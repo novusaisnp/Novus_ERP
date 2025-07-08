@@ -36,9 +36,9 @@ import ConfigBasicas from './pages/financeiro/ConfigBasicas';
 import FluxoCaixaPage from './pages/financeiro/FluxoCaixaPage';
 
 // Gestão Bancária Pages
-import Bancos from './pages/gestao-bancaria/bancos';
-import Agencias from './pages/gestao-bancaria/agencias';
-import ContasBancarias from './pages/gestao-bancaria/contas-bancarias';
+import Bancos from './pages/gestao-bancaria/bancos/index';
+import Agencias from './pages/gestao-bancaria/agencias/index';
+import ContasBancarias from './pages/gestao-bancaria/contas-bancarias/index';
 
 // Fiscal Pages
 import NotasFiscais from './pages/fiscal/NotasFiscais';
