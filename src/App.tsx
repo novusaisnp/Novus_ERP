@@ -39,6 +39,7 @@ import FluxoCaixaPage from './pages/financeiro/FluxoCaixaPage';
 import Bancos from './pages/gestao-bancaria/bancos/index';
 import Agencias from './pages/gestao-bancaria/agencias/index';
 import ContasBancarias from './pages/gestao-bancaria/contas-bancarias/index';
+import MovimentacoesBancarias from './pages/gestao-bancaria/movimentacoes-bancarias/index';
 
 // Fiscal Pages
 import NotasFiscais from './pages/fiscal/NotasFiscais';
@@ -120,6 +121,7 @@ function App() {
                     <Route path="bancos" element={<Bancos />} />
                     <Route path="agencias" element={<Agencias />} />
                     <Route path="contas-bancarias" element={<ContasBancarias />} />
+                    <Route path="movimentacoes-bancarias" element={<MovimentacoesBancarias />} />
                   </Route>
                   
                   {/* Financeiro Routes */}

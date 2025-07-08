@@ -116,6 +116,10 @@ export const sidebarItems: MenuItem[] = [
         title: "Contas Bancárias",
         url: "/gestao-bancaria/contas-bancarias",
       },
+      {
+        title: "Movimentações Bancárias",
+        url: "/gestao-bancaria/movimentacoes-bancarias",
+      },
     ],
   },
   {

@@ -836,6 +836,62 @@ export type Database = {
         }
         Relationships: []
       }
+      documentos_movimentacoes_bancarias: {
+        Row: {
+          ativo: boolean
+          categoria: string | null
+          created_at: string
+          descricao: string | null
+          id: string
+          movimentacao_id: string
+          nome_arquivo: string
+          nome_original: string
+          tamanho_bytes: number
+          tipo_arquivo: string
+          updated_at: string
+          url_arquivo: string
+          usuario_upload_id: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          categoria?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          movimentacao_id: string
+          nome_arquivo: string
+          nome_original: string
+          tamanho_bytes: number
+          tipo_arquivo: string
+          updated_at?: string
+          url_arquivo: string
+          usuario_upload_id?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          categoria?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          movimentacao_id?: string
+          nome_arquivo?: string
+          nome_original?: string
+          tamanho_bytes?: number
+          tipo_arquivo?: string
+          updated_at?: string
+          url_arquivo?: string
+          usuario_upload_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentos_movimentacoes_bancarias_movimentacao_id_fkey"
+            columns: ["movimentacao_id"]
+            isOneToOne: false
+            referencedRelation: "movimentacoes_bancarias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documentos_titulos_financeiros: {
         Row: {
           ativo: boolean
@@ -1152,6 +1208,48 @@ export type Database = {
         }
         Relationships: []
       }
+      historico_movimentacoes_bancarias: {
+        Row: {
+          created_at: string
+          dados_anteriores: Json | null
+          dados_novos: Json | null
+          data_operacao: string
+          id: string
+          ip_origem: unknown | null
+          movimentacao_id: string
+          observacoes: string | null
+          tipo_operacao: string
+          usuario_id: string | null
+          usuario_nome: string | null
+        }
+        Insert: {
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          data_operacao?: string
+          id?: string
+          ip_origem?: unknown | null
+          movimentacao_id: string
+          observacoes?: string | null
+          tipo_operacao: string
+          usuario_id?: string | null
+          usuario_nome?: string | null
+        }
+        Update: {
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          data_operacao?: string
+          id?: string
+          ip_origem?: unknown | null
+          movimentacao_id?: string
+          observacoes?: string | null
+          tipo_operacao?: string
+          usuario_id?: string | null
+          usuario_nome?: string | null
+        }
+        Relationships: []
+      }
       historico_movimentacoes_financeiras: {
         Row: {
           created_at: string
@@ -1385,6 +1483,48 @@ export type Database = {
         }
         Relationships: []
       }
+      lotes_movimentacoes: {
+        Row: {
+          created_at: string
+          descricao_lote: string
+          id: string
+          ip_origem: unknown | null
+          numero_lote: string
+          quantidade_movimentacoes: number
+          status: string
+          tipo_lote: string
+          updated_at: string
+          usuario_criacao_id: string | null
+          valor_total: number
+        }
+        Insert: {
+          created_at?: string
+          descricao_lote: string
+          id?: string
+          ip_origem?: unknown | null
+          numero_lote: string
+          quantidade_movimentacoes?: number
+          status?: string
+          tipo_lote: string
+          updated_at?: string
+          usuario_criacao_id?: string | null
+          valor_total: number
+        }
+        Update: {
+          created_at?: string
+          descricao_lote?: string
+          id?: string
+          ip_origem?: unknown | null
+          numero_lote?: string
+          quantidade_movimentacoes?: number
+          status?: string
+          tipo_lote?: string
+          updated_at?: string
+          usuario_criacao_id?: string | null
+          valor_total?: number
+        }
+        Relationships: []
+      }
       modalidade_api_vinculo: {
         Row: {
           ativo: boolean
@@ -1453,6 +1593,116 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      movimentacoes_bancarias: {
+        Row: {
+          ativo: boolean
+          conciliado: boolean
+          conta_bancaria_id: string
+          conta_destino_id: string | null
+          created_at: string
+          data_conciliacao: string | null
+          data_estorno: string | null
+          data_movimentacao: string
+          deleted_at: string | null
+          descricao: string
+          documento_referencia: string | null
+          estornado: boolean
+          id: string
+          ip_origem: unknown | null
+          lote_id: string | null
+          motivo_estorno: string | null
+          movimentacao_estorno_id: string | null
+          observacoes: string | null
+          tipo_movimentacao: string
+          updated_at: string
+          usuario_conciliacao_id: string | null
+          usuario_criacao_id: string | null
+          usuario_estorno_id: string | null
+          valor: number
+        }
+        Insert: {
+          ativo?: boolean
+          conciliado?: boolean
+          conta_bancaria_id: string
+          conta_destino_id?: string | null
+          created_at?: string
+          data_conciliacao?: string | null
+          data_estorno?: string | null
+          data_movimentacao?: string
+          deleted_at?: string | null
+          descricao: string
+          documento_referencia?: string | null
+          estornado?: boolean
+          id?: string
+          ip_origem?: unknown | null
+          lote_id?: string | null
+          motivo_estorno?: string | null
+          movimentacao_estorno_id?: string | null
+          observacoes?: string | null
+          tipo_movimentacao: string
+          updated_at?: string
+          usuario_conciliacao_id?: string | null
+          usuario_criacao_id?: string | null
+          usuario_estorno_id?: string | null
+          valor: number
+        }
+        Update: {
+          ativo?: boolean
+          conciliado?: boolean
+          conta_bancaria_id?: string
+          conta_destino_id?: string | null
+          created_at?: string
+          data_conciliacao?: string | null
+          data_estorno?: string | null
+          data_movimentacao?: string
+          deleted_at?: string | null
+          descricao?: string
+          documento_referencia?: string | null
+          estornado?: boolean
+          id?: string
+          ip_origem?: unknown | null
+          lote_id?: string | null
+          motivo_estorno?: string | null
+          movimentacao_estorno_id?: string | null
+          observacoes?: string | null
+          tipo_movimentacao?: string
+          updated_at?: string
+          usuario_conciliacao_id?: string | null
+          usuario_criacao_id?: string | null
+          usuario_estorno_id?: string | null
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movimentacoes_bancarias_conta_bancaria_id_fkey"
+            columns: ["conta_bancaria_id"]
+            isOneToOne: false
+            referencedRelation: "contas_bancarias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimentacoes_bancarias_conta_destino_id_fkey"
+            columns: ["conta_destino_id"]
+            isOneToOne: false
+            referencedRelation: "contas_bancarias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimentacoes_bancarias_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "lotes_movimentacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimentacoes_bancarias_movimentacao_estorno_id_fkey"
+            columns: ["movimentacao_estorno_id"]
+            isOneToOne: false
+            referencedRelation: "movimentacoes_bancarias"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       natureza_caixas: {
         Row: {
