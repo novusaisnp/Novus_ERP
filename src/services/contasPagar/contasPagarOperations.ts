@@ -1,0 +1,192 @@
+
+import { supabase } from '@/integrations/supabase/client';
+import type { ContaPagarInput } from '@/types/contasPagar';
+
+export const createContaPagar = async (input: ContaPagarInput) => {
+  console.log('[ContasPagarOperations] Criando conta a pagar com rateios:', input.rateios?.length || 0);
+  
+  // Iniciar transação
+  const { data: contaData, error: contaError } = await supabase
+    .from('contas_pagar')
+    .insert([{
+      numero_documento: input.numero_documento,
+      descricao: input.descricao,
+      fornecedor_id: input.fornecedor_id || null,
+      plano_conta_id: input.plano_conta_id || null,
+      centro_custo_id: input.centro_custo_id || null,
+      valor_original: input.valor_original,
+      valor_atual: input.valor_atual,
+      data_vencimento: input.data_vencimento,
+      data_emissao: input.data_emissao,
+      data_competencia: input.data_competencia || null,
+      situacao: input.situacao || 'ABERTA',
+      observacoes: input.observacoes || null,
+      anexos: input.anexos || [],
+      tags: input.tags || [],
+      periodicidade: input.periodicidade || null,
+      recorrente: input.recorrente || false,
+      conta_origem_id: input.conta_origem_id || null,
+      numero_parcela: input.numero_parcela || null,
+      total_parcelas: input.total_parcelas || null,
+      ativo: input.ativo !== false,
+    }])
+    .select('id')
+    .single();
+
+  if (contaError) {
+    console.error('[ContasPagarOperations] Erro ao criar conta a pagar:', contaError);
+    throw new Error(`Erro ao criar conta a pagar: ${contaError.message}`);
+  }
+
+  // Se há rateios, inserir cada um como linha separada
+  if (input.rateios && input.rateios.length > 0) {
+    console.log('[ContasPagarOperations] Inserindo rateios:', input.rateios.length);
+    
+    const rateiosData = input.rateios.map(rateio => ({
+      conta_pagar_id: contaData.id,
+      plano_conta_id: rateio.plano_conta_id,
+      centro_custo_id: rateio.centro_custo_id || null,
+      valor: rateio.valor,
+      percentual: rateio.percentual,
+      descricao: rateio.descricao || null,
+    }));
+
+    const { error: rateiosError } = await supabase
+      .from('rateios_contas_pagar')
+      .insert(rateiosData);
+
+    if (rateiosError) {
+      console.error('[ContasPagarOperations] Erro ao inserir rateios:', rateiosError);
+      // Reverter a conta criada
+      await supabase.from('contas_pagar').delete().eq('id', contaData.id);
+      throw new Error(`Erro ao inserir rateios: ${rateiosError.message}`);
+    }
+  }
+
+  // Buscar conta completa com relacionamentos
+  const { data: contaCompleta, error: fetchError } = await supabase
+    .from('contas_pagar')
+    .select(`
+      *,
+      fornecedores!contas_pagar_fornecedor_id_fkey(id, razao_social, nome_fantasia),
+      plano_contas!contas_pagar_plano_conta_id_fkey(id, codigo, nome),
+      centros_custo!contas_pagar_centro_custo_id_fkey(id, nome, codigo)
+    `)
+    .eq('id', contaData.id)
+    .single();
+
+  if (fetchError) {
+    console.error('[ContasPagarOperations] Erro ao buscar conta criada:', fetchError);
+    throw new Error(`Erro ao buscar conta criada: ${fetchError.message}`);
+  }
+
+  return contaCompleta;
+};
+
+export const updateContaPagar = async (id: string, input: ContaPagarInput) => {
+  console.log('[ContasPagarOperations] Atualizando conta a pagar:', id, 'com rateios:', input.rateios?.length || 0);
+
+  // Atualizar dados principais da conta
+  const { data: contaData, error: contaError } = await supabase
+    .from('contas_pagar')
+    .update({
+      numero_documento: input.numero_documento,
+      descricao: input.descricao,
+      fornecedor_id: input.fornecedor_id || null,
+      plano_conta_id: input.plano_conta_id || null,
+      centro_custo_id: input.centro_custo_id || null,
+      valor_original: input.valor_original,
+      valor_atual: input.valor_atual,
+      data_vencimento: input.data_vencimento,
+      data_emissao: input.data_emissao,
+      data_competencia: input.data_competencia || null,
+      situacao: input.situacao || 'ABERTA',
+      observacoes: input.observacoes || null,
+      anexos: input.anexos || [],
+      tags: input.tags || [],
+      periodicidade: input.periodicidade || null,
+      recorrente: input.recorrente || false,
+      conta_origem_id: input.conta_origem_id || null,
+      numero_parcela: input.numero_parcela || null,
+      total_parcelas: input.total_parcelas || null,
+    })
+    .eq('id', id)
+    .select('id')
+    .single();
+
+  if (contaError) {
+    console.error('[ContasPagarOperations] Erro ao atualizar conta a pagar:', contaError);
+    throw new Error(`Erro ao atualizar conta a pagar: ${contaError.message}`);
+  }
+
+  // Remover rateios existentes
+  const { error: deleteRateiosError } = await supabase
+    .from('rateios_contas_pagar')
+    .delete()
+    .eq('conta_pagar_id', id);
+
+  if (deleteRateiosError) {
+    console.error('[ContasPagarOperations] Erro ao remover rateios existentes:', deleteRateiosError);
+    throw new Error(`Erro ao remover rateios existentes: ${deleteRateiosError.message}`);
+  }
+
+  // Se há rateios, inserir os novos
+  if (input.rateios && input.rateios.length > 0) {
+    console.log('[ContasPagarOperations] Inserindo novos rateios:', input.rateios.length);
+    
+    const rateiosData = input.rateios.map(rateio => ({
+      conta_pagar_id: id,
+      plano_conta_id: rateio.plano_conta_id,
+      centro_custo_id: rateio.centro_custo_id || null,
+      valor: rateio.valor,
+      percentual: rateio.percentual,
+      descricao: rateio.descricao || null,
+    }));
+
+    const { error: rateiosError } = await supabase
+      .from('rateios_contas_pagar')
+      .insert(rateiosData);
+
+    if (rateiosError) {
+      console.error('[ContasPagarOperations] Erro ao inserir novos rateios:', rateiosError);
+      throw new Error(`Erro ao inserir novos rateios: ${rateiosError.message}`);
+    }
+  }
+
+  // Buscar conta completa com relacionamentos
+  const { data: contaCompleta, error: fetchError } = await supabase
+    .from('contas_pagar')
+    .select(`
+      *,
+      fornecedores!contas_pagar_fornecedor_id_fkey(id, razao_social, nome_fantasia),
+      plano_contas!contas_pagar_plano_conta_id_fkey(id, codigo, nome),
+      centros_custo!contas_pagar_centro_custo_id_fkey(id, nome, codigo)
+    `)
+    .eq('id', id)
+    .single();
+
+  if (fetchError) {
+    console.error('[ContasPagarOperations] Erro ao buscar conta atualizada:', fetchError);
+    throw new Error(`Erro ao buscar conta atualizada: ${fetchError.message}`);
+  }
+
+  return contaCompleta;
+};
+
+export const deleteContaPagar = async (id: string) => {
+  console.log('[ContasPagarOperations] Removendo conta a pagar:', id);
+
+  // Usar soft delete para manter histórico dos rateios
+  const { error } = await supabase
+    .from('contas_pagar')
+    .update({ ativo: false })
+    .eq('id', id);
+
+  if (error) {
+    console.error('[ContasPagarOperations] Erro ao remover conta a pagar:', error);
+    throw new Error(`Erro ao remover conta a pagar: ${error.message}`);
+  }
+
+  // Nota: Os rateios são mantidos para auditoria, não são removidos
+  console.log('[ContasPagarOperations] Conta removida com sucesso, rateios mantidos para auditoria');
+};
