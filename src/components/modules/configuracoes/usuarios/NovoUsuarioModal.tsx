@@ -109,12 +109,9 @@ const NovoUsuarioModal: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
       if (origem === 'COLABORADOR') payload.colaborador_id = pessoaId;
       else payload.socio_id = pessoaId;
 
-      // user_id é obrigatório; enquanto não houver signup, usamos o próprio auth.uid do criador?
-      // Em vez disso, criamos o registro sem user_id via placeholder (uuid nulo não permitido).
-      // Estratégia: bloquear até haver signup; guardamos user_id pendente = uuid do próprio criador temporariamente.
-      const { data: authUser } = await supabase.auth.getUser();
-      payload.user_id = authUser?.user?.id;
-      if (!payload.user_id) throw new Error('Sessão inválida');
+      // Placeholder user_id — será substituído quando a pessoa aceitar o convite/fizer signup.
+      // Até lá o vínculo pessoa ↔ usuário já está registrado com segurança.
+      payload.user_id = (crypto as any).randomUUID?.() || `${Date.now()}`;
 
       const { data: created, error } = await supabase.from('usuarios').insert(payload).select('id, user_id').single();
       if (error) throw error;
