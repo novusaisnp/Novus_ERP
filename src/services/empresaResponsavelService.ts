@@ -44,21 +44,51 @@ function hydrate(row: any): EmpresaResponsavel {
   return { ...c, ...row, configuracoes: c };
 }
 
+async function getExistingEmpresaId(): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('empresa_responsavel')
+    .select('id')
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data?.id || null;
+}
+
 export const empresaResponsavelService = {
   async fetch(): Promise<EmpresaResponsavel | null> {
-    const { data, error } = await supabase.from('empresa_responsavel').select('*').maybeSingle();
+    const { data, error } = await supabase
+      .from('empresa_responsavel')
+      .select('*')
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
     if (error) throw error;
     return data ? hydrate(data) : null;
   },
 
-  async save(input: EmpresaResponsavel): Promise<void> {
+  async save(input: EmpresaResponsavel): Promise<EmpresaResponsavel> {
     const payload = buildPayload(input);
-    if (input.id) {
-      const { error } = await supabase.from('empresa_responsavel').update(payload).eq('id', input.id);
+    const id = input.id || await getExistingEmpresaId();
+
+    if (id) {
+      const { data, error } = await supabase
+        .from('empresa_responsavel')
+        .update(payload)
+        .eq('id', id)
+        .select('*')
+        .single();
       if (error) throw error;
+      return hydrate(data);
     } else {
-      const { error } = await supabase.from('empresa_responsavel').insert(payload);
+      const { data, error } = await supabase
+        .from('empresa_responsavel')
+        .insert(payload)
+        .select('*')
+        .single();
       if (error) throw error;
+      return hydrate(data);
     }
   },
 };
