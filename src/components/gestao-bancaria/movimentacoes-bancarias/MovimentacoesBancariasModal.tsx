@@ -141,15 +141,7 @@ export function MovimentacoesBancariasModal({
             </TabsContent>
 
             <TabsContent value="historico" className="flex-1 flex flex-col">
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center">
-                  <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Histórico de Operações</h3>
-                  <p className="text-muted-foreground">
-                    Em desenvolvimento - Histórico detalhado de todas as operações
-                  </p>
-                </div>
-              </div>
+              <HistoricoMovimentacoes movimentacoes={movimentacoes} />
             </TabsContent>
           </Tabs>
         </div>
