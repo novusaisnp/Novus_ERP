@@ -37,10 +37,9 @@ const ContasReceber = () => {
   };
 
   const handleDelete = (id: string) => {
-    if (window.confirm('Tem certeza que deseja remover esta conta a receber?')) {
-      remover(id);
-    }
+    setContaParaExcluir(id);
   };
+
 
   const handleFilter = (novosFiltros: ContaReceberFilters) => {
     setFiltros(novosFiltros);
