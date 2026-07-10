@@ -98,9 +98,8 @@ export const rhUtils = {
       return { isValid: false, error: 'CPF é obrigatório.' };
     }
 
-    if (!colaboradorData.empresaRepresentadaId) {
-      return { isValid: false, error: 'Empresa representada é obrigatória.' };
-    }
+    // empresaRepresentadaId é resolvido no servidor via get_user_empresa_id()
+
 
     if (!colaboradorData.regimeContratacao) {
       return { isValid: false, error: 'Regime de contratação é obrigatório.' };
