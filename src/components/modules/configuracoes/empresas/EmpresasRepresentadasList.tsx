@@ -560,7 +560,104 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
                   </div>
                 </div>
               </TabsContent>
+
+              <TabsContent value="logo" className="space-y-4">
+                <div className="space-y-4">
+                  <div>
+                    <Label>Logomarca da Empresa</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Utilizada em layouts de documentos (NFe, boletos, relatórios). PNG, JPG ou SVG até 2 MB.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <div className="w-40 h-40 rounded-lg border border-dashed border-border flex items-center justify-center bg-muted/30 overflow-hidden">
+                      {logoPreviewUrl ? (
+                        <img src={logoPreviewUrl} alt="Logo da empresa" className="max-w-full max-h-full object-contain" />
+                      ) : (
+                        <ImageIcon className="w-10 h-10 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <input
+                        ref={logoInputRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                        className="hidden"
+                        onChange={(ev) => {
+                          const f = ev.target.files?.[0];
+                          if (f) handleLogoUpload(f);
+                          ev.target.value = '';
+                        }}
+                      />
+                      <Button type="button" variant="outline" onClick={() => logoInputRef.current?.click()} disabled={uploadingLogo}>
+                        {uploadingLogo ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                        {form.logo_path ? 'Trocar logo' : 'Enviar logo'}
+                      </Button>
+                      {form.logo_path && (
+                        <Button type="button" variant="ghost" size="sm" onClick={handleRemoveLogo} disabled={uploadingLogo}>
+                          <X className="w-4 h-4 mr-2" />Remover
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="certificado" className="space-y-4">
+                <div className="space-y-4">
+                  <div>
+                    <Label>Certificado Digital A1</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Arquivo <strong>.pfx</strong> ou <strong>.p12</strong> (até 200 KB). Usado pelo módulo Fiscal para assinar NFe / NFSe.
+                      Por segurança, a <strong>senha do certificado não é armazenada</strong> — ela será solicitada no momento da emissão do documento.
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg border border-border p-4 bg-muted/20">
+                    {form.cert_path ? (
+                      <div className="flex items-start gap-3">
+                        <ShieldCheck className="w-8 h-8 text-primary shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate">{form.cert_filename || 'Certificado carregado'}</div>
+                          {form.cert_uploaded_at && (
+                            <div className="text-xs text-muted-foreground">
+                              Enviado em {new Date(form.cert_uploaded_at).toLocaleString('pt-BR')}
+                            </div>
+                          )}
+                          <Badge variant="secondary" className="mt-2 text-[10px]">Certificado ativo</Badge>
+                        </div>
+                        <Button type="button" variant="ghost" size="sm" onClick={handleRemoveCert} disabled={uploadingCert}>
+                          <X className="w-4 h-4 mr-1" />Remover
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-6 gap-2 text-center">
+                        <FileLock2 className="w-10 h-10 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">Nenhum certificado digital cadastrado</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <input
+                    ref={certInputRef}
+                    type="file"
+                    accept=".pfx,.p12,application/x-pkcs12"
+                    className="hidden"
+                    onChange={(ev) => {
+                      const f = ev.target.files?.[0];
+                      if (f) handleCertUpload(f);
+                      ev.target.value = '';
+                    }}
+                  />
+                  <Button type="button" variant="outline" onClick={() => certInputRef.current?.click()} disabled={uploadingCert}>
+                    {uploadingCert ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                    {form.cert_path ? 'Substituir certificado' : 'Enviar certificado'}
+                  </Button>
+                </div>
+              </TabsContent>
             </Tabs>
+
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={saving}>Cancelar</Button>
