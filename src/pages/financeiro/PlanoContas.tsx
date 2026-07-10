@@ -52,10 +52,9 @@ const PlanoContas = () => {
   };
 
   const handleDelete = (conta: PlanoContasType) => {
-    if (window.confirm(`Tem certeza que deseja excluir a conta "${conta.nome}"?`)) {
-      deleteConta(conta.id);
-    }
+    setContaParaExcluir(conta);
   };
+
 
   const handleSubmit = async (data: PlanoContasInput): Promise<void> => {
     try {
