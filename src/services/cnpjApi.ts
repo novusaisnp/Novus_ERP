@@ -1,6 +1,15 @@
 
 import { CNPJData, CEPData } from '@/types/empresa';
 
+// Cache in-memory por sessão (TTL 10min) — evita reconsulta ao reabrir o mesmo cadastro
+const CACHE_TTL_MS = 10 * 60 * 1000;
+const cnpjCache = new Map<string, { data: CNPJData; ts: number }>();
+const cepCache = new Map<string, { data: CEPData; ts: number }>();
+
+const fresh = <T>(entry: { data: T; ts: number } | undefined): T | null =>
+  entry && Date.now() - entry.ts < CACHE_TTL_MS ? entry.data : null;
+
+
 export const consultarCNPJ = async (cnpj: string): Promise<CNPJData | null> => {
   console.log('[CNPJ API]', 'Consultando CNPJ:', cnpj);
   
@@ -11,17 +20,24 @@ export const consultarCNPJ = async (cnpj: string): Promise<CNPJData | null> => {
       throw new Error('CNPJ deve ter 14 dígitos');
     }
 
+    const cached = fresh(cnpjCache.get(cnpjLimpo));
+    if (cached) {
+      console.log('[CNPJ API]', 'Cache hit para', cnpjLimpo);
+      return cached;
+    }
+
     const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpjLimpo}`);
     
     if (!response.ok) {
       throw new Error('CNPJ não encontrado ou inválido');
     }
 
+
     const data = await response.json();
     
     console.log('[CNPJ API]', 'Dados retornados:', data);
     
-    return {
+    const result: CNPJData = {
       cnpj: data.cnpj,
       nome: data.razao_social || data.nome,
       fantasia: data.nome_fantasia,
@@ -31,10 +47,12 @@ export const consultarCNPJ = async (cnpj: string): Promise<CNPJData | null> => {
       bairro: data.bairro,
       municipio: data.municipio,
       uf: data.uf,
-      cep: data.cep, // Incluindo o campo cep no retorno
+      cep: data.cep,
       situacao: data.situacao_cadastral,
       porte: data.porte
     };
+    cnpjCache.set(cnpjLimpo, { data: result, ts: Date.now() });
+    return result;
   } catch (error) {
     console.error('[CNPJ API]', 'Erro ao consultar CNPJ:', error);
     return null;
@@ -51,6 +69,12 @@ export const consultarCEP = async (cep: string): Promise<CEPData | null> => {
       throw new Error('CEP deve ter 8 dígitos');
     }
 
+    const cached = fresh(cepCache.get(cepLimpo));
+    if (cached) {
+      console.log('[CEP API]', 'Cache hit para', cepLimpo);
+      return cached;
+    }
+
     const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
     
     if (!response.ok) {
@@ -65,7 +89,7 @@ export const consultarCEP = async (cep: string): Promise<CEPData | null> => {
     
     console.log('[CEP API]', 'Dados retornados:', data);
     
-    return {
+    const result: CEPData = {
       cep: data.cep,
       logradouro: data.logradouro,
       complemento: data.complemento,
@@ -73,6 +97,8 @@ export const consultarCEP = async (cep: string): Promise<CEPData | null> => {
       localidade: data.localidade,
       uf: data.uf
     };
+    cepCache.set(cepLimpo, { data: result, ts: Date.now() });
+    return result;
   } catch (error) {
     console.error('[CEP API]', 'Erro ao consultar CEP:', error);
     return null;

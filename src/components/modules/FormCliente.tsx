@@ -10,7 +10,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon, Loader2, Upload, Users, Building2, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Cliente } from '@/types/cliente';
-import { consultarCNPJ, consultarCEP, formatarCPF, formatarCNPJ, formatarCEP } from '@/services/cnpjApi';
+import { consultarCNPJ, consultarCEP, formatarCPF, formatarCNPJ, formatarCEP, validarCPF } from '@/services/cnpjApi';
+import { toast } from 'sonner';
 import { TelefoneManager } from '@/components/modules/TelefoneManager';
 import { EmailManager } from '@/components/modules/clientes/EmailManager';
 import { ContatoEmpresaManager } from '@/components/modules/clientes/ContatoEmpresaManager';
@@ -305,6 +306,11 @@ export const FormCliente: React.FC<FormClienteProps> = ({
                   id="cpf_cnpj"
                   value={formData.cpfCnpj || ''}
                   onChange={(e) => handleCpfCnpjChange(e.target.value)}
+                  onBlur={() => {
+                    if (formData.tipo !== 'F') return;
+                    const clean = (formData.cpfCnpj || '').replace(/\D/g, '');
+                    if (clean && !validarCPF(clean)) toast.error('CPF inválido — verifique os dígitos');
+                  }}
                   placeholder={formData.tipo === 'F' ? '000.000.000-00' : '00.000.000/0000-00'}
                 />
                 {loadingApi && (
