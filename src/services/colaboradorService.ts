@@ -39,7 +39,7 @@ function toDbPayload(c: Colaborador, empresaId: string | null) {
     conta: bank?.conta || null,
     tipo_conta: bank?.tipoConta || null,
     ativo: c.situacao ?? true,
-    empresa_representada_id: c.empresaRepresentadaId || empresaId,
+    empresa_representada_id: empresaId,
     updated_at: new Date().toISOString(),
   };
 }
