@@ -14,6 +14,7 @@ import Usuarios from './pages/configuracoes/Usuarios';
 import Empresas from './pages/configuracoes/Empresas';
 import Sistema from './pages/configuracoes/Sistema';
 import CentrosCusto from './pages/configuracoes/CentrosCusto';
+import Perfil from './pages/configuracoes/Perfil';
 
 // Cadastros Pages
 import Servicos from './pages/cadastros/Servicos';
