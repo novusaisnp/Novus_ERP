@@ -266,11 +266,7 @@ export class FluxoCaixaService {
                                  saidasRealizadas.reduce((sum, m) => sum + m.valor, 0);
       const saldoAtual = saldoBancarioTotal + saldoMovimentacoes;
 
-        saldoBancarioTotal,
-        saldoMovimentacoes,
-        saldoAtual,
-        contasBancarias: contasBancarias?.length || 0
-      });
+
 
       // Calcular projeções
       const movimentacoes7d = movimentacoes.filter(m => new Date(m.data) <= data7d);
