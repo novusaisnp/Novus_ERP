@@ -10,7 +10,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon, Loader2, Upload, Users, Building2, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Cliente } from '@/types/cliente';
-import { consultarCNPJ, consultarCEP, formatarCPF, formatarCNPJ, formatarCEP, validarCPF } from '@/services/cnpjApi';
+import { consultarCEP, formatarCPF, formatarCNPJ, formatarCEP, validarCPF } from '@/services/cnpjApi';
+import { useCnpjLookupImperative } from '@/hooks/useCnpjLookup';
 import { toast } from 'sonner';
 import { TelefoneManager } from '@/components/modules/TelefoneManager';
 import { EmailManager } from '@/components/modules/clientes/EmailManager';
