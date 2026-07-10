@@ -16,6 +16,7 @@ import { useEmpresaResponsavel } from '@/hooks/useEmpresaResponsavel';
 import { empresasRepresentadasService } from '@/services/empresasRepresentadasService';
 import SociosRepresentantesTab from './SociosRepresentantesTab';
 import { toast } from 'sonner';
+import { CepInput } from '@/components/shared/CepInput';
 
 
 interface Props {
@@ -468,7 +469,19 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <Label>CEP</Label>
-                    <Input value={form.cep} onChange={(ev) => setField('cep', ev.target.value)} />
+                    <CepInput
+                      value={form.cep}
+                      onChange={(v) => setField('cep', v)}
+                      onAddressFound={(addr) => {
+                        setForm((p) => ({
+                          ...p,
+                          cep: addr.cep || p.cep,
+                          cidade: addr.localidade || p.cidade,
+                          estado: addr.uf || p.estado,
+                          endereco: p.endereco || [addr.logradouro, addr.bairro].filter(Boolean).join(', '),
+                        }));
+                      }}
+                    />
                   </div>
                   <div>
                     <Label>Cidade</Label>
