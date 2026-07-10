@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Building, Plus, Edit, Trash2, Loader2 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmpresaRepresentada } from '@/hooks/useEmpresasRepresentadas';
+import { useEmpresaResponsavel } from '@/hooks/useEmpresaResponsavel';
 import { toast } from 'sonner';
 
 interface Props {
@@ -19,6 +20,22 @@ interface Props {
   onSave: (e: EmpresaRepresentada) => Promise<any> | any;
   onDelete: (id: string) => Promise<any> | any;
 }
+
+type TipoVinculo = '' | 'INDEPENDENTE' | 'MESMA_EMPRESA' | 'FILIAL' | 'GRUPO';
+
+const VINCULO_LABEL: Record<Exclude<TipoVinculo, ''>, string> = {
+  INDEPENDENTE: 'Independente',
+  MESMA_EMPRESA: 'Mesma Empresa',
+  FILIAL: 'Filial',
+  GRUPO: 'Grupo',
+};
+
+const VINCULO_VARIANT: Record<Exclude<TipoVinculo, ''>, 'default' | 'secondary' | 'outline'> = {
+  INDEPENDENTE: 'outline',
+  MESMA_EMPRESA: 'secondary',
+  FILIAL: 'default',
+  GRUPO: 'default',
+};
 
 interface FormState {
   id?: string;
@@ -47,6 +64,8 @@ interface FormState {
   contador_crc: string;
   contador_email: string;
   observacoes: string;
+  tipo_vinculo: TipoVinculo;
+  cnpj_matriz: string;
 }
 
 const empty = (): FormState => ({
@@ -56,7 +75,11 @@ const empty = (): FormState => ({
   tipo_empresa: '', regime_tributario: '', perfil_tributario: '',
   cnae_principal: '', natureza_juridica: '', data_abertura: '',
   contador_nome: '', contador_crc: '', contador_email: '', observacoes: '',
+  tipo_vinculo: '', cnpj_matriz: '',
 });
+
+const onlyDigits = (v: string) => (v || '').replace(/\D/g, '');
+const isValidCnpj = (v: string) => onlyDigits(v).length === 14;
 
 const fromEmpresa = (e?: EmpresaRepresentada | null): FormState => {
   if (!e) return empty();
@@ -87,6 +110,8 @@ const fromEmpresa = (e?: EmpresaRepresentada | null): FormState => {
     contador_crc: c.contador_crc || '',
     contador_email: c.contador_email || '',
     observacoes: c.observacoes || '',
+    tipo_vinculo: (c.tipo_vinculo as TipoVinculo) || '',
+    cnpj_matriz: c.cnpj_matriz || '',
   };
 };
 
@@ -97,19 +122,36 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
   const [toDelete, setToDelete] = useState<EmpresaRepresentada | null>(null);
   const [loadingCnpj, setLoadingCnpj] = useState(false);
   const lastCnpjRef = useRef<string>('');
+  const autoVinculoRef = useRef<string>('');
+
+  const { empresa: responsavel } = useEmpresaResponsavel();
+  const responsavelCnpj = useMemo(() => onlyDigits(responsavel?.cnpj || ''), [responsavel]);
 
   useEffect(() => {
     if (!open) return;
     setForm(fromEmpresa(editing));
     lastCnpjRef.current = '';
+    autoVinculoRef.current = '';
   }, [open, editing]);
 
   const setField = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((p) => ({ ...p, [k]: v }));
 
+  // Auto-detecta "Mesma Empresa" quando o CNPJ digitado bate com o da responsável
   useEffect(() => {
     if (!open) return;
-    const cnpjLimpo = (form.cnpj || '').replace(/\D/g, '');
+    const cnpjLimpo = onlyDigits(form.cnpj);
+    if (cnpjLimpo.length !== 14 || !responsavelCnpj) return;
+    if (cnpjLimpo === responsavelCnpj && form.tipo_vinculo !== 'MESMA_EMPRESA' && autoVinculoRef.current !== cnpjLimpo) {
+      autoVinculoRef.current = cnpjLimpo;
+      setForm((p) => ({ ...p, tipo_vinculo: 'MESMA_EMPRESA' }));
+      toast.info('CNPJ igual ao da Empresa Responsável — vínculo definido como "Mesma Empresa"');
+    }
+  }, [form.cnpj, form.tipo_vinculo, open, responsavelCnpj]);
+
+  useEffect(() => {
+    if (!open) return;
+    const cnpjLimpo = onlyDigits(form.cnpj);
     if (cnpjLimpo.length !== 14 || cnpjLimpo === lastCnpjRef.current) return;
     const handler = setTimeout(async () => {
       lastCnpjRef.current = cnpjLimpo;
@@ -149,6 +191,12 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (form.tipo_vinculo === 'FILIAL' && !isValidCnpj(form.cnpj_matriz)) {
+      toast.error('Informe um CNPJ da Matriz válido (14 dígitos)');
+      return;
+    }
+
     const payload: EmpresaRepresentada = {
       id: form.id,
       nome: form.nome,
@@ -175,10 +223,18 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
         contador_crc: form.contador_crc,
         contador_email: form.contador_email,
         observacoes: form.observacoes,
+        tipo_vinculo: form.tipo_vinculo || null,
+        cnpj_matriz: form.tipo_vinculo === 'FILIAL' ? form.cnpj_matriz : null,
       },
     };
     await onSave(payload);
     setOpen(false);
+  };
+
+  const getVinculo = (e: EmpresaRepresentada): Exclude<TipoVinculo, ''> | null => {
+    const c: any = e.configuracoes || {};
+    const v = (c.tipo_vinculo || '') as TipoVinculo;
+    return v ? (v as Exclude<TipoVinculo, ''>) : null;
   };
 
   return (
@@ -192,30 +248,40 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {empresas.map((e) => (
-          <Card key={e.id}>
-            <CardContent className="p-4 space-y-2">
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="font-semibold">{e.nome}</div>
-                  {e.cnpj && <div className="text-xs text-muted-foreground">{e.cnpj}</div>}
+        {empresas.map((e) => {
+          const vinculo = getVinculo(e);
+          return (
+            <Card key={e.id}>
+              <CardContent className="p-4 space-y-2">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold truncate">{e.nome}</span>
+                      {vinculo && (
+                        <Badge variant={VINCULO_VARIANT[vinculo]} className="text-[10px]">
+                          {VINCULO_LABEL[vinculo]}
+                        </Badge>
+                      )}
+                    </div>
+                    {e.cnpj && <div className="text-xs text-muted-foreground">{e.cnpj}</div>}
+                  </div>
+                  <Badge variant={e.ativo ? 'default' : 'secondary'}>{e.ativo ? 'Ativa' : 'Inativa'}</Badge>
                 </div>
-                <Badge variant={e.ativo ? 'default' : 'secondary'}>{e.ativo ? 'Ativa' : 'Inativa'}</Badge>
-              </div>
-              {(e.cidade || e.estado) && (
-                <div className="text-sm text-muted-foreground">{[e.cidade, e.estado].filter(Boolean).join('/')}</div>
-              )}
-              <div className="flex justify-end gap-2 pt-2">
-                <Button size="sm" variant="outline" onClick={() => openEdit(e)}>
-                  <Edit className="w-3 h-3 mr-1" />Editar
-                </Button>
-                <Button size="sm" variant="destructive" onClick={() => setToDelete(e)}>
-                  <Trash2 className="w-3 h-3 mr-1" />Excluir
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                {(e.cidade || e.estado) && (
+                  <div className="text-sm text-muted-foreground">{[e.cidade, e.estado].filter(Boolean).join('/')}</div>
+                )}
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button size="sm" variant="outline" onClick={() => openEdit(e)}>
+                    <Edit className="w-3 h-3 mr-1" />Editar
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => setToDelete(e)}>
+                    <Trash2 className="w-3 h-3 mr-1" />Excluir
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
         {empresas.length === 0 && (
           <Card className="col-span-full p-8 text-center">
             <Building className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
@@ -268,6 +334,36 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
                     <Label>Telefone</Label>
                     <Input value={form.telefone} onChange={(ev) => setField('telefone', ev.target.value)} />
                   </div>
+
+                  <div>
+                    <Label>Tipo de Vínculo</Label>
+                    <Select
+                      value={form.tipo_vinculo || undefined}
+                      onValueChange={(v) => setField('tipo_vinculo', v as TipoVinculo)}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="INDEPENDENTE">Empresa Independente</SelectItem>
+                        <SelectItem value="MESMA_EMPRESA">Mesma Empresa (CNPJ idêntico à responsável)</SelectItem>
+                        <SelectItem value="FILIAL">Filial (vinculada à responsável como matriz)</SelectItem>
+                        <SelectItem value="GRUPO">Empresa do Grupo (conglomerado econômico)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {form.tipo_vinculo === 'FILIAL' && (
+                    <div>
+                      <Label>CNPJ da Matriz *</Label>
+                      <Input
+                        value={form.cnpj_matriz}
+                        onChange={(ev) => setField('cnpj_matriz', ev.target.value)}
+                        placeholder="00.000.000/0000-00"
+                      />
+                      {form.cnpj_matriz && !isValidCnpj(form.cnpj_matriz) && (
+                        <p className="text-xs text-destructive mt-1">CNPJ inválido (14 dígitos)</p>
+                      )}
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-2 md:col-span-2">
                     <Switch checked={!!form.ativo} onCheckedChange={(v) => setField('ativo', v)} id="ativa" />
                     <Label htmlFor="ativa">Empresa ativa</Label>
