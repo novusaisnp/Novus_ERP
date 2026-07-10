@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { UserDropdown } from '@/components/layout/header/UserDropdown';
 import { useEmpresaResponsavel } from '@/hooks/useEmpresaResponsavel';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const AppHeader: React.FC = () => {
-  const { empresa } = useEmpresaResponsavel();
+  const { empresa, loading } = useEmpresaResponsavel();
+  const { user } = useAuth();
 
   const formatarCnpj = (cnpj: string) => {
     if (!cnpj) return '';
@@ -28,18 +30,22 @@ export const AppHeader: React.FC = () => {
 
       {/* Dados da Empresa Responsável - Centralizados */}
       <div className="flex-1 flex flex-col items-center justify-center">
-        {empresa ? (
+        {empresa?.nome ? (
           <>
             <div className="text-sm font-medium text-foreground">
               {empresa.nome}
             </div>
-            <div className="text-xs text-muted-foreground">
-              CNPJ: {formatarCnpj(empresa.cnpj || '')}
-            </div>
+            {empresa.cnpj && (
+              <div className="text-xs text-muted-foreground">
+                CNPJ: {formatarCnpj(empresa.cnpj)}
+              </div>
+            )}
           </>
+        ) : loading ? (
+          <div className="text-xs text-muted-foreground">Carregando...</div>
         ) : (
-          <div className="text-xs text-muted-foreground">
-            Carregando dados da empresa...
+          <div className="text-sm font-medium text-foreground">
+            {user?.email || 'NOVUS ERP'}
           </div>
         )}
       </div>

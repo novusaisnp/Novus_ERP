@@ -115,9 +115,9 @@ function App() {
                     <Route path="relatorios" element={<EmBreve titulo="Relatórios de Estoque" icon={BarChart3} descricao="Relatórios analíticos de estoque estarão disponíveis em breve." />} />
                   </Route>
                   
-                  {/* Vendas Routes */}
+                  {/* Vendas Routes - declared before generic routes to avoid conflicts */}
                   <Route path="vendas">
-                    <Route index element={<Vendas />} />
+                    <Route index element={<Navigate to="/vendas/pedidos" replace />} />
                     <Route path="pedidos" element={<Vendas />} />
                     <Route path="orcamentos" element={<div className="p-8"><h1 className="text-3xl font-bold text-primary mb-2">Orçamentos</h1><p className="text-muted-foreground">Em breve</p></div>} />
                     <Route path="contratos" element={<Contratos />} />
@@ -125,7 +125,7 @@ function App() {
                   </Route>
 
                   {/* Contratos redirect (legacy) */}
-                  <Route path="contratos" element={<Navigate to="/vendas/contratos" replace />} />
+                  <Route path="contratos/*" element={<Navigate to="/vendas/contratos" replace />} />
                   
                   {/* Gestão Bancária Routes */}
                   <Route path="gestao-bancaria">
