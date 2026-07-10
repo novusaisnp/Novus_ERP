@@ -385,11 +385,14 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
           </DialogHeader>
           <form onSubmit={submit} className="space-y-4">
             <Tabs defaultValue="dados" className="space-y-4">
-              <TabsList className="grid grid-cols-3 w-full">
+              <TabsList className="grid grid-cols-5 w-full">
                 <TabsTrigger value="dados">Dados Gerais</TabsTrigger>
                 <TabsTrigger value="endereco">Endereço</TabsTrigger>
                 <TabsTrigger value="fiscal">Fiscal / Tributário</TabsTrigger>
+                <TabsTrigger value="logo">Logo</TabsTrigger>
+                <TabsTrigger value="certificado">Certificado Digital</TabsTrigger>
               </TabsList>
+
 
               <TabsContent value="dados" className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
