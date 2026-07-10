@@ -215,6 +215,10 @@ export const sidebarItems: MenuItem[] = [
         url: "/rh/folha/integracao-ponto",
       },
       {
+        title: "Registros de Ponto",
+        url: "/rh/registros-ponto",
+      },
+      {
         title: "Relatórios",
         url: "/rh/relatorios",
       },
