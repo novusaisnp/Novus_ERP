@@ -31,7 +31,8 @@ export const useEmpresaResponsavel = () => {
 
   const saveMutation = useMutation({
     mutationFn: (input: EmpresaResponsavel) => empresaResponsavelService.save(input),
-    onSuccess: () => {
+    onSuccess: (savedEmpresa) => {
+      qc.setQueryData(['empresa-responsavel'], savedEmpresa);
       qc.invalidateQueries({ queryKey: ['empresa-responsavel'] });
       toast.success('Empresa salva com sucesso');
     },
