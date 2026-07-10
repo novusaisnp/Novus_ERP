@@ -26,12 +26,6 @@ import type { Categoria } from '@/services/categoriaService';
 const formSchema = z.object({
   nome: z.string().min(1, 'Nome é obrigatório').max(255, 'Nome muito longo'),
   descricao: z.string().optional(),
-  regras_tributacao: z.object({
-    icms: z.string().optional(),
-    ipi: z.string().optional(),
-    pis: z.string().optional(),
-    cofins: z.string().optional(),
-  }).optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
