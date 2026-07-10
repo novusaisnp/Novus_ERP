@@ -11,6 +11,8 @@ import type { ContaReceber, ContaReceberFilters } from '@/types/contasReceber';
 
 const ContasReceber = () => {
   const [filtros, setFiltros] = useState<ContaReceberFilters>({});
+  const [contaParaExcluir, setContaParaExcluir] = useState<string | null>(null);
+
 
   const {
     contasReceber,
