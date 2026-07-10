@@ -346,5 +346,18 @@ export const DocumentosTab = ({ titulo, podeEditar }: DocumentosTabProps) => {
         </div>
       )}
     </div>
+
+    <ConfirmDialog
+      open={!!documentoParaExcluir}
+      onOpenChange={(open) => !open && setDocumentoParaExcluir(null)}
+      title="Remover documento"
+      description="Tem certeza que deseja remover este documento? Esta ação não pode ser desfeita."
+      confirmLabel="Remover"
+      onConfirm={() => {
+        if (documentoParaExcluir) deleteDocumento(documentoParaExcluir);
+        setDocumentoParaExcluir(null);
+      }}
+    />
+    </>
   );
 };
