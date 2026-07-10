@@ -213,6 +213,254 @@ export type Database = {
           },
         ]
       }
+      contas_pagar: {
+        Row: {
+          centro_custo_id: string | null
+          created_at: string
+          data_emissao: string | null
+          data_pagamento: string | null
+          data_vencimento: string
+          deleted_at: string | null
+          descricao: string
+          empresa_representada_id: string
+          fornecedor_id: string | null
+          id: string
+          natureza_id: string | null
+          numero_documento: string | null
+          numero_parcela: number | null
+          observacoes: string | null
+          plano_conta_id: string | null
+          plano_pagamento_id: string | null
+          status: string | null
+          total_parcelas: number | null
+          updated_at: string
+          valor_desconto: number | null
+          valor_juros: number | null
+          valor_multa: number | null
+          valor_original: number
+          valor_pago: number | null
+        }
+        Insert: {
+          centro_custo_id?: string | null
+          created_at?: string
+          data_emissao?: string | null
+          data_pagamento?: string | null
+          data_vencimento: string
+          deleted_at?: string | null
+          descricao: string
+          empresa_representada_id: string
+          fornecedor_id?: string | null
+          id?: string
+          natureza_id?: string | null
+          numero_documento?: string | null
+          numero_parcela?: number | null
+          observacoes?: string | null
+          plano_conta_id?: string | null
+          plano_pagamento_id?: string | null
+          status?: string | null
+          total_parcelas?: number | null
+          updated_at?: string
+          valor_desconto?: number | null
+          valor_juros?: number | null
+          valor_multa?: number | null
+          valor_original: number
+          valor_pago?: number | null
+        }
+        Update: {
+          centro_custo_id?: string | null
+          created_at?: string
+          data_emissao?: string | null
+          data_pagamento?: string | null
+          data_vencimento?: string
+          deleted_at?: string | null
+          descricao?: string
+          empresa_representada_id?: string
+          fornecedor_id?: string | null
+          id?: string
+          natureza_id?: string | null
+          numero_documento?: string | null
+          numero_parcela?: number | null
+          observacoes?: string | null
+          plano_conta_id?: string | null
+          plano_pagamento_id?: string | null
+          status?: string | null
+          total_parcelas?: number | null
+          updated_at?: string
+          valor_desconto?: number | null
+          valor_juros?: number | null
+          valor_multa?: number | null
+          valor_original?: number
+          valor_pago?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contas_pagar_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_pagar_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_pagar_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_pagar_natureza_id_fkey"
+            columns: ["natureza_id"]
+            isOneToOne: false
+            referencedRelation: "natureza_caixas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_pagar_plano_conta_id_fkey"
+            columns: ["plano_conta_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_pagar_plano_pagamento_id_fkey"
+            columns: ["plano_pagamento_id"]
+            isOneToOne: false
+            referencedRelation: "planos_pagamento"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contas_receber: {
+        Row: {
+          centro_custo_id: string | null
+          cliente_id: string | null
+          created_at: string
+          data_emissao: string | null
+          data_recebimento: string | null
+          data_vencimento: string
+          deleted_at: string | null
+          descricao: string
+          empresa_representada_id: string
+          id: string
+          natureza_id: string | null
+          numero_documento: string | null
+          numero_parcela: number | null
+          observacoes: string | null
+          plano_conta_id: string | null
+          plano_pagamento_id: string | null
+          status: string | null
+          total_parcelas: number | null
+          updated_at: string
+          valor_desconto: number | null
+          valor_juros: number | null
+          valor_multa: number | null
+          valor_original: number
+          valor_recebido: number | null
+        }
+        Insert: {
+          centro_custo_id?: string | null
+          cliente_id?: string | null
+          created_at?: string
+          data_emissao?: string | null
+          data_recebimento?: string | null
+          data_vencimento: string
+          deleted_at?: string | null
+          descricao: string
+          empresa_representada_id: string
+          id?: string
+          natureza_id?: string | null
+          numero_documento?: string | null
+          numero_parcela?: number | null
+          observacoes?: string | null
+          plano_conta_id?: string | null
+          plano_pagamento_id?: string | null
+          status?: string | null
+          total_parcelas?: number | null
+          updated_at?: string
+          valor_desconto?: number | null
+          valor_juros?: number | null
+          valor_multa?: number | null
+          valor_original: number
+          valor_recebido?: number | null
+        }
+        Update: {
+          centro_custo_id?: string | null
+          cliente_id?: string | null
+          created_at?: string
+          data_emissao?: string | null
+          data_recebimento?: string | null
+          data_vencimento?: string
+          deleted_at?: string | null
+          descricao?: string
+          empresa_representada_id?: string
+          id?: string
+          natureza_id?: string | null
+          numero_documento?: string | null
+          numero_parcela?: number | null
+          observacoes?: string | null
+          plano_conta_id?: string | null
+          plano_pagamento_id?: string | null
+          status?: string | null
+          total_parcelas?: number | null
+          updated_at?: string
+          valor_desconto?: number | null
+          valor_juros?: number | null
+          valor_multa?: number | null
+          valor_original?: number
+          valor_recebido?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contas_receber_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_receber_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_receber_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_receber_natureza_id_fkey"
+            columns: ["natureza_id"]
+            isOneToOne: false
+            referencedRelation: "natureza_caixas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_receber_plano_conta_id_fkey"
+            columns: ["plano_conta_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_receber_plano_pagamento_id_fkey"
+            columns: ["plano_pagamento_id"]
+            isOneToOne: false
+            referencedRelation: "planos_pagamento"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       descontos_padrao: {
         Row: {
           ativo: boolean
@@ -262,6 +510,67 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "descontos_padrao_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documentos_titulos_financeiros: {
+        Row: {
+          conta_pagar_id: string | null
+          conta_receber_id: string | null
+          created_at: string
+          descricao: string | null
+          empresa_representada_id: string
+          id: string
+          nome_arquivo: string
+          tamanho_bytes: number | null
+          tipo_arquivo: string | null
+          url_arquivo: string
+        }
+        Insert: {
+          conta_pagar_id?: string | null
+          conta_receber_id?: string | null
+          created_at?: string
+          descricao?: string | null
+          empresa_representada_id: string
+          id?: string
+          nome_arquivo: string
+          tamanho_bytes?: number | null
+          tipo_arquivo?: string | null
+          url_arquivo: string
+        }
+        Update: {
+          conta_pagar_id?: string | null
+          conta_receber_id?: string | null
+          created_at?: string
+          descricao?: string | null
+          empresa_representada_id?: string
+          id?: string
+          nome_arquivo?: string
+          tamanho_bytes?: number | null
+          tipo_arquivo?: string | null
+          url_arquivo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentos_titulos_financeiros_conta_pagar_id_fkey"
+            columns: ["conta_pagar_id"]
+            isOneToOne: false
+            referencedRelation: "contas_pagar"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_titulos_financeiros_conta_receber_id_fkey"
+            columns: ["conta_receber_id"]
+            isOneToOne: false
+            referencedRelation: "contas_receber"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_titulos_financeiros_empresa_representada_id_fkey"
             columns: ["empresa_representada_id"]
             isOneToOne: false
             referencedRelation: "empresas_representadas"
@@ -468,6 +777,206 @@ export type Database = {
             columns: ["empresa_representada_id"]
             isOneToOne: false
             referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      historico_movimentacoes_financeiras: {
+        Row: {
+          acao: string
+          created_at: string
+          dados_anteriores: Json | null
+          dados_novos: Json | null
+          empresa_representada_id: string
+          id: string
+          ip_origem: unknown
+          registro_id: string
+          tabela_origem: string
+          usuario_id: string | null
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          empresa_representada_id: string
+          id?: string
+          ip_origem?: unknown
+          registro_id: string
+          tabela_origem: string
+          usuario_id?: string | null
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          empresa_representada_id?: string
+          id?: string
+          ip_origem?: unknown
+          registro_id?: string
+          tabela_origem?: string
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historico_movimentacoes_financeira_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      liquidacoes_multiplas: {
+        Row: {
+          created_at: string
+          data_liquidacao: string
+          empresa_representada_id: string
+          forma_pagamento: string | null
+          id: string
+          observacoes: string | null
+          valor_total: number
+        }
+        Insert: {
+          created_at?: string
+          data_liquidacao: string
+          empresa_representada_id: string
+          forma_pagamento?: string | null
+          id?: string
+          observacoes?: string | null
+          valor_total: number
+        }
+        Update: {
+          created_at?: string
+          data_liquidacao?: string
+          empresa_representada_id?: string
+          forma_pagamento?: string | null
+          id?: string
+          observacoes?: string | null
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "liquidacoes_multiplas_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      liquidacoes_titulos: {
+        Row: {
+          cancelada: boolean | null
+          cancelada_em: string | null
+          centro_custo_id: string | null
+          conta_bancaria_id: string | null
+          conta_pagar_id: string | null
+          conta_receber_id: string | null
+          created_at: string
+          data_liquidacao: string
+          empresa_representada_id: string
+          forma_pagamento: string | null
+          historico: string | null
+          id: string
+          motivo_cancelamento: string | null
+          natureza_id: string | null
+          numero_cheque: string | null
+          plano_conta_id: string | null
+          updated_at: string
+          valor_desconto: number | null
+          valor_juros: number | null
+          valor_multa: number | null
+          valor_pago: number
+        }
+        Insert: {
+          cancelada?: boolean | null
+          cancelada_em?: string | null
+          centro_custo_id?: string | null
+          conta_bancaria_id?: string | null
+          conta_pagar_id?: string | null
+          conta_receber_id?: string | null
+          created_at?: string
+          data_liquidacao: string
+          empresa_representada_id: string
+          forma_pagamento?: string | null
+          historico?: string | null
+          id?: string
+          motivo_cancelamento?: string | null
+          natureza_id?: string | null
+          numero_cheque?: string | null
+          plano_conta_id?: string | null
+          updated_at?: string
+          valor_desconto?: number | null
+          valor_juros?: number | null
+          valor_multa?: number | null
+          valor_pago: number
+        }
+        Update: {
+          cancelada?: boolean | null
+          cancelada_em?: string | null
+          centro_custo_id?: string | null
+          conta_bancaria_id?: string | null
+          conta_pagar_id?: string | null
+          conta_receber_id?: string | null
+          created_at?: string
+          data_liquidacao?: string
+          empresa_representada_id?: string
+          forma_pagamento?: string | null
+          historico?: string | null
+          id?: string
+          motivo_cancelamento?: string | null
+          natureza_id?: string | null
+          numero_cheque?: string | null
+          plano_conta_id?: string | null
+          updated_at?: string
+          valor_desconto?: number | null
+          valor_juros?: number | null
+          valor_multa?: number | null
+          valor_pago?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "liquidacoes_titulos_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "liquidacoes_titulos_conta_pagar_id_fkey"
+            columns: ["conta_pagar_id"]
+            isOneToOne: false
+            referencedRelation: "contas_pagar"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "liquidacoes_titulos_conta_receber_id_fkey"
+            columns: ["conta_receber_id"]
+            isOneToOne: false
+            referencedRelation: "contas_receber"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "liquidacoes_titulos_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "liquidacoes_titulos_natureza_id_fkey"
+            columns: ["natureza_id"]
+            isOneToOne: false
+            referencedRelation: "natureza_caixas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "liquidacoes_titulos_plano_conta_id_fkey"
+            columns: ["plano_conta_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
             referencedColumns: ["id"]
           },
         ]
@@ -1003,6 +1512,74 @@ export type Database = {
             columns: ["unidade_medida_id"]
             isOneToOne: false
             referencedRelation: "unidades_medida"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rateios_contas_pagar: {
+        Row: {
+          centro_custo_id: string | null
+          conta_pagar_id: string
+          created_at: string
+          empresa_representada_id: string
+          id: string
+          observacoes: string | null
+          percentual: number | null
+          plano_conta_id: string | null
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          centro_custo_id?: string | null
+          conta_pagar_id: string
+          created_at?: string
+          empresa_representada_id: string
+          id?: string
+          observacoes?: string | null
+          percentual?: number | null
+          plano_conta_id?: string | null
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          centro_custo_id?: string | null
+          conta_pagar_id?: string
+          created_at?: string
+          empresa_representada_id?: string
+          id?: string
+          observacoes?: string | null
+          percentual?: number | null
+          plano_conta_id?: string | null
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rateios_contas_pagar_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rateios_contas_pagar_conta_pagar_id_fkey"
+            columns: ["conta_pagar_id"]
+            isOneToOne: false
+            referencedRelation: "contas_pagar"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rateios_contas_pagar_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rateios_contas_pagar_plano_conta_id_fkey"
+            columns: ["plano_conta_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
             referencedColumns: ["id"]
           },
         ]
