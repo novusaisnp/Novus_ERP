@@ -45,7 +45,6 @@ const Login: React.FC = () => {
   // Redirect authenticated users to main route
   useEffect(() => {
     if (user && !loading) {
-      console.log('[Login] User already authenticated, redirecting to main route');
       navigate('/', { replace: true });
     }
   }, [user, loading, navigate]);
@@ -60,13 +59,11 @@ const Login: React.FC = () => {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      console.log('[Login] Starting login process');
       setIsSubmitting(true);
-      
+
       const result = await signIn(data.email, data.password, data.rememberMe);
-      
+
       if (result.error) {
-        console.log('[Login] Login error:', result.error);
         toast({
           title: 'Erro no Login',
           description: result.error,
@@ -74,17 +71,15 @@ const Login: React.FC = () => {
         });
         return;
       }
-      
-      console.log('[Login] Login successful - redirecting to dashboard');
+
       toast({
         title: 'Bem-vindo ao ERP NOVUS!',
         description: 'Login realizado com sucesso'
       });
-      
+
       // Force page reload for clean state
       window.location.href = '/';
     } catch (error) {
-      console.error('[Login] Unexpected error:', error);
       toast({
         title: 'Erro Interno',
         description: 'Ocorreu um erro inesperado. Tente novamente.',
