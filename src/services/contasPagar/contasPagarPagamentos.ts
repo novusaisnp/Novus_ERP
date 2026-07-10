@@ -72,26 +72,11 @@ export const registrarPagamento = async (pagamento: PagamentoContaPagar) => {
   // 1. Auditoria contábil
   // 2. Relatórios de análise de custos
   // 3. Histórico de como os recursos foram alocados
-  
-  if (conta.rateios_contas_pagar && conta.rateios_contas_pagar.length > 0) {
-    
-    conta.rateios_contas_pagar.forEach((rateio, index) => {
-        conta: rateio.plano_conta_id,
-        centroCusto: rateio.centro_custo_id,
-        valor: rateio.valor,
-        percentual: rateio.percentual,
-        status: 'MANTIDO_PARA_AUDITORIA'
-      });
-    });
-  }
 
-  // Registrar histórico do pagamento (se houver tabela de histórico)
-    contaId: pagamento.conta_pagar_id,
-    valorPago: pagamento.valor_pago,
-    valorRestante: novoValorAtual,
-    situacaoFinal: novaSituacao,
-    rateiosPreservados: conta.rateios_contas_pagar?.length || 0
-  });
+  // Rateios são preservados no pagamento como registro histórico
+  // (auditoria contábil, análise de custos)
+
+
 
   return {
     conta_id: pagamento.conta_pagar_id,
