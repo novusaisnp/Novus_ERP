@@ -85,14 +85,14 @@ export const ContasReceberFilters = ({ onFilter }: ContasReceberFiltersProps) =>
               <div className="space-y-2">
                 <Label htmlFor="situacao">Situação</Label>
                 <Select 
-                  value={filtros.situacao || ''} 
-                  onValueChange={(value) => handleInputChange('situacao', value)}
+                  value={filtros.situacao || '__ALL__'} 
+                  onValueChange={(value) => handleInputChange('situacao', value === '__ALL__' ? '' : value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Todas as situações" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas as situações</SelectItem>
+                    <SelectItem value="__ALL__">Todas as situações</SelectItem>
                     <SelectItem value="ABERTA">Em Aberto</SelectItem>
                     <SelectItem value="RECEBIDA">Recebida</SelectItem>
                     <SelectItem value="VENCIDA">Vencida</SelectItem>
@@ -104,14 +104,14 @@ export const ContasReceberFilters = ({ onFilter }: ContasReceberFiltersProps) =>
               <div className="space-y-2">
                 <Label htmlFor="forma_pagamento">Forma de Pagamento</Label>
                 <Select 
-                  value={filtros.forma_pagamento || ''} 
-                  onValueChange={(value) => handleInputChange('forma_pagamento', value)}
+                  value={filtros.forma_pagamento || '__ALL__'} 
+                  onValueChange={(value) => handleInputChange('forma_pagamento', value === '__ALL__' ? '' : value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Todas as formas" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas as formas</SelectItem>
+                    <SelectItem value="__ALL__">Todas as formas</SelectItem>
                     <SelectItem value="DINHEIRO">Dinheiro</SelectItem>
                     <SelectItem value="PIX">PIX</SelectItem>
                     <SelectItem value="CARTAO_CREDITO">Cartão de Crédito</SelectItem>
