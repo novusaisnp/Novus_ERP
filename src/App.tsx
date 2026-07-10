@@ -178,6 +178,7 @@ function App() {
                     <Route path="empresas" element={<Empresas />} />
                     <Route path="usuarios" element={<Usuarios />} />
                     <Route path="sistema" element={<Sistema />} />
+                    <Route path="perfil" element={<Perfil />} />
                   </Route>
                   
                   {/* 404 Route */}
