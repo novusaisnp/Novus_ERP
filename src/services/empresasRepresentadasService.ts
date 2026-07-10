@@ -81,4 +81,42 @@ export const empresasRepresentadasService = {
     const { error } = await supabase.from('empresas_representadas').delete().eq('id', id);
     if (error) throw error;
   },
+
+  async uploadLogo(folderKey: string, file: File): Promise<{ path: string }> {
+    const ext = (file.name.split('.').pop() || 'png').toLowerCase();
+    const path = `${folderKey}/logo-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage
+      .from('empresa-logos')
+      .upload(path, file, { upsert: true, contentType: file.type });
+    if (error) throw error;
+    return { path };
+  },
+
+  async removeLogo(path: string): Promise<void> {
+    if (!path) return;
+    await supabase.storage.from('empresa-logos').remove([path]);
+  },
+
+  async uploadCertificado(folderKey: string, file: File): Promise<{ path: string; filename: string }> {
+    const ext = (file.name.split('.').pop() || 'pfx').toLowerCase();
+    const path = `${folderKey}/cert-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage
+      .from('empresa-certificados')
+      .upload(path, file, { upsert: true, contentType: 'application/x-pkcs12' });
+    if (error) throw error;
+    return { path, filename: file.name };
+  },
+
+  async removeCertificado(path: string): Promise<void> {
+    if (!path) return;
+    await supabase.storage.from('empresa-certificados').remove([path]);
+  },
+
+  async getSignedUrl(bucket: 'empresa-logos' | 'empresa-certificados', path: string, expiresIn = 3600): Promise<string | null> {
+    if (!path) return null;
+    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, expiresIn);
+    if (error) return null;
+    return data?.signedUrl || null;
+  },
 };
+
