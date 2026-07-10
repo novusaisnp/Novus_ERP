@@ -26,6 +26,8 @@ import Categorias from './pages/estoque/Categorias';
 import Localizacoes from './pages/estoque/Localizacoes';
 import UnidadesMedida from './pages/estoque/UnidadesMedida';
 import Tamanhos from './pages/estoque/Tamanhos';
+import EmBreve from './pages/estoque/EmBreve';
+import { ArrowLeftRight, ClipboardList, BarChart3 } from 'lucide-react';
 
 // Financeiro Pages
 import PlanoContas from './pages/financeiro/PlanoContas';
