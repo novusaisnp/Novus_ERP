@@ -7,7 +7,7 @@ import { AppLayout } from './components/layout/AppLayout';
 import Login from './pages/Login';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
-import SupabaseTest from './pages/SupabaseTest';
+
 
 // Configurações Pages
 import Usuarios from './pages/configuracoes/Usuarios';
@@ -80,14 +80,6 @@ function App() {
                 {/* Public Routes */}
                 <Route path="/login" element={<Login />} />
                 
-                {/* Teste Supabase - Rota temporária */}
-                <Route path="/supabase-test" element={
-                  <ProtectedRoute>
-                    <div className="min-h-screen">
-                      <SupabaseTest />
-                    </div>
-                  </ProtectedRoute>
-                } />
                 
                 <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                   {/* Dashboard Route */}
