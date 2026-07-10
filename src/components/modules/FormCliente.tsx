@@ -76,6 +76,7 @@ export const FormCliente: React.FC<FormClienteProps> = ({
   });
 
   const [loadingApi, setLoadingApi] = useState(false);
+  const lookupCnpj = useCnpjLookupImperative();
   const [date, setDate] = useState<Date>();
   const [dataFundacao, setDataFundacao] = useState<Date>();
 
@@ -131,7 +132,7 @@ export const FormCliente: React.FC<FormClienteProps> = ({
         setLoadingApi(true);
         console.log('[FormCliente] Consultando CNPJ:', cleanValue);
         try {
-          const cnpjData = await consultarCNPJ(cleanValue);
+          const cnpjData = await lookupCnpj(cleanValue);
           if (cnpjData) {
             console.log('[FormCliente] Dados do CNPJ recebidos:', cnpjData);
             setFormData(prev => ({

@@ -76,6 +76,7 @@ export const FormFornecedor: React.FC<FormFornecedorProps> = ({
   });
 
   const [loadingApi, setLoadingApi] = useState(false);
+  const lookupCnpj = useCnpjLookupImperative();
 
   // Inicializar dados do fornecedor
   useEffect(() => {
@@ -116,7 +117,7 @@ export const FormFornecedor: React.FC<FormFornecedorProps> = ({
       setLoadingApi(true);
       try {
         console.log('[FormFornecedor] Consultando CNPJ:', cleanValue);
-        const cnpjData = await consultarCNPJ(cleanValue);
+        const cnpjData = await lookupCnpj(cleanValue);
         if (cnpjData) {
           console.log('[FormFornecedor] Dados do CNPJ recebidos:', cnpjData.nome);
           setFormData(prev => ({
