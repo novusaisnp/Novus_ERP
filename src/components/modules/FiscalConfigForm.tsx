@@ -125,9 +125,9 @@ export const FiscalConfigForm: React.FC<FiscalConfigFormProps> = ({ configuracao
                       <SelectValue placeholder="Selecione a empresa" />
                     </SelectTrigger>
                     <SelectContent>
-                      {empresas?.map((empresa) => (
+                      {empresas?.filter((e: any) => e.id).map((empresa: any) => (
                         <SelectItem key={empresa.id} value={empresa.id}>
-                          {empresa.nomeFantasia} - {empresa.cnpj}
+                          {empresa.nome} - {empresa.cnpj}
                         </SelectItem>
                       ))}
                     </SelectContent>

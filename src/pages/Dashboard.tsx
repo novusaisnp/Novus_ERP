@@ -1,9 +1,86 @@
-
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, Package, DollarSign, TrendingUp, AlertCircle } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Users, ArrowDown, ArrowUp, Landmark, AlertCircle, TrendingUp } from 'lucide-react';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+
+const supabase: any = _supabase;
+
+const brl = (v: number) =>
+  (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+async function fetchClientesAtivos(): Promise<number> {
+  try {
+    const { count, error } = await supabase
+      .from('clientes')
+      .select('id', { count: 'exact', head: true })
+      .eq('ativo', true)
+      .is('deleted_at', null);
+    if (error) throw error;
+    return count || 0;
+  } catch {
+    return 0;
+  }
+}
+
+async function fetchSumContas(table: 'contas_pagar' | 'contas_receber'): Promise<number> {
+  try {
+    const { data, error } = await supabase
+      .from(table)
+      .select('valor_original')
+      .eq('status', 'PENDENTE');
+    if (error) throw error;
+    return (data || []).reduce((acc: number, r: any) => acc + Number(r.valor_original || 0), 0);
+  } catch {
+    return 0;
+  }
+}
+
+async function fetchSaldoBancario(): Promise<number> {
+  try {
+    const { data, error } = await supabase
+      .from('contas_bancarias')
+      .select('saldo_atual')
+      .eq('ativo', true);
+    if (error) throw error;
+    return (data || []).reduce((acc: number, r: any) => acc + Number(r.saldo_atual || 0), 0);
+  } catch {
+    return 0;
+  }
+}
+
+interface MetricProps {
+  title: string;
+  icon: React.ElementType;
+  value: string;
+  loading: boolean;
+  subtitle?: string;
+}
+
+const MetricCard: React.FC<MetricProps> = ({ title, icon: Icon, value, loading, subtitle }) => (
+  <Card>
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium">{title}</CardTitle>
+      <Icon className="h-4 w-4 text-muted-foreground" />
+    </CardHeader>
+    <CardContent>
+      {loading ? (
+        <Skeleton className="h-8 w-32" />
+      ) : (
+        <div className="text-2xl font-bold">{value}</div>
+      )}
+      {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+    </CardContent>
+  </Card>
+);
 
 const Dashboard: React.FC = () => {
+  const clientes = useQuery({ queryKey: ['dash-clientes'], queryFn: fetchClientesAtivos });
+  const pagar = useQuery({ queryKey: ['dash-pagar'], queryFn: () => fetchSumContas('contas_pagar') });
+  const receber = useQuery({ queryKey: ['dash-receber'], queryFn: () => fetchSumContas('contas_receber') });
+  const saldo = useQuery({ queryKey: ['dash-saldo'], queryFn: fetchSaldoBancario });
+
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="mb-8">
@@ -11,62 +88,36 @@ const Dashboard: React.FC = () => {
         <p className="text-muted-foreground">Visão geral do seu negócio</p>
       </div>
 
-      {/* Estatísticas principais */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Vendas do Mês</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">R$ 45.231,89</div>
-            <p className="text-xs text-muted-foreground">
-              +20.1% em relação ao mês anterior
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Clientes Ativos</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">1.234</div>
-            <p className="text-xs text-muted-foreground">
-              +12 novos esta semana
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Produtos em Estoque</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">856</div>
-            <p className="text-xs text-muted-foreground">
-              23 produtos com estoque baixo
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Empresas Cadastradas</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">5</div>
-            <p className="text-xs text-muted-foreground">
-              Todas ativas
-            </p>
-          </CardContent>
-        </Card>
+        <MetricCard
+          title="Clientes Ativos"
+          icon={Users}
+          loading={clientes.isLoading}
+          value={String(clientes.data ?? 0)}
+        />
+        <MetricCard
+          title="Contas a Pagar"
+          icon={ArrowDown}
+          loading={pagar.isLoading}
+          value={brl(pagar.data ?? 0)}
+          subtitle="Pendentes"
+        />
+        <MetricCard
+          title="Contas a Receber"
+          icon={ArrowUp}
+          loading={receber.isLoading}
+          value={brl(receber.data ?? 0)}
+          subtitle="Pendentes"
+        />
+        <MetricCard
+          title="Saldo Bancário"
+          icon={Landmark}
+          loading={saldo.isLoading}
+          value={brl(saldo.data ?? 0)}
+          subtitle="Contas ativas"
+        />
       </div>
 
-      {/* Alertas e Notificações */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
@@ -78,21 +129,11 @@ const Dashboard: React.FC = () => {
           <CardContent className="space-y-4">
             <div className="border-l-4 border-orange-500 pl-4">
               <p className="font-medium">Estoque Baixo</p>
-              <p className="text-sm text-muted-foreground">
-                23 produtos estão com estoque abaixo do mínimo
-              </p>
+              <p className="text-sm text-muted-foreground">Monitore produtos abaixo do mínimo</p>
             </div>
             <div className="border-l-4 border-red-500 pl-4">
               <p className="font-medium">Contas Vencidas</p>
-              <p className="text-sm text-muted-foreground">
-                5 contas a receber estão em atraso
-              </p>
-            </div>
-            <div className="border-l-4 border-blue-500 pl-4">
-              <p className="font-medium">Certificado Digital</p>
-              <p className="text-sm text-muted-foreground">
-                Certificado vence em 30 dias
-              </p>
+              <p className="text-sm text-muted-foreground">Acompanhe contas em atraso</p>
             </div>
           </CardContent>
         </Card>
@@ -104,18 +145,20 @@ const Dashboard: React.FC = () => {
               Resumo Financeiro
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium">Contas a Receber</span>
-              <span className="text-sm font-bold text-green-600">R$ 125.430,00</span>
+              <span className="text-sm font-bold text-green-600">{brl(receber.data ?? 0)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium">Contas a Pagar</span>
-              <span className="text-sm font-bold text-red-600">R$ 67.890,00</span>
+              <span className="text-sm font-bold text-red-600">{brl(pagar.data ?? 0)}</span>
             </div>
             <div className="flex justify-between items-center pt-2 border-t">
               <span className="font-medium">Saldo Projetado</span>
-              <span className="font-bold text-primary">R$ 57.540,00</span>
+              <span className="font-bold text-primary">
+                {brl((saldo.data ?? 0) + (receber.data ?? 0) - (pagar.data ?? 0))}
+              </span>
             </div>
           </CardContent>
         </Card>

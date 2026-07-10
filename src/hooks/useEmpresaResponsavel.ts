@@ -1,139 +1,70 @@
-
-import { useState, useEffect } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase as _supabase } from '@/integrations/supabase/client';
-const supabase: any = _supabase;
 import { useToast } from '@/hooks/use-toast';
-import { EmpresaResponsavel } from '@/types/empresa';
+
+const supabase: any = _supabase;
+
+export interface EmpresaResponsavel {
+  id?: string;
+  nome: string;
+  cnpj?: string | null;
+  email?: string | null;
+  telefone?: string | null;
+  endereco?: string | null;
+  logo_url?: string | null;
+  configuracoes?: Record<string, any> | null;
+}
+
+async function fetchEmpresa(): Promise<EmpresaResponsavel | null> {
+  const { data, error } = await supabase.from('empresa_responsavel').select('*').maybeSingle();
+  if (error) {
+    console.error('[EmpresaResponsavel] erro ao carregar');
+    return null;
+  }
+  return (data as EmpresaResponsavel) || null;
+}
 
 export const useEmpresaResponsavel = () => {
-  const [empresa, setEmpresa] = useState<EmpresaResponsavel | null>(null);
-  const [loading, setLoading] = useState(false);
+  const qc = useQueryClient();
   const { toast } = useToast();
 
-  const loadEmpresa = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await (supabase as any)
-        .from('empresa_responsavel')
-        .select('*')
-        .maybeSingle();
+  const query = useQuery({ queryKey: ['empresa-responsavel'], queryFn: fetchEmpresa });
 
-      if (error) {
-        console.error('Erro ao carregar empresa responsável:', error);
-        toast({
-          title: "Erro ao carregar",
-          description: "Não foi possível carregar os dados da empresa responsável.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      if (data) {
-        setEmpresa({
-          id: data.id,
-          cnpj: data.cnpj,
-          razaoSocial: data.razao_social,
-          nomeFantasia: data.nome_fantasia,
-          endereco: data.endereco as any,
-          nomeResponsavel: data.nome_responsavel,
-          contatos: data.contatos as any,
-          createdAt: new Date(data.created_at),
-          updatedAt: new Date(data.updated_at)
-        });
-      }
-    } catch (error) {
-      console.error('Erro ao carregar empresa responsável:', error);
-      toast({
-        title: "Erro",
-        description: "Erro inesperado ao carregar os dados.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const saveEmpresa = async (empresaData: EmpresaResponsavel) => {
-    setLoading(true);
-    try {
-      const dataToSave = {
-        cnpj: empresaData.cnpj,
-        razao_social: empresaData.razaoSocial,
-        nome_fantasia: empresaData.nomeFantasia,
-        endereco: empresaData.endereco as any,
-        nome_responsavel: empresaData.nomeResponsavel,
-        contatos: empresaData.contatos as any,
-        updated_at: new Date().toISOString()
+  const saveMutation = useMutation({
+    mutationFn: async (input: EmpresaResponsavel) => {
+      const payload = {
+        nome: input.nome,
+        cnpj: input.cnpj || null,
+        email: input.email || null,
+        telefone: input.telefone || null,
+        endereco: input.endereco || null,
+        logo_url: input.logo_url || null,
+        configuracoes: input.configuracoes || {},
+        updated_at: new Date().toISOString(),
       };
-
-      let result: any;
-      if (empresaData.id) {
-        result = await (supabase as any)
-          .from('empresa_responsavel')
-          .update(dataToSave)
-          .eq('id', empresaData.id)
-          .select()
-          .single();
+      if (input.id) {
+        const { error } = await supabase.from('empresa_responsavel').update(payload).eq('id', input.id);
+        if (error) throw error;
       } else {
-        result = await (supabase as any)
-          .from('empresa_responsavel')
-          .insert(dataToSave)
-          .select()
-          .single();
+        const { error } = await supabase.from('empresa_responsavel').insert(payload);
+        if (error) throw error;
       }
-
-      if (result.error) {
-        console.error('Erro ao salvar empresa responsável:', result.error);
-        toast({
-          title: "Erro ao salvar",
-          description: "Não foi possível salvar os dados da empresa responsável.",
-          variant: "destructive"
-        });
-        return false;
-      }
-
-      // Atualizar estado local
-      if (result.data) {
-        setEmpresa({
-          id: result.data.id,
-          cnpj: result.data.cnpj,
-          razaoSocial: result.data.razao_social,
-          nomeFantasia: result.data.nome_fantasia,
-          endereco: result.data.endereco as any,
-          nomeResponsavel: result.data.nome_responsavel,
-          contatos: result.data.contatos as any,
-          createdAt: new Date(result.data.created_at),
-          updatedAt: new Date(result.data.updated_at)
-        });
-      }
-
-      toast({
-        title: "Sucesso",
-        description: empresaData.id ? "Empresa atualizada com sucesso!" : "Empresa cadastrada com sucesso!",
-      });
-
-      return true;
-    } catch (error) {
-      console.error('Erro ao salvar empresa responsável:', error);
-      toast({
-        title: "Erro",
-        description: "Erro inesperado ao salvar os dados.",
-        variant: "destructive"
-      });
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadEmpresa();
-  }, []);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['empresa-responsavel'] });
+      toast({ title: 'Empresa salva com sucesso' });
+    },
+    onError: (e: any) => {
+      console.error('[EmpresaResponsavel] erro ao salvar');
+      toast({ title: 'Erro', description: e?.message || 'Falha ao salvar empresa', variant: 'destructive' });
+    },
+  });
 
   return {
-    empresa,
-    loading,
-    saveEmpresa,
-    refetch: loadEmpresa
+    empresa: query.data || null,
+    loading: query.isLoading,
+    saving: saveMutation.isPending,
+    saveEmpresa: (v: EmpresaResponsavel) => saveMutation.mutateAsync(v),
+    refetch: query.refetch,
   };
 };

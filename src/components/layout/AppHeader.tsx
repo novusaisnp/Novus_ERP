@@ -31,10 +31,10 @@ export const AppHeader: React.FC = () => {
         {empresa ? (
           <>
             <div className="text-sm font-medium text-foreground">
-              {empresa.razaoSocial}
+              {empresa.nome}
             </div>
             <div className="text-xs text-muted-foreground">
-              CNPJ: {formatarCnpj(empresa.cnpj)}
+              CNPJ: {formatarCnpj(empresa.cnpj || '')}
             </div>
           </>
         ) : (
