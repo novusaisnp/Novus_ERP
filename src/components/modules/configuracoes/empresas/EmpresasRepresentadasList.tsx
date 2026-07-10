@@ -69,7 +69,13 @@ interface FormState {
   observacoes: string;
   tipo_vinculo: TipoVinculo;
   cnpj_matriz: string;
+  // logo e certificado (persistidos em configuracoes jsonb)
+  logo_path: string;
+  cert_path: string;
+  cert_filename: string;
+  cert_uploaded_at: string;
 }
+
 
 const empty = (): FormState => ({
   nome: '', cnpj: '', email: '', telefone: '', endereco: '',
