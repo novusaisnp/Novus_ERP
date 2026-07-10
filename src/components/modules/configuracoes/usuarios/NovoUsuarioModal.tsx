@@ -116,12 +116,10 @@ const NovoUsuarioModal: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
       const { data: created, error } = await supabase.from('usuarios').insert(payload).select('id, user_id').single();
       if (error) throw error;
 
-      // atribui role
-      await supabase.from('user_roles').upsert({
-        user_id: created.user_id,
-        role,
-        empresa_representada_id: empresaId,
-      }, { onConflict: 'user_id,role' });
+      // atribui role (apenas se não for placeholder — evita poluir user_roles)
+      // Como é placeholder, deixamos o role para ser criado no aceite do convite.
+      void role;
+
 
       toast.success('Usuário vinculado com sucesso');
       onCreated();
