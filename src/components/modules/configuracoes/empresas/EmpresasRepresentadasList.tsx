@@ -9,11 +9,13 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Building, Plus, Edit, Trash2, Loader2 } from 'lucide-react';
+import { Building, Plus, Edit, Trash2, Loader2, Upload, X, ImageIcon, FileLock2, ShieldCheck } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmpresaRepresentada } from '@/hooks/useEmpresasRepresentadas';
 import { useEmpresaResponsavel } from '@/hooks/useEmpresaResponsavel';
+import { empresasRepresentadasService } from '@/services/empresasRepresentadasService';
 import { toast } from 'sonner';
+
 
 interface Props {
   empresas: EmpresaRepresentada[];
@@ -67,7 +69,13 @@ interface FormState {
   observacoes: string;
   tipo_vinculo: TipoVinculo;
   cnpj_matriz: string;
+  // logo e certificado (persistidos em configuracoes jsonb)
+  logo_path: string;
+  cert_path: string;
+  cert_filename: string;
+  cert_uploaded_at: string;
 }
+
 
 const empty = (): FormState => ({
   nome: '', cnpj: '', email: '', telefone: '', endereco: '',
@@ -77,7 +85,9 @@ const empty = (): FormState => ({
   cnae_principal: '', natureza_juridica: '', data_abertura: '',
   contador_nome: '', contador_crc: '', contador_email: '', observacoes: '',
   tipo_vinculo: '', cnpj_matriz: '',
+  logo_path: '', cert_path: '', cert_filename: '', cert_uploaded_at: '',
 });
+
 
 const onlyDigits = (v: string) => (v || '').replace(/\D/g, '');
 const isValidCnpj = (v: string) => onlyDigits(v).length === 14;
@@ -113,8 +123,13 @@ const fromEmpresa = (e?: EmpresaRepresentada | null): FormState => {
     observacoes: c.observacoes || '',
     tipo_vinculo: (c.tipo_vinculo as TipoVinculo) || '',
     cnpj_matriz: c.cnpj_matriz || '',
+    logo_path: c.logo_path || '',
+    cert_path: c.cert_path || '',
+    cert_filename: c.cert_filename || '',
+    cert_uploaded_at: c.cert_uploaded_at || '',
   };
 };
+
 
 const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete, saving }) => {
   const [open, setOpen] = useState(false);
@@ -122,21 +137,88 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
   const [form, setForm] = useState<FormState>(empty());
   const [toDelete, setToDelete] = useState<EmpresaRepresentada | null>(null);
   const [loadingCnpj, setLoadingCnpj] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingCert, setUploadingCert] = useState(false);
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
   const lastCnpjRef = useRef<string>('');
   const autoVinculoRef = useRef<string>('');
+  const folderKeyRef = useRef<string>('');
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const certInputRef = useRef<HTMLInputElement>(null);
 
   const { empresa: responsavel } = useEmpresaResponsavel();
   const responsavelCnpj = useMemo(() => onlyDigits(responsavel?.cnpj || ''), [responsavel]);
 
   useEffect(() => {
-    if (!open) return;
-    setForm(fromEmpresa(editing));
+    if (!open) {
+      setLogoPreviewUrl(null);
+      return;
+    }
+    const initial = fromEmpresa(editing);
+    setForm(initial);
     lastCnpjRef.current = '';
     autoVinculoRef.current = '';
+    folderKeyRef.current = editing?.id || (crypto as any).randomUUID?.() || `${Date.now()}`;
+    // carrega preview do logo se existir
+    if (initial.logo_path) {
+      empresasRepresentadasService.getSignedUrl('empresa-logos', initial.logo_path).then(setLogoPreviewUrl);
+    } else {
+      setLogoPreviewUrl(null);
+    }
   }, [open, editing]);
 
   const setField = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((p) => ({ ...p, [k]: v }));
+
+  const handleLogoUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) { toast.error('Selecione um arquivo de imagem'); return; }
+    if (file.size > 2 * 1024 * 1024) { toast.error('Logo deve ter no máximo 2 MB'); return; }
+    setUploadingLogo(true);
+    try {
+      // remove logo anterior
+      if (form.logo_path) await empresasRepresentadasService.removeLogo(form.logo_path);
+      const { path } = await empresasRepresentadasService.uploadLogo(folderKeyRef.current, file);
+      setForm((p) => ({ ...p, logo_path: path }));
+      const url = await empresasRepresentadasService.getSignedUrl('empresa-logos', path);
+      setLogoPreviewUrl(url);
+      toast.success('Logo enviada com sucesso');
+    } catch (err: any) {
+      toast.error(`Falha ao enviar logo: ${err?.message || 'erro'}`);
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    if (form.logo_path) await empresasRepresentadasService.removeLogo(form.logo_path).catch(() => {});
+    setForm((p) => ({ ...p, logo_path: '' }));
+    setLogoPreviewUrl(null);
+  };
+
+  const handleCertUpload = async (file: File) => {
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    if (!['pfx', 'p12'].includes(ext)) { toast.error('Envie um arquivo .pfx ou .p12'); return; }
+    if (file.size > 200 * 1024) { toast.error('Certificado deve ter no máximo 200 KB'); return; }
+    setUploadingCert(true);
+    try {
+      if (form.cert_path) await empresasRepresentadasService.removeCertificado(form.cert_path);
+      const { path, filename } = await empresasRepresentadasService.uploadCertificado(folderKeyRef.current, file);
+      const now = new Date().toISOString();
+      setForm((p) => ({ ...p, cert_path: path, cert_filename: filename, cert_uploaded_at: now }));
+      toast.success('Certificado digital enviado com sucesso');
+    } catch (err: any) {
+      toast.error(`Falha ao enviar certificado: ${err?.message || 'erro'}`);
+    } finally {
+      setUploadingCert(false);
+    }
+  };
+
+  const handleRemoveCert = async () => {
+    if (form.cert_path) await empresasRepresentadasService.removeCertificado(form.cert_path).catch(() => {});
+    setForm((p) => ({ ...p, cert_path: '', cert_filename: '', cert_uploaded_at: '' }));
+  };
+
+
 
   // Auto-detecta "Mesma Empresa" quando o CNPJ digitado bate com o da responsável
   useEffect(() => {
@@ -226,7 +308,12 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
         observacoes: form.observacoes,
         tipo_vinculo: form.tipo_vinculo || null,
         cnpj_matriz: form.tipo_vinculo === 'FILIAL' ? form.cnpj_matriz : null,
+        logo_path: form.logo_path || null,
+        cert_path: form.cert_path || null,
+        cert_filename: form.cert_filename || null,
+        cert_uploaded_at: form.cert_uploaded_at || null,
       },
+
     };
     await onSave(payload);
     setOpen(false);
@@ -298,11 +385,14 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
           </DialogHeader>
           <form onSubmit={submit} className="space-y-4">
             <Tabs defaultValue="dados" className="space-y-4">
-              <TabsList className="grid grid-cols-3 w-full">
+              <TabsList className="grid grid-cols-5 w-full">
                 <TabsTrigger value="dados">Dados Gerais</TabsTrigger>
                 <TabsTrigger value="endereco">Endereço</TabsTrigger>
                 <TabsTrigger value="fiscal">Fiscal / Tributário</TabsTrigger>
+                <TabsTrigger value="logo">Logo</TabsTrigger>
+                <TabsTrigger value="certificado">Certificado Digital</TabsTrigger>
               </TabsList>
+
 
               <TabsContent value="dados" className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -470,7 +560,104 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
                   </div>
                 </div>
               </TabsContent>
+
+              <TabsContent value="logo" className="space-y-4">
+                <div className="space-y-4">
+                  <div>
+                    <Label>Logomarca da Empresa</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Utilizada em layouts de documentos (NFe, boletos, relatórios). PNG, JPG ou SVG até 2 MB.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <div className="w-40 h-40 rounded-lg border border-dashed border-border flex items-center justify-center bg-muted/30 overflow-hidden">
+                      {logoPreviewUrl ? (
+                        <img src={logoPreviewUrl} alt="Logo da empresa" className="max-w-full max-h-full object-contain" />
+                      ) : (
+                        <ImageIcon className="w-10 h-10 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <input
+                        ref={logoInputRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                        className="hidden"
+                        onChange={(ev) => {
+                          const f = ev.target.files?.[0];
+                          if (f) handleLogoUpload(f);
+                          ev.target.value = '';
+                        }}
+                      />
+                      <Button type="button" variant="outline" onClick={() => logoInputRef.current?.click()} disabled={uploadingLogo}>
+                        {uploadingLogo ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                        {form.logo_path ? 'Trocar logo' : 'Enviar logo'}
+                      </Button>
+                      {form.logo_path && (
+                        <Button type="button" variant="ghost" size="sm" onClick={handleRemoveLogo} disabled={uploadingLogo}>
+                          <X className="w-4 h-4 mr-2" />Remover
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="certificado" className="space-y-4">
+                <div className="space-y-4">
+                  <div>
+                    <Label>Certificado Digital A1</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Arquivo <strong>.pfx</strong> ou <strong>.p12</strong> (até 200 KB). Usado pelo módulo Fiscal para assinar NFe / NFSe.
+                      Por segurança, a <strong>senha do certificado não é armazenada</strong> — ela será solicitada no momento da emissão do documento.
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg border border-border p-4 bg-muted/20">
+                    {form.cert_path ? (
+                      <div className="flex items-start gap-3">
+                        <ShieldCheck className="w-8 h-8 text-primary shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate">{form.cert_filename || 'Certificado carregado'}</div>
+                          {form.cert_uploaded_at && (
+                            <div className="text-xs text-muted-foreground">
+                              Enviado em {new Date(form.cert_uploaded_at).toLocaleString('pt-BR')}
+                            </div>
+                          )}
+                          <Badge variant="secondary" className="mt-2 text-[10px]">Certificado ativo</Badge>
+                        </div>
+                        <Button type="button" variant="ghost" size="sm" onClick={handleRemoveCert} disabled={uploadingCert}>
+                          <X className="w-4 h-4 mr-1" />Remover
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-6 gap-2 text-center">
+                        <FileLock2 className="w-10 h-10 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">Nenhum certificado digital cadastrado</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <input
+                    ref={certInputRef}
+                    type="file"
+                    accept=".pfx,.p12,application/x-pkcs12"
+                    className="hidden"
+                    onChange={(ev) => {
+                      const f = ev.target.files?.[0];
+                      if (f) handleCertUpload(f);
+                      ev.target.value = '';
+                    }}
+                  />
+                  <Button type="button" variant="outline" onClick={() => certInputRef.current?.click()} disabled={uploadingCert}>
+                    {uploadingCert ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                    {form.cert_path ? 'Substituir certificado' : 'Enviar certificado'}
+                  </Button>
+                </div>
+              </TabsContent>
             </Tabs>
+
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={saving}>Cancelar</Button>
