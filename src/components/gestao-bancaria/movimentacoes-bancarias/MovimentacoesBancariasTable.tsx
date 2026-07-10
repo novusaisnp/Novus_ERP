@@ -354,6 +354,27 @@ export function MovimentacoesBancariasTable({
           </Table>
         </div>
       </CardContent>
+
+      <AlertDialog open={!!confirmDialog} onOpenChange={(open) => !open && setConfirmDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmDialog?.type === 'estornar' ? 'Estornar movimentação?' : 'Excluir movimentação?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmDialog?.type === 'estornar'
+                ? 'Esta ação irá estornar a movimentação e ajustar o saldo automaticamente. Deseja continuar?'
+                : 'Esta ação é irreversível e removerá a movimentação. Deseja continuar?'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={executarAcaoConfirmada}>
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
