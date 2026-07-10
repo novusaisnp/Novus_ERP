@@ -55,14 +55,25 @@ export const empresasRepresentadasService = {
     return (data || []).map(hydrate);
   },
 
-  async save(input: EmpresaRepresentada): Promise<void> {
+  async save(input: EmpresaRepresentada): Promise<EmpresaRepresentada> {
     const payload = buildPayload(input);
     if (input.id) {
-      const { error } = await supabase.from('empresas_representadas').update(payload).eq('id', input.id);
+      const { data, error } = await supabase
+        .from('empresas_representadas')
+        .update(payload)
+        .eq('id', input.id)
+        .select('*')
+        .single();
       if (error) throw error;
+      return hydrate(data);
     } else {
-      const { error } = await supabase.from('empresas_representadas').insert(payload);
+      const { data, error } = await supabase
+        .from('empresas_representadas')
+        .insert(payload)
+        .select('*')
+        .single();
       if (error) throw error;
+      return hydrate(data);
     }
   },
 

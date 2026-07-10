@@ -34,7 +34,15 @@ export const useEmpresasRepresentadas = (_?: string) => {
 
   const saveMutation = useMutation({
     mutationFn: (input: EmpresaRepresentada) => empresasRepresentadasService.save(input),
-    onSuccess: () => {
+    onSuccess: (savedEmpresa) => {
+      qc.setQueryData<EmpresaRepresentada[]>(['empresas-representadas'], (current = []) => {
+        const exists = current.some((empresa) => empresa.id === savedEmpresa.id);
+        const next = exists
+          ? current.map((empresa) => (empresa.id === savedEmpresa.id ? savedEmpresa : empresa))
+          : [...current, savedEmpresa];
+
+        return next.sort((a, b) => a.nome.localeCompare(b.nome));
+      });
       qc.invalidateQueries({ queryKey: ['empresas-representadas'] });
       toast.success('Empresa salva com sucesso');
     },
@@ -59,6 +67,7 @@ export const useEmpresasRepresentadas = (_?: string) => {
   return {
     empresas: query.data || [],
     loading: query.isLoading,
+    saving: saveMutation.isPending,
     saveEmpresa: (v: EmpresaRepresentada) => saveMutation.mutateAsync(v),
     deleteEmpresa: (id: string) => deleteMutation.mutateAsync(id),
     refetch: query.refetch,
