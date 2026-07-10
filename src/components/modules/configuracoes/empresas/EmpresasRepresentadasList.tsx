@@ -19,6 +19,7 @@ interface Props {
   empresas: EmpresaRepresentada[];
   onSave: (e: EmpresaRepresentada) => Promise<any> | any;
   onDelete: (id: string) => Promise<any> | any;
+  saving?: boolean;
 }
 
 type TipoVinculo = '' | 'INDEPENDENTE' | 'MESMA_EMPRESA' | 'FILIAL' | 'GRUPO';
@@ -115,7 +116,7 @@ const fromEmpresa = (e?: EmpresaRepresentada | null): FormState => {
   };
 };
 
-const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete }) => {
+const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete, saving }) => {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<EmpresaRepresentada | null>(null);
   const [form, setForm] = useState<FormState>(empty());
@@ -472,8 +473,11 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
             </Tabs>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-              <Button type="submit">Salvar</Button>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={saving}>Cancelar</Button>
+              <Button type="submit" disabled={saving}>
+                {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Salvar
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>

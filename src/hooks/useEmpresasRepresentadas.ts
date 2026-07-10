@@ -67,6 +67,7 @@ export const useEmpresasRepresentadas = (_?: string) => {
   return {
     empresas: query.data || [],
     loading: query.isLoading,
+    saving: saveMutation.isPending,
     saveEmpresa: (v: EmpresaRepresentada) => saveMutation.mutateAsync(v),
     deleteEmpresa: (id: string) => deleteMutation.mutateAsync(id),
     refetch: query.refetch,

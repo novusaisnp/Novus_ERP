@@ -9,7 +9,7 @@ import { useEmpresasRepresentadas } from '@/hooks/useEmpresasRepresentadas';
 
 const ConfiguracoesEmpresas: React.FC = () => {
   const { empresa, saveEmpresa, saving } = useEmpresaResponsavel();
-  const { empresas, saveEmpresa: saveRep, deleteEmpresa } = useEmpresasRepresentadas();
+  const { empresas, saveEmpresa: saveRep, deleteEmpresa, saving: savingRep } = useEmpresasRepresentadas();
 
   const ativas = empresas.filter((e) => e.ativo).length;
 
@@ -52,7 +52,7 @@ const ConfiguracoesEmpresas: React.FC = () => {
           <EmpresaResponsavelForm empresa={empresa} onSave={saveEmpresa} saving={saving} />
         </TabsContent>
         <TabsContent value="representadas">
-          <EmpresasRepresentadasList empresas={empresas} onSave={saveRep} onDelete={deleteEmpresa} />
+          <EmpresasRepresentadasList empresas={empresas} onSave={saveRep} onDelete={deleteEmpresa} saving={savingRep} />
         </TabsContent>
       </Tabs>
     </div>
