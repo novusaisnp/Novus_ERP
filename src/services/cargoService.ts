@@ -5,7 +5,6 @@ import { Cargo } from '@/types/rh';
 
 export const cargoService = {
   async fetchCargos() {
-    console.log('[RH] Carregando cargos...');
     const { data, error } = await supabase
       .from('cargos')
       .select('*')
@@ -17,12 +16,10 @@ export const cargoService = {
       throw new Error('Não foi possível carregar os cargos.');
     }
 
-    console.log('[RH] Cargos carregados:', data?.length || 0);
     return data || [];
   },
 
   async createCargo(cargoData: Cargo) {
-    console.log('[RH] Criando cargo:', cargoData.nome);
     
     const dataToSave = {
       nome: cargoData.nome,
@@ -43,12 +40,10 @@ export const cargoService = {
       throw error;
     }
 
-    console.log('[RH] Cargo criado com sucesso');
     return data;
   },
 
   async updateCargo(id: string, cargoData: Cargo) {
-    console.log('[RH] Atualizando cargo:', id);
     
     const dataToSave = {
       nome: cargoData.nome,
@@ -70,12 +65,10 @@ export const cargoService = {
       throw error;
     }
 
-    console.log('[RH] Cargo atualizado com sucesso');
     return data;
   },
 
   async deleteCargo(id: string) {
-    console.log('[RH] Excluindo cargo:', id);
     
     const { error } = await supabase
       .from('cargos')
@@ -87,6 +80,5 @@ export const cargoService = {
       throw new Error('Não foi possível excluir o cargo.');
     }
 
-    console.log('[RH] Cargo excluído com sucesso');
   }
 };

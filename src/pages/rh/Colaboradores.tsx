@@ -18,7 +18,6 @@ const Colaboradores: React.FC = () => {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedColaborador, setSelectedColaborador] = useState<Colaborador | null>(null);
 
-  console.log('[Colaboradores] Renderizando página de Colaboradores');
 
   const filteredColaboradores = colaboradores.filter(colaborador =>
     colaborador.nomeCompleto.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -29,19 +28,16 @@ const Colaboradores: React.FC = () => {
   const colaboradoresInativos = colaboradores.filter(c => !c.situacao).length;
 
   const handleNovoColaborador = () => {
-    console.log('[Colaboradores] Abrindo modal de cadastro');
     setSelectedColaborador(null);
     setIsFormModalOpen(true);
   };
 
   const handleEditarColaborador = (colaborador: Colaborador) => {
-    console.log('[Colaboradores] Abrindo modal de edição para:', colaborador.nomeCompleto);
     setSelectedColaborador(colaborador);
     setIsFormModalOpen(true);
   };
 
   const handleVerDetalhes = (colaborador: Colaborador) => {
-    console.log('[Colaboradores] Abrindo detalhes para:', colaborador.nomeCompleto);
     setSelectedColaborador(colaborador);
     setIsDetailsModalOpen(true);
   };

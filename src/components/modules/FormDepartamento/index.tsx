@@ -23,6 +23,7 @@ import { FormDepartamentoFields } from './FormDepartamentoFields';
 const formSchema = z.object({
   nome: z.string().min(1, 'Nome do departamento é obrigatório'),
   descricao: z.string().optional(),
+  responsavelId: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -43,60 +44,44 @@ const FormDepartamento: React.FC<FormDepartamentoProps> = ({
   const { saveDepartamento, loading } = useDepartamentos();
   const { toast } = useToast();
 
-  console.log('[Departamentos] FormDepartamento renderizado - Modo:', departamento ? 'Edição' : 'Criação');
-  console.log('[Departamentos] Departamento recebido:', departamento);
-
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       nome: '',
       descricao: '',
+      responsavelId: '',
     },
   });
 
-  // Reset form when departamento changes or modal opens/closes
   React.useEffect(() => {
-    console.log('[Departamentos] Effect disparado - open:', open, 'departamento:', departamento?.nome);
-    
     if (open) {
-      const formData: FormData = {
+      form.reset({
         nome: departamento?.nome || '',
         descricao: departamento?.descricao || '',
-      };
-      
-      console.log('[Departamentos] Resetando formulário com dados:', formData);
-      form.reset(formData);
-    } else {
-      // Limpa o formulário quando fecha
-      console.log('[Departamentos] Limpando formulário ao fechar modal');
-      form.reset({
-        nome: '',
-        descricao: '',
+        responsavelId: (departamento as any)?.responsavelId || '',
       });
+    } else {
+      form.reset({ nome: '', descricao: '', responsavelId: '' });
     }
   }, [departamento, open, form]);
 
   const handleSubmit = async (data: FormData) => {
-    console.log('[Departamentos] Dados do formulário submetidos:', data);
-    
     const departamentoData: Departamento = {
       id: departamento?.id,
       nome: data.nome.trim(),
       descricao: data.descricao?.trim() || undefined,
       ativo: departamento?.ativo ?? true,
+      ...({ responsavelId: data.responsavelId || undefined } as any),
     };
 
-    console.log('[Departamentos] Dados processados para envio:', departamentoData);
 
     try {
       const success = await saveDepartamento(departamentoData);
       
       if (success) {
-        console.log('[Departamentos] Departamento salvo com sucesso, executando callbacks');
         onOpenChange(false);
         onSuccess?.();
       } else {
-        console.log('[Departamentos] Falha ao salvar departamento');
       }
     } catch (error) {
       console.error('[Departamentos] Erro não tratado no handleSubmit:', error);
@@ -109,7 +94,6 @@ const FormDepartamento: React.FC<FormDepartamentoProps> = ({
   };
 
   const handleClose = () => {
-    console.log('[Departamentos] Modal fechado pelo usuário');
     onOpenChange(false);
   };
 

@@ -39,7 +39,8 @@ export const clienteUtils = {
       // Setor para integração CRM
       setor: (item as any).setor ? {
         id: (item as any).setor.id,
-        codigo: (item as any).setor.codigo,
+        nome: (item as any).setor.nome ?? (item as any).setor.codigo ?? '',
+        codigo: (item as any).setor.codigo ?? (item as any).setor.nome,
         descricao: (item as any).setor.descricao
       } : undefined,
       setorId: item.setor_id || undefined,

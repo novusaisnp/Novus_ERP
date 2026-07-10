@@ -44,8 +44,6 @@ const FormCargo: React.FC<FormCargoProps> = ({
   const { saveCargo, loading } = useCargos();
   const { toast } = useToast();
 
-  console.log('[Cargos] FormCargo renderizado - Modo:', cargo ? 'Edição' : 'Criação');
-  console.log('[Cargos] Cargo recebido:', cargo);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -58,7 +56,6 @@ const FormCargo: React.FC<FormCargoProps> = ({
 
   // Reset form when cargo changes or modal opens/closes
   React.useEffect(() => {
-    console.log('[Cargos] Effect disparado - open:', open, 'cargo:', cargo?.nome);
     
     if (open) {
       const formData: FormData = {
@@ -67,11 +64,9 @@ const FormCargo: React.FC<FormCargoProps> = ({
         salarioBase: cargo?.salarioBase?.toString() || '',
       };
       
-      console.log('[Cargos] Resetando formulário com dados:', formData);
       form.reset(formData);
     } else {
       // Limpa o formulário quando fecha
-      console.log('[Cargos] Limpando formulário ao fechar modal');
       form.reset({
         nome: '',
         descricao: '',
@@ -81,8 +76,6 @@ const FormCargo: React.FC<FormCargoProps> = ({
   }, [cargo, open, form]);
 
   const handleSubmit = async (data: FormData) => {
-    console.log('[Cargos] Enviando dados do formulário:', data);
-    console.log('[Cargos] Cargo sendo editado:', cargo?.id ? 'Sim' : 'Não');
     
     const salarioBaseValue = data.salarioBase ? parseFloat(data.salarioBase.replace(/[^\d,.-]/g, '').replace(',', '.')) : undefined;
     
@@ -94,12 +87,10 @@ const FormCargo: React.FC<FormCargoProps> = ({
       ativo: cargo?.ativo ?? true,
     };
 
-    console.log('[Cargos] Dados processados para envio:', cargoData);
 
     const success = await saveCargo(cargoData);
     
     if (success) {
-      console.log('[Cargos] Cargo salvo com sucesso, executando callbacks');
       onOpenChange(false);
       onSuccess?.();
       
@@ -112,7 +103,6 @@ const FormCargo: React.FC<FormCargoProps> = ({
   };
 
   const handleClose = () => {
-    console.log('[Cargos] Modal fechado pelo usuário');
     onOpenChange(false);
   };
 

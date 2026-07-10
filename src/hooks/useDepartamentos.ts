@@ -13,10 +13,8 @@ export const useDepartamentos = () => {
   const loadDepartamentos = async () => {
     setLoading(true);
     try {
-      console.log('[RH] Iniciando carregamento de departamentos...');
       const data = await departamentoService.fetchDepartamentos();
       const departamentosFormatados = data.map(rhUtils.transformSupabaseToDepartamento);
-      console.log('[RH] Departamentos formatados:', departamentosFormatados);
       setDepartamentos(departamentosFormatados);
     } catch (error) {
       console.error('[RH] Erro ao carregar departamentos:', error);
@@ -31,7 +29,6 @@ export const useDepartamentos = () => {
   };
 
   const saveDepartamento = async (departamentoData: Departamento) => {
-    console.log('[RH] Iniciando salvamento de departamento:', departamentoData);
     setLoading(true);
     
     try {
@@ -49,14 +46,11 @@ export const useDepartamentos = () => {
 
       let result;
       if (departamentoData.id) {
-        console.log('[RH] Atualizando departamento existente:', departamentoData.id);
         result = await departamentoService.updateDepartamento(departamentoData.id, departamentoData);
       } else {
-        console.log('[RH] Criando novo departamento');
         result = await departamentoService.createDepartamento(departamentoData);
       }
 
-      console.log('[RH] Resultado da operação:', result);
 
       // Recarregar lista de departamentos
       await loadDepartamentos();
@@ -69,7 +63,6 @@ export const useDepartamentos = () => {
           : "Departamento criado com sucesso!",
       });
 
-      console.log('[RH] Departamento salvo com sucesso');
       return true;
 
     } catch (error) {
@@ -102,7 +95,6 @@ export const useDepartamentos = () => {
   };
 
   const deleteDepartamento = async (id: string) => {
-    console.log('[RH] Iniciando exclusão de departamento:', id);
     setLoading(true);
     
     try {
@@ -114,7 +106,6 @@ export const useDepartamentos = () => {
         description: "Departamento excluído com sucesso!",
       });
       
-      console.log('[RH] Departamento excluído com sucesso');
       return true;
       
     } catch (error) {

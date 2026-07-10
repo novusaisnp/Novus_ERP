@@ -1,58 +1,55 @@
 import { Colaborador, SupabaseColaborador, Cargo, SupabaseCargo, Departamento, SupabaseDepartamento, VencimentoPadrao } from '@/types/rh';
 
 export const rhUtils = {
-  transformSupabaseToColaborador(item: SupabaseColaborador): Colaborador {
-    // Extrair campos do objeto endereco se existirem
-    const endereco = item.endereco as any;
-    
+  transformSupabaseToColaborador(item: any): Colaborador {
+    const hasEndereco = !!(item.cep || item.logradouro || item.bairro || item.cidade);
     return {
       id: item.id,
-      nomeCompleto: item.nome_completo,
-      dataNascimento: new Date(item.data_nascimento),
-      cpf: item.cpf,
-      rg: item.rg,
-      endereco: endereco?.cep ? {
-        cep: endereco.cep,
-        logradouro: endereco.logradouro,
-        numero: endereco.numero,
-        complemento: endereco.complemento,
-        bairro: endereco.bairro,
-        cidade: endereco.cidade,
-        uf: endereco.uf,
+      nomeCompleto: item.nome ?? '',
+      dataNascimento: item.data_nascimento ? new Date(item.data_nascimento) : new Date(),
+      cpf: item.cpf ?? '',
+      rg: item.rg ?? undefined,
+      endereco: hasEndereco ? {
+        cep: item.cep ?? '',
+        logradouro: item.logradouro ?? '',
+        numero: item.numero ?? '',
+        complemento: item.complemento ?? undefined,
+        bairro: item.bairro ?? '',
+        cidade: item.cidade ?? '',
+        uf: item.estado ?? '',
       } : undefined,
-      telefone: item.telefone,
-      emailPessoal: endereco?.emailPessoal || item.email, // Fallback para campo legado
-      emailCorporativo: endereco?.emailCorporativo,
-      cargoId: item.cargo_id,
-      departamentoId: item.departamento_id,
-      regimeContratacao: item.regime_contratacao as 'CLT' | 'PJ' | 'ESTAGIO' | 'TERCEIRIZADO',
-      dataAdmissao: new Date(item.data_admissao),
+      telefone: item.telefone ?? undefined,
+      emailPessoal: item.email ?? undefined,
+      emailCorporativo: item.email_corporativo ?? undefined,
+      cargoId: item.cargo_id ?? undefined,
+      departamentoId: item.departamento_id ?? undefined,
+      regimeContratacao: (item.tipo_contrato as any) || 'CLT',
+      dataAdmissao: item.data_admissao ? new Date(item.data_admissao) : new Date(),
       dataDemissao: item.data_demissao ? new Date(item.data_demissao) : undefined,
-      tipoContrato: endereco?.tipoContrato,
-      regimeTrabalho: endereco?.regimeTrabalho,
-      localTrabalho: endereco?.localTrabalho,
-      jornada: endereco?.jornada,
-      salarioBase: item.salario_base,
-      adicionais: endereco?.adicionais,
-      documentacao: endereco?.documentacao,
-      pontoControle: endereco?.pontoControle,
-      compliance: endereco?.compliance ? {
-        aceiteLgpd: endereco.compliance.aceiteLgpd || false,
-        dataAceite: endereco.compliance.dataAceite ? new Date(endereco.compliance.dataAceite) : undefined,
-        consentimentoDados: endereco.compliance.consentimentoDados || false,
-      } : {
+      tipoContrato: item.tipo_contrato ?? undefined,
+      regimeTrabalho: item.regime_trabalho ?? undefined,
+      salarioBase: item.salario ?? undefined,
+      documentacao: {
+        nisPis: item.pis ?? undefined,
+        dadosBancarios: item.banco ? {
+          banco: item.banco,
+          agencia: item.agencia ?? '',
+          conta: item.conta ?? '',
+          tipoConta: (item.tipo_conta as any) || 'CORRENTE',
+        } : undefined,
+      },
+      compliance: {
         aceiteLgpd: false,
         consentimentoDados: false,
       },
       empresaRepresentadaId: item.empresa_representada_id,
-      situacao: item.situacao,
-      createdAt: new Date(item.created_at),
-      updatedAt: new Date(item.updated_at)
+      situacao: item.ativo ?? true,
+      createdAt: item.created_at ? new Date(item.created_at) : undefined,
+      updatedAt: item.updated_at ? new Date(item.updated_at) : undefined,
     };
   },
 
   transformSupabaseToCargo(item: SupabaseCargo): Cargo {
-    console.log('[Cargos] Transformando cargo do Supabase:', item.nome);
     return {
       id: item.id,
       nome: item.nome,
@@ -64,16 +61,17 @@ export const rhUtils = {
     };
   },
 
-  transformSupabaseToDepartamento(item: SupabaseDepartamento): Departamento {
+  transformSupabaseToDepartamento(item: any): Departamento {
     return {
       id: item.id,
       nome: item.nome,
       descricao: item.descricao,
       empresaRepresentadaId: item.empresa_representada_id,
       ativo: item.ativo,
-      createdAt: new Date(item.created_at),
-      updatedAt: new Date(item.updated_at)
-    };
+      createdAt: item.created_at ? new Date(item.created_at) : undefined,
+      updatedAt: item.updated_at ? new Date(item.updated_at) : undefined,
+      ...({ responsavelId: item.responsavel_id ?? undefined } as any),
+    } as Departamento;
   },
 
   transformSupabaseToVencimentoPadrao: (data: any): VencimentoPadrao => ({
@@ -136,7 +134,6 @@ export const rhUtils = {
   },
 
   formatCurrency(value: number): string {
-    console.log('[RH] Formatando valor:', value);
     if (!value || isNaN(value)) return 'R$ 0,00';
     
     const formatted = new Intl.NumberFormat('pt-BR', {
@@ -144,12 +141,10 @@ export const rhUtils = {
       currency: 'BRL'
     }).format(value);
     
-    console.log('[RH] Valor formatado:', formatted);
     return formatted;
   },
 
   parseCurrency(value: string): number {
-    console.log('[RH] Parseando valor:', value);
     if (!value) return 0;
     
     // Remove todos os caracteres não numéricos, exceto vírgula e ponto
@@ -161,7 +156,6 @@ export const rhUtils = {
     const parsed = parseFloat(numericValue);
     const result = isNaN(parsed) ? 0 : parsed;
     
-    console.log('[RH] Valor parseado:', result);
     return result;
   },
 

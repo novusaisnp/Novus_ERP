@@ -15,32 +15,27 @@ const Departamentos: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDepartamento, setSelectedDepartamento] = useState<Departamento | null>(null);
 
-  console.log('[Departamentos] Renderizando página de Departamentos');
 
   const filteredDepartamentos = departamentos.filter(departamento =>
     departamento.nome.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleNewDepartamento = () => {
-    console.log('[Departamentos] Abrindo modal para novo departamento');
     setSelectedDepartamento(null);
     setIsModalOpen(true);
   };
 
   const handleEditDepartamento = (departamento: Departamento) => {
-    console.log('[Departamentos] Abrindo modal para editar departamento:', departamento.nome);
     setSelectedDepartamento(departamento);
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
-    console.log('[Departamentos] Fechando modal');
     setIsModalOpen(false);
     setSelectedDepartamento(null);
   };
 
   const handleSuccess = () => {
-    console.log('[Departamentos] Operação realizada com sucesso');
     // O hook useDepartamentos já recarrega automaticamente os dados
   };
 

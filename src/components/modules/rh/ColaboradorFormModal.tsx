@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useColaboradores } from '@/hooks/useColaboradores';
+import { cargoService } from '@/services/cargoService';
+import { departamentoService } from '@/services/departamentoService';
+import { setorService } from '@/services/setorService';
 import { Colaborador } from '@/types/rh';
 import { toast } from '@/hooks/use-toast';
 
@@ -23,6 +27,9 @@ export const ColaboradorFormModal: React.FC<ColaboradorFormModalProps> = ({
   colaborador
 }) => {
   const { saveColaborador, loading } = useColaboradores();
+  const { data: cargos = [] } = useQuery({ queryKey: ['cargos'], queryFn: cargoService.fetchCargos });
+  const { data: departamentos = [] } = useQuery({ queryKey: ['departamentos'], queryFn: departamentoService.fetchDepartamentos });
+  const { data: setores = [] } = useQuery({ queryKey: ['setores'], queryFn: setorService.fetchSetores });
   const [formData, setFormData] = useState<Partial<Colaborador>>({
     nomeCompleto: '',
     dataNascimento: new Date(),
@@ -55,7 +62,6 @@ export const ColaboradorFormModal: React.FC<ColaboradorFormModalProps> = ({
     if (open) {
       if (colaborador) {
         // Modo edição - popular com dados do colaborador
-        console.log('[ColaboradorFormModal] Carregando dados para edição:', colaborador.nomeCompleto);
         setFormData({
           ...colaborador,
           dataNascimento: colaborador.dataNascimento,
@@ -64,7 +70,6 @@ export const ColaboradorFormModal: React.FC<ColaboradorFormModalProps> = ({
         });
       } else {
         // Modo criação - limpar form
-        console.log('[ColaboradorFormModal] Modo criação - form limpo');
         setFormData({
           nomeCompleto: '',
           dataNascimento: new Date(),
@@ -368,6 +373,48 @@ export const ColaboradorFormModal: React.FC<ColaboradorFormModalProps> = ({
                     onChange={(e) => handleInputChange('salarioBase', parseFloat(e.target.value) || 0)}
                     placeholder="0,00"
                   />
+                </div>
+                <div>
+                  <Label htmlFor="cargoId">Cargo</Label>
+                  <Select
+                    value={formData.cargoId || ''}
+                    onValueChange={(value) => handleInputChange('cargoId', value)}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Selecione o cargo" /></SelectTrigger>
+                    <SelectContent>
+                      {cargos.map((c: any) => (
+                        <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="departamentoId">Departamento</Label>
+                  <Select
+                    value={formData.departamentoId || ''}
+                    onValueChange={(value) => handleInputChange('departamentoId', value)}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Selecione o departamento" /></SelectTrigger>
+                    <SelectContent>
+                      {departamentos.map((d: any) => (
+                        <SelectItem key={d.id} value={d.id}>{d.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="setorId">Setor</Label>
+                  <Select
+                    value={(formData as any).setorId || ''}
+                    onValueChange={(value) => handleInputChange('setorId' as any, value)}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Selecione o setor" /></SelectTrigger>
+                    <SelectContent>
+                      {setores.map((s: any) => (
+                        <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox
