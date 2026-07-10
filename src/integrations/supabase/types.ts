@@ -52,6 +52,57 @@ export type Database = {
           },
         ]
       }
+      centros_custo: {
+        Row: {
+          ativo: boolean
+          centro_pai_id: string | null
+          codigo: string | null
+          created_at: string
+          descricao: string | null
+          empresa_representada_id: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          centro_pai_id?: string | null
+          codigo?: string | null
+          created_at?: string
+          descricao?: string | null
+          empresa_representada_id: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          centro_pai_id?: string | null
+          codigo?: string | null
+          created_at?: string
+          descricao?: string | null
+          empresa_representada_id?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "centros_custo_centro_pai_id_fkey"
+            columns: ["centro_pai_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "centros_custo_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clientes: {
         Row: {
           ativo: boolean
@@ -155,6 +206,62 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "clientes_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      descontos_padrao: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          empresa_representada_id: string
+          id: string
+          nome: string
+          obrigatorio: boolean
+          ordem: number
+          percentual: number | null
+          referencia: string | null
+          tipo: string | null
+          updated_at: string
+          valor: number | null
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          empresa_representada_id: string
+          id?: string
+          nome: string
+          obrigatorio?: boolean
+          ordem?: number
+          percentual?: number | null
+          referencia?: string | null
+          tipo?: string | null
+          updated_at?: string
+          valor?: number | null
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          empresa_representada_id?: string
+          id?: string
+          nome?: string
+          obrigatorio?: boolean
+          ordem?: number
+          percentual?: number | null
+          referencia?: string | null
+          tipo?: string | null
+          updated_at?: string
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "descontos_padrao_empresa_representada_id_fkey"
             columns: ["empresa_representada_id"]
             isOneToOne: false
             referencedRelation: "empresas_representadas"
@@ -365,6 +472,217 @@ export type Database = {
           },
         ]
       }
+      localizacoes_estoque: {
+        Row: {
+          ativo: boolean
+          corredor: string | null
+          created_at: string
+          descricao: string | null
+          empresa_representada_id: string
+          id: string
+          nome: string
+          posicao: string | null
+          prateleira: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          corredor?: string | null
+          created_at?: string
+          descricao?: string | null
+          empresa_representada_id: string
+          id?: string
+          nome: string
+          posicao?: string | null
+          prateleira?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          corredor?: string | null
+          created_at?: string
+          descricao?: string | null
+          empresa_representada_id?: string
+          id?: string
+          nome?: string
+          posicao?: string | null
+          prateleira?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "localizacoes_estoque_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      modalidade_api_vinculo: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          empresa_representada_id: string
+          endpoint: string | null
+          headers: Json
+          id: string
+          metodo: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          empresa_representada_id: string
+          endpoint?: string | null
+          headers?: Json
+          id?: string
+          metodo?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          empresa_representada_id?: string
+          endpoint?: string | null
+          headers?: Json
+          id?: string
+          metodo?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "modalidade_api_vinculo_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      modalidade_caixas: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          empresa_representada_id: string
+          id: string
+          nome: string
+          ordem: number
+          tipo: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          empresa_representada_id: string
+          id?: string
+          nome: string
+          ordem?: number
+          tipo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          empresa_representada_id?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          tipo?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "modalidade_caixas_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      natureza_caixas: {
+        Row: {
+          ativo: boolean
+          centro_custo_id: string | null
+          codigo: string | null
+          created_at: string
+          descricao: string | null
+          empresa_representada_id: string
+          id: string
+          nome: string
+          ordem: number
+          permite_estorno: boolean
+          plano_conta_id: string | null
+          requer_documento: boolean
+          tipo: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          centro_custo_id?: string | null
+          codigo?: string | null
+          created_at?: string
+          descricao?: string | null
+          empresa_representada_id: string
+          id?: string
+          nome: string
+          ordem?: number
+          permite_estorno?: boolean
+          plano_conta_id?: string | null
+          requer_documento?: boolean
+          tipo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          centro_custo_id?: string | null
+          codigo?: string | null
+          created_at?: string
+          descricao?: string | null
+          empresa_representada_id?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          permite_estorno?: boolean
+          plano_conta_id?: string | null
+          requer_documento?: boolean
+          tipo?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "natureza_caixas_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "natureza_caixas_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "natureza_caixas_plano_conta_id_fkey"
+            columns: ["plano_conta_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       perfis: {
         Row: {
           ativo: boolean
@@ -402,6 +720,110 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "perfis_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plano_contas: {
+        Row: {
+          aceita_lancamento: boolean
+          ativo: boolean
+          codigo: string
+          conta_pai_id: string | null
+          created_at: string
+          empresa_representada_id: string
+          id: string
+          natureza: string | null
+          nivel: number
+          nome: string
+          tipo: string | null
+          updated_at: string
+        }
+        Insert: {
+          aceita_lancamento?: boolean
+          ativo?: boolean
+          codigo: string
+          conta_pai_id?: string | null
+          created_at?: string
+          empresa_representada_id: string
+          id?: string
+          natureza?: string | null
+          nivel?: number
+          nome: string
+          tipo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aceita_lancamento?: boolean
+          ativo?: boolean
+          codigo?: string
+          conta_pai_id?: string | null
+          created_at?: string
+          empresa_representada_id?: string
+          id?: string
+          natureza?: string | null
+          nivel?: number
+          nome?: string
+          tipo?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plano_contas_conta_pai_id_fkey"
+            columns: ["conta_pai_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plano_contas_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planos_pagamento: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          empresa_representada_id: string
+          id: string
+          intervalo_dias: number
+          nome: string
+          numero_parcelas: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          empresa_representada_id: string
+          id?: string
+          intervalo_dias?: number
+          nome: string
+          numero_parcelas?: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          empresa_representada_id?: string
+          id?: string
+          intervalo_dias?: number
+          nome?: string
+          numero_parcelas?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planos_pagamento_empresa_representada_id_fkey"
             columns: ["empresa_representada_id"]
             isOneToOne: false
             referencedRelation: "empresas_representadas"
@@ -792,6 +1214,62 @@ export type Database = {
             columns: ["perfil_id"]
             isOneToOne: false
             referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vencimentos_padrao: {
+        Row: {
+          ativo: boolean
+          competencia: string | null
+          created_at: string
+          descricao: string | null
+          empresa_representada_id: string
+          id: string
+          nome: string
+          ordem: number
+          percentual: number | null
+          referencia: string | null
+          tipo: string | null
+          updated_at: string
+          valor: number | null
+        }
+        Insert: {
+          ativo?: boolean
+          competencia?: string | null
+          created_at?: string
+          descricao?: string | null
+          empresa_representada_id: string
+          id?: string
+          nome: string
+          ordem?: number
+          percentual?: number | null
+          referencia?: string | null
+          tipo?: string | null
+          updated_at?: string
+          valor?: number | null
+        }
+        Update: {
+          ativo?: boolean
+          competencia?: string | null
+          created_at?: string
+          descricao?: string | null
+          empresa_representada_id?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          percentual?: number | null
+          referencia?: string | null
+          tipo?: string | null
+          updated_at?: string
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vencimentos_padrao_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
             referencedColumns: ["id"]
           },
         ]
