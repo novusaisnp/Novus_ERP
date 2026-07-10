@@ -1,8 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase as _supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-
-const supabase: any = _supabase;
+import { toast } from 'sonner';
+import { empresaResponsavelService } from '@/services/empresaResponsavelService';
 
 export interface EmpresaResponsavel {
   id?: string;
@@ -13,50 +11,33 @@ export interface EmpresaResponsavel {
   endereco?: string | null;
   logo_url?: string | null;
   configuracoes?: Record<string, any> | null;
-}
-
-async function fetchEmpresa(): Promise<EmpresaResponsavel | null> {
-  const { data, error } = await supabase.from('empresa_responsavel').select('*').maybeSingle();
-  if (error) {
-    console.error('[EmpresaResponsavel] erro ao carregar');
-    return null;
-  }
-  return (data as EmpresaResponsavel) || null;
+  [key: string]: any;
 }
 
 export const useEmpresaResponsavel = () => {
   const qc = useQueryClient();
-  const { toast } = useToast();
 
-  const query = useQuery({ queryKey: ['empresa-responsavel'], queryFn: fetchEmpresa });
-
-  const saveMutation = useMutation({
-    mutationFn: async (input: EmpresaResponsavel) => {
-      const payload = {
-        nome: input.nome,
-        cnpj: input.cnpj || null,
-        email: input.email || null,
-        telefone: input.telefone || null,
-        endereco: input.endereco || null,
-        logo_url: input.logo_url || null,
-        configuracoes: input.configuracoes || {},
-        updated_at: new Date().toISOString(),
-      };
-      if (input.id) {
-        const { error } = await supabase.from('empresa_responsavel').update(payload).eq('id', input.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('empresa_responsavel').insert(payload);
-        if (error) throw error;
+  const query = useQuery({
+    queryKey: ['empresa-responsavel'],
+    queryFn: async () => {
+      try {
+        return await empresaResponsavelService.fetch();
+      } catch (e) {
+        console.error('[EmpresaResponsavel] erro ao carregar');
+        return null;
       }
     },
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: (input: EmpresaResponsavel) => empresaResponsavelService.save(input),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['empresa-responsavel'] });
-      toast({ title: 'Empresa salva com sucesso' });
+      toast.success('Empresa salva com sucesso');
     },
     onError: (e: any) => {
       console.error('[EmpresaResponsavel] erro ao salvar');
-      toast({ title: 'Erro', description: e?.message || 'Falha ao salvar empresa', variant: 'destructive' });
+      toast.error(e?.message || 'Falha ao salvar empresa');
     },
   });
 
