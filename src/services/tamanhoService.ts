@@ -9,7 +9,6 @@ export type TamanhoUpdate = TablesUpdate<'tamanhos_produtos'>;
 
 export const tamanhoService = {
   async getAll(): Promise<Tamanho[]> {
-    console.log('[TamanhoService] Buscando todos os tamanhos');
     
     const { data, error } = await supabase
       .from('tamanhos_produtos')
@@ -22,12 +21,10 @@ export const tamanhoService = {
       throw error;
     }
 
-    console.log('[TamanhoService] Tamanhos encontrados:', data?.length || 0);
     return data || [];
   },
 
   async getById(id: string): Promise<Tamanho | null> {
-    console.log('[TamanhoService] Buscando tamanho por ID:', id);
     
     const { data, error } = await supabase
       .from('tamanhos_produtos')
@@ -44,7 +41,6 @@ export const tamanhoService = {
   },
 
   async create(tamanho: TamanhoInsert): Promise<Tamanho> {
-    console.log('[TamanhoService] Criando tamanho:', tamanho.descricao);
     
     const { data, error } = await supabase
       .from('tamanhos_produtos')
@@ -57,12 +53,10 @@ export const tamanhoService = {
       throw error;
     }
 
-    console.log('[TamanhoService] Tamanho criado com sucesso:', data.id);
     return data;
   },
 
   async update(id: string, tamanho: TamanhoUpdate): Promise<Tamanho> {
-    console.log('[TamanhoService] Atualizando tamanho:', id);
     
     const { data, error } = await supabase
       .from('tamanhos_produtos')
@@ -79,12 +73,10 @@ export const tamanhoService = {
       throw error;
     }
 
-    console.log('[TamanhoService] Tamanho atualizado com sucesso');
     return data;
   },
 
   async delete(id: string): Promise<void> {
-    console.log('[TamanhoService] Desativando tamanho:', id);
     
     const { error } = await supabase
       .from('tamanhos_produtos')
@@ -99,6 +91,5 @@ export const tamanhoService = {
       throw error;
     }
 
-    console.log('[TamanhoService] Tamanho desativado com sucesso');
   },
 };

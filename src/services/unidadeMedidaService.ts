@@ -9,7 +9,6 @@ export type UnidadeMedidaUpdate = TablesUpdate<'unidades_medida'>;
 
 export const unidadeMedidaService = {
   async getAll(): Promise<UnidadeMedida[]> {
-    console.log('[UnidadeMedidaService] Buscando todas as unidades de medida');
     
     const { data, error } = await supabase
       .from('unidades_medida')
@@ -22,12 +21,10 @@ export const unidadeMedidaService = {
       throw error;
     }
 
-    console.log('[UnidadeMedidaService] Unidades de medida encontradas:', data?.length || 0);
     return data || [];
   },
 
   async getById(id: string): Promise<UnidadeMedida | null> {
-    console.log('[UnidadeMedidaService] Buscando unidade de medida por ID:', id);
     
     const { data, error } = await supabase
       .from('unidades_medida')
@@ -44,7 +41,6 @@ export const unidadeMedidaService = {
   },
 
   async create(unidadeMedida: UnidadeMedidaInsert): Promise<UnidadeMedida> {
-    console.log('[UnidadeMedidaService] Criando unidade de medida:', unidadeMedida.nome);
     
     const { data, error } = await supabase
       .from('unidades_medida')
@@ -57,12 +53,10 @@ export const unidadeMedidaService = {
       throw error;
     }
 
-    console.log('[UnidadeMedidaService] Unidade de medida criada com sucesso:', data.id);
     return data;
   },
 
   async update(id: string, unidadeMedida: UnidadeMedidaUpdate): Promise<UnidadeMedida> {
-    console.log('[UnidadeMedidaService] Atualizando unidade de medida:', id);
     
     const { data, error } = await supabase
       .from('unidades_medida')
@@ -79,12 +73,10 @@ export const unidadeMedidaService = {
       throw error;
     }
 
-    console.log('[UnidadeMedidaService] Unidade de medida atualizada com sucesso');
     return data;
   },
 
   async delete(id: string): Promise<void> {
-    console.log('[UnidadeMedidaService] Desativando unidade de medida:', id);
     
     const { error } = await supabase
       .from('unidades_medida')
@@ -99,6 +91,5 @@ export const unidadeMedidaService = {
       throw error;
     }
 
-    console.log('[UnidadeMedidaService] Unidade de medida desativada com sucesso');
   },
 };

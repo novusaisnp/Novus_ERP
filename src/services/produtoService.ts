@@ -5,7 +5,6 @@ import { Produto, SupabaseProduto } from '@/types/produto';
 
 export const produtoService = {
   async listar(): Promise<SupabaseProduto[]> {
-    console.log('[Produtos] Buscando lista de produtos...');
     
     const { data, error } = await supabase
       .from('produtos')
@@ -17,12 +16,10 @@ export const produtoService = {
       throw error;
     }
 
-    console.log('[Produtos] Lista de produtos carregada:', data?.length, 'registros');
     return data || [];
   },
 
   async buscarPorId(id: string): Promise<SupabaseProduto | null> {
-    console.log('[Produtos] Buscando produto por ID:', id);
     
     const { data, error } = await supabase
       .from('produtos')
@@ -35,12 +32,10 @@ export const produtoService = {
       throw error;
     }
 
-    console.log('[Produtos] Produto encontrado:', data);
     return data;
   },
 
   async criar(produto: Produto): Promise<SupabaseProduto> {
-    console.log('[Produtos] Criando novo produto:', produto);
     
     const { data, error } = await supabase
       .from('produtos')
@@ -79,12 +74,10 @@ export const produtoService = {
       throw error;
     }
 
-    console.log('[Produtos] Produto criado com sucesso:', data);
     return data;
   },
 
   async atualizar(id: string, produto: Produto): Promise<SupabaseProduto> {
-    console.log('[Produtos] Atualizando produto:', id, produto);
     
     const { data, error } = await supabase
       .from('produtos')
@@ -125,12 +118,10 @@ export const produtoService = {
       throw error;
     }
 
-    console.log('[Produtos] Produto atualizado com sucesso:', data);
     return data;
   },
 
   async excluir(id: string): Promise<void> {
-    console.log('[Produtos] Excluindo produto:', id);
     
     const { error } = await supabase
       .from('produtos')
@@ -142,11 +133,9 @@ export const produtoService = {
       throw error;
     }
 
-    console.log('[Produtos] Produto excluído com sucesso');
   },
 
   async buscarPorCodigoBarras(codigoBarras: string): Promise<SupabaseProduto | null> {
-    console.log('[Produtos] Buscando produto por código de barras:', codigoBarras);
     
     const { data, error } = await supabase
       .from('produtos')
