@@ -55,6 +55,10 @@ import Departamentos from './pages/rh/Departamentos';
 import Relatorios from './pages/rh/Relatorios';
 import VencimentosPadrao from './pages/rh/VencimentosPadrao';
 import DescontosPadrao from './pages/rh/DescontosPadrao';
+import FolhaPagamento from './pages/rh/FolhaPagamento';
+import BeneficiosVinculados from './pages/rh/BeneficiosVinculados';
+import IntegracaoPonto from './pages/rh/IntegracaoPonto';
+import RegistrosPonto from './pages/rh/RegistrosPonto';
 
 // Vendas Pages
 import Pedidos from './pages/vendas/Pedidos';
