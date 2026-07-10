@@ -104,16 +104,8 @@ export const useFluxoCaixa = (filtros: FluxoCaixaFiltros = {}) => {
     refetchMovimentacoes();
   };
 
-  // Log de debug
-  useEffect(() => {
-      movimentacoes: movimentacoes.length,
-      resumo: !!resumo,
-      projecao: projecao.length,
-      estatisticas: !!estatisticas,
-      isLoading,
-      error
-    });
-  }, [movimentacoes, resumo, projecao, estatisticas, isLoading, error]);
+  // Log de debug removido (dados sensíveis)
+
 
   return {
     // Dados
