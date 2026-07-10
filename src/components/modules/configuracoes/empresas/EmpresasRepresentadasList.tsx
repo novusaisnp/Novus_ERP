@@ -308,7 +308,12 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
         observacoes: form.observacoes,
         tipo_vinculo: form.tipo_vinculo || null,
         cnpj_matriz: form.tipo_vinculo === 'FILIAL' ? form.cnpj_matriz : null,
+        logo_path: form.logo_path || null,
+        cert_path: form.cert_path || null,
+        cert_filename: form.cert_filename || null,
+        cert_uploaded_at: form.cert_uploaded_at || null,
       },
+
     };
     await onSave(payload);
     setOpen(false);
