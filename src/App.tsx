@@ -101,6 +101,9 @@ function App() {
                     <Route path="localizacoes" element={<Localizacoes />} />
                     <Route path="unidades-medida" element={<UnidadesMedida />} />
                     <Route path="tamanhos" element={<Tamanhos />} />
+                    <Route path="movimentacoes" element={<EmBreve titulo="Movimentações de Estoque" icon={ArrowLeftRight} descricao="Entradas, saídas e transferências de estoque estarão disponíveis em breve." />} />
+                    <Route path="inventario" element={<EmBreve titulo="Inventário" icon={ClipboardList} descricao="Contagem e conciliação de inventário estarão disponíveis em breve." />} />
+                    <Route path="relatorios" element={<EmBreve titulo="Relatórios de Estoque" icon={BarChart3} descricao="Relatórios analíticos de estoque estarão disponíveis em breve." />} />
                   </Route>
                   
                   {/* Vendas Routes */}
