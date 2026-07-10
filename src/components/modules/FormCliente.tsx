@@ -10,7 +10,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon, Loader2, Upload, Users, Building2, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Cliente } from '@/types/cliente';
-import { consultarCNPJ, consultarCEP, formatarCPF, formatarCNPJ, formatarCEP, validarCPF } from '@/services/cnpjApi';
+import { consultarCEP, formatarCPF, formatarCNPJ, formatarCEP, validarCPF } from '@/services/cnpjApi';
+import { useCnpjLookupImperative } from '@/hooks/useCnpjLookup';
 import { toast } from 'sonner';
 import { TelefoneManager } from '@/components/modules/TelefoneManager';
 import { EmailManager } from '@/components/modules/clientes/EmailManager';
@@ -75,6 +76,7 @@ export const FormCliente: React.FC<FormClienteProps> = ({
   });
 
   const [loadingApi, setLoadingApi] = useState(false);
+  const lookupCnpj = useCnpjLookupImperative();
   const [date, setDate] = useState<Date>();
   const [dataFundacao, setDataFundacao] = useState<Date>();
 
@@ -130,7 +132,7 @@ export const FormCliente: React.FC<FormClienteProps> = ({
         setLoadingApi(true);
         console.log('[FormCliente] Consultando CNPJ:', cleanValue);
         try {
-          const cnpjData = await consultarCNPJ(cleanValue);
+          const cnpjData = await lookupCnpj(cleanValue);
           if (cnpjData) {
             console.log('[FormCliente] Dados do CNPJ recebidos:', cnpjData);
             setFormData(prev => ({

@@ -8,7 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Building2, User } from 'lucide-react';
 import { Fornecedor, TipoPessoa } from '@/types/fornecedor';
-import { consultarCNPJ, consultarCEP, formatarCEP } from '@/services/cnpjApi';
+import { consultarCEP, formatarCEP } from '@/services/cnpjApi';
+import { useCnpjLookupImperative } from '@/hooks/useCnpjLookup';
 import { DocumentUpload } from './DocumentUpload';
 import { TelefoneManager } from './TelefoneManager';
 import { DateInput } from './DateInput';
@@ -75,6 +76,7 @@ export const FormFornecedor: React.FC<FormFornecedorProps> = ({
   });
 
   const [loadingApi, setLoadingApi] = useState(false);
+  const lookupCnpj = useCnpjLookupImperative();
 
   // Inicializar dados do fornecedor
   useEffect(() => {
@@ -115,7 +117,7 @@ export const FormFornecedor: React.FC<FormFornecedorProps> = ({
       setLoadingApi(true);
       try {
         console.log('[FormFornecedor] Consultando CNPJ:', cleanValue);
-        const cnpjData = await consultarCNPJ(cleanValue);
+        const cnpjData = await lookupCnpj(cleanValue);
         if (cnpjData) {
           console.log('[FormFornecedor] Dados do CNPJ recebidos:', cnpjData.nome);
           setFormData(prev => ({
