@@ -123,8 +123,13 @@ const fromEmpresa = (e?: EmpresaRepresentada | null): FormState => {
     observacoes: c.observacoes || '',
     tipo_vinculo: (c.tipo_vinculo as TipoVinculo) || '',
     cnpj_matriz: c.cnpj_matriz || '',
+    logo_path: c.logo_path || '',
+    cert_path: c.cert_path || '',
+    cert_filename: c.cert_filename || '',
+    cert_uploaded_at: c.cert_uploaded_at || '',
   };
 };
+
 
 const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete, saving }) => {
   const [open, setOpen] = useState(false);
