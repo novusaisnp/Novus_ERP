@@ -11,6 +11,7 @@ import { MovimentacoesBancariasStats } from './MovimentacoesBancariasStats';
 import { MovimentacoesBancariasTable } from './MovimentacoesBancariasTable';
 import { NovaMovimentacaoModal } from './NovaMovimentacaoModal';
 import { TransferenciaModal } from './TransferenciaModal';
+import { HistoricoMovimentacoes } from './HistoricoMovimentacoes';
 import { X, Plus, ArrowRightLeft, Download, Upload } from 'lucide-react';
 
 
