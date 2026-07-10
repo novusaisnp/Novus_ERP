@@ -399,20 +399,16 @@ export const obterEstatisticasMovimentacoes = async (
   return stats;
 };
 
-// Função para obter histórico de uma movimentação
+// Obter trilha de auditoria via RPC segura (get_audit_trail)
 export const obterHistoricoMovimentacao = async (
   movimentacaoId: string
 ): Promise<HistoricoMovimentacao[]> => {
-  console.log('[MovimentacoesBancarias] Obtendo histórico da movimentação:', movimentacaoId);
-
-  const { data, error } = await supabase
-    .from('historico_movimentacoes_bancarias')
-    .select('*')
-    .eq('movimentacao_id', movimentacaoId)
-    .order('data_operacao', { ascending: false });
+  const { data, error } = await supabase.rpc('get_audit_trail', {
+    p_movimentacao_id: movimentacaoId,
+  });
 
   if (error) {
-    console.error('[MovimentacoesBancarias] Erro ao obter histórico:', error);
+    console.error('[MovimentacoesBancarias] Erro ao obter histórico');
     throw new Error(`Erro ao obter histórico: ${error.message}`);
   }
 
