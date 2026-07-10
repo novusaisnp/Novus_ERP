@@ -1,7 +1,9 @@
 export interface Setor {
   id: string;
-  codigo: string;
-  descricao: string;
+  nome: string;
+  codigo?: string;
+  descricao?: string;
+  departamento_id?: string | null;
   ativo?: boolean;
   created_at?: Date;
   updated_at?: Date;
