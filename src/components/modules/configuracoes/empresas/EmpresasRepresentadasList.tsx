@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,9 +7,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Building, Plus, Edit, Trash2 } from 'lucide-react';
+import { Building, Plus, Edit, Trash2, Loader2 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmpresaRepresentada } from '@/hooks/useEmpresasRepresentadas';
+import { toast } from 'sonner';
 
 interface Props {
   empresas: EmpresaRepresentada[];
@@ -34,11 +35,46 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
   const [editing, setEditing] = useState<EmpresaRepresentada | null>(null);
   const [form, setForm] = useState<EmpresaRepresentada>(empty());
   const [toDelete, setToDelete] = useState<EmpresaRepresentada | null>(null);
+  const [loadingCnpj, setLoadingCnpj] = useState(false);
+  const lastCnpjRef = useRef<string>('');
 
   useEffect(() => {
     if (!open) return;
     setForm(editing ? { ...empty(), ...editing } : empty());
+    lastCnpjRef.current = '';
   }, [open, editing]);
+
+  useEffect(() => {
+    if (!open) return;
+    const cnpjLimpo = (form.cnpj || '').replace(/\D/g, '');
+    if (cnpjLimpo.length !== 14 || cnpjLimpo === lastCnpjRef.current) return;
+    const handler = setTimeout(async () => {
+      lastCnpjRef.current = cnpjLimpo;
+      setLoadingCnpj(true);
+      try {
+        const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpjLimpo}`);
+        if (!res.ok) throw new Error('CNPJ não encontrado');
+        const data = await res.json();
+        const endereco = [data.logradouro, data.numero, data.bairro].filter(Boolean).join(', ');
+        setForm((p) => ({
+          ...p,
+          nome: p.nome || data.razao_social || '',
+          endereco: endereco || p.endereco || '',
+          cidade: p.cidade || data.municipio || '',
+          estado: p.estado || data.uf || '',
+          cep: p.cep || data.cep || '',
+          email: p.email || data.email || '',
+          telefone: p.telefone || `${data.ddd_telefone_1 || ''}`.trim(),
+        }));
+        toast.success('Dados do CNPJ preenchidos');
+      } catch {
+        toast.warning('Não foi possível consultar o CNPJ');
+      } finally {
+        setLoadingCnpj(false);
+      }
+    }, 600);
+    return () => clearTimeout(handler);
+  }, [form.cnpj, open]);
 
   const openNew = () => { setEditing(null); setOpen(true); };
   const openEdit = (e: EmpresaRepresentada) => { setEditing(e); setOpen(true); };
@@ -108,7 +144,12 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
               </div>
               <div>
                 <Label>CNPJ</Label>
-                <Input value={form.cnpj || ''} onChange={(ev) => setField('cnpj', ev.target.value)} />
+                <div className="relative">
+                  <Input value={form.cnpj || ''} onChange={(ev) => setField('cnpj', ev.target.value)} />
+                  {loadingCnpj && (
+                    <Loader2 className="w-4 h-4 animate-spin absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  )}
+                </div>
               </div>
               <div>
                 <Label>Email</Label>
