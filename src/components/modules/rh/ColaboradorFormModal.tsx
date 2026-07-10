@@ -14,6 +14,8 @@ import { departamentoService } from '@/services/departamentoService';
 import { setorService } from '@/services/setorService';
 import { Colaborador } from '@/types/rh';
 import { toast } from '@/hooks/use-toast';
+import { CepInput } from '@/components/shared/CepInput';
+import { CpfInput } from '@/components/shared/CpfInput';
 
 interface ColaboradorFormModalProps {
   open: boolean;
@@ -219,11 +221,10 @@ export const ColaboradorFormModal: React.FC<ColaboradorFormModalProps> = ({
                 </div>
                 <div>
                   <Label htmlFor="cpf">CPF *</Label>
-                  <Input
+                  <CpfInput
                     id="cpf"
                     value={formData.cpf || ''}
-                    onChange={(e) => handleInputChange('cpf', e.target.value)}
-                    placeholder="000.000.000-00"
+                    onChange={(v) => handleInputChange('cpf', v)}
                     required
                   />
                 </div>
@@ -274,11 +275,26 @@ export const ColaboradorFormModal: React.FC<ColaboradorFormModalProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="cep">CEP</Label>
-                    <Input
+                    <CepInput
                       id="cep"
                       value={formData.endereco?.cep || ''}
-                      onChange={(e) => handleEnderecoChange('cep', e.target.value)}
-                      placeholder="00000-000"
+                      onChange={(v) => handleEnderecoChange('cep', v)}
+                      onAddressFound={(addr) => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          endereco: {
+                            ...prev.endereco,
+                            cep: addr.cep || prev.endereco?.cep || '',
+                            logradouro: addr.logradouro || '',
+                            bairro: addr.bairro || '',
+                            cidade: addr.localidade || '',
+                            uf: addr.uf || '',
+                            numero: prev.endereco?.numero || '',
+                            complemento: prev.endereco?.complemento || '',
+                          },
+                        }));
+                        setTimeout(() => document.getElementById('numero')?.focus(), 50);
+                      }}
                     />
                   </div>
                   <div className="md:col-span-2">
