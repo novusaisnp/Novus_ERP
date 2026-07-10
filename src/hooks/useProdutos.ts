@@ -13,7 +13,6 @@ export const useProdutos = () => {
 
   const fetchProdutos = async () => {
     try {
-      console.log('[useProdutos] Carregando produtos...');
       setLoading(true);
       setError(null);
       
@@ -21,7 +20,6 @@ export const useProdutos = () => {
       const produtosTransformados = data.map(produtoUtils.transformSupabaseToProduto);
       
       setProdutos(produtosTransformados);
-      console.log('[useProdutos] Produtos carregados:', produtosTransformados.length);
     } catch (err: any) {
       console.error('[useProdutos] Erro ao carregar produtos:', err);
       setError('Erro ao carregar produtos');
@@ -37,7 +35,6 @@ export const useProdutos = () => {
 
   const criarProduto = async (produto: Produto): Promise<boolean> => {
     try {
-      console.log('[useProdutos] Criando produto:', produto);
       
       const validation = produtoUtils.validarProduto(produto);
       if (!validation.isValid) {
@@ -72,7 +69,6 @@ export const useProdutos = () => {
 
   const atualizarProduto = async (id: string, produto: Produto): Promise<boolean> => {
     try {
-      console.log('[useProdutos] Atualizando produto:', id, produto);
       
       const validation = produtoUtils.validarProduto(produto);
       if (!validation.isValid) {
@@ -107,7 +103,6 @@ export const useProdutos = () => {
 
   const excluirProduto = async (id: string): Promise<boolean> => {
     try {
-      console.log('[useProdutos] Excluindo produto:', id);
       
       await produtoService.excluir(id);
       
@@ -131,7 +126,6 @@ export const useProdutos = () => {
 
   const buscarPorCodigoBarras = async (codigoBarras: string): Promise<Produto | null> => {
     try {
-      console.log('[useProdutos] Buscando por código de barras:', codigoBarras);
       
       const data = await produtoService.buscarPorCodigoBarras(codigoBarras);
       if (!data) return null;

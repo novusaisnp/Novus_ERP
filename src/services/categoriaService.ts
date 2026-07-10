@@ -9,7 +9,6 @@ export type CategoriaUpdate = TablesUpdate<'categorias_produtos'>;
 
 export const categoriaService = {
   async getAll(): Promise<Categoria[]> {
-    console.log('[CategoriaService] Buscando todas as categorias');
     
     const { data, error } = await supabase
       .from('categorias_produtos')
@@ -22,12 +21,10 @@ export const categoriaService = {
       throw error;
     }
 
-    console.log('[CategoriaService] Categorias encontradas:', data?.length || 0);
     return data || [];
   },
 
   async getById(id: string): Promise<Categoria | null> {
-    console.log('[CategoriaService] Buscando categoria por ID:', id);
     
     const { data, error } = await supabase
       .from('categorias_produtos')
@@ -44,7 +41,6 @@ export const categoriaService = {
   },
 
   async create(categoria: CategoriaInsert): Promise<Categoria> {
-    console.log('[CategoriaService] Criando categoria:', categoria.nome);
     
     const { data, error } = await supabase
       .from('categorias_produtos')
@@ -57,12 +53,10 @@ export const categoriaService = {
       throw error;
     }
 
-    console.log('[CategoriaService] Categoria criada com sucesso:', data.id);
     return data;
   },
 
   async update(id: string, categoria: CategoriaUpdate): Promise<Categoria> {
-    console.log('[CategoriaService] Atualizando categoria:', id);
     
     const { data, error } = await supabase
       .from('categorias_produtos')
@@ -79,12 +73,10 @@ export const categoriaService = {
       throw error;
     }
 
-    console.log('[CategoriaService] Categoria atualizada com sucesso');
     return data;
   },
 
   async delete(id: string): Promise<void> {
-    console.log('[CategoriaService] Desativando categoria:', id);
     
     const { error } = await supabase
       .from('categorias_produtos')
@@ -99,6 +91,5 @@ export const categoriaService = {
       throw error;
     }
 
-    console.log('[CategoriaService] Categoria desativada com sucesso');
   },
 };

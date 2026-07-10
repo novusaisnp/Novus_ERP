@@ -9,7 +9,6 @@ export type LocalizacaoUpdate = TablesUpdate<'localizacoes_estoque'>;
 
 export const localizacaoService = {
   async getAll(): Promise<Localizacao[]> {
-    console.log('[LocalizacaoService] Buscando todas as localizações');
     
     const { data, error } = await supabase
       .from('localizacoes_estoque')
@@ -22,12 +21,10 @@ export const localizacaoService = {
       throw error;
     }
 
-    console.log('[LocalizacaoService] Localizações encontradas:', data?.length || 0);
     return data || [];
   },
 
   async getById(id: string): Promise<Localizacao | null> {
-    console.log('[LocalizacaoService] Buscando localização por ID:', id);
     
     const { data, error } = await supabase
       .from('localizacoes_estoque')
@@ -44,7 +41,6 @@ export const localizacaoService = {
   },
 
   async create(localizacao: LocalizacaoInsert): Promise<Localizacao> {
-    console.log('[LocalizacaoService] Criando localização:', localizacao.nome);
     
     const { data, error } = await supabase
       .from('localizacoes_estoque')
@@ -57,12 +53,10 @@ export const localizacaoService = {
       throw error;
     }
 
-    console.log('[LocalizacaoService] Localização criada com sucesso:', data.id);
     return data;
   },
 
   async update(id: string, localizacao: LocalizacaoUpdate): Promise<Localizacao> {
-    console.log('[LocalizacaoService] Atualizando localização:', id);
     
     const { data, error } = await supabase
       .from('localizacoes_estoque')
@@ -79,12 +73,10 @@ export const localizacaoService = {
       throw error;
     }
 
-    console.log('[LocalizacaoService] Localização atualizada com sucesso');
     return data;
   },
 
   async delete(id: string): Promise<void> {
-    console.log('[LocalizacaoService] Verificando se pode desativar localização:', id);
     
     // Verificar se não é a única localização ativa
     const { data: localizacoes, error: countError } = await supabase
@@ -114,6 +106,5 @@ export const localizacaoService = {
       throw error;
     }
 
-    console.log('[LocalizacaoService] Localização desativada com sucesso');
   },
 };
