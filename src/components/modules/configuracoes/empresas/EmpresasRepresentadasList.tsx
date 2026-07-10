@@ -137,21 +137,88 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
   const [form, setForm] = useState<FormState>(empty());
   const [toDelete, setToDelete] = useState<EmpresaRepresentada | null>(null);
   const [loadingCnpj, setLoadingCnpj] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingCert, setUploadingCert] = useState(false);
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
   const lastCnpjRef = useRef<string>('');
   const autoVinculoRef = useRef<string>('');
+  const folderKeyRef = useRef<string>('');
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const certInputRef = useRef<HTMLInputElement>(null);
 
   const { empresa: responsavel } = useEmpresaResponsavel();
   const responsavelCnpj = useMemo(() => onlyDigits(responsavel?.cnpj || ''), [responsavel]);
 
   useEffect(() => {
-    if (!open) return;
-    setForm(fromEmpresa(editing));
+    if (!open) {
+      setLogoPreviewUrl(null);
+      return;
+    }
+    const initial = fromEmpresa(editing);
+    setForm(initial);
     lastCnpjRef.current = '';
     autoVinculoRef.current = '';
+    folderKeyRef.current = editing?.id || (crypto as any).randomUUID?.() || `${Date.now()}`;
+    // carrega preview do logo se existir
+    if (initial.logo_path) {
+      empresasRepresentadasService.getSignedUrl('empresa-logos', initial.logo_path).then(setLogoPreviewUrl);
+    } else {
+      setLogoPreviewUrl(null);
+    }
   }, [open, editing]);
 
   const setField = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((p) => ({ ...p, [k]: v }));
+
+  const handleLogoUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) { toast.error('Selecione um arquivo de imagem'); return; }
+    if (file.size > 2 * 1024 * 1024) { toast.error('Logo deve ter no máximo 2 MB'); return; }
+    setUploadingLogo(true);
+    try {
+      // remove logo anterior
+      if (form.logo_path) await empresasRepresentadasService.removeLogo(form.logo_path);
+      const { path } = await empresasRepresentadasService.uploadLogo(folderKeyRef.current, file);
+      setForm((p) => ({ ...p, logo_path: path }));
+      const url = await empresasRepresentadasService.getSignedUrl('empresa-logos', path);
+      setLogoPreviewUrl(url);
+      toast.success('Logo enviada com sucesso');
+    } catch (err: any) {
+      toast.error(`Falha ao enviar logo: ${err?.message || 'erro'}`);
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    if (form.logo_path) await empresasRepresentadasService.removeLogo(form.logo_path).catch(() => {});
+    setForm((p) => ({ ...p, logo_path: '' }));
+    setLogoPreviewUrl(null);
+  };
+
+  const handleCertUpload = async (file: File) => {
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    if (!['pfx', 'p12'].includes(ext)) { toast.error('Envie um arquivo .pfx ou .p12'); return; }
+    if (file.size > 200 * 1024) { toast.error('Certificado deve ter no máximo 200 KB'); return; }
+    setUploadingCert(true);
+    try {
+      if (form.cert_path) await empresasRepresentadasService.removeCertificado(form.cert_path);
+      const { path, filename } = await empresasRepresentadasService.uploadCertificado(folderKeyRef.current, file);
+      const now = new Date().toISOString();
+      setForm((p) => ({ ...p, cert_path: path, cert_filename: filename, cert_uploaded_at: now }));
+      toast.success('Certificado digital enviado com sucesso');
+    } catch (err: any) {
+      toast.error(`Falha ao enviar certificado: ${err?.message || 'erro'}`);
+    } finally {
+      setUploadingCert(false);
+    }
+  };
+
+  const handleRemoveCert = async () => {
+    if (form.cert_path) await empresasRepresentadasService.removeCertificado(form.cert_path).catch(() => {});
+    setForm((p) => ({ ...p, cert_path: '', cert_filename: '', cert_uploaded_at: '' }));
+  };
+
+
 
   // Auto-detecta "Mesma Empresa" quando o CNPJ digitado bate com o da responsável
   useEffect(() => {
