@@ -2949,6 +2949,65 @@ export type Database = {
           },
         ]
       }
+      socios_representantes: {
+        Row: {
+          ativo: boolean
+          cargo_societario: string | null
+          cpf: string | null
+          created_at: string
+          deleted_at: string | null
+          documento_url: string | null
+          email: string | null
+          empresa_representada_id: string
+          id: string
+          nome: string
+          participacao_percentual: number | null
+          telefone: string | null
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          cargo_societario?: string | null
+          cpf?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          documento_url?: string | null
+          email?: string | null
+          empresa_representada_id: string
+          id?: string
+          nome: string
+          participacao_percentual?: number | null
+          telefone?: string | null
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          cargo_societario?: string | null
+          cpf?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          documento_url?: string | null
+          email?: string | null
+          empresa_representada_id?: string
+          id?: string
+          nome?: string
+          participacao_percentual?: number | null
+          telefone?: string | null
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "socios_representantes_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sync_logs: {
         Row: {
           created_at: string
@@ -3164,41 +3223,60 @@ export type Database = {
       usuarios: {
         Row: {
           ativo: boolean
+          colaborador_id: string | null
           created_at: string
           email: string
           empresa_representada_id: string | null
           id: string
           nome: string
           perfil_id: string | null
+          pessoa_pendente: boolean
+          pessoa_tipo: string | null
+          socio_id: string | null
           ultimo_acesso: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           ativo?: boolean
+          colaborador_id?: string | null
           created_at?: string
           email: string
           empresa_representada_id?: string | null
           id?: string
           nome: string
           perfil_id?: string | null
+          pessoa_pendente?: boolean
+          pessoa_tipo?: string | null
+          socio_id?: string | null
           ultimo_acesso?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           ativo?: boolean
+          colaborador_id?: string | null
           created_at?: string
           email?: string
           empresa_representada_id?: string | null
           id?: string
           nome?: string
           perfil_id?: string | null
+          pessoa_pendente?: boolean
+          pessoa_tipo?: string | null
+          socio_id?: string | null
           ultimo_acesso?: string | null
           updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "usuarios_colaborador_id_fkey"
+            columns: ["colaborador_id"]
+            isOneToOne: false
+            referencedRelation: "colaboradores"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "usuarios_empresa_representada_id_fkey"
             columns: ["empresa_representada_id"]
@@ -3211,6 +3289,13 @@ export type Database = {
             columns: ["perfil_id"]
             isOneToOne: false
             referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "usuarios_socio_id_fkey"
+            columns: ["socio_id"]
+            isOneToOne: false
+            referencedRelation: "socios_representantes"
             referencedColumns: ["id"]
           },
         ]

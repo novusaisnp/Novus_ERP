@@ -9,11 +9,12 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Building, Plus, Edit, Trash2, Loader2, Upload, X, ImageIcon, FileLock2, ShieldCheck } from 'lucide-react';
+import { Building, Plus, Edit, Trash2, Loader2, Upload, X, ImageIcon, FileLock2, ShieldCheck, Users } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmpresaRepresentada } from '@/hooks/useEmpresasRepresentadas';
 import { useEmpresaResponsavel } from '@/hooks/useEmpresaResponsavel';
 import { empresasRepresentadasService } from '@/services/empresasRepresentadasService';
+import SociosRepresentantesTab from './SociosRepresentantesTab';
 import { toast } from 'sonner';
 
 
@@ -385,10 +386,11 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
           </DialogHeader>
           <form onSubmit={submit} className="space-y-4">
             <Tabs defaultValue="dados" className="space-y-4">
-              <TabsList className="grid grid-cols-5 w-full">
+              <TabsList className="grid grid-cols-6 w-full">
                 <TabsTrigger value="dados">Dados Gerais</TabsTrigger>
                 <TabsTrigger value="endereco">Endereço</TabsTrigger>
                 <TabsTrigger value="fiscal">Fiscal / Tributário</TabsTrigger>
+                <TabsTrigger value="socios" className="gap-1"><Users className="w-3 h-3" />Sócios</TabsTrigger>
                 <TabsTrigger value="logo">Logo</TabsTrigger>
                 <TabsTrigger value="certificado">Certificado Digital</TabsTrigger>
               </TabsList>
@@ -560,6 +562,11 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
                   </div>
                 </div>
               </TabsContent>
+
+              <TabsContent value="socios" className="space-y-4">
+                <SociosRepresentantesTab empresaId={form.id} />
+              </TabsContent>
+
 
               <TabsContent value="logo" className="space-y-4">
                 <div className="space-y-4">
