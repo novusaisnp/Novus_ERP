@@ -61,12 +61,10 @@ export const AuditTrail = ({ tableName, recordId, entityName }: AuditTrailProps)
   const fetchAuditTrail = async () => {
     try {
       setLoading(true);
-      console.log(`[AuditTrail] Buscando histórico de auditoria...`);
-      
-      // Usar a função RPC do Supabase para buscar dados de auditoria
-      const { data, error } = await supabase.rpc('get_audit_trail', {
+
+      const { data, error } = await (supabase as any).rpc('get_audit_trail', {
         p_tabela_nome: tableName,
-        p_registro_id: recordId
+        p_registro_id: recordId,
       });
 
       if (error) {
@@ -74,8 +72,7 @@ export const AuditTrail = ({ tableName, recordId, entityName }: AuditTrailProps)
         return;
       }
 
-      console.log(`[AuditTrail] ${data?.length || 0} entradas de auditoria encontradas`);
-      setAuditEntries(data || []);
+      setAuditEntries((data as any as AuditEntry[]) || []);
     } catch (err) {
       console.error(`[AuditTrail] Erro inesperado:`, err);
     } finally {

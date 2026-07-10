@@ -12,7 +12,7 @@ export const useEmpresasRepresentadas = (empresaResponsavelId?: string) => {
   const loadEmpresas = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('empresas_representadas')
         .select('*')
         .order('razao_social');
@@ -28,7 +28,7 @@ export const useEmpresasRepresentadas = (empresaResponsavelId?: string) => {
       }
 
       if (data) {
-        const empresasFormatadas = data.map(item => ({
+        const empresasFormatadas = (data as any[]).map((item: any) => ({
           id: item.id,
           empresaResponsavelId: item.empresa_responsavel_id || '',
           cnpj: item.cnpj,
@@ -78,18 +78,16 @@ export const useEmpresasRepresentadas = (empresaResponsavelId?: string) => {
         updated_at: new Date().toISOString()
       };
 
-      let result;
+      let result: any;
       if (empresaData.id) {
-        // Atualizar empresa existente
-        result = await supabase
+        result = await (supabase as any)
           .from('empresas_representadas')
           .update(dataToSave)
           .eq('id', empresaData.id)
           .select()
           .single();
       } else {
-        // Criar nova empresa
-        result = await supabase
+        result = await (supabase as any)
           .from('empresas_representadas')
           .insert(dataToSave)
           .select()

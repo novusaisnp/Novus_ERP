@@ -31,7 +31,7 @@ export const useClientes = () => {
     setLoading(true);
     try {
       const data = await clienteService.fetchClientes();
-      const clientesFormatados = data.map(clienteUtils.transformSupabaseToCliente);
+      const clientesFormatados = (data as any[]).map(clienteUtils.transformSupabaseToCliente);
       setClientes(clientesFormatados);
     } catch (error) {
       handleError(error, "Erro inesperado ao carregar os clientes.");

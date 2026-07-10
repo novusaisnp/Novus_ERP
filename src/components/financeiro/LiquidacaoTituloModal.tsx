@@ -45,24 +45,23 @@ export const LiquidacaoTituloModal = ({
   });
 
   // Buscar contas bancárias
-  const { data: contasBancarias = [], isLoading: loadingContas } = useQuery({
+  const { data: contasBancarias = [], isLoading: loadingContas } = useQuery<any[]>({
     queryKey: ['contas-bancarias-ativas'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('contas_bancarias')
         .select(`
           id,
-          titular,
+          cpf_cnpj_titular,
           numero_conta,
-          digito_verificador,
+          digito,
           agencia_id,
           agencias_bancarias!inner(
             numero_agencia,
             bancos!inner(nome, codigo)
           )
         `)
-        .eq('ativo', true)
-        .eq('status', 'ATIVA');
+        .eq('ativo', true);
 
       if (error) throw error;
       return data || [];
@@ -239,12 +238,12 @@ export const LiquidacaoTituloModal = ({
                     <SelectValue placeholder="Selecione uma conta" />
                   </SelectTrigger>
                   <SelectContent>
-                    {contasBancarias.map((conta) => (
+                    {contasBancarias.map((conta: any) => (
                       <SelectItem key={conta.id} value={conta.id}>
                         {conta.agencias_bancarias?.bancos?.nome} - 
                         Ag: {conta.agencias_bancarias?.numero_agencia} - 
-                        CC: {conta.numero_conta}-{conta.digito_verificador} - 
-                        {conta.titular}
+                        CC: {conta.numero_conta}-{conta.digito} - 
+                        {conta.cpf_cnpj_titular}
                       </SelectItem>
                     ))}
                   </SelectContent>

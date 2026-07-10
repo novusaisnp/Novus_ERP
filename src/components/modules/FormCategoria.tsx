@@ -69,7 +69,7 @@ export const FormCategoria: React.FC<FormCategoriaProps> = ({
     defaultValues: {
       nome: categoria?.nome || '',
       descricao: categoria?.descricao || '',
-      regras_tributacao: parseRegrasTributacao(categoria?.regras_tributacao),
+      regras_tributacao: parseRegrasTributacao((categoria as any)?.regras_tributacao),
     },
   });
 
@@ -78,7 +78,7 @@ export const FormCategoria: React.FC<FormCategoriaProps> = ({
       form.reset({
         nome: categoria.nome,
         descricao: categoria.descricao || '',
-        regras_tributacao: parseRegrasTributacao(categoria.regras_tributacao),
+        regras_tributacao: parseRegrasTributacao((categoria as any).regras_tributacao),
       });
     } else {
       form.reset({
