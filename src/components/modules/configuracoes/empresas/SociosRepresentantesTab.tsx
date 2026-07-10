@@ -11,6 +11,7 @@ import { useSociosRepresentantes } from '@/hooks/useSociosRepresentantes';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import type { SocioRepresentante, TipoSocio } from '@/types/socios';
 import { TIPO_SOCIO_LABEL } from '@/types/socios';
+import { CpfInput } from '@/components/shared/CpfInput';
 
 interface Props {
   empresaId?: string;
@@ -117,7 +118,7 @@ const SociosRepresentantesTab: React.FC<Props> = ({ empresaId }) => {
                 </div>
                 <div>
                   <Label>CPF</Label>
-                  <Input value={form.cpf || ''} onChange={(e) => setForm({ ...form, cpf: e.target.value })} />
+                  <CpfInput value={form.cpf || ''} onChange={(v) => setForm({ ...form, cpf: v })} />
                 </div>
                 <div>
                   <Label>Tipo *</Label>
