@@ -43,8 +43,7 @@ export const DocumentosTab = ({ titulo, podeEditar }: DocumentosTabProps) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [categoria, setCategoria] = useState<string>('');
   const [descricao, setDescricao] = useState('');
-
-  console.log('[DocumentosTab] Renderizando documentos para título:', titulo.id);
+  const [documentoParaExcluir, setDocumentoParaExcluir] = useState<string | null>(null);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -76,10 +75,9 @@ export const DocumentosTab = ({ titulo, podeEditar }: DocumentosTabProps) => {
   };
 
   const handleDelete = (documentoId: string) => {
-    if (window.confirm('Tem certeza que deseja remover este documento?')) {
-      deleteDocumento(documentoId);
-    }
+    setDocumentoParaExcluir(documentoId);
   };
+
 
   const getFileIcon = (tipoArquivo: string) => {
     if (tipoArquivo.startsWith('image/')) {
