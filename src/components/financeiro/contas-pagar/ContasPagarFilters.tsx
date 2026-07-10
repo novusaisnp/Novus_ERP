@@ -74,14 +74,14 @@ export const ContasPagarFilters = ({ onFilter }: ContasPagarFiltersProps) => {
             <div>
               <Label htmlFor="situacao">Situação</Label>
               <Select
-                value={filtros.situacao || ''}
-                onValueChange={(value) => handleFilterChange('situacao', value)}
+                value={filtros.situacao || '__ALL__'}
+                onValueChange={(value) => handleFilterChange('situacao', value === '__ALL__' ? '' : value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Todas as situações" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas as situações</SelectItem>
+                  <SelectItem value="__ALL__">Todas as situações</SelectItem>
                   <SelectItem value="ABERTA">Aberta</SelectItem>
                   <SelectItem value="VENCIDA">Vencida</SelectItem>
                   <SelectItem value="PAGA">Paga</SelectItem>
@@ -93,15 +93,15 @@ export const ContasPagarFilters = ({ onFilter }: ContasPagarFiltersProps) => {
             <div>
               <Label htmlFor="fornecedor">Fornecedor</Label>
               <Select
-                value={filtros.fornecedor_id || ''}
-                onValueChange={(value) => handleFilterChange('fornecedor_id', value)}
+                value={filtros.fornecedor_id || '__ALL__'}
+                onValueChange={(value) => handleFilterChange('fornecedor_id', value === '__ALL__' ? '' : value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Todos os fornecedores" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os fornecedores</SelectItem>
-                  {fornecedores.map((fornecedor) => (
+                  <SelectItem value="__ALL__">Todos os fornecedores</SelectItem>
+                  {fornecedores.filter((f) => f.id).map((fornecedor) => (
                     <SelectItem key={fornecedor.id} value={fornecedor.id!}>
                       {fornecedor.razaoSocial}
                     </SelectItem>
