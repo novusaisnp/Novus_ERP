@@ -1,5 +1,6 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+const supabase: any = _supabase;
 import { DescontoPadrao } from '@/types/rh';
 
 export const descontoPadraoService = {

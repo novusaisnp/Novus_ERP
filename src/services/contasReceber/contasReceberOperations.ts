@@ -1,4 +1,5 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+const supabase: any = _supabase;
 import { transformToSupabase } from './contasReceberTransforms';
 import type { ContaReceberInput, SupabaseContaReceber } from '@/types/contasReceber';
 

@@ -1,4 +1,5 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+const supabase: any = _supabase;
 import { PlanoContas, PlanoContasInput, SupabasePlanoContas } from '@/types/planoContas';
 
 console.log('[PlanoContas] Service inicializado');

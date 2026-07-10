@@ -1,5 +1,6 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+const supabase: any = _supabase;
 
 export const createTestUser = async (email: string, password: string) => {
   try {
