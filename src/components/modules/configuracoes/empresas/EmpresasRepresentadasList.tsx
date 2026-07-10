@@ -233,8 +233,8 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
 
   const getVinculo = (e: EmpresaRepresentada): Exclude<TipoVinculo, ''> | null => {
     const c: any = e.configuracoes || {};
-    const v = c.tipo_vinculo as TipoVinculo;
-    return v && v !== '' ? v : null;
+    const v = (c.tipo_vinculo || '') as TipoVinculo;
+    return v ? (v as Exclude<TipoVinculo, ''>) : null;
   };
 
   return (
