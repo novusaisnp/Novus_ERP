@@ -162,7 +162,20 @@ const PlanoContas = () => {
         contas={contas}
         parentId={parentId}
       />
+
+      <ConfirmDialog
+        open={!!contaParaExcluir}
+        onOpenChange={(open) => !open && setContaParaExcluir(null)}
+        title="Excluir conta"
+        description={`Tem certeza que deseja excluir a conta "${contaParaExcluir?.nome ?? ''}"? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        onConfirm={() => {
+          if (contaParaExcluir) deleteConta(contaParaExcluir.id);
+          setContaParaExcluir(null);
+        }}
+      />
     </div>
+
   );
 };
 
