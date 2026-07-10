@@ -12,13 +12,11 @@ import type {
   ModalidadeAPIVinculoInput
 } from '@/types/configBasicas';
 
-console.log('[ConfigBasicasService] Serviços inicializados');
 
 // ==================== NATUREZA CAIXAS ====================
 
 export const naturezaCaixasService = {
   async getAll(): Promise<NaturezaCaixa[]> {
-    console.log('[ConfigBasicasService] Buscando naturezas de caixa');
     const { data, error } = await supabase
       .from('natureza_caixas')
       .select('*')
@@ -34,7 +32,6 @@ export const naturezaCaixasService = {
   },
 
   async create(input: NaturezaCaixaInput): Promise<NaturezaCaixa> {
-    console.log('[ConfigBasicasService] Criando natureza de caixa:', input);
     const { data, error } = await supabase
       .from('natureza_caixas')
       .insert([input])
@@ -50,7 +47,6 @@ export const naturezaCaixasService = {
   },
 
   async update(id: string, input: Partial<NaturezaCaixaInput>): Promise<NaturezaCaixa> {
-    console.log('[ConfigBasicasService] Atualizando natureza de caixa:', id, input);
     const { data, error } = await supabase
       .from('natureza_caixas')
       .update(input)
@@ -67,7 +63,6 @@ export const naturezaCaixasService = {
   },
 
   async delete(id: string): Promise<void> {
-    console.log('[ConfigBasicasService] Excluindo natureza de caixa:', id);
     const { error } = await supabase
       .from('natureza_caixas')
       .update({ deleted_at: new Date().toISOString() })
@@ -84,7 +79,6 @@ export const naturezaCaixasService = {
 
 export const modalidadeCaixasService = {
   async getAll(apenasAtivos = false): Promise<ModalidadeCaixa[]> {
-    console.log('[ConfigBasicasService] Buscando modalidades de caixa, apenas ativos:', apenasAtivos);
     let query = supabase
       .from('modalidade_caixas')
       .select('*')
@@ -105,7 +99,6 @@ export const modalidadeCaixasService = {
   },
 
   async search(termo: string, apenasAtivos = false): Promise<ModalidadeCaixa[]> {
-    console.log('[ConfigBasicasService] Buscando modalidades por termo:', termo);
     let query = supabase
       .from('modalidade_caixas')
       .select('*')
@@ -127,7 +120,6 @@ export const modalidadeCaixasService = {
   },
 
   async create(input: ModalidadeCaixaInput): Promise<ModalidadeCaixa> {
-    console.log('[ConfigBasicasService] Criando modalidade de caixa:', input);
     const { data, error } = await supabase
       .from('modalidade_caixas')
       .insert([input])
@@ -143,7 +135,6 @@ export const modalidadeCaixasService = {
   },
 
   async update(id: string, input: Partial<ModalidadeCaixaInput>): Promise<ModalidadeCaixa> {
-    console.log('[ConfigBasicasService] Atualizando modalidade de caixa:', id, input);
     const { data, error } = await supabase
       .from('modalidade_caixas')
       .update(input)
@@ -160,7 +151,6 @@ export const modalidadeCaixasService = {
   },
 
   async delete(id: string): Promise<void> {
-    console.log('[ConfigBasicasService] Excluindo modalidade de caixa:', id);
     const { error } = await supabase
       .from('modalidade_caixas')
       .update({ deleted_at: new Date().toISOString() })
@@ -177,7 +167,6 @@ export const modalidadeCaixasService = {
 
 export const planosPagamentoService = {
   async getAll(): Promise<PlanoPagamento[]> {
-    console.log('[ConfigBasicasService] Buscando planos de pagamento');
     const { data, error } = await supabase
       .from('planos_pagamento')
       .select('*')
@@ -193,7 +182,6 @@ export const planosPagamentoService = {
   },
 
   async create(input: PlanoPagamentoInput): Promise<PlanoPagamento> {
-    console.log('[ConfigBasicasService] Criando plano de pagamento:', input);
     const { data, error } = await supabase
       .from('planos_pagamento')
       .insert([input])
@@ -209,7 +197,6 @@ export const planosPagamentoService = {
   },
 
   async update(id: string, input: Partial<PlanoPagamentoInput>): Promise<PlanoPagamento> {
-    console.log('[ConfigBasicasService] Atualizando plano de pagamento:', id, input);
     const { data, error } = await supabase
       .from('planos_pagamento')
       .update(input)
@@ -226,7 +213,6 @@ export const planosPagamentoService = {
   },
 
   async delete(id: string): Promise<void> {
-    console.log('[ConfigBasicasService] Excluindo plano de pagamento:', id);
     const { error } = await supabase
       .from('planos_pagamento')
       .update({ deleted_at: new Date().toISOString() })
@@ -243,7 +229,6 @@ export const planosPagamentoService = {
 
 export const modalidadeAPIVinculoService = {
   async getAll(): Promise<ModalidadeAPIVinculo[]> {
-    console.log('[ConfigBasicasService] Buscando modalidades API vínculo');
     const { data, error } = await supabase
       .from('modalidade_api_vinculo')
       .select('*')
@@ -259,7 +244,6 @@ export const modalidadeAPIVinculoService = {
   },
 
   async create(input: ModalidadeAPIVinculoInput): Promise<ModalidadeAPIVinculo> {
-    console.log('[ConfigBasicasService] Criando modalidade API vínculo:', input);
     const { data, error } = await supabase
       .from('modalidade_api_vinculo')
       .insert([input])
@@ -275,7 +259,6 @@ export const modalidadeAPIVinculoService = {
   },
 
   async update(id: string, input: Partial<ModalidadeAPIVinculoInput>): Promise<ModalidadeAPIVinculo> {
-    console.log('[ConfigBasicasService] Atualizando modalidade API vínculo:', id, input);
     const { data, error } = await supabase
       .from('modalidade_api_vinculo')
       .update(input)
@@ -292,7 +275,6 @@ export const modalidadeAPIVinculoService = {
   },
 
   async delete(id: string): Promise<void> {
-    console.log('[ConfigBasicasService] Excluindo modalidade API vínculo:', id);
     const { error } = await supabase
       .from('modalidade_api_vinculo')
       .update({ deleted_at: new Date().toISOString() })

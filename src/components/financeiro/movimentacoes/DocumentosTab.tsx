@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { 
   Upload, 
   FileText, 
@@ -42,8 +43,7 @@ export const DocumentosTab = ({ titulo, podeEditar }: DocumentosTabProps) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [categoria, setCategoria] = useState<string>('');
   const [descricao, setDescricao] = useState('');
-
-  console.log('[DocumentosTab] Renderizando documentos para título:', titulo.id);
+  const [documentoParaExcluir, setDocumentoParaExcluir] = useState<string | null>(null);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -75,10 +75,9 @@ export const DocumentosTab = ({ titulo, podeEditar }: DocumentosTabProps) => {
   };
 
   const handleDelete = (documentoId: string) => {
-    if (window.confirm('Tem certeza que deseja remover este documento?')) {
-      deleteDocumento(documentoId);
-    }
+    setDocumentoParaExcluir(documentoId);
   };
+
 
   const getFileIcon = (tipoArquivo: string) => {
     if (tipoArquivo.startsWith('image/')) {
@@ -129,7 +128,9 @@ export const DocumentosTab = ({ titulo, podeEditar }: DocumentosTabProps) => {
   }
 
   return (
+    <>
     <div className="space-y-6">
+
       {/* Cabeçalho com estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -347,5 +348,18 @@ export const DocumentosTab = ({ titulo, podeEditar }: DocumentosTabProps) => {
         </div>
       )}
     </div>
+
+    <ConfirmDialog
+      open={!!documentoParaExcluir}
+      onOpenChange={(open) => !open && setDocumentoParaExcluir(null)}
+      title="Remover documento"
+      description="Tem certeza que deseja remover este documento? Esta ação não pode ser desfeita."
+      confirmLabel="Remover"
+      onConfirm={() => {
+        if (documentoParaExcluir) deleteDocumento(documentoParaExcluir);
+        setDocumentoParaExcluir(null);
+      }}
+    />
+    </>
   );
 };

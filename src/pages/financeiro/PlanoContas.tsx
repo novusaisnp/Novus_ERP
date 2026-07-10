@@ -6,6 +6,7 @@ import { PlanoContasModal } from '@/components/financeiro/PlanoContasModal';
 import { PlanoContasHeader } from '@/components/financeiro/PlanoContasHeader';
 import { PlanoContasStats } from '@/components/financeiro/PlanoContasStats';
 import { PlanoContasContent } from '@/components/financeiro/PlanoContasContent';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { PlanoContas as PlanoContasType, PlanoContasInput } from '@/types/planoContas';
 
 const PlanoContas = () => {
@@ -28,46 +29,40 @@ const PlanoContas = () => {
   const [editingConta, setEditingConta] = useState<PlanoContasType | undefined>();
   const [parentId, setParentId] = useState<string | undefined>();
   const [searchTerm, setSearchTerm] = useState('');
+  const [contaParaExcluir, setContaParaExcluir] = useState<PlanoContasType | null>(null);
 
-  console.log('[PlanoContas] Renderizando página, contas:', contas.length);
+
 
   const handleCreate = () => {
-    console.log('[PlanoContas] Abrindo modal para criar nova conta');
     setEditingConta(undefined);
     setParentId(undefined);
     setIsModalOpen(true);
   };
 
   const handleEdit = (conta: PlanoContasType) => {
-    console.log('[PlanoContas] Abrindo modal para editar conta:', conta.id);
     setEditingConta(conta);
     setParentId(undefined);
     setIsModalOpen(true);
   };
 
   const handleAddChild = (parentId: string) => {
-    console.log('[PlanoContas] Abrindo modal para adicionar subconta ao pai:', parentId);
     setEditingConta(undefined);
     setParentId(parentId);
     setIsModalOpen(true);
   };
 
   const handleDelete = (conta: PlanoContasType) => {
-    if (window.confirm(`Tem certeza que deseja excluir a conta "${conta.nome}"?`)) {
-      console.log('[PlanoContas] Excluindo conta:', conta.id);
-      deleteConta(conta.id);
-    }
+    setContaParaExcluir(conta);
   };
+
 
   const handleSubmit = async (data: PlanoContasInput): Promise<void> => {
     try {
       const dataWithParent = { ...data, id_pai: parentId || data.id_pai };
       
       if (editingConta) {
-        console.log('[PlanoContas] Atualizando conta:', editingConta.id, dataWithParent);
         await updateConta({ id: editingConta.id, data: dataWithParent });
       } else {
-        console.log('[PlanoContas] Criando nova conta:', dataWithParent);
         await createConta(dataWithParent);
       }
       
@@ -167,7 +162,20 @@ const PlanoContas = () => {
         contas={contas}
         parentId={parentId}
       />
+
+      <ConfirmDialog
+        open={!!contaParaExcluir}
+        onOpenChange={(open) => !open && setContaParaExcluir(null)}
+        title="Excluir conta"
+        description={`Tem certeza que deseja excluir a conta "${contaParaExcluir?.nome ?? ''}"? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        onConfirm={() => {
+          if (contaParaExcluir) deleteConta(contaParaExcluir.id);
+          setContaParaExcluir(null);
+        }}
+      />
     </div>
+
   );
 };
 

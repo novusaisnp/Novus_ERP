@@ -8,10 +8,8 @@ import { ModalidadeCaixasTab } from '@/components/financeiro/config-basicas/Moda
 import { PlanosPagamentoTab } from '@/components/financeiro/config-basicas/PlanosPagamentoTab';
 import { ModalidadeAPITab } from '@/components/financeiro/config-basicas/ModalidadeAPITab';
 
-console.log('[ConfigBasicas] Página inicializada');
 
 const ConfigBasicas = () => {
-  console.log('[ConfigBasicas] Renderizando página de configurações básicas');
 
   return (
     <div className="container mx-auto py-6 px-4">

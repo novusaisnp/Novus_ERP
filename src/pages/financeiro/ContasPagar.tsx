@@ -6,15 +6,18 @@ import { ContasPagarStats } from '@/components/financeiro/contas-pagar/ContasPag
 import { ContasPagarFilters } from '@/components/financeiro/contas-pagar/ContasPagarFilters';
 import { ContasPagarContent } from '@/components/financeiro/contas-pagar/ContasPagarContent';
 import { ContasPagarModal } from '@/components/financeiro/contas-pagar/ContasPagarModal';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { ContaPagar, ContaPagarInput, ContaPagarFilters } from '@/types/contasPagar';
 
-console.log('[ContasPagar] Página de contas a pagar carregada');
+
 
 const ContasPagar = () => {
   const location = useLocation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [contaSelecionada, setContaSelecionada] = useState<ContaPagar | undefined>();
+  const [contaParaExcluir, setContaParaExcluir] = useState<string | null>(null);
   const [filtros, setFiltros] = useState<ContaPagarFilters>({});
+
 
   const {
     contasPagar,
@@ -85,13 +88,11 @@ const ContasPagar = () => {
   };
 
   const handleDelete = (id: string) => {
-    if (window.confirm('Tem certeza que deseja remover esta conta a pagar?')) {
-      remover(id);
-    }
+    setContaParaExcluir(id);
   };
 
+
   const handleFilter = (novosFiltros: ContaPagarFilters) => {
-    console.log('[ContasPagar] Aplicando filtros:', novosFiltros);
     setFiltros(novosFiltros);
   };
 
@@ -131,7 +132,20 @@ const ContasPagar = () => {
         conta={contaSelecionada}
         isSubmitting={isCreating || isUpdating}
       />
+
+      <ConfirmDialog
+        open={!!contaParaExcluir}
+        onOpenChange={(open) => !open && setContaParaExcluir(null)}
+        title="Remover conta a pagar"
+        description="Tem certeza que deseja remover esta conta a pagar? Esta ação não pode ser desfeita."
+        confirmLabel="Remover"
+        onConfirm={() => {
+          if (contaParaExcluir) remover(contaParaExcluir);
+          setContaParaExcluir(null);
+        }}
+      />
     </div>
+
   );
 };
 

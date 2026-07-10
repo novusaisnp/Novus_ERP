@@ -10,7 +10,6 @@ import {
 } from '@/types/fluxoCaixa';
 
 export const useFluxoCaixa = (filtros: FluxoCaixaFiltros = {}) => {
-  console.log('[FluxoCaixa] Hook iniciado com filtros:', filtros);
 
   // Query para buscar movimentações
   const { 
@@ -102,21 +101,11 @@ export const useFluxoCaixa = (filtros: FluxoCaixaFiltros = {}) => {
 
   // Função para invalidar cache
   const invalidateCache = () => {
-    console.log('[FluxoCaixa] Invalidando cache');
     refetchMovimentacoes();
   };
 
-  // Log de debug
-  useEffect(() => {
-    console.log('[FluxoCaixa] Dados atualizados:', {
-      movimentacoes: movimentacoes.length,
-      resumo: !!resumo,
-      projecao: projecao.length,
-      estatisticas: !!estatisticas,
-      isLoading,
-      error
-    });
-  }, [movimentacoes, resumo, projecao, estatisticas, isLoading, error]);
+  // Log de debug removido (dados sensíveis)
+
 
   return {
     // Dados

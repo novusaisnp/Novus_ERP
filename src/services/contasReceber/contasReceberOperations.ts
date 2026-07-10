@@ -4,10 +4,8 @@ import { transformToSupabase } from './contasReceberTransforms';
 import type { ContaReceberInput, SupabaseContaReceber } from '@/types/contasReceber';
 
 export const createContaReceber = async (input: ContaReceberInput): Promise<SupabaseContaReceber> => {
-  console.log('[ContasReceberOperations] Criando conta a receber:', input);
   
   const payload = transformToSupabase(input);
-  console.log('[ContasReceberOperations] Payload transformado:', payload);
   
   const { data, error } = await supabase
     .from('contas_receber')
@@ -20,15 +18,12 @@ export const createContaReceber = async (input: ContaReceberInput): Promise<Supa
     throw new Error(`Erro ao criar conta a receber: ${error.message}`);
   }
 
-  console.log('[ContasReceberOperations] Conta a receber criada:', data);
   return data;
 };
 
 export const updateContaReceber = async (id: string, input: ContaReceberInput): Promise<SupabaseContaReceber> => {
-  console.log('[ContasReceberOperations] Atualizando conta a receber:', id, input);
   
   const payload = transformToSupabase(input);
-  console.log('[ContasReceberOperations] Payload transformado:', payload);
   
   const { data, error } = await supabase
     .from('contas_receber')
@@ -42,12 +37,10 @@ export const updateContaReceber = async (id: string, input: ContaReceberInput): 
     throw new Error(`Erro ao atualizar conta a receber: ${error.message}`);
   }
 
-  console.log('[ContasReceberOperations] Conta a receber atualizada:', data);
   return data;
 };
 
 export const deleteContaReceber = async (id: string): Promise<void> => {
-  console.log('[ContasReceberOperations] Removendo conta a receber:', id);
   
   const { error } = await supabase
     .from('contas_receber')
@@ -59,5 +52,4 @@ export const deleteContaReceber = async (id: string): Promise<void> => {
     throw new Error(`Erro ao remover conta a receber: ${error.message}`);
   }
 
-  console.log('[ContasReceberOperations] Conta a receber removida com sucesso');
 };

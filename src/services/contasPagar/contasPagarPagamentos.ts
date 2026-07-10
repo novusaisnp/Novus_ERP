@@ -10,7 +10,6 @@ interface PagamentoContaPagar {
 }
 
 export const registrarPagamento = async (pagamento: PagamentoContaPagar) => {
-  console.log('[ContasPagarPagamentos] Registrando pagamento:', pagamento);
 
   // Buscar a conta a pagar com seus rateios
   const { data: conta, error: contaError } = await supabase
@@ -48,13 +47,8 @@ export const registrarPagamento = async (pagamento: PagamentoContaPagar) => {
   const novoValorAtual = conta.valor_atual - pagamento.valor_pago;
   const novaSituacao = novoValorAtual === 0 ? 'PAGA' : 'ABERTA';
 
-  console.log('[ContasPagarPagamentos] Análise do pagamento:', {
-    valorOriginal: conta.valor_atual,
-    valorPago: pagamento.valor_pago,
-    novoValor: novoValorAtual,
-    novaSituacao,
-    temRateios: conta.rateios_contas_pagar?.length > 0
-  });
+
+
 
   // Atualizar a conta principal
   const { error: updateError } = await supabase
@@ -78,33 +72,11 @@ export const registrarPagamento = async (pagamento: PagamentoContaPagar) => {
   // 1. Auditoria contábil
   // 2. Relatórios de análise de custos
   // 3. Histórico de como os recursos foram alocados
-  
-  if (conta.rateios_contas_pagar && conta.rateios_contas_pagar.length > 0) {
-    console.log('[ContasPagarPagamentos] COMPORTAMENTO DOS RATEIOS NO PAGAMENTO:');
-    console.log('- Os rateios permanecem inalterados como registro histórico');
-    console.log('- Cada rateio mantém sua conta contábil e centro de custo originais');
-    console.log('- Os valores e percentuais refletem a distribuição original');
-    console.log('- Isso permite auditoria e análise de custos posterior');
-    
-    conta.rateios_contas_pagar.forEach((rateio, index) => {
-      console.log(`[ContasPagarPagamentos] Rateio ${index + 1}:`, {
-        conta: rateio.plano_conta_id,
-        centroCusto: rateio.centro_custo_id,
-        valor: rateio.valor,
-        percentual: rateio.percentual,
-        status: 'MANTIDO_PARA_AUDITORIA'
-      });
-    });
-  }
 
-  // Registrar histórico do pagamento (se houver tabela de histórico)
-  console.log('[ContasPagarPagamentos] Pagamento registrado com sucesso:', {
-    contaId: pagamento.conta_pagar_id,
-    valorPago: pagamento.valor_pago,
-    valorRestante: novoValorAtual,
-    situacaoFinal: novaSituacao,
-    rateiosPreservados: conta.rateios_contas_pagar?.length || 0
-  });
+  // Rateios são preservados no pagamento como registro histórico
+  // (auditoria contábil, análise de custos)
+
+
 
   return {
     conta_id: pagamento.conta_pagar_id,
@@ -116,7 +88,6 @@ export const registrarPagamento = async (pagamento: PagamentoContaPagar) => {
 };
 
 export const consultarRateiosOrigiais = async (contaId: string) => {
-  console.log('[ContasPagarPagamentos] Consultando rateios originais da conta:', contaId);
 
   const { data: rateios, error } = await supabase
     .from('rateios_contas_pagar')
@@ -141,7 +112,6 @@ export const consultarRateiosOrigiais = async (contaId: string) => {
     throw new Error(`Erro ao consultar rateios: ${error.message}`);
   }
 
-  console.log('[ContasPagarPagamentos] Rateios encontrados:', rateios?.length || 0);
   
   return rateios || [];
 };

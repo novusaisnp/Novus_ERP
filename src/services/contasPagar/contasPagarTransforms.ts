@@ -2,8 +2,6 @@
 import type { ContaPagar, RateioContaPagar, SupabaseContaPagar } from '@/types/contasPagar';
 
 export const transformFromSupabase = (item: any): ContaPagar => {
-  console.log('[ContasPagarTransforms] Transformando item do Supabase:', item.id);
-  console.log('[ContasPagarTransforms] Rateios raw:', item.rateios_contas_pagar);
   
   // Transformar rateios se existirem
   let rateios: RateioContaPagar[] = [];
@@ -29,7 +27,6 @@ export const transformFromSupabase = (item: any): ContaPagar => {
     }));
   }
   
-  console.log('[ContasPagarTransforms] Rateios transformados:', rateios);
 
   return {
     id: item.id,
@@ -76,7 +73,6 @@ export const transformFromSupabase = (item: any): ContaPagar => {
 };
 
 export const transformToSupabase = (input: any): SupabaseContaPagar => {
-  console.log('[ContasPagarTransforms] Transformando para Supabase:', input);
   
   return {
     id: input.id,

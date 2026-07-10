@@ -10,7 +10,6 @@ export const usePlanoContas = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  console.log('[PlanoContas] Hook inicializado');
 
   const {
     data: contas = [],
@@ -26,7 +25,6 @@ export const usePlanoContas = () => {
   const createMutation = useMutation({
     mutationFn: planoContasService.create,
     onSuccess: (data) => {
-      console.log('[PlanoContas] Conta criada com sucesso:', data);
       queryClient.invalidateQueries({ queryKey: ['plano-contas'] });
       
       // Expandir o nó pai automaticamente se existe
@@ -53,7 +51,6 @@ export const usePlanoContas = () => {
     mutationFn: ({ id, data }: { id: string; data: Partial<PlanoContasInput> }) =>
       planoContasService.update(id, data),
     onSuccess: (data) => {
-      console.log('[PlanoContas] Conta atualizada com sucesso:', data);
       queryClient.invalidateQueries({ queryKey: ['plano-contas'] });
       toast({
         title: "Sucesso",
@@ -73,7 +70,6 @@ export const usePlanoContas = () => {
   const deleteMutation = useMutation({
     mutationFn: planoContasService.delete,
     onSuccess: () => {
-      console.log('[PlanoContas] Conta excluída com sucesso');
       queryClient.invalidateQueries({ queryKey: ['plano-contas'] });
       toast({
         title: "Sucesso",

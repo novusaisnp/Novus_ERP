@@ -13,7 +13,6 @@ import {
 
 export class FluxoCaixaService {
   static async getFluxoCaixa(filtros: FluxoCaixaFiltros = {}): Promise<FluxoCaixaItem[]> {
-    console.log('[FluxoCaixa] Buscando movimentações com filtros:', filtros);
     
     try {
       // Buscar contas a pagar
@@ -223,7 +222,6 @@ export class FluxoCaixaService {
         new Date(a.data).getTime() - new Date(b.data).getTime()
       );
 
-      console.log('[FluxoCaixa] Movimentações processadas:', movimentacoesFiltradas.length);
       return movimentacoesFiltradas;
 
     } catch (error) {
@@ -233,7 +231,6 @@ export class FluxoCaixaService {
   }
 
   static async getResumoFluxoCaixa(filtros: FluxoCaixaFiltros = {}): Promise<FluxoCaixaResumo> {
-    console.log('[FluxoCaixa] Calculando resumo com filtros:', filtros);
     
     try {
       const movimentacoes = await this.getFluxoCaixa(filtros);
@@ -269,12 +266,7 @@ export class FluxoCaixaService {
                                  saidasRealizadas.reduce((sum, m) => sum + m.valor, 0);
       const saldoAtual = saldoBancarioTotal + saldoMovimentacoes;
 
-      console.log('[FluxoCaixa] Breakdown do saldo atual:', {
-        saldoBancarioTotal,
-        saldoMovimentacoes,
-        saldoAtual,
-        contasBancarias: contasBancarias?.length || 0
-      });
+
 
       // Calcular projeções
       const movimentacoes7d = movimentacoes.filter(m => new Date(m.data) <= data7d);
@@ -307,7 +299,6 @@ export class FluxoCaixaService {
         saldo_minimo: saldoMinimo
       };
 
-      console.log('[FluxoCaixa] Resumo calculado:', resumo);
       return resumo;
 
     } catch (error) {
@@ -317,7 +308,6 @@ export class FluxoCaixaService {
   }
 
   static async getProjecaoFluxoCaixa(dias: number = 30): Promise<FluxoCaixaProjecao[]> {
-    console.log('[FluxoCaixa] Calculando projeção para', dias, 'dias');
     
     try {
       const dataInicio = new Date();
@@ -367,7 +357,6 @@ export class FluxoCaixaService {
         });
       }
 
-      console.log('[FluxoCaixa] Projeção gerada para', projecoes.length, 'dias');
       return projecoes;
 
     } catch (error) {
@@ -377,7 +366,6 @@ export class FluxoCaixaService {
   }
 
   static async getEstatisticasAvancadas(filtros: FluxoCaixaFiltros = {}): Promise<FluxoCaixaEstatisticas> {
-    console.log('[FluxoCaixa] Calculando estatísticas avançadas:', filtros);
     
     try {
       const movimentacoes = await this.getFluxoCaixa(filtros);
@@ -411,7 +399,6 @@ export class FluxoCaixaService {
                         totalEntradas < totalSaidas ? 'DECRESCENTE' : 'ESTAVEL'
       };
 
-      console.log('[FluxoCaixa] Estatísticas calculadas:', estatisticas);
       return estatisticas;
 
     } catch (error) {

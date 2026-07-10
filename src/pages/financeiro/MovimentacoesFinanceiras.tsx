@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { MovimentacoesModal } from '@/components/financeiro/MovimentacoesModal';
 
-console.log('[MovimentacoesFinanceiras] Página de movimentações financeiras carregada');
 
 const MovimentacoesFinanceiras = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);

@@ -4,7 +4,6 @@ const supabase: any = _supabase;
 import type { ContaPagarInput } from '@/types/contasPagar';
 
 export const createContaPagar = async (input: ContaPagarInput) => {
-  console.log('[ContasPagarOperations] Criando conta a pagar com rateios:', input.rateios?.length || 0);
   
   // Iniciar transação
   const { data: contaData, error: contaError } = await supabase
@@ -41,7 +40,6 @@ export const createContaPagar = async (input: ContaPagarInput) => {
 
   // Se há rateios, inserir cada um como linha separada
   if (input.rateios && input.rateios.length > 0) {
-    console.log('[ContasPagarOperations] Inserindo rateios:', input.rateios.length);
     
     const rateiosData = input.rateios.map(rateio => ({
       conta_pagar_id: contaData.id,
@@ -85,7 +83,6 @@ export const createContaPagar = async (input: ContaPagarInput) => {
 };
 
 export const updateContaPagar = async (id: string, input: ContaPagarInput) => {
-  console.log('[ContasPagarOperations] Atualizando conta a pagar:', id, 'com rateios:', input.rateios?.length || 0);
 
   // Atualizar dados principais da conta
   const { data: contaData, error: contaError } = await supabase
@@ -133,7 +130,6 @@ export const updateContaPagar = async (id: string, input: ContaPagarInput) => {
 
   // Se há rateios, inserir os novos
   if (input.rateios && input.rateios.length > 0) {
-    console.log('[ContasPagarOperations] Inserindo novos rateios:', input.rateios.length);
     
     const rateiosData = input.rateios.map(rateio => ({
       conta_pagar_id: id,
@@ -175,7 +171,6 @@ export const updateContaPagar = async (id: string, input: ContaPagarInput) => {
 };
 
 export const deleteContaPagar = async (id: string) => {
-  console.log('[ContasPagarOperations] Removendo conta a pagar:', id);
 
   // Usar soft delete para manter histórico dos rateios
   const { error } = await supabase
@@ -189,5 +184,4 @@ export const deleteContaPagar = async (id: string) => {
   }
 
   // Nota: Os rateios são mantidos para auditoria, não são removidos
-  console.log('[ContasPagarOperations] Conta removida com sucesso, rateios mantidos para auditoria');
 };

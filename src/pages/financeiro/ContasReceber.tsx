@@ -5,12 +5,14 @@ import { ContasReceberHeader } from '@/components/financeiro/contas-receber/Cont
 import { ContasReceberStats } from '@/components/financeiro/contas-receber/ContasReceberStats';
 import { ContasReceberFilters } from '@/components/financeiro/contas-receber/ContasReceberFilters';
 import { ContasReceberContent } from '@/components/financeiro/contas-receber/ContasReceberContent';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import type { ContaReceber, ContaReceberFilters } from '@/types/contasReceber';
 
-console.log('[ContasReceber] Página de contas a receber carregada');
 
 const ContasReceber = () => {
   const [filtros, setFiltros] = useState<ContaReceberFilters>({});
+  const [contaParaExcluir, setContaParaExcluir] = useState<string | null>(null);
+
 
   const {
     contasReceber,
@@ -27,23 +29,19 @@ const ContasReceber = () => {
   } = useContasReceber(filtros);
 
   const handleCreateClick = () => {
-    console.log('[ContasReceber] Clique para criar nova conta');
     // TODO: Implementar modal de criação
   };
 
   const handleEditClick = (conta: ContaReceber) => {
-    console.log('[ContasReceber] Clique para editar conta:', conta.id);
     // TODO: Implementar modal de edição
   };
 
   const handleDelete = (id: string) => {
-    if (window.confirm('Tem certeza que deseja remover esta conta a receber?')) {
-      remover(id);
-    }
+    setContaParaExcluir(id);
   };
 
+
   const handleFilter = (novosFiltros: ContaReceberFilters) => {
-    console.log('[ContasReceber] Aplicando filtros:', novosFiltros);
     setFiltros(novosFiltros);
   };
 
@@ -68,7 +66,20 @@ const ContasReceber = () => {
         onCreateClick={handleCreateClick}
         isDeleting={isDeleting}
       />
+
+      <ConfirmDialog
+        open={!!contaParaExcluir}
+        onOpenChange={(open) => !open && setContaParaExcluir(null)}
+        title="Remover conta a receber"
+        description="Tem certeza que deseja remover esta conta a receber? Esta ação não pode ser desfeita."
+        confirmLabel="Remover"
+        onConfirm={() => {
+          if (contaParaExcluir) remover(contaParaExcluir);
+          setContaParaExcluir(null);
+        }}
+      />
     </div>
+
   );
 };
 
