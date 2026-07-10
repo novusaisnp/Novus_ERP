@@ -63,7 +63,6 @@ export const FormCategoria: React.FC<FormCategoriaProps> = ({
     defaultValues: {
       nome: categoria?.nome || '',
       descricao: categoria?.descricao || '',
-      regras_tributacao: parseRegrasTributacao((categoria as any)?.regras_tributacao),
     },
   });
 
@@ -72,19 +71,16 @@ export const FormCategoria: React.FC<FormCategoriaProps> = ({
       form.reset({
         nome: categoria.nome,
         descricao: categoria.descricao || '',
-        regras_tributacao: parseRegrasTributacao((categoria as any).regras_tributacao),
       });
     } else {
       form.reset({
         nome: '',
         descricao: '',
-        regras_tributacao: {},
       });
     }
   }, [categoria, form]);
 
   const handleSubmit = (data: FormData) => {
-    console.log('[FormCategoria] Dados do formulário:', data);
     onSubmit(data);
   };
 
