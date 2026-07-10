@@ -149,11 +149,12 @@ function App() {
                     <Route path="colaboradores" element={<Colaboradores />} />
                     <Route path="cargos" element={<Cargos />} />
                     <Route path="departamentos" element={<Departamentos />} />
-                    <Route path="folha/folha-pagamento" element={<div>Folha de Pagamento - Em desenvolvimento</div>} />
+                    <Route path="folha/folha-pagamento" element={<FolhaPagamento />} />
                     <Route path="folha/vencimentos-padrao" element={<VencimentosPadrao />} />
                     <Route path="folha/descontos-padrao" element={<DescontosPadrao />} />
-                    <Route path="folha/beneficios-vinculados" element={<div>Benefícios Vinculados - Em desenvolvimento</div>} />
-                    <Route path="folha/integracao-ponto" element={<div>Integração de Ponto - Em desenvolvimento</div>} />
+                    <Route path="folha/beneficios-vinculados" element={<BeneficiosVinculados />} />
+                    <Route path="folha/integracao-ponto" element={<IntegracaoPonto />} />
+                    <Route path="registros-ponto" element={<RegistrosPonto />} />
                     <Route path="relatorios" element={<Relatorios />} />
                   </Route>
 
