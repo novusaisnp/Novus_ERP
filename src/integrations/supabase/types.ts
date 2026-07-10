@@ -974,6 +974,100 @@ export type Database = {
           },
         ]
       }
+      contratos: {
+        Row: {
+          arquivo_url: string | null
+          cliente_id: string | null
+          created_at: string
+          data_fim: string | null
+          data_inicio: string | null
+          deleted_at: string | null
+          descricao: string | null
+          dia_vencimento: number | null
+          empresa_representada_id: string
+          gera_financeiro: boolean | null
+          id: string
+          numero_contrato: string | null
+          observacoes: string | null
+          plano_pagamento_id: string | null
+          renovacao_automatica: boolean | null
+          status: string | null
+          tipo: string | null
+          titulo: string
+          updated_at: string
+          valor_mensal: number | null
+          valor_total: number | null
+        }
+        Insert: {
+          arquivo_url?: string | null
+          cliente_id?: string | null
+          created_at?: string
+          data_fim?: string | null
+          data_inicio?: string | null
+          deleted_at?: string | null
+          descricao?: string | null
+          dia_vencimento?: number | null
+          empresa_representada_id: string
+          gera_financeiro?: boolean | null
+          id?: string
+          numero_contrato?: string | null
+          observacoes?: string | null
+          plano_pagamento_id?: string | null
+          renovacao_automatica?: boolean | null
+          status?: string | null
+          tipo?: string | null
+          titulo: string
+          updated_at?: string
+          valor_mensal?: number | null
+          valor_total?: number | null
+        }
+        Update: {
+          arquivo_url?: string | null
+          cliente_id?: string | null
+          created_at?: string
+          data_fim?: string | null
+          data_inicio?: string | null
+          deleted_at?: string | null
+          descricao?: string | null
+          dia_vencimento?: number | null
+          empresa_representada_id?: string
+          gera_financeiro?: boolean | null
+          id?: string
+          numero_contrato?: string | null
+          observacoes?: string | null
+          plano_pagamento_id?: string | null
+          renovacao_automatica?: boolean | null
+          status?: string | null
+          tipo?: string | null
+          titulo?: string
+          updated_at?: string
+          valor_mensal?: number | null
+          valor_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contratos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_plano_pagamento_id_fkey"
+            columns: ["plano_pagamento_id"]
+            isOneToOne: false
+            referencedRelation: "planos_pagamento"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       departamentos: {
         Row: {
           ativo: boolean | null
@@ -1619,6 +1713,92 @@ export type Database = {
             columns: ["empresa_representada_id"]
             isOneToOne: false
             referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      itens_venda: {
+        Row: {
+          acrescimo_item: number | null
+          created_at: string
+          desconto_item: number | null
+          descricao: string
+          empresa_representada_id: string
+          id: string
+          observacoes: string | null
+          ordem: number | null
+          preco_unitario: number
+          produto_id: string | null
+          quantidade: number
+          servico_id: string | null
+          unidade: string | null
+          updated_at: string
+          valor_total_item: number | null
+          venda_id: string
+        }
+        Insert: {
+          acrescimo_item?: number | null
+          created_at?: string
+          desconto_item?: number | null
+          descricao: string
+          empresa_representada_id: string
+          id?: string
+          observacoes?: string | null
+          ordem?: number | null
+          preco_unitario?: number
+          produto_id?: string | null
+          quantidade?: number
+          servico_id?: string | null
+          unidade?: string | null
+          updated_at?: string
+          valor_total_item?: number | null
+          venda_id: string
+        }
+        Update: {
+          acrescimo_item?: number | null
+          created_at?: string
+          desconto_item?: number | null
+          descricao?: string
+          empresa_representada_id?: string
+          id?: string
+          observacoes?: string | null
+          ordem?: number | null
+          preco_unitario?: number
+          produto_id?: string | null
+          quantidade?: number
+          servico_id?: string | null
+          unidade?: string | null
+          updated_at?: string
+          valor_total_item?: number | null
+          venda_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "itens_venda_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "itens_venda_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "itens_venda_servico_id_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "servicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "itens_venda_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
             referencedColumns: ["id"]
           },
         ]
@@ -2733,6 +2913,118 @@ export type Database = {
           },
         ]
       }
+      sync_logs: {
+        Row: {
+          created_at: string
+          destino: string | null
+          empresa_representada_id: string | null
+          id: string
+          max_tentativas: number | null
+          mensagem_erro: string | null
+          origem: string | null
+          payload_entrada: Json | null
+          payload_saida: Json | null
+          processado_em: string | null
+          status: string | null
+          tentativas: number | null
+          tipo: string
+        }
+        Insert: {
+          created_at?: string
+          destino?: string | null
+          empresa_representada_id?: string | null
+          id?: string
+          max_tentativas?: number | null
+          mensagem_erro?: string | null
+          origem?: string | null
+          payload_entrada?: Json | null
+          payload_saida?: Json | null
+          processado_em?: string | null
+          status?: string | null
+          tentativas?: number | null
+          tipo: string
+        }
+        Update: {
+          created_at?: string
+          destino?: string | null
+          empresa_representada_id?: string | null
+          id?: string
+          max_tentativas?: number | null
+          mensagem_erro?: string | null
+          origem?: string | null
+          payload_entrada?: Json | null
+          payload_saida?: Json | null
+          processado_em?: string | null
+          status?: string | null
+          tentativas?: number | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_logs_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sync_queue: {
+        Row: {
+          created_at: string
+          empresa_representada_id: string | null
+          erro_detalhes: string | null
+          id: string
+          max_tentativas: number | null
+          payload: Json | null
+          prioridade: number | null
+          processado_em: string | null
+          proxima_tentativa_em: string | null
+          status: string | null
+          tentativas: number | null
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          empresa_representada_id?: string | null
+          erro_detalhes?: string | null
+          id?: string
+          max_tentativas?: number | null
+          payload?: Json | null
+          prioridade?: number | null
+          processado_em?: string | null
+          proxima_tentativa_em?: string | null
+          status?: string | null
+          tentativas?: number | null
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          empresa_representada_id?: string | null
+          erro_detalhes?: string | null
+          id?: string
+          max_tentativas?: number | null
+          payload?: Json | null
+          prioridade?: number | null
+          processado_em?: string | null
+          proxima_tentativa_em?: string | null
+          status?: string | null
+          tentativas?: number | null
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_queue_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tamanhos_produtos: {
         Row: {
           ativo: boolean
@@ -2936,6 +3228,156 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "vencimentos_padrao_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendas: {
+        Row: {
+          acrescimo: number | null
+          canal_venda: string | null
+          cliente_id: string | null
+          created_at: string
+          data_entrega_prevista: string | null
+          data_venda: string
+          deleted_at: string | null
+          desconto: number | null
+          empresa_representada_id: string
+          id: string
+          numero_venda: string | null
+          observacoes: string | null
+          observacoes_internas: string | null
+          origem: string | null
+          plano_pagamento_id: string | null
+          status: string | null
+          subtotal: number | null
+          updated_at: string
+          valor_frete: number | null
+          valor_total: number | null
+        }
+        Insert: {
+          acrescimo?: number | null
+          canal_venda?: string | null
+          cliente_id?: string | null
+          created_at?: string
+          data_entrega_prevista?: string | null
+          data_venda?: string
+          deleted_at?: string | null
+          desconto?: number | null
+          empresa_representada_id: string
+          id?: string
+          numero_venda?: string | null
+          observacoes?: string | null
+          observacoes_internas?: string | null
+          origem?: string | null
+          plano_pagamento_id?: string | null
+          status?: string | null
+          subtotal?: number | null
+          updated_at?: string
+          valor_frete?: number | null
+          valor_total?: number | null
+        }
+        Update: {
+          acrescimo?: number | null
+          canal_venda?: string | null
+          cliente_id?: string | null
+          created_at?: string
+          data_entrega_prevista?: string | null
+          data_venda?: string
+          deleted_at?: string | null
+          desconto?: number | null
+          empresa_representada_id?: string
+          id?: string
+          numero_venda?: string | null
+          observacoes?: string | null
+          observacoes_internas?: string | null
+          origem?: string | null
+          plano_pagamento_id?: string | null
+          status?: string | null
+          subtotal?: number | null
+          updated_at?: string
+          valor_frete?: number | null
+          valor_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendas_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_plano_pagamento_id_fkey"
+            columns: ["plano_pagamento_id"]
+            isOneToOne: false
+            referencedRelation: "planos_pagamento"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhook_configs: {
+        Row: {
+          ativo: boolean | null
+          created_at: string
+          descricao: string | null
+          empresa_representada_id: string
+          eventos: Json | null
+          headers: Json | null
+          id: string
+          max_tentativas: number | null
+          metodo: string | null
+          nome: string
+          secret_token: string | null
+          timeout_segundos: number | null
+          updated_at: string
+          url_destino: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string
+          descricao?: string | null
+          empresa_representada_id: string
+          eventos?: Json | null
+          headers?: Json | null
+          id?: string
+          max_tentativas?: number | null
+          metodo?: string | null
+          nome: string
+          secret_token?: string | null
+          timeout_segundos?: number | null
+          updated_at?: string
+          url_destino: string
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string
+          descricao?: string | null
+          empresa_representada_id?: string
+          eventos?: Json | null
+          headers?: Json | null
+          id?: string
+          max_tentativas?: number | null
+          metodo?: string | null
+          nome?: string
+          secret_token?: string | null
+          timeout_segundos?: number | null
+          updated_at?: string
+          url_destino?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_configs_empresa_representada_id_fkey"
             columns: ["empresa_representada_id"]
             isOneToOne: false
             referencedRelation: "empresas_representadas"
