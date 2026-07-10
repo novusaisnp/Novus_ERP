@@ -98,9 +98,8 @@ export const rhUtils = {
       return { isValid: false, error: 'CPF é obrigatório.' };
     }
 
-    if (!colaboradorData.empresaRepresentadaId) {
-      return { isValid: false, error: 'Empresa representada é obrigatória.' };
-    }
+    // empresaRepresentadaId é resolvido no servidor via get_user_empresa_id()
+
 
     if (!colaboradorData.regimeContratacao) {
       return { isValid: false, error: 'Regime de contratação é obrigatório.' };
@@ -124,13 +123,22 @@ export const rhUtils = {
   },
 
   getErrorMessage(error: any): string {
-    if (error.code === '23505') {
-      return 'Já existe um registro com estes dados.';
-    } else if (error.code === '23503') {
-      return 'Referência inválida. Verifique os dados relacionados.';
-    } else {
-      return 'Não foi possível salvar os dados.';
+    if (error?.message?.includes('Empresa representada não encontrada')) {
+      return 'Seu usuário não está vinculado a uma empresa. Solicite ao administrador o vínculo em Configurações → Usuários.';
     }
+    if (error?.code === '42501') {
+      return 'Sem permissão para gravar (RLS). Verifique se o usuário está vinculado à empresa correta.';
+    }
+    if (error?.code === '23505') {
+      return 'Já existe um registro com estes dados.';
+    }
+    if (error?.code === '23503') {
+      return 'Referência inválida. Verifique os dados relacionados.';
+    }
+    if (error?.code === '22P02') {
+      return 'Formato de dado inválido (UUID/número).';
+    }
+    return error?.message || 'Não foi possível salvar os dados.';
   },
 
   formatCurrency(value: number): string {

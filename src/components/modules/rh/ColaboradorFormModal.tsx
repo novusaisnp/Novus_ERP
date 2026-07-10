@@ -52,7 +52,7 @@ export const ColaboradorFormModal: React.FC<ColaboradorFormModalProps> = ({
     regimeContratacao: 'CLT',
     dataAdmissao: new Date(),
     situacao: true,
-    empresaRepresentadaId: 'default-empresa-id',
+    empresaRepresentadaId: '',
     compliance: {
       aceiteLgpd: false,
       consentimentoDados: false
@@ -92,7 +92,7 @@ export const ColaboradorFormModal: React.FC<ColaboradorFormModalProps> = ({
           regimeContratacao: 'CLT',
           dataAdmissao: new Date(),
           situacao: true,
-          empresaRepresentadaId: 'default-empresa-id',
+          empresaRepresentadaId: '',
           compliance: {
             aceiteLgpd: false,
             consentimentoDados: false
