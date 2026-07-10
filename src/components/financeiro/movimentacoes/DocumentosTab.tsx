@@ -128,7 +128,9 @@ export const DocumentosTab = ({ titulo, podeEditar }: DocumentosTabProps) => {
   }
 
   return (
+    <>
     <div className="space-y-6">
+
       {/* Cabeçalho com estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
