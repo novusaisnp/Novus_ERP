@@ -66,7 +66,20 @@ const ContasReceber = () => {
         onCreateClick={handleCreateClick}
         isDeleting={isDeleting}
       />
+
+      <ConfirmDialog
+        open={!!contaParaExcluir}
+        onOpenChange={(open) => !open && setContaParaExcluir(null)}
+        title="Remover conta a receber"
+        description="Tem certeza que deseja remover esta conta a receber? Esta ação não pode ser desfeita."
+        confirmLabel="Remover"
+        onConfirm={() => {
+          if (contaParaExcluir) remover(contaParaExcluir);
+          setContaParaExcluir(null);
+        }}
+      />
     </div>
+
   );
 };
 
