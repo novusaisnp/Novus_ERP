@@ -38,7 +38,7 @@ export const useSyncStatus = () => {
       
       // Buscar dados das últimas 24h
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      const { data: last24hData, error: error24h } = await supabase
+      const { data: last24hData, error: error24h } = await (supabase as any)
         .from('sync_logs')
         .select('status, created_at, execution_time_ms')
         .gte('created_at', twentyFourHoursAgo);
@@ -47,7 +47,7 @@ export const useSyncStatus = () => {
 
       // Buscar dados dos últimos 7 dias
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-      const { data: last7dData, error: error7d } = await supabase
+      const { data: last7dData, error: error7d } = await (supabase as any)
         .from('sync_logs')
         .select('status, created_at, execution_time_ms')
         .gte('created_at', sevenDaysAgo);
@@ -55,27 +55,27 @@ export const useSyncStatus = () => {
       if (error7d) throw error7d;
 
       // Processar dados das últimas 24h
-      const stats24h = (last24hData || []).reduce((acc, log) => {
+      const stats24h = (last24hData || []).reduce((acc: any, log: any) => {
         acc.total++;
         acc[log.status as keyof SyncStatus]++;
         return acc;
-      }, { total: 0, success: 0, error: 0, pending: 0 });
+      }, { total: 0, success: 0, error: 0, pending: 0 } as any);
 
       // Calcular tempo médio de execução (24h)
       const executionTimes = (last24hData || [])
-        .filter(log => log.execution_time_ms)
-        .map(log => log.execution_time_ms);
+        .filter((log: any) => log.execution_time_ms)
+        .map((log: any) => log.execution_time_ms);
       
       const avgExecutionTime = executionTimes.length > 0 
-        ? Math.round(executionTimes.reduce((sum, time) => sum + time, 0) / executionTimes.length)
+        ? Math.round(executionTimes.reduce((sum: number, time: number) => sum + time, 0) / executionTimes.length)
         : 0;
 
       // Processar dados dos últimos 7 dias
-      const stats7d = (last7dData || []).reduce((acc, log) => {
+      const stats7d = (last7dData || []).reduce((acc: any, log: any) => {
         acc.total++;
         acc[log.status as keyof SyncStatus]++;
         return acc;
-      }, { total: 0, success: 0, error: 0, pending: 0 });
+      }, { total: 0, success: 0, error: 0, pending: 0 } as any);
 
       // Preparar dados para gráfico (últimas 24h por hora)
       const chartData = [];
@@ -83,15 +83,15 @@ export const useSyncStatus = () => {
         const hourStart = new Date(Date.now() - i * 60 * 60 * 1000);
         const hourEnd = new Date(Date.now() - (i - 1) * 60 * 60 * 1000);
         
-        const hourData = (last24hData || []).filter(log => {
+        const hourData = (last24hData || []).filter((log: any) => {
           const logTime = new Date(log.created_at);
           return logTime >= hourStart && logTime < hourEnd;
         });
 
-        const hourStats = hourData.reduce((acc, log) => {
+        const hourStats = hourData.reduce((acc: any, log: any) => {
           acc[log.status as keyof Omit<SyncStatus, 'total' | 'lastSync' | 'avgExecutionTime'>]++;
           return acc;
-        }, { success: 0, error: 0, pending: 0 });
+        }, { success: 0, error: 0, pending: 0 } as any);
 
         chartData.push({
           period: hourStart.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
@@ -99,7 +99,7 @@ export const useSyncStatus = () => {
         });
       }
 
-      const lastSync = last24hData?.[0]?.created_at;
+      const lastSync = (last24hData as any[])?.[0]?.created_at;
 
       setSyncStatus({
         last24h: { ...stats24h, lastSync, avgExecutionTime },

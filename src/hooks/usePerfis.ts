@@ -12,7 +12,7 @@ export const usePerfis = () => {
   const loadPerfis = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('perfis')
         .select('*')
         .order('nome');
@@ -28,7 +28,7 @@ export const usePerfis = () => {
       }
 
       if (data) {
-        const perfisFormatados = data.map(item => ({
+        const perfisFormatados = (data as any[]).map((item: any) => ({
           id: item.id,
           nome: item.nome,
           codigo: item.codigo,
@@ -68,18 +68,16 @@ export const usePerfis = () => {
         updated_at: new Date().toISOString()
       };
 
-      let result;
+      let result: any;
       if (perfilData.id) {
-        // Atualizar perfil existente
-        result = await supabase
+        result = await (supabase as any)
           .from('perfis')
           .update(dataToSave)
           .eq('id', perfilData.id)
           .select()
           .single();
       } else {
-        // Criar novo perfil
-        result = await supabase
+        result = await (supabase as any)
           .from('perfis')
           .insert(dataToSave)
           .select()

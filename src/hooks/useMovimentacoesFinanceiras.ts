@@ -22,7 +22,7 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
 
       // Buscar contas a pagar se não filtrou apenas contas a receber
       if (filtros.tipo_titulo !== 'CONTAS_RECEBER') {
-        let queryPagar = supabase
+        let queryPagar: any = (supabase as any)
           .from('contas_pagar')
           .select(`
             *,
@@ -77,7 +77,7 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
         if (errorPagar) {
           console.error('[useMovimentacoesFinanceiras] Erro ao buscar contas a pagar:', errorPagar);
         } else if (contasPagar) {
-          contasPagar.forEach(conta => {
+          contasPagar.forEach((conta: any) => {
             const titulo: TituloFinanceiro = {
               id: conta.id,
               tipo: 'CONTAS_PAGAR',
@@ -107,7 +107,7 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
 
       // Buscar contas a receber se não filtrou apenas contas a pagar
       if (filtros.tipo_titulo !== 'CONTAS_PAGAR') {
-        let queryReceber = supabase
+        let queryReceber: any = (supabase as any)
           .from('contas_receber')
           .select(`
             *,
@@ -152,7 +152,7 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
         if (errorReceber) {
           console.error('[useMovimentacoesFinanceiras] Erro ao buscar contas a receber:', errorReceber);
         } else if (contasReceber) {
-          contasReceber.forEach(conta => {
+          contasReceber.forEach((conta: any) => {
             const titulo: TituloFinanceiro = {
               id: conta.id,
               tipo: 'CONTAS_RECEBER',

@@ -15,7 +15,7 @@ export const useUsuarios = () => {
     setLoading(true);
     try {
       const data = await usuarioService.fetchUsuarios();
-      const usuariosFormatados = data.map(usuarioUtils.transformSupabaseToUsuario);
+      const usuariosFormatados = (data as any[]).map(usuarioUtils.transformSupabaseToUsuario);
       console.log('[Usuarios] Usuários carregados:', usuariosFormatados.length);
       setUsuarios(usuariosFormatados);
     } catch (error) {
