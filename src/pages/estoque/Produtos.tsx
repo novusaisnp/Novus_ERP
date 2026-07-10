@@ -10,6 +10,7 @@ import { useProdutos } from '@/hooks/useProdutos';
 import { FormProduto } from '@/components/modules/FormProduto';
 import { Produto } from '@/types/produto';
 import { produtoUtils } from '@/utils/produtoUtils';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 const Produtos: React.FC = () => {
   const { produtos, loading, criarProduto, atualizarProduto, excluirProduto } = useProdutos();
@@ -17,8 +18,7 @@ const Produtos: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduto, setEditingProduto] = useState<Produto | undefined>(undefined);
   const [formLoading, setFormLoading] = useState(false);
-
-  console.log('[Produtos] Renderizando página, produtos:', produtos.length);
+  const [produtoToDelete, setProdutoToDelete] = useState<Produto | null>(null);
 
   const filteredProdutos = produtos.filter(produto =>
     produto.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -28,22 +28,23 @@ const Produtos: React.FC = () => {
   );
 
   const handleEdit = (produto: Produto) => {
-    console.log('[Produtos] Editando produto:', produto);
     setEditingProduto(produto);
     setIsFormOpen(true);
   };
 
-  const handleDelete = async (produto: Produto) => {
-    if (window.confirm(`Tem certeza que deseja excluir o produto "${produto.nome}"?`)) {
-      console.log('[Produtos] Excluindo produto:', produto.id);
-      await excluirProduto(produto.id!);
+  const handleDelete = (produto: Produto) => {
+    setProdutoToDelete(produto);
+  };
+
+  const confirmDelete = async () => {
+    if (produtoToDelete?.id) {
+      await excluirProduto(produtoToDelete.id);
+      setProdutoToDelete(null);
     }
   };
 
   const handleFormSubmit = async (produto: Produto): Promise<boolean> => {
-    console.log('[Produtos] Submetendo formulário:', produto);
     setFormLoading(true);
-    
     try {
       if (editingProduto) {
         return await atualizarProduto(editingProduto.id!, produto);
@@ -56,13 +57,11 @@ const Produtos: React.FC = () => {
   };
 
   const handleFormClose = () => {
-    console.log('[Produtos] Fechando formulário');
     setIsFormOpen(false);
     setEditingProduto(undefined);
   };
 
   const handleNewProduct = () => {
-    console.log('[Produtos] Novo produto');
     setEditingProduto(undefined);
     setIsFormOpen(true);
   };
