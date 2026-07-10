@@ -35,11 +35,46 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
   const [editing, setEditing] = useState<EmpresaRepresentada | null>(null);
   const [form, setForm] = useState<EmpresaRepresentada>(empty());
   const [toDelete, setToDelete] = useState<EmpresaRepresentada | null>(null);
+  const [loadingCnpj, setLoadingCnpj] = useState(false);
+  const lastCnpjRef = useRef<string>('');
 
   useEffect(() => {
     if (!open) return;
     setForm(editing ? { ...empty(), ...editing } : empty());
+    lastCnpjRef.current = '';
   }, [open, editing]);
+
+  useEffect(() => {
+    if (!open) return;
+    const cnpjLimpo = (form.cnpj || '').replace(/\D/g, '');
+    if (cnpjLimpo.length !== 14 || cnpjLimpo === lastCnpjRef.current) return;
+    const handler = setTimeout(async () => {
+      lastCnpjRef.current = cnpjLimpo;
+      setLoadingCnpj(true);
+      try {
+        const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpjLimpo}`);
+        if (!res.ok) throw new Error('CNPJ não encontrado');
+        const data = await res.json();
+        const endereco = [data.logradouro, data.numero, data.bairro].filter(Boolean).join(', ');
+        setForm((p) => ({
+          ...p,
+          nome: p.nome || data.razao_social || '',
+          endereco: endereco || p.endereco || '',
+          cidade: p.cidade || data.municipio || '',
+          estado: p.estado || data.uf || '',
+          cep: p.cep || data.cep || '',
+          email: p.email || data.email || '',
+          telefone: p.telefone || `${data.ddd_telefone_1 || ''}`.trim(),
+        }));
+        toast.success('Dados do CNPJ preenchidos');
+      } catch {
+        toast.warning('Não foi possível consultar o CNPJ');
+      } finally {
+        setLoadingCnpj(false);
+      }
+    }, 600);
+    return () => clearTimeout(handler);
+  }, [form.cnpj, open]);
 
   const openNew = () => { setEditing(null); setOpen(true); };
   const openEdit = (e: EmpresaRepresentada) => { setEditing(e); setOpen(true); };
