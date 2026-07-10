@@ -91,17 +91,6 @@ const Categorias: React.FC = () => {
     setSelectedCategoria(null);
   };
 
-  const formatTributos = (regras: any) => {
-    if (!regras || typeof regras !== 'object') return 'Não definido';
-    
-    const tributos = [];
-    if (regras.icms) tributos.push(`ICMS: ${regras.icms}%`);
-    if (regras.ipi) tributos.push(`IPI: ${regras.ipi}%`);
-    if (regras.pis) tributos.push(`PIS: ${regras.pis}%`);
-    if (regras.cofins) tributos.push(`COFINS: ${regras.cofins}%`);
-    
-    return tributos.length > 0 ? tributos.join(', ') : 'Não definido';
-  };
 
   if (isLoading) {
     return (
