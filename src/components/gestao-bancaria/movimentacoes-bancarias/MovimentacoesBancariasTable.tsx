@@ -100,13 +100,7 @@ export function MovimentacoesBancariasTable({
   };
 
   const handleEstorno = (movimentacao: MovimentacaoBancaria) => {
-    if (confirm('Tem certeza que deseja estornar esta movimentação?')) {
-      estornar({
-        movimentacao_id: movimentacao.id,
-        motivo_estorno: 'Estorno manual pelo usuário',
-        observacoes: 'Estornado via interface de movimentações bancárias',
-      });
-    }
+    setConfirmDialog({ type: 'estornar', movimentacao });
   };
 
   const handleConciliacao = (movimentacao: MovimentacaoBancaria) => {
@@ -117,9 +111,21 @@ export function MovimentacoesBancariasTable({
   };
 
   const handleExclusao = (movimentacao: MovimentacaoBancaria) => {
-    if (confirm('Tem certeza que deseja excluir esta movimentação?')) {
-      excluir(movimentacao.id);
+    setConfirmDialog({ type: 'excluir', movimentacao });
+  };
+
+  const executarAcaoConfirmada = () => {
+    if (!confirmDialog) return;
+    if (confirmDialog.type === 'estornar') {
+      estornar({
+        movimentacao_id: confirmDialog.movimentacao.id,
+        motivo_estorno: 'Estorno manual pelo usuário',
+        observacoes: 'Estornado via interface de movimentações bancárias',
+      });
+    } else {
+      excluir(confirmDialog.movimentacao.id);
     }
+    setConfirmDialog(null);
   };
 
   const formatarData = (data: string) => {
