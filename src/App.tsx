@@ -62,6 +62,10 @@ import RegistrosPonto from './pages/rh/RegistrosPonto';
 
 // Vendas Pages
 import Pedidos from './pages/vendas/Pedidos';
+import Vendas from './pages/vendas/Vendas';
+
+// Contratos Pages
+import Contratos from './pages/contratos/Contratos';
 
 // Integração Pages
 import SyncDashboard from './pages/integracao/SyncDashboard';
@@ -112,10 +116,14 @@ function App() {
                   
                   {/* Vendas Routes */}
                   <Route path="vendas">
-                    <Route path="pedidos" element={<Pedidos />} />
+                    <Route index element={<Vendas />} />
+                    <Route path="pedidos" element={<Vendas />} />
                     <Route path="orcamentos" element={<div>Orçamentos - Em desenvolvimento</div>} />
                     <Route path="relatorios" element={<div>Relatórios de Vendas - Em desenvolvimento</div>} />
                   </Route>
+
+                  {/* Contratos Routes */}
+                  <Route path="contratos" element={<Contratos />} />
                   
                   {/* Gestão Bancária Routes */}
                   <Route path="gestao-bancaria">
