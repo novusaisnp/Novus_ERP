@@ -1,118 +1,139 @@
-
 import React from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase as _supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Shield } from 'lucide-react';
-import PerfisConfig from '@/components/modules/configuracoes/empresas/PerfisConfig';
-import UsuariosVinculadosList from '@/components/modules/configuracoes/empresas/UsuariosVinculadosList';
-import { useEmpresaResponsavel } from '@/hooks/useEmpresaResponsavel';
-import { useEmpresasRepresentadas } from '@/hooks/useEmpresasRepresentadas';
-import { usePerfis } from '@/hooks/usePerfis';
-import { useUsuarios } from '@/hooks/useUsuarios';
-import { useColaboradores } from '@/hooks/useColaboradores';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { Users } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+
+const supabase: any = _supabase;
+
+interface UsuarioRow {
+  id: string;
+  user_id: string;
+  empresa_representada_id: string | null;
+  ativo: boolean | null;
+  nome?: string | null;
+  email?: string | null;
+  perfil_nome?: string | null;
+  role?: string | null;
+}
+
+async function fetchUsuarios(): Promise<UsuarioRow[]> {
+  const { data: usuarios, error } = await supabase
+    .from('usuarios')
+    .select('id, user_id, empresa_representada_id, ativo, nome, email');
+  if (error) {
+    console.error('[Usuarios] erro ao carregar');
+    return [];
+  }
+  const userIds = (usuarios || []).map((u: any) => u.user_id).filter(Boolean);
+  let roles: Record<string, string> = {};
+  if (userIds.length) {
+    const { data: rolesData } = await supabase
+      .from('user_roles')
+      .select('user_id, role')
+      .in('user_id', userIds);
+    (rolesData || []).forEach((r: any) => {
+      roles[r.user_id] = r.role;
+    });
+  }
+  return (usuarios || []).map((u: any) => ({ ...u, role: roles[u.user_id] || '-' }));
+}
 
 const ConfiguracoesUsuarios: React.FC = () => {
-  console.log('[ERP]', 'Iniciando módulo de Configurações de Usuários');
+  const qc = useQueryClient();
+  const { toast } = useToast();
 
-  // Hooks para carregar dados do Supabase
-  const { empresa: empresaResponsavel } = useEmpresaResponsavel();
-  const { empresas: empresasRepresentadas } = useEmpresasRepresentadas(empresaResponsavel?.id);
-  const { perfis, savePerfil, deletePerfil, loading: loadingPerfis } = usePerfis();
-  const { usuarios, saveUsuario, deleteUsuario, loading: loadingUsuarios } = useUsuarios();
-  const { colaboradores, loading: loadingColaboradores } = useColaboradores();
+  const { data: usuarios = [], isLoading } = useQuery({
+    queryKey: ['config-usuarios'],
+    queryFn: fetchUsuarios,
+  });
 
-  // Contar estatísticas
-  const usuariosAtivos = usuarios.filter(u => u.ativo).length;
-  const perfisCustomizados = perfis.filter(p => !p.sistema).length;
+  const toggleAtivo = useMutation({
+    mutationFn: async ({ id, ativo }: { id: string; ativo: boolean }) => {
+      const { error } = await supabase
+        .from('usuarios')
+        .update({ ativo, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['config-usuarios'] });
+      toast({ title: 'Status atualizado' });
+    },
+    onError: (e: any) => {
+      console.error('[Usuarios] erro ao atualizar');
+      toast({ title: 'Erro', description: e?.message || 'Falha ao atualizar', variant: 'destructive' });
+    },
+  });
 
-  // Combinar perfis do sistema com perfis customizados
-  const todosPerfis = perfis;
+  const ativos = usuarios.filter((u) => u.ativo).length;
 
   return (
-    <div className="container mx-auto px-6 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-primary mb-2">
-          Configurações de Usuários
-        </h1>
-        <p className="text-muted-foreground">
-          Gerencie perfis de acesso e usuários do sistema
-        </p>
+    <div className="container mx-auto px-6 py-8 space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-primary mb-1">Usuários</h1>
+        <p className="text-muted-foreground">Gestão de usuários da sua empresa</p>
       </div>
 
-      {/* Estatísticas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
-        <Card className="gradient-card border-0 shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Usuários Ativos</CardTitle>
-            <Users className="h-4 w-4 text-success" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-erp-success">
-              {usuariosAtivos}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Usuários Ativos</CardTitle>
+          <Users className="h-4 w-4 text-primary" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{ativos}</div>
+          <p className="text-xs text-muted-foreground">de {usuarios.length} cadastrados</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="pt-6">
+          {isLoading ? (
+            <div className="text-center py-8 text-muted-foreground">Carregando...</div>
+          ) : usuarios.length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+              <p className="text-muted-foreground">Nenhum usuário encontrado</p>
             </div>
-            <p className="text-xs text-muted-foreground">
-              de {usuarios.length} cadastrados
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="gradient-card border-0 shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Perfis Customizados</CardTitle>
-            <Shield className="h-4 w-4 text-warning" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-erp-warning">
-              {perfisCustomizados}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              + {perfis.filter(p => p.sistema).length} do sistema
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tabs de Configuração */}
-      <Tabs defaultValue="usuarios" className="space-y-6">
-        <TabsList className="grid grid-cols-2 w-full bg-white shadow-lg rounded-lg p-2">
-          <TabsTrigger 
-            value="usuarios"
-            className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white"
-          >
-            <Users className="w-4 h-4" />
-            <span className="hidden sm:inline">Usuários</span>
-          </TabsTrigger>
-          <TabsTrigger 
-            value="perfis"
-            className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white"
-          >
-            <Shield className="w-4 h-4" />
-            <span className="hidden sm:inline">Perfis de Acesso</span>
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="usuarios" className="animate-fade-in">
-          <UsuariosVinculadosList
-            usuarios={usuarios}
-            empresas={empresasRepresentadas}
-            perfis={todosPerfis}
-            colaboradores={colaboradores}
-            onAdd={saveUsuario}
-            onEdit={saveUsuario}
-            onDelete={deleteUsuario}
-          />
-        </TabsContent>
-
-        <TabsContent value="perfis" className="animate-fade-in">
-          <PerfisConfig
-            perfis={perfis}
-            onAdd={savePerfil}
-            onEdit={savePerfil}
-            onDelete={deletePerfil}
-          />
-        </TabsContent>
-      </Tabs>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Ativo</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {usuarios.map((u) => (
+                  <TableRow key={u.id}>
+                    <TableCell>{u.nome || '-'}</TableCell>
+                    <TableCell>{u.email || '-'}</TableCell>
+                    <TableCell><Badge variant="outline">{u.role}</Badge></TableCell>
+                    <TableCell>
+                      <Badge variant={u.ativo ? 'default' : 'secondary'}>
+                        {u.ativo ? 'Ativo' : 'Inativo'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Switch
+                        checked={!!u.ativo}
+                        onCheckedChange={(v) => toggleAtivo.mutate({ id: u.id, ativo: v })}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
