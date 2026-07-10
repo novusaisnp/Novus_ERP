@@ -223,83 +223,35 @@ export const criarMovimentacaoBancaria = async (
   return data as MovimentacaoBancaria;
 };
 
-// Função para realizar transferência bancária
+// Realiza transferência bancária de forma atômica via RPC do banco
 export const realizarTransferenciaBancaria = async (
   transferencia: TransferenciaBancaria
-): Promise<{ movimentacao_saida: MovimentacaoBancaria; movimentacao_entrada: MovimentacaoBancaria }> => {
-  console.log('[MovimentacoesBancarias] Realizando transferência:', transferencia);
-
-  const userId = (await supabase.auth.getUser()).data.user?.id;
-
-  // Criar lote para a transferência
-  const { data: lote, error: loteError } = await supabase
-    .from('lotes_movimentacoes')
-    .insert({
-      numero_lote: `TRANSF-${Date.now()}`,
-      descricao_lote: `Transferência: ${transferencia.descricao}`,
-      tipo_lote: 'TRANSFERENCIA_MULTIPLA',
-      valor_total: transferencia.valor,
-      quantidade_movimentacoes: 2,
-      status: 'PROCESSANDO',
-      usuario_criacao_id: userId,
-    })
-    .select()
-    .single();
-
-  if (loteError) {
-    console.error('[MovimentacoesBancarias] Erro ao criar lote:', loteError);
-    throw new Error(`Erro ao criar lote de transferência: ${loteError.message}`);
+): Promise<{ lote_id: string }> => {
+  // Obter empresa do usuário atual
+  const { data: empresaId, error: empresaErr } = await supabase.rpc('get_user_empresa_id');
+  if (empresaErr || !empresaId) {
+    throw new Error('Não foi possível identificar a empresa do usuário');
   }
 
-  try {
-    // Criar movimentação de saída
-    const movimentacaoSaida = await criarMovimentacaoBancaria({
-      conta_bancaria_id: transferencia.conta_origem_id,
-      conta_destino_id: transferencia.conta_destino_id,
-      tipo_movimentacao: 'TRANSFERENCIA_SAIDA',
-      valor: transferencia.valor,
-      descricao: transferencia.descricao,
-      data_movimentacao: transferencia.data_movimentacao,
-      documento_referencia: transferencia.documento_referencia,
-      observacoes: transferencia.observacoes,
-    });
+  const { data, error } = await supabase.rpc('transferencia_bancaria_atomica', {
+    p_empresa_id: empresaId,
+    p_conta_origem_id: transferencia.conta_origem_id,
+    p_conta_destino_id: transferencia.conta_destino_id,
+    p_valor: transferencia.valor,
+    p_data_lancamento: transferencia.data_movimentacao,
+    p_descricao: transferencia.descricao,
+    p_lote_descricao: `Transferência: ${transferencia.descricao}`,
+    p_natureza_id: (transferencia as any).natureza_id ?? null,
+    p_plano_conta_id: (transferencia as any).plano_conta_id ?? null,
+    p_centro_custo_id: (transferencia as any).centro_custo_id ?? null,
+  });
 
-    // Criar movimentação de entrada
-    const movimentacaoEntrada = await criarMovimentacaoBancaria({
-      conta_bancaria_id: transferencia.conta_destino_id,
-      tipo_movimentacao: 'TRANSFERENCIA_ENTRADA',
-      valor: transferencia.valor,
-      descricao: transferencia.descricao,
-      data_movimentacao: transferencia.data_movimentacao,
-      documento_referencia: transferencia.documento_referencia,
-      observacoes: transferencia.observacoes,
-    });
-
-    // Associar movimentações ao lote
-    await supabase
-      .from('movimentacoes_bancarias')
-      .update({ lote_id: lote.id })
-      .in('id', [movimentacaoSaida.id, movimentacaoEntrada.id]);
-
-    // Finalizar lote
-    await supabase
-      .from('lotes_movimentacoes')
-      .update({ status: 'FINALIZADO' })
-      .eq('id', lote.id);
-
-    return {
-      movimentacao_saida: movimentacaoSaida,
-      movimentacao_entrada: movimentacaoEntrada,
-    };
-  } catch (error) {
-    // Cancelar lote em caso de erro
-    await supabase
-      .from('lotes_movimentacoes')
-      .update({ status: 'CANCELADO' })
-      .eq('id', lote.id);
-
-    throw error;
+  if (error) {
+    console.error('[MovimentacoesBancarias] Erro na transferência atômica:', error.message);
+    throw new Error(`Erro ao realizar transferência: ${error.message}`);
   }
+
+  return { lote_id: data as string };
 };
 
 // Função para estornar movimentação
