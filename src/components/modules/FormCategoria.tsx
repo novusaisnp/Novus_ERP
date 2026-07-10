@@ -38,18 +38,6 @@ interface FormCategoriaProps {
   isLoading?: boolean;
 }
 
-// Função helper para converter regras_tributacao do banco para o formato do formulário
-const parseRegrasTributacao = (regras: any) => {
-  if (!regras || typeof regras !== 'object') {
-    return {};
-  }
-  return {
-    icms: regras.icms || '',
-    ipi: regras.ipi || '',
-    pis: regras.pis || '',
-    cofins: regras.cofins || '',
-  };
-};
 
 export const FormCategoria: React.FC<FormCategoriaProps> = ({
   open,
