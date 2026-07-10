@@ -5,6 +5,7 @@ import { ContasReceberHeader } from '@/components/financeiro/contas-receber/Cont
 import { ContasReceberStats } from '@/components/financeiro/contas-receber/ContasReceberStats';
 import { ContasReceberFilters } from '@/components/financeiro/contas-receber/ContasReceberFilters';
 import { ContasReceberContent } from '@/components/financeiro/contas-receber/ContasReceberContent';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import type { ContaReceber, ContaReceberFilters } from '@/types/contasReceber';
 
 
