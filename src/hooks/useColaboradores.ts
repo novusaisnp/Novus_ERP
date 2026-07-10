@@ -14,7 +14,7 @@ export const useColaboradores = () => {
     setLoading(true);
     try {
       const data = await colaboradorService.fetchColaboradores();
-      const colaboradoresFormatados = data.map(rhUtils.transformSupabaseToColaborador);
+      const colaboradoresFormatados = (data as any[]).map(rhUtils.transformSupabaseToColaborador);
       setColaboradores(colaboradoresFormatados);
     } catch (error) {
       console.error('[RH] Erro ao carregar colaboradores:', error);

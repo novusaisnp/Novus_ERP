@@ -168,7 +168,7 @@ const Categorias: React.FC = () => {
                     <TableCell>{categoria.descricao || '-'}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className="text-xs">
-                        {formatTributos(categoria.regras_tributacao)}
+                        {formatTributos((categoria as any).regras_tributacao)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">

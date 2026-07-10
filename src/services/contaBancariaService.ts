@@ -1,4 +1,5 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+const supabase: any = _supabase;
 import { ContaBancaria, ContaBancariaInput, ContaBancariaFilters, ContaBancariaEstatisticas } from '@/types/contaBancaria';
 
 console.log('[ContaBancariaService] Serviço de contas bancárias carregado');

@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+const supabase: any = _supabase;
 import { useToast } from '@/hooks/use-toast';
 
 interface SyncLog {
@@ -26,7 +27,7 @@ export const useSyncLogs = (limit: number = 20) => {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('sync_logs')
         .select('*')
         .order('created_at', { ascending: false })
@@ -34,7 +35,7 @@ export const useSyncLogs = (limit: number = 20) => {
 
       if (error) throw error;
       
-      setLogs(data || []);
+      setLogs((data as any as SyncLog[]) || []);
       
     } catch (error: any) {
       console.error('Erro ao buscar logs de sincronização:', error);

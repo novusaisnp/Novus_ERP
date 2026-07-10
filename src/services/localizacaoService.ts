@@ -1,5 +1,6 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+const supabase: any = _supabase;
 import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 
 export type Localizacao = Tables<'localizacoes_estoque'>;

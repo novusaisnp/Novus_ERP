@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+const supabase: any = _supabase;
 import { useToast } from '@/hooks/use-toast';
 import { EmpresaResponsavel } from '@/types/empresa';
 
@@ -12,7 +13,7 @@ export const useEmpresaResponsavel = () => {
   const loadEmpresa = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('empresa_responsavel')
         .select('*')
         .maybeSingle();
@@ -65,18 +66,16 @@ export const useEmpresaResponsavel = () => {
         updated_at: new Date().toISOString()
       };
 
-      let result;
+      let result: any;
       if (empresaData.id) {
-        // Atualizar empresa existente
-        result = await supabase
+        result = await (supabase as any)
           .from('empresa_responsavel')
           .update(dataToSave)
           .eq('id', empresaData.id)
           .select()
           .single();
       } else {
-        // Criar nova empresa
-        result = await supabase
+        result = await (supabase as any)
           .from('empresa_responsavel')
           .insert(dataToSave)
           .select()
