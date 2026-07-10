@@ -563,6 +563,11 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
                 </div>
               </TabsContent>
 
+              <TabsContent value="socios" className="space-y-4">
+                <SociosRepresentantesTab empresaId={form.id} />
+              </TabsContent>
+
+
               <TabsContent value="logo" className="space-y-4">
                 <div className="space-y-4">
                   <div>
