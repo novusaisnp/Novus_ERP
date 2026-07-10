@@ -144,7 +144,12 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
               </div>
               <div>
                 <Label>CNPJ</Label>
-                <Input value={form.cnpj || ''} onChange={(ev) => setField('cnpj', ev.target.value)} />
+                <div className="relative">
+                  <Input value={form.cnpj || ''} onChange={(ev) => setField('cnpj', ev.target.value)} />
+                  {loadingCnpj && (
+                    <Loader2 className="w-4 h-4 animate-spin absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  )}
+                </div>
               </div>
               <div>
                 <Label>Email</Label>
