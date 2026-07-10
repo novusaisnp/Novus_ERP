@@ -1,6 +1,15 @@
 
 import { CNPJData, CEPData } from '@/types/empresa';
 
+// Cache in-memory por sessão (TTL 10min) — evita reconsulta ao reabrir o mesmo cadastro
+const CACHE_TTL_MS = 10 * 60 * 1000;
+const cnpjCache = new Map<string, { data: CNPJData; ts: number }>();
+const cepCache = new Map<string, { data: CEPData; ts: number }>();
+
+const fresh = <T>(entry: { data: T; ts: number } | undefined): T | null =>
+  entry && Date.now() - entry.ts < CACHE_TTL_MS ? entry.data : null;
+
+
 export const consultarCNPJ = async (cnpj: string): Promise<CNPJData | null> => {
   console.log('[CNPJ API]', 'Consultando CNPJ:', cnpj);
   
@@ -11,11 +20,18 @@ export const consultarCNPJ = async (cnpj: string): Promise<CNPJData | null> => {
       throw new Error('CNPJ deve ter 14 dígitos');
     }
 
+    const cached = fresh(cnpjCache.get(cnpjLimpo));
+    if (cached) {
+      console.log('[CNPJ API]', 'Cache hit para', cnpjLimpo);
+      return cached;
+    }
+
     const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpjLimpo}`);
     
     if (!response.ok) {
       throw new Error('CNPJ não encontrado ou inválido');
     }
+
 
     const data = await response.json();
     
