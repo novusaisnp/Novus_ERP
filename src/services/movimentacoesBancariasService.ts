@@ -12,13 +12,11 @@ import {
   DocumentoMovimentacao
 } from '@/types/movimentacoesBancarias';
 
-console.log('[MovimentacoesBancarias] Service carregado');
 
 // Função para listar movimentações com filtros
 export const listarMovimentacoesBancarias = async (
   filtros?: FiltrosMovimentacoes
 ): Promise<MovimentacaoBancaria[]> => {
-  console.log('[MovimentacoesBancarias] Listando movimentações com filtros:', filtros);
 
   let query = supabase
     .from('movimentacoes_bancarias')
@@ -122,7 +120,6 @@ export const listarMovimentacoesBancarias = async (
 
 // Função para obter uma movimentação específica
 export const obterMovimentacaoBancaria = async (id: string): Promise<MovimentacaoBancaria | null> => {
-  console.log('[MovimentacoesBancarias] Obtendo movimentação:', id);
 
   const { data, error } = await supabase
     .from('movimentacoes_bancarias')
@@ -178,7 +175,6 @@ export const obterMovimentacaoBancaria = async (id: string): Promise<Movimentaca
 export const criarMovimentacaoBancaria = async (
   input: MovimentacaoBancariaInput
 ): Promise<MovimentacaoBancaria> => {
-  console.log('[MovimentacoesBancarias] Criando movimentação:', input);
 
   const { data, error } = await supabase
     .from('movimentacoes_bancarias')
@@ -223,90 +219,41 @@ export const criarMovimentacaoBancaria = async (
   return data as MovimentacaoBancaria;
 };
 
-// Função para realizar transferência bancária
+// Realiza transferência bancária de forma atômica via RPC do banco
 export const realizarTransferenciaBancaria = async (
   transferencia: TransferenciaBancaria
-): Promise<{ movimentacao_saida: MovimentacaoBancaria; movimentacao_entrada: MovimentacaoBancaria }> => {
-  console.log('[MovimentacoesBancarias] Realizando transferência:', transferencia);
-
-  const userId = (await supabase.auth.getUser()).data.user?.id;
-
-  // Criar lote para a transferência
-  const { data: lote, error: loteError } = await supabase
-    .from('lotes_movimentacoes')
-    .insert({
-      numero_lote: `TRANSF-${Date.now()}`,
-      descricao_lote: `Transferência: ${transferencia.descricao}`,
-      tipo_lote: 'TRANSFERENCIA_MULTIPLA',
-      valor_total: transferencia.valor,
-      quantidade_movimentacoes: 2,
-      status: 'PROCESSANDO',
-      usuario_criacao_id: userId,
-    })
-    .select()
-    .single();
-
-  if (loteError) {
-    console.error('[MovimentacoesBancarias] Erro ao criar lote:', loteError);
-    throw new Error(`Erro ao criar lote de transferência: ${loteError.message}`);
+): Promise<{ lote_id: string }> => {
+  // Obter empresa do usuário atual
+  const { data: empresaId, error: empresaErr } = await supabase.rpc('get_user_empresa_id');
+  if (empresaErr || !empresaId) {
+    throw new Error('Não foi possível identificar a empresa do usuário');
   }
 
-  try {
-    // Criar movimentação de saída
-    const movimentacaoSaida = await criarMovimentacaoBancaria({
-      conta_bancaria_id: transferencia.conta_origem_id,
-      conta_destino_id: transferencia.conta_destino_id,
-      tipo_movimentacao: 'TRANSFERENCIA_SAIDA',
-      valor: transferencia.valor,
-      descricao: transferencia.descricao,
-      data_movimentacao: transferencia.data_movimentacao,
-      documento_referencia: transferencia.documento_referencia,
-      observacoes: transferencia.observacoes,
-    });
+  const { data, error } = await supabase.rpc('transferencia_bancaria_atomica', {
+    p_empresa_id: empresaId,
+    p_conta_origem_id: transferencia.conta_origem_id,
+    p_conta_destino_id: transferencia.conta_destino_id,
+    p_valor: transferencia.valor,
+    p_data_lancamento: transferencia.data_movimentacao,
+    p_descricao: transferencia.descricao,
+    p_lote_descricao: `Transferência: ${transferencia.descricao}`,
+    p_natureza_id: (transferencia as any).natureza_id ?? null,
+    p_plano_conta_id: (transferencia as any).plano_conta_id ?? null,
+    p_centro_custo_id: (transferencia as any).centro_custo_id ?? null,
+  });
 
-    // Criar movimentação de entrada
-    const movimentacaoEntrada = await criarMovimentacaoBancaria({
-      conta_bancaria_id: transferencia.conta_destino_id,
-      tipo_movimentacao: 'TRANSFERENCIA_ENTRADA',
-      valor: transferencia.valor,
-      descricao: transferencia.descricao,
-      data_movimentacao: transferencia.data_movimentacao,
-      documento_referencia: transferencia.documento_referencia,
-      observacoes: transferencia.observacoes,
-    });
-
-    // Associar movimentações ao lote
-    await supabase
-      .from('movimentacoes_bancarias')
-      .update({ lote_id: lote.id })
-      .in('id', [movimentacaoSaida.id, movimentacaoEntrada.id]);
-
-    // Finalizar lote
-    await supabase
-      .from('lotes_movimentacoes')
-      .update({ status: 'FINALIZADO' })
-      .eq('id', lote.id);
-
-    return {
-      movimentacao_saida: movimentacaoSaida,
-      movimentacao_entrada: movimentacaoEntrada,
-    };
-  } catch (error) {
-    // Cancelar lote em caso de erro
-    await supabase
-      .from('lotes_movimentacoes')
-      .update({ status: 'CANCELADO' })
-      .eq('id', lote.id);
-
-    throw error;
+  if (error) {
+    console.error('[MovimentacoesBancarias] Erro na transferência atômica:', error.message);
+    throw new Error(`Erro ao realizar transferência: ${error.message}`);
   }
+
+  return { lote_id: data as string };
 };
 
 // Função para estornar movimentação
 export const estornarMovimentacao = async (
   estorno: EstornoMovimentacao
 ): Promise<MovimentacaoBancaria> => {
-  console.log('[MovimentacoesBancarias] Estornando movimentação:', estorno);
 
   const userId = (await supabase.auth.getUser()).data.user?.id;
 
@@ -336,7 +283,6 @@ export const estornarMovimentacao = async (
 export const conciliarMovimentacao = async (
   conciliacao: ConciliacaoMovimentacao
 ): Promise<MovimentacaoBancaria> => {
-  console.log('[MovimentacoesBancarias] Conciliando movimentação:', conciliacao);
 
   const userId = (await supabase.auth.getUser()).data.user?.id;
 
@@ -365,7 +311,6 @@ export const conciliarMovimentacao = async (
 export const obterEstatisticasMovimentacoes = async (
   filtros?: FiltrosMovimentacoes
 ): Promise<EstatisticasMovimentacoes> => {
-  console.log('[MovimentacoesBancarias] Obtendo estatísticas com filtros:', filtros);
 
   let query = supabase
     .from('movimentacoes_bancarias')
@@ -447,20 +392,16 @@ export const obterEstatisticasMovimentacoes = async (
   return stats;
 };
 
-// Função para obter histórico de uma movimentação
+// Obter trilha de auditoria via RPC segura (get_audit_trail)
 export const obterHistoricoMovimentacao = async (
   movimentacaoId: string
 ): Promise<HistoricoMovimentacao[]> => {
-  console.log('[MovimentacoesBancarias] Obtendo histórico da movimentação:', movimentacaoId);
-
-  const { data, error } = await supabase
-    .from('historico_movimentacoes_bancarias')
-    .select('*')
-    .eq('movimentacao_id', movimentacaoId)
-    .order('data_operacao', { ascending: false });
+  const { data, error } = await supabase.rpc('get_audit_trail', {
+    p_movimentacao_id: movimentacaoId,
+  });
 
   if (error) {
-    console.error('[MovimentacoesBancarias] Erro ao obter histórico:', error);
+    console.error('[MovimentacoesBancarias] Erro ao obter histórico');
     throw new Error(`Erro ao obter histórico: ${error.message}`);
   }
 
@@ -471,7 +412,6 @@ export const obterHistoricoMovimentacao = async (
 export const obterDocumentosMovimentacao = async (
   movimentacaoId: string
 ): Promise<DocumentoMovimentacao[]> => {
-  console.log('[MovimentacoesBancarias] Obtendo documentos da movimentação:', movimentacaoId);
 
   const { data, error } = await supabase
     .from('documentos_movimentacoes_bancarias')
@@ -493,7 +433,6 @@ export const atualizarMovimentacaoBancaria = async (
   id: string,
   input: Partial<MovimentacaoBancariaInput>
 ): Promise<MovimentacaoBancaria> => {
-  console.log('[MovimentacoesBancarias] Atualizando movimentação:', id, input);
 
   const { data, error } = await supabase
     .from('movimentacoes_bancarias')
@@ -539,7 +478,6 @@ export const atualizarMovimentacaoBancaria = async (
 
 // Função para excluir movimentação (soft delete)
 export const excluirMovimentacaoBancaria = async (id: string): Promise<void> => {
-  console.log('[MovimentacoesBancarias] Excluindo movimentação:', id);
 
   const { error } = await supabase
     .from('movimentacoes_bancarias')

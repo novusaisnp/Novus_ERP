@@ -11,9 +11,9 @@ import { MovimentacoesBancariasStats } from './MovimentacoesBancariasStats';
 import { MovimentacoesBancariasTable } from './MovimentacoesBancariasTable';
 import { NovaMovimentacaoModal } from './NovaMovimentacaoModal';
 import { TransferenciaModal } from './TransferenciaModal';
+import { HistoricoMovimentacoes } from './HistoricoMovimentacoes';
 import { X, Plus, ArrowRightLeft, Download, Upload } from 'lucide-react';
 
-console.log('[MovimentacoesBancarias] Modal principal carregado');
 
 interface MovimentacoesBancariasModalProps {
   isOpen: boolean;
@@ -40,12 +40,10 @@ export function MovimentacoesBancariasModal({
   }, [isOpen, refetch]);
 
   const handleFiltrosChange = (novosFiltros: FiltrosMovimentacoes) => {
-    console.log('[MovimentacoesBancarias] Aplicando filtros:', novosFiltros);
     setFiltros(novosFiltros);
   };
 
   const handleExportarExtrato = () => {
-    console.log('[MovimentacoesBancarias] Exportando extrato com filtros:', filtros);
     // TODO: Implementar exportação
   };
 
@@ -143,15 +141,7 @@ export function MovimentacoesBancariasModal({
             </TabsContent>
 
             <TabsContent value="historico" className="flex-1 flex flex-col">
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center">
-                  <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Histórico de Operações</h3>
-                  <p className="text-muted-foreground">
-                    Em desenvolvimento - Histórico detalhado de todas as operações
-                  </p>
-                </div>
-              </div>
+              <HistoricoMovimentacoes movimentacoes={movimentacoes} />
             </TabsContent>
           </Tabs>
         </div>

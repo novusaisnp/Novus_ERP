@@ -116,7 +116,6 @@ export const ContasBancariasModal = ({
       return;
     }
 
-    console.log('[ContasBancariasModal] Enviando formulário:', formData);
     onSubmit(formData);
   };
 
@@ -371,6 +370,33 @@ export const ContasBancariasModal = ({
                 placeholder="0,00"
               />
             </div>
+
+            {/* Saldo Atual (somente leitura) */}
+            {isEditing && (
+              <div className="space-y-2">
+                <Label htmlFor="saldo_atual" className="flex items-center gap-1">
+                  Saldo Atual
+                  <span
+                    className="text-xs text-muted-foreground"
+                    title="Saldo atualizado automaticamente pelas movimentações bancárias"
+                  >
+                    (auto)
+                  </span>
+                </Label>
+                <Input
+                  id="saldo_atual"
+                  type="number"
+                  step="0.01"
+                  value={(conta as any)?.saldo_atual ?? 0}
+                  readOnly
+                  disabled
+                  className="bg-muted cursor-not-allowed"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Saldo atualizado automaticamente
+                </p>
+              </div>
+            )}
 
             {/* Data de Abertura */}
             <div className="space-y-2">

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { MovimentacoesBancariasModal } from '@/components/gestao-bancaria/movimentacoes-bancarias/MovimentacoesBancariasModal';
 
-console.log('[MovimentacoesBancarias] Página de movimentações bancárias carregada');
 
 const MovimentacoesBancarias = () => {
   const [isModalOpen, setIsModalOpen] = useState(true);

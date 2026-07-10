@@ -3,12 +3,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { MovimentacaoBancaria } from '@/types/movimentacoesBancarias';
 import { useMovimentacoesBancarias } from '@/hooks/useMovimentacoesBancarias';
 import { currencyUtils } from '@/utils/currencyUtils';
@@ -42,6 +52,10 @@ export function MovimentacoesBancariasTable({
 }: MovimentacoesBancariasTableProps) {
   const { estornar, conciliar, excluir } = useMovimentacoesBancarias();
   const [selectedMovimentacao, setSelectedMovimentacao] = useState<string | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    type: 'estornar' | 'excluir';
+    movimentacao: MovimentacaoBancaria;
+  } | null>(null);
 
   const getTipoIcon = (tipo: string) => {
     switch (tipo) {
@@ -86,13 +100,7 @@ export function MovimentacoesBancariasTable({
   };
 
   const handleEstorno = (movimentacao: MovimentacaoBancaria) => {
-    if (confirm('Tem certeza que deseja estornar esta movimentação?')) {
-      estornar({
-        movimentacao_id: movimentacao.id,
-        motivo_estorno: 'Estorno manual pelo usuário',
-        observacoes: 'Estornado via interface de movimentações bancárias',
-      });
-    }
+    setConfirmDialog({ type: 'estornar', movimentacao });
   };
 
   const handleConciliacao = (movimentacao: MovimentacaoBancaria) => {
@@ -103,9 +111,21 @@ export function MovimentacoesBancariasTable({
   };
 
   const handleExclusao = (movimentacao: MovimentacaoBancaria) => {
-    if (confirm('Tem certeza que deseja excluir esta movimentação?')) {
-      excluir(movimentacao.id);
+    setConfirmDialog({ type: 'excluir', movimentacao });
+  };
+
+  const executarAcaoConfirmada = () => {
+    if (!confirmDialog) return;
+    if (confirmDialog.type === 'estornar') {
+      estornar({
+        movimentacao_id: confirmDialog.movimentacao.id,
+        motivo_estorno: 'Estorno manual pelo usuário',
+        observacoes: 'Estornado via interface de movimentações bancárias',
+      });
+    } else {
+      excluir(confirmDialog.movimentacao.id);
     }
+    setConfirmDialog(null);
   };
 
   const formatarData = (data: string) => {
@@ -334,6 +354,27 @@ export function MovimentacoesBancariasTable({
           </Table>
         </div>
       </CardContent>
+
+      <AlertDialog open={!!confirmDialog} onOpenChange={(open) => !open && setConfirmDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmDialog?.type === 'estornar' ? 'Estornar movimentação?' : 'Excluir movimentação?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmDialog?.type === 'estornar'
+                ? 'Esta ação irá estornar a movimentação e ajustar o saldo automaticamente. Deseja continuar?'
+                : 'Esta ação é irreversível e removerá a movimentação. Deseja continuar?'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={executarAcaoConfirmada}>
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
