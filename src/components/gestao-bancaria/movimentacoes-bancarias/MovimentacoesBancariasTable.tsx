@@ -52,6 +52,10 @@ export function MovimentacoesBancariasTable({
 }: MovimentacoesBancariasTableProps) {
   const { estornar, conciliar, excluir } = useMovimentacoesBancarias();
   const [selectedMovimentacao, setSelectedMovimentacao] = useState<string | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    type: 'estornar' | 'excluir';
+    movimentacao: MovimentacaoBancaria;
+  } | null>(null);
 
   const getTipoIcon = (tipo: string) => {
     switch (tipo) {
