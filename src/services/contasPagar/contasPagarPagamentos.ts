@@ -47,12 +47,8 @@ export const registrarPagamento = async (pagamento: PagamentoContaPagar) => {
   const novoValorAtual = conta.valor_atual - pagamento.valor_pago;
   const novaSituacao = novoValorAtual === 0 ? 'PAGA' : 'ABERTA';
 
-    valorOriginal: conta.valor_atual,
-    valorPago: pagamento.valor_pago,
-    novoValor: novoValorAtual,
-    novaSituacao,
-    temRateios: conta.rateios_contas_pagar?.length > 0
-  });
+
+
 
   // Atualizar a conta principal
   const { error: updateError } = await supabase
