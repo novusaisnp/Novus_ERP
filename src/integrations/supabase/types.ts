@@ -14,6 +14,154 @@ export type Database = {
   }
   public: {
     Tables: {
+      categorias_produtos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          empresa_representada_id: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          empresa_representada_id: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          empresa_representada_id?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categorias_produtos_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clientes: {
+        Row: {
+          ativo: boolean
+          bairro: string | null
+          celular: string | null
+          cep: string | null
+          cidade: string | null
+          cnpj: string | null
+          complemento: string | null
+          cpf: string | null
+          created_at: string
+          deleted_at: string | null
+          email: string | null
+          email_secundario: string | null
+          empresa_representada_id: string
+          estado: string | null
+          id: string
+          inscricao_estadual: string | null
+          inscricao_municipal: string | null
+          limite_credito: number | null
+          logradouro: string | null
+          nome: string
+          nome_fantasia: string | null
+          numero: string | null
+          observacoes: string | null
+          razao_social: string | null
+          rg: string | null
+          telefone: string | null
+          telefone_secundario: string | null
+          tipo_pessoa: string | null
+          updated_at: string
+          website: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          bairro?: string | null
+          celular?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
+          complemento?: string | null
+          cpf?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          email?: string | null
+          email_secundario?: string | null
+          empresa_representada_id: string
+          estado?: string | null
+          id?: string
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          limite_credito?: number | null
+          logradouro?: string | null
+          nome: string
+          nome_fantasia?: string | null
+          numero?: string | null
+          observacoes?: string | null
+          razao_social?: string | null
+          rg?: string | null
+          telefone?: string | null
+          telefone_secundario?: string | null
+          tipo_pessoa?: string | null
+          updated_at?: string
+          website?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          bairro?: string | null
+          celular?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
+          complemento?: string | null
+          cpf?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          email?: string | null
+          email_secundario?: string | null
+          empresa_representada_id?: string
+          estado?: string | null
+          id?: string
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          limite_credito?: number | null
+          logradouro?: string | null
+          nome?: string
+          nome_fantasia?: string | null
+          numero?: string | null
+          observacoes?: string | null
+          razao_social?: string | null
+          rg?: string | null
+          telefone?: string | null
+          telefone_secundario?: string | null
+          tipo_pessoa?: string | null
+          updated_at?: string
+          website?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clientes_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       empresa_responsavel: {
         Row: {
           cnpj: string | null
@@ -101,6 +249,122 @@ export type Database = {
         }
         Relationships: []
       }
+      fornecedores: {
+        Row: {
+          agencia: string | null
+          ativo: boolean
+          bairro: string | null
+          banco: string | null
+          celular: string | null
+          cep: string | null
+          cidade: string | null
+          cnpj: string | null
+          complemento: string | null
+          conta: string | null
+          cpf: string | null
+          created_at: string
+          deleted_at: string | null
+          email: string | null
+          email_secundario: string | null
+          empresa_representada_id: string
+          estado: string | null
+          id: string
+          inscricao_estadual: string | null
+          inscricao_municipal: string | null
+          logradouro: string | null
+          nome: string
+          nome_fantasia: string | null
+          numero: string | null
+          observacoes: string | null
+          pix: string | null
+          prazo_entrega: number | null
+          razao_social: string | null
+          telefone: string | null
+          tipo_conta: string | null
+          tipo_pessoa: string | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          agencia?: string | null
+          ativo?: boolean
+          bairro?: string | null
+          banco?: string | null
+          celular?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
+          complemento?: string | null
+          conta?: string | null
+          cpf?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          email?: string | null
+          email_secundario?: string | null
+          empresa_representada_id: string
+          estado?: string | null
+          id?: string
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          logradouro?: string | null
+          nome: string
+          nome_fantasia?: string | null
+          numero?: string | null
+          observacoes?: string | null
+          pix?: string | null
+          prazo_entrega?: number | null
+          razao_social?: string | null
+          telefone?: string | null
+          tipo_conta?: string | null
+          tipo_pessoa?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          agencia?: string | null
+          ativo?: boolean
+          bairro?: string | null
+          banco?: string | null
+          celular?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
+          complemento?: string | null
+          conta?: string | null
+          cpf?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          email?: string | null
+          email_secundario?: string | null
+          empresa_representada_id?: string
+          estado?: string | null
+          id?: string
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          logradouro?: string | null
+          nome?: string
+          nome_fantasia?: string | null
+          numero?: string | null
+          observacoes?: string | null
+          pix?: string | null
+          prazo_entrega?: number | null
+          razao_social?: string | null
+          telefone?: string | null
+          tipo_conta?: string | null
+          tipo_pessoa?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fornecedores_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       perfis: {
         Row: {
           ativo: boolean
@@ -138,6 +402,315 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "perfis_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      produto_fornecedores: {
+        Row: {
+          ativo: boolean
+          codigo_fornecedor: string | null
+          created_at: string
+          empresa_representada_id: string
+          fornecedor_id: string
+          id: string
+          observacoes: string | null
+          prazo_entrega: number | null
+          preco_custo: number | null
+          principal: boolean
+          produto_id: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          codigo_fornecedor?: string | null
+          created_at?: string
+          empresa_representada_id: string
+          fornecedor_id: string
+          id?: string
+          observacoes?: string | null
+          prazo_entrega?: number | null
+          preco_custo?: number | null
+          principal?: boolean
+          produto_id: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          codigo_fornecedor?: string | null
+          created_at?: string
+          empresa_representada_id?: string
+          fornecedor_id?: string
+          id?: string
+          observacoes?: string | null
+          prazo_entrega?: number | null
+          preco_custo?: number | null
+          principal?: boolean
+          produto_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produto_fornecedores_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produto_fornecedores_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produto_fornecedores_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      produtos: {
+        Row: {
+          altura: number | null
+          ativo: boolean
+          categoria_id: string | null
+          cest: string | null
+          codigo: string | null
+          comprimento: number | null
+          controla_estoque: boolean
+          created_at: string
+          deleted_at: string | null
+          descricao: string | null
+          empresa_representada_id: string
+          estoque_atual: number | null
+          estoque_maximo: number | null
+          estoque_minimo: number | null
+          id: string
+          imagem_url: string | null
+          largura: number | null
+          margem_lucro: number | null
+          ncm: string | null
+          nome: string
+          origem_produto: string | null
+          peso: number | null
+          preco_custo: number | null
+          preco_venda: number | null
+          unidade_medida_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          altura?: number | null
+          ativo?: boolean
+          categoria_id?: string | null
+          cest?: string | null
+          codigo?: string | null
+          comprimento?: number | null
+          controla_estoque?: boolean
+          created_at?: string
+          deleted_at?: string | null
+          descricao?: string | null
+          empresa_representada_id: string
+          estoque_atual?: number | null
+          estoque_maximo?: number | null
+          estoque_minimo?: number | null
+          id?: string
+          imagem_url?: string | null
+          largura?: number | null
+          margem_lucro?: number | null
+          ncm?: string | null
+          nome: string
+          origem_produto?: string | null
+          peso?: number | null
+          preco_custo?: number | null
+          preco_venda?: number | null
+          unidade_medida_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          altura?: number | null
+          ativo?: boolean
+          categoria_id?: string | null
+          cest?: string | null
+          codigo?: string | null
+          comprimento?: number | null
+          controla_estoque?: boolean
+          created_at?: string
+          deleted_at?: string | null
+          descricao?: string | null
+          empresa_representada_id?: string
+          estoque_atual?: number | null
+          estoque_maximo?: number | null
+          estoque_minimo?: number | null
+          id?: string
+          imagem_url?: string | null
+          largura?: number | null
+          margem_lucro?: number | null
+          ncm?: string | null
+          nome?: string
+          origem_produto?: string | null
+          peso?: number | null
+          preco_custo?: number | null
+          preco_venda?: number | null
+          unidade_medida_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produtos_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produtos_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produtos_unidade_medida_id_fkey"
+            columns: ["unidade_medida_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_medida"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      servicos: {
+        Row: {
+          ativo: boolean
+          codigo: string | null
+          created_at: string
+          deleted_at: string | null
+          descricao: string | null
+          empresa_representada_id: string
+          id: string
+          nome: string
+          preco: number | null
+          unidade_medida_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          codigo?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          descricao?: string | null
+          empresa_representada_id: string
+          id?: string
+          nome: string
+          preco?: number | null
+          unidade_medida_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          codigo?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          descricao?: string | null
+          empresa_representada_id?: string
+          id?: string
+          nome?: string
+          preco?: number | null
+          unidade_medida_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "servicos_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "servicos_unidade_medida_id_fkey"
+            columns: ["unidade_medida_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_medida"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tamanhos_produtos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          empresa_representada_id: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          empresa_representada_id: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          empresa_representada_id?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tamanhos_produtos_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      unidades_medida: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          empresa_representada_id: string
+          id: string
+          nome: string
+          sigla: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          empresa_representada_id: string
+          id?: string
+          nome: string
+          sigla: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          empresa_representada_id?: string
+          id?: string
+          nome?: string
+          sigla?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unidades_medida_empresa_representada_id_fkey"
             columns: ["empresa_representada_id"]
             isOneToOne: false
             referencedRelation: "empresas_representadas"
