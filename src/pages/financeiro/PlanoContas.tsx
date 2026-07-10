@@ -29,6 +29,8 @@ const PlanoContas = () => {
   const [editingConta, setEditingConta] = useState<PlanoContasType | undefined>();
   const [parentId, setParentId] = useState<string | undefined>();
   const [searchTerm, setSearchTerm] = useState('');
+  const [contaParaExcluir, setContaParaExcluir] = useState<PlanoContasType | null>(null);
+
 
 
   const handleCreate = () => {
