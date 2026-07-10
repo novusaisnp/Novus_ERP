@@ -15,7 +15,9 @@ const ContasPagar = () => {
   const location = useLocation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [contaSelecionada, setContaSelecionada] = useState<ContaPagar | undefined>();
+  const [contaParaExcluir, setContaParaExcluir] = useState<string | null>(null);
   const [filtros, setFiltros] = useState<ContaPagarFilters>({});
+
 
   const {
     contasPagar,
