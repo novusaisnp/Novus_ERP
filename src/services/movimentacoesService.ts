@@ -11,7 +11,6 @@ import type {
 export const movimentacoesService = {
   // Liquidar/Baixar título
   async liquidarTitulo(dadosLiquidacao: LiquidacaoTitulo): Promise<void> {
-    console.log('[MovimentacoesService] Liquidando título:', dadosLiquidacao);
     
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
@@ -78,7 +77,6 @@ export const movimentacoesService = {
         observacoes: `Título liquidado via ${dadosLiquidacao.forma_pagamento}`,
       });
 
-      console.log('[MovimentacoesService] Título liquidado com sucesso');
     } catch (error) {
       console.error('[MovimentacoesService] Erro ao liquidar título:', error);
       throw new Error(`Erro ao liquidar título: ${error.message}`);
@@ -87,7 +85,6 @@ export const movimentacoesService = {
 
   // Estornar título
   async estornarTitulo(dados: { titulo_id: string; tipo_titulo: string; motivo: string }): Promise<void> {
-    console.log('[MovimentacoesService] Estornando título:', dados);
     
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
@@ -131,7 +128,6 @@ export const movimentacoesService = {
         observacoes: `Título estornado: ${dados.motivo}`,
       });
 
-      console.log('[MovimentacoesService] Título estornado com sucesso');
     } catch (error) {
       console.error('[MovimentacoesService] Erro ao estornar título:', error);
       throw new Error(`Erro ao estornar título: ${error.message}`);
@@ -140,7 +136,6 @@ export const movimentacoesService = {
 
   // Editar título
   async editarTitulo(dadosEdicao: EdicaoTitulo): Promise<void> {
-    console.log('[MovimentacoesService] Editando título:', dadosEdicao);
 
     try {
       const tabelaTitulo = dadosEdicao.tipo_titulo === 'CONTAS_PAGAR' ? 'contas_pagar' : 'contas_receber';
@@ -162,7 +157,6 @@ export const movimentacoesService = {
         observacoes: dadosEdicao.motivo_edicao || 'Título editado',
       });
 
-      console.log('[MovimentacoesService] Título editado com sucesso');
     } catch (error) {
       console.error('[MovimentacoesService] Erro ao editar título:', error);
       throw new Error(`Erro ao editar título: ${error.message}`);
@@ -171,7 +165,6 @@ export const movimentacoesService = {
 
   // Cancelar título
   async cancelarTitulo(dadosCancelamento: CancelamentoTitulo): Promise<void> {
-    console.log('[MovimentacoesService] Cancelando título:', dadosCancelamento);
 
     try {
       const tabelaTitulo = dadosCancelamento.tipo_titulo === 'CONTAS_PAGAR' ? 'contas_pagar' : 'contas_receber';
@@ -192,7 +185,6 @@ export const movimentacoesService = {
         observacoes: `Título cancelado: ${dadosCancelamento.motivo_cancelamento}`,
       });
 
-      console.log('[MovimentacoesService] Título cancelado com sucesso');
     } catch (error) {
       console.error('[MovimentacoesService] Erro ao cancelar título:', error);
       throw new Error(`Erro ao cancelar título: ${error.message}`);
@@ -201,7 +193,6 @@ export const movimentacoesService = {
 
   // Buscar histórico de movimentações
   async getHistoricoMovimentacoes(tituloId: string, tipoTitulo: string): Promise<HistoricoMovimentacao[]> {
-    console.log('[MovimentacoesService] Buscando histórico:', tituloId, tipoTitulo);
 
     try {
       const { data, error } = await supabase
@@ -236,11 +227,9 @@ export const movimentacoesService = {
 
   // Buscar rateios do título
   async getRateiosTitulo(tituloId: string, tipoTitulo: string): Promise<any[]> {
-    console.log('[MovimentacoesService] Buscando rateios para título:', tituloId, 'tipo:', tipoTitulo);
 
     try {
       if (tipoTitulo === 'CONTAS_PAGAR') {
-        console.log('[MovimentacoesService] Executando consulta na tabela rateios_contas_pagar...');
         
         const { data, error } = await supabase
           .from('rateios_contas_pagar')
@@ -251,20 +240,17 @@ export const movimentacoesService = {
           `)
           .eq('conta_pagar_id', tituloId);
 
-        console.log('[MovimentacoesService] Resultado da consulta:', { data, error });
         
         if (error) {
           console.error('[MovimentacoesService] Erro na consulta:', error);
           throw error;
         }
         
-        console.log('[MovimentacoesService] Rateios encontrados:', data?.length || 0);
         return data || [];
       }
 
       // Para contas a receber, por enquanto retorna array vazio
       // TODO: Implementar rateios para contas a receber se necessário
-      console.log('[MovimentacoesService] Tipo título não é CONTAS_PAGAR, retornando array vazio');
       return [];
     } catch (error) {
       console.error('[MovimentacoesService] Erro ao buscar rateios:', error);
@@ -274,7 +260,6 @@ export const movimentacoesService = {
 
   // Buscar documentos do título
   async getDocumentosTitulo(tituloId: string, tipoTitulo: string): Promise<any[]> {
-    console.log('[MovimentacoesService] Buscando documentos:', tituloId, tipoTitulo);
 
     try {
       const { data, error } = await supabase
@@ -301,7 +286,6 @@ export const movimentacoesService = {
     categoria?: string;
     descricao?: string;
   }): Promise<void> {
-    console.log('[MovimentacoesService] Fazendo upload de documento:', dados);
     
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
@@ -330,7 +314,6 @@ export const movimentacoesService = {
 
       if (insertError) throw insertError;
 
-      console.log('[MovimentacoesService] Documento enviado com sucesso');
     } catch (error) {
       console.error('[MovimentacoesService] Erro ao fazer upload:', error);
       throw new Error(`Erro ao enviar documento: ${error.message}`);
@@ -339,7 +322,6 @@ export const movimentacoesService = {
 
   // Deletar documento
   async deleteDocumento(documentoId: string): Promise<void> {
-    console.log('[MovimentacoesService] Removendo documento:', documentoId);
 
     try {
       const { error } = await supabase
@@ -349,7 +331,6 @@ export const movimentacoesService = {
 
       if (error) throw error;
 
-      console.log('[MovimentacoesService] Documento removido com sucesso');
     } catch (error) {
       console.error('[MovimentacoesService] Erro ao remover documento:', error);
       throw new Error(`Erro ao remover documento: ${error.message}`);

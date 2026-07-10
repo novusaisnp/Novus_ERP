@@ -7,7 +7,6 @@ import { ContasReceberFilters } from '@/components/financeiro/contas-receber/Con
 import { ContasReceberContent } from '@/components/financeiro/contas-receber/ContasReceberContent';
 import type { ContaReceber, ContaReceberFilters } from '@/types/contasReceber';
 
-console.log('[ContasReceber] Página de contas a receber carregada');
 
 const ContasReceber = () => {
   const [filtros, setFiltros] = useState<ContaReceberFilters>({});
@@ -27,12 +26,10 @@ const ContasReceber = () => {
   } = useContasReceber(filtros);
 
   const handleCreateClick = () => {
-    console.log('[ContasReceber] Clique para criar nova conta');
     // TODO: Implementar modal de criação
   };
 
   const handleEditClick = (conta: ContaReceber) => {
-    console.log('[ContasReceber] Clique para editar conta:', conta.id);
     // TODO: Implementar modal de edição
   };
 
@@ -43,7 +40,6 @@ const ContasReceber = () => {
   };
 
   const handleFilter = (novosFiltros: ContaReceberFilters) => {
-    console.log('[ContasReceber] Aplicando filtros:', novosFiltros);
     setFiltros(novosFiltros);
   };
 

@@ -2,7 +2,6 @@
 import type { ContaReceber, SupabaseContaReceber } from '@/types/contasReceber';
 
 export const transformFromSupabase = (data: any): ContaReceber => {
-  console.log('[ContasReceberTransforms] Transformando dados do Supabase:', data);
   
   return {
     id: data.id,
@@ -41,7 +40,6 @@ export const transformFromSupabase = (data: any): ContaReceber => {
 };
 
 export const transformToSupabase = (input: any) => {
-  console.log('[ContasReceberTransforms] Transformando para Supabase:', input);
   
   return {
     numero_documento: input.numero_documento,

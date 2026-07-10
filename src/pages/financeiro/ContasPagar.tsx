@@ -8,7 +8,6 @@ import { ContasPagarContent } from '@/components/financeiro/contas-pagar/ContasP
 import { ContasPagarModal } from '@/components/financeiro/contas-pagar/ContasPagarModal';
 import { ContaPagar, ContaPagarInput, ContaPagarFilters } from '@/types/contasPagar';
 
-console.log('[ContasPagar] Página de contas a pagar carregada');
 
 const ContasPagar = () => {
   const location = useLocation();
@@ -91,7 +90,6 @@ const ContasPagar = () => {
   };
 
   const handleFilter = (novosFiltros: ContaPagarFilters) => {
-    console.log('[ContasPagar] Aplicando filtros:', novosFiltros);
     setFiltros(novosFiltros);
   };
 

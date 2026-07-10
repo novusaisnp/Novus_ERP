@@ -14,7 +14,6 @@ import type {
   ModalidadeAPIVinculoInput
 } from '@/types/configBasicas';
 
-console.log('[useConfigBasicas] Hook inicializado');
 
 // Hook para Natureza de Caixas
 export const useNaturezaCaixas = () => {

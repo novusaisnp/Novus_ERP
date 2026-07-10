@@ -11,13 +11,11 @@ import {
 } from '@/types/movimentacoesFinanceiras';
 
 export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
-  console.log('[useMovimentacoesFinanceiras] Hook iniciado com filtros:', filtros);
 
   // Buscar títulos das duas tabelas
   const { data: titulos = [], isLoading, error, refetch } = useQuery({
     queryKey: ['movimentacoes-financeiras', filtros],
     queryFn: async () => {
-      console.log('[useMovimentacoesFinanceiras] Buscando títulos');
       
       const titulosUnificados: TituloFinanceiro[] = [];
 

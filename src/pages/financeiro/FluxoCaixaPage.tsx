@@ -10,7 +10,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, AlertCircle } from 'lucide-react';
 
 export const FluxoCaixaPage = () => {
-  console.log('[FluxoCaixa] Renderizando página principal');
 
   // Estado dos filtros
   const [filtros, setFiltros] = useState<FluxoCaixaFiltros>({
@@ -35,12 +34,10 @@ export const FluxoCaixaPage = () => {
 
   // Handlers
   const handleFiltrosChange = (novosFiltros: FluxoCaixaFiltros) => {
-    console.log('[FluxoCaixa] Aplicando novos filtros:', novosFiltros);
     setFiltros(novosFiltros);
   };
 
   const handleRefresh = () => {
-    console.log('[FluxoCaixa] Atualizando dados');
     invalidateCache();
   };
 

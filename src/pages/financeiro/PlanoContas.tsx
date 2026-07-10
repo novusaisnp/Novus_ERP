@@ -29,24 +29,20 @@ const PlanoContas = () => {
   const [parentId, setParentId] = useState<string | undefined>();
   const [searchTerm, setSearchTerm] = useState('');
 
-  console.log('[PlanoContas] Renderizando página, contas:', contas.length);
 
   const handleCreate = () => {
-    console.log('[PlanoContas] Abrindo modal para criar nova conta');
     setEditingConta(undefined);
     setParentId(undefined);
     setIsModalOpen(true);
   };
 
   const handleEdit = (conta: PlanoContasType) => {
-    console.log('[PlanoContas] Abrindo modal para editar conta:', conta.id);
     setEditingConta(conta);
     setParentId(undefined);
     setIsModalOpen(true);
   };
 
   const handleAddChild = (parentId: string) => {
-    console.log('[PlanoContas] Abrindo modal para adicionar subconta ao pai:', parentId);
     setEditingConta(undefined);
     setParentId(parentId);
     setIsModalOpen(true);
@@ -54,7 +50,6 @@ const PlanoContas = () => {
 
   const handleDelete = (conta: PlanoContasType) => {
     if (window.confirm(`Tem certeza que deseja excluir a conta "${conta.nome}"?`)) {
-      console.log('[PlanoContas] Excluindo conta:', conta.id);
       deleteConta(conta.id);
     }
   };
@@ -64,10 +59,8 @@ const PlanoContas = () => {
       const dataWithParent = { ...data, id_pai: parentId || data.id_pai };
       
       if (editingConta) {
-        console.log('[PlanoContas] Atualizando conta:', editingConta.id, dataWithParent);
         await updateConta({ id: editingConta.id, data: dataWithParent });
       } else {
-        console.log('[PlanoContas] Criando nova conta:', dataWithParent);
         await createConta(dataWithParent);
       }
       

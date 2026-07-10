@@ -11,7 +11,6 @@ import type {
 
 export const contasReceberService = {
   async getAll(filtros: ContaReceberFilters = {}): Promise<ContaReceber[]> {
-    console.log('[ContasReceber] Buscando todas as contas a receber com filtros:', filtros);
     
     try {
       const query = buildContasReceberQuery(filtros);
@@ -24,7 +23,6 @@ export const contasReceberService = {
 
       // Retorna array vazio se não há dados, evitando erros
       if (!data || data.length === 0) {
-        console.log('[ContasReceber] Nenhuma conta a receber encontrada');
         return [];
       }
 
@@ -36,7 +34,6 @@ export const contasReceberService = {
   },
 
   async getById(id: string): Promise<ContaReceber | null> {
-    console.log('[ContasReceber] Buscando conta a receber por ID:', id);
     
     try {
       const { data, error } = await getContaReceberByIdQuery(id);
@@ -54,11 +51,9 @@ export const contasReceberService = {
   },
 
   async create(input: ContaReceberInput): Promise<ContaReceber> {
-    console.log('[ContasReceber] Criando nova conta a receber:', input);
 
     try {
       const data = await createContaReceber(input);
-      console.log('[ContasReceber] Conta a receber criada com sucesso:', data);
       return transformFromSupabase(data);
     } catch (error) {
       console.error('[ContasReceber] Erro no service create:', error);
@@ -67,11 +62,9 @@ export const contasReceberService = {
   },
 
   async update(id: string, input: ContaReceberInput): Promise<ContaReceber> {
-    console.log('[ContasReceber] Atualizando conta a receber:', id, input);
 
     try {
       const data = await updateContaReceber(id, input);
-      console.log('[ContasReceber] Conta a receber atualizada com sucesso:', data);
       return transformFromSupabase(data);
     } catch (error) {
       console.error('[ContasReceber] Erro no service update:', error);
@@ -80,11 +73,9 @@ export const contasReceberService = {
   },
 
   async delete(id: string): Promise<void> {
-    console.log('[ContasReceber] Removendo conta a receber:', id);
 
     try {
       await deleteContaReceber(id);
-      console.log('[ContasReceber] Conta a receber removida com sucesso');
     } catch (error) {
       console.error('[ContasReceber] Erro no service delete:', error);
       throw error;
@@ -92,7 +83,6 @@ export const contasReceberService = {
   },
 
   async getEstatisticas(filtros: ContaReceberFilters = {}): Promise<ContaReceberEstatisticas> {
-    console.log('[ContasReceber] Calculando estatísticas com filtros:', filtros);
 
     try {
       const query = getEstatisticasQuery(filtros);
@@ -116,7 +106,6 @@ export const contasReceberService = {
 
       // Se não há dados, retorna estatísticas zeradas
       if (!data || data.length === 0) {
-        console.log('[ContasReceber] Nenhuma conta encontrada para estatísticas');
         return estatisticas;
       }
 

@@ -4,7 +4,6 @@ const supabase: any = _supabase;
 import type { ContaReceberFilters } from '@/types/contasReceber';
 
 export const buildContasReceberQuery = (filtros: ContaReceberFilters = {}) => {
-  console.log('[ContasReceberQueries] Construindo query com filtros:', filtros);
   
   let query = supabase
     .from('contas_receber')
@@ -60,7 +59,6 @@ export const buildContasReceberQuery = (filtros: ContaReceberFilters = {}) => {
 };
 
 export const getContaReceberByIdQuery = (id: string) => {
-  console.log('[ContasReceberQueries] Buscando conta por ID:', id);
   
   return supabase
     .from('contas_receber')
@@ -75,7 +73,6 @@ export const getContaReceberByIdQuery = (id: string) => {
 };
 
 export const getEstatisticasQuery = (filtros: ContaReceberFilters = {}) => {
-  console.log('[ContasReceberQueries] Buscando estatísticas com filtros:', filtros);
   
   let query = supabase
     .from('contas_receber')

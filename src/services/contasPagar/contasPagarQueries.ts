@@ -3,7 +3,6 @@ import { supabase as _supabase } from '@/integrations/supabase/client';
 const supabase: any = _supabase;
 
 export const buildContasPagarQuery = (filtros: any = {}) => {
-  console.log('[ContasPagarQueries] Construindo query com filtros:', filtros);
   
   let query = supabase
     .from('contas_pagar')
@@ -79,7 +78,6 @@ export const buildContasPagarQuery = (filtros: any = {}) => {
 };
 
 export const getContaPagarByIdQuery = (id: string) => {
-  console.log('[ContasPagarQueries] Construindo query para ID:', id);
   
   return supabase
     .from('contas_pagar')
@@ -125,7 +123,6 @@ export const getContaPagarByIdQuery = (id: string) => {
 };
 
 export const getEstatisticasQuery = (filtros: any = {}) => {
-  console.log('[ContasPagarQueries] Construindo query de estatísticas com filtros:', filtros);
   
   let query = supabase
     .from('contas_pagar')

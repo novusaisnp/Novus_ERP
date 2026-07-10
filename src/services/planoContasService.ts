@@ -2,7 +2,6 @@ import { supabase as _supabase } from '@/integrations/supabase/client';
 const supabase: any = _supabase;
 import { PlanoContas, PlanoContasInput, SupabasePlanoContas } from '@/types/planoContas';
 
-console.log('[PlanoContas] Service inicializado');
 
 const transformToPlanoContas = (data: SupabasePlanoContas): PlanoContas => ({
   id: data.id,
@@ -19,7 +18,6 @@ const transformToPlanoContas = (data: SupabasePlanoContas): PlanoContas => ({
 
 export const planoContasService = {
   async getAll(): Promise<PlanoContas[]> {
-    console.log('[PlanoContas] Buscando todas as contas');
     const { data, error } = await supabase
       .from('plano_contas')
       .select('*')
@@ -31,15 +29,12 @@ export const planoContasService = {
     }
 
     const transformedData = data?.map(transformToPlanoContas) || [];
-    console.log('[PlanoContas] Contas carregadas:', transformedData.length);
     return transformedData;
   },
 
   async searchContasAnaliticas(searchTerm: string, tipo?: 'RECEITA' | 'DESPESA'): Promise<PlanoContas[]> {
-    console.log('[PlanoContas] Buscando contas analíticas com termo:', searchTerm, 'tipo:', tipo);
     
     if (!searchTerm || searchTerm.length < 2) {
-      console.log('[PlanoContas] Termo muito curto, retornando array vazio');
       return [];
     }
 
@@ -66,7 +61,6 @@ export const planoContasService = {
       }
 
       const transformedData = data?.map(transformToPlanoContas) || [];
-      console.log('[PlanoContas] Contas analíticas encontradas:', transformedData.length, transformedData);
       return transformedData;
     } catch (error) {
       console.error('[PlanoContas] Erro na busca de contas analíticas:', error);
@@ -75,7 +69,6 @@ export const planoContasService = {
   },
 
   async create(input: PlanoContasInput): Promise<PlanoContas> {
-    console.log('[PlanoContas] Criando nova conta:', input);
     
     // Validação dos dados antes do envio
     if (!input.nome?.trim()) {
@@ -109,7 +102,6 @@ export const planoContasService = {
       analitica,
     };
 
-    console.log('[PlanoContas] Dados para inserção:', insertData);
 
     const { data, error } = await supabase
       .from('plano_contas')
@@ -127,12 +119,10 @@ export const planoContasService = {
     }
 
     const transformedData = transformToPlanoContas(data);
-    console.log('[PlanoContas] Conta criada com sucesso:', transformedData);
     return transformedData;
   },
 
   async update(id: string, input: Partial<PlanoContasInput>): Promise<PlanoContas> {
-    console.log('[PlanoContas] Atualizando conta:', id, input);
     
     // Validação para evitar transformar conta sintética em analítica se ela tiver filhos
     if (input.analitica === true) {
@@ -164,12 +154,10 @@ export const planoContasService = {
     }
 
     const transformedData = transformToPlanoContas(data);
-    console.log('[PlanoContas] Conta atualizada:', transformedData);
     return transformedData;
   },
 
   async delete(id: string): Promise<void> {
-    console.log('[PlanoContas] Verificando se conta pode ser excluída:', id);
     
     // Verificar se tem filhos
     const { data: filhos } = await supabase
@@ -191,7 +179,6 @@ export const planoContasService = {
       throw new Error(`Erro ao excluir conta: ${error.message}`);
     }
 
-    console.log('[PlanoContas] Conta excluída:', id);
   },
 
   async generateCode(idPai?: string): Promise<string> {
@@ -251,7 +238,6 @@ export const planoContasService = {
   },
 
   buildTree(contas: PlanoContas[]): PlanoContas[] {
-    console.log('[PlanoContas] Construindo árvore hierárquica');
     
     const contasMap = new Map<string, PlanoContas>();
     const roots: PlanoContas[] = [];
