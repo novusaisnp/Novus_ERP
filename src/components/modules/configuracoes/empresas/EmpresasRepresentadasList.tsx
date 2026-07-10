@@ -85,7 +85,9 @@ const empty = (): FormState => ({
   cnae_principal: '', natureza_juridica: '', data_abertura: '',
   contador_nome: '', contador_crc: '', contador_email: '', observacoes: '',
   tipo_vinculo: '', cnpj_matriz: '',
+  logo_path: '', cert_path: '', cert_filename: '', cert_uploaded_at: '',
 });
+
 
 const onlyDigits = (v: string) => (v || '').replace(/\D/g, '');
 const isValidCnpj = (v: string) => onlyDigits(v).length === 14;
