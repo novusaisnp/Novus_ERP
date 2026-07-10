@@ -116,7 +116,6 @@ export const ContasBancariasModal = ({
       return;
     }
 
-    console.log('[ContasBancariasModal] Enviando formulário:', formData);
     onSubmit(formData);
   };
 

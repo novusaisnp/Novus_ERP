@@ -21,7 +21,6 @@ import {
   ConciliacaoMovimentacao,
 } from '@/types/movimentacoesBancarias';
 
-console.log('[MovimentacoesBancarias] Hook useMovimentacoesBancarias carregado');
 
 export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
   const queryClient = useQueryClient();

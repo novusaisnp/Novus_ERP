@@ -12,13 +12,11 @@ import {
   DocumentoMovimentacao
 } from '@/types/movimentacoesBancarias';
 
-console.log('[MovimentacoesBancarias] Service carregado');
 
 // Função para listar movimentações com filtros
 export const listarMovimentacoesBancarias = async (
   filtros?: FiltrosMovimentacoes
 ): Promise<MovimentacaoBancaria[]> => {
-  console.log('[MovimentacoesBancarias] Listando movimentações com filtros:', filtros);
 
   let query = supabase
     .from('movimentacoes_bancarias')
@@ -122,7 +120,6 @@ export const listarMovimentacoesBancarias = async (
 
 // Função para obter uma movimentação específica
 export const obterMovimentacaoBancaria = async (id: string): Promise<MovimentacaoBancaria | null> => {
-  console.log('[MovimentacoesBancarias] Obtendo movimentação:', id);
 
   const { data, error } = await supabase
     .from('movimentacoes_bancarias')
@@ -178,7 +175,6 @@ export const obterMovimentacaoBancaria = async (id: string): Promise<Movimentaca
 export const criarMovimentacaoBancaria = async (
   input: MovimentacaoBancariaInput
 ): Promise<MovimentacaoBancaria> => {
-  console.log('[MovimentacoesBancarias] Criando movimentação:', input);
 
   const { data, error } = await supabase
     .from('movimentacoes_bancarias')
@@ -258,7 +254,6 @@ export const realizarTransferenciaBancaria = async (
 export const estornarMovimentacao = async (
   estorno: EstornoMovimentacao
 ): Promise<MovimentacaoBancaria> => {
-  console.log('[MovimentacoesBancarias] Estornando movimentação:', estorno);
 
   const userId = (await supabase.auth.getUser()).data.user?.id;
 
@@ -288,7 +283,6 @@ export const estornarMovimentacao = async (
 export const conciliarMovimentacao = async (
   conciliacao: ConciliacaoMovimentacao
 ): Promise<MovimentacaoBancaria> => {
-  console.log('[MovimentacoesBancarias] Conciliando movimentação:', conciliacao);
 
   const userId = (await supabase.auth.getUser()).data.user?.id;
 
@@ -317,7 +311,6 @@ export const conciliarMovimentacao = async (
 export const obterEstatisticasMovimentacoes = async (
   filtros?: FiltrosMovimentacoes
 ): Promise<EstatisticasMovimentacoes> => {
-  console.log('[MovimentacoesBancarias] Obtendo estatísticas com filtros:', filtros);
 
   let query = supabase
     .from('movimentacoes_bancarias')
@@ -419,7 +412,6 @@ export const obterHistoricoMovimentacao = async (
 export const obterDocumentosMovimentacao = async (
   movimentacaoId: string
 ): Promise<DocumentoMovimentacao[]> => {
-  console.log('[MovimentacoesBancarias] Obtendo documentos da movimentação:', movimentacaoId);
 
   const { data, error } = await supabase
     .from('documentos_movimentacoes_bancarias')
@@ -441,7 +433,6 @@ export const atualizarMovimentacaoBancaria = async (
   id: string,
   input: Partial<MovimentacaoBancariaInput>
 ): Promise<MovimentacaoBancaria> => {
-  console.log('[MovimentacoesBancarias] Atualizando movimentação:', id, input);
 
   const { data, error } = await supabase
     .from('movimentacoes_bancarias')
@@ -487,7 +478,6 @@ export const atualizarMovimentacaoBancaria = async (
 
 // Função para excluir movimentação (soft delete)
 export const excluirMovimentacaoBancaria = async (id: string): Promise<void> => {
-  console.log('[MovimentacoesBancarias] Excluindo movimentação:', id);
 
   const { error } = await supabase
     .from('movimentacoes_bancarias')

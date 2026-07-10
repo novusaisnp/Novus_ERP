@@ -13,7 +13,6 @@ import { NovaMovimentacaoModal } from './NovaMovimentacaoModal';
 import { TransferenciaModal } from './TransferenciaModal';
 import { X, Plus, ArrowRightLeft, Download, Upload } from 'lucide-react';
 
-console.log('[MovimentacoesBancarias] Modal principal carregado');
 
 interface MovimentacoesBancariasModalProps {
   isOpen: boolean;
@@ -40,12 +39,10 @@ export function MovimentacoesBancariasModal({
   }, [isOpen, refetch]);
 
   const handleFiltrosChange = (novosFiltros: FiltrosMovimentacoes) => {
-    console.log('[MovimentacoesBancarias] Aplicando filtros:', novosFiltros);
     setFiltros(novosFiltros);
   };
 
   const handleExportarExtrato = () => {
-    console.log('[MovimentacoesBancarias] Exportando extrato com filtros:', filtros);
     // TODO: Implementar exportação
   };
 
