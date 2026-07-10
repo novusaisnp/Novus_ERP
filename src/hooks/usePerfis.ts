@@ -14,7 +14,7 @@ export const usePerfis = () => {
     setLoading(true);
     try {
       const { data, error } = await (supabase as any)
-        .from('perfis')
+        .from('perfis_acesso')
         .select('*')
         .order('nome');
 
@@ -72,14 +72,14 @@ export const usePerfis = () => {
       let result: any;
       if (perfilData.id) {
         result = await (supabase as any)
-          .from('perfis')
+          .from('perfis_acesso')
           .update(dataToSave)
           .eq('id', perfilData.id)
           .select()
           .single();
       } else {
         result = await (supabase as any)
-          .from('perfis')
+          .from('perfis_acesso')
           .insert(dataToSave)
           .select()
           .single();
@@ -121,7 +121,7 @@ export const usePerfis = () => {
     setLoading(true);
     try {
       const { error } = await supabase
-        .from('perfis')
+        .from('perfis_acesso')
         .delete()
         .eq('id', id);
 

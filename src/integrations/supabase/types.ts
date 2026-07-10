@@ -2385,6 +2385,42 @@ export type Database = {
           },
         ]
       }
+      perfis_acesso: {
+        Row: {
+          ativo: boolean
+          codigo: string
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          permissoes: Json
+          sistema: boolean
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          codigo: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          permissoes?: Json
+          sistema?: boolean
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          codigo?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          permissoes?: Json
+          sistema?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       plano_contas: {
         Row: {
           aceita_lancamento: boolean
