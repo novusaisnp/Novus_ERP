@@ -9,11 +9,13 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Building, Plus, Edit, Trash2, Loader2 } from 'lucide-react';
+import { Building, Plus, Edit, Trash2, Loader2, Upload, X, ImageIcon, FileLock2, ShieldCheck } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmpresaRepresentada } from '@/hooks/useEmpresasRepresentadas';
 import { useEmpresaResponsavel } from '@/hooks/useEmpresaResponsavel';
+import { empresasRepresentadasService } from '@/services/empresasRepresentadasService';
 import { toast } from 'sonner';
+
 
 interface Props {
   empresas: EmpresaRepresentada[];
