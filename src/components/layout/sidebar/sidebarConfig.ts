@@ -88,22 +88,21 @@ export const sidebarItems: MenuItem[] = [
     items: [
       {
         title: "Pedidos",
-        url: "/vendas",
+        url: "/vendas/pedidos",
       },
       {
         title: "Orçamentos",
         url: "/vendas/orcamentos",
       },
       {
+        title: "Contratos",
+        url: "/vendas/contratos",
+      },
+      {
         title: "Relatórios",
         url: "/vendas/relatorios",
       },
     ],
-  },
-  {
-    title: "Contratos",
-    url: "/contratos",
-    icon: FileText,
   },
   {
     title: "Gestão Bancária",
