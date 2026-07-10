@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './components/ui/theme-provider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
@@ -118,12 +118,13 @@ function App() {
                   <Route path="vendas">
                     <Route index element={<Vendas />} />
                     <Route path="pedidos" element={<Vendas />} />
-                    <Route path="orcamentos" element={<div>Orçamentos - Em desenvolvimento</div>} />
-                    <Route path="relatorios" element={<div>Relatórios de Vendas - Em desenvolvimento</div>} />
+                    <Route path="orcamentos" element={<div className="p-8"><h1 className="text-3xl font-bold text-primary mb-2">Orçamentos</h1><p className="text-muted-foreground">Em breve</p></div>} />
+                    <Route path="contratos" element={<Contratos />} />
+                    <Route path="relatorios" element={<div className="p-8"><h1 className="text-3xl font-bold text-primary mb-2">Relatórios de Vendas</h1><p className="text-muted-foreground">Em breve</p></div>} />
                   </Route>
 
-                  {/* Contratos Routes */}
-                  <Route path="contratos" element={<Contratos />} />
+                  {/* Contratos redirect (legacy) */}
+                  <Route path="contratos" element={<Navigate to="/vendas/contratos" replace />} />
                   
                   {/* Gestão Bancária Routes */}
                   <Route path="gestao-bancaria">
