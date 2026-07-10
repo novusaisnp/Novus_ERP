@@ -26,12 +26,6 @@ import type { Categoria } from '@/services/categoriaService';
 const formSchema = z.object({
   nome: z.string().min(1, 'Nome é obrigatório').max(255, 'Nome muito longo'),
   descricao: z.string().optional(),
-  regras_tributacao: z.object({
-    icms: z.string().optional(),
-    ipi: z.string().optional(),
-    pis: z.string().optional(),
-    cofins: z.string().optional(),
-  }).optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -44,18 +38,6 @@ interface FormCategoriaProps {
   isLoading?: boolean;
 }
 
-// Função helper para converter regras_tributacao do banco para o formato do formulário
-const parseRegrasTributacao = (regras: any) => {
-  if (!regras || typeof regras !== 'object') {
-    return {};
-  }
-  return {
-    icms: regras.icms || '',
-    ipi: regras.ipi || '',
-    pis: regras.pis || '',
-    cofins: regras.cofins || '',
-  };
-};
 
 export const FormCategoria: React.FC<FormCategoriaProps> = ({
   open,
@@ -69,7 +51,6 @@ export const FormCategoria: React.FC<FormCategoriaProps> = ({
     defaultValues: {
       nome: categoria?.nome || '',
       descricao: categoria?.descricao || '',
-      regras_tributacao: parseRegrasTributacao((categoria as any)?.regras_tributacao),
     },
   });
 
@@ -78,19 +59,16 @@ export const FormCategoria: React.FC<FormCategoriaProps> = ({
       form.reset({
         nome: categoria.nome,
         descricao: categoria.descricao || '',
-        regras_tributacao: parseRegrasTributacao((categoria as any).regras_tributacao),
       });
     } else {
       form.reset({
         nome: '',
         descricao: '',
-        regras_tributacao: {},
       });
     }
   }, [categoria, form]);
 
   const handleSubmit = (data: FormData) => {
-    console.log('[FormCategoria] Dados do formulário:', data);
     onSubmit(data);
   };
 
@@ -140,86 +118,6 @@ export const FormCategoria: React.FC<FormCategoriaProps> = ({
               )}
             />
 
-            <div className="space-y-3">
-              <FormLabel>Regras de Tributação Padrão</FormLabel>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField
-                  control={form.control}
-                  name="regras_tributacao.icms"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>ICMS (%)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="regras_tributacao.ipi"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>IPI (%)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="regras_tributacao.pis"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>PIS (%)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="regras_tributacao.cofins"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>COFINS (%)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
 
             <div className="flex justify-end gap-3 pt-4">
               <Button type="button" variant="outline" onClick={onClose}>

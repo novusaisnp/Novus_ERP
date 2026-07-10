@@ -91,17 +91,6 @@ const Categorias: React.FC = () => {
     setSelectedCategoria(null);
   };
 
-  const formatTributos = (regras: any) => {
-    if (!regras || typeof regras !== 'object') return 'Não definido';
-    
-    const tributos = [];
-    if (regras.icms) tributos.push(`ICMS: ${regras.icms}%`);
-    if (regras.ipi) tributos.push(`IPI: ${regras.ipi}%`);
-    if (regras.pis) tributos.push(`PIS: ${regras.pis}%`);
-    if (regras.cofins) tributos.push(`COFINS: ${regras.cofins}%`);
-    
-    return tributos.length > 0 ? tributos.join(', ') : 'Não definido';
-  };
 
   if (isLoading) {
     return (
@@ -148,14 +137,13 @@ const Categorias: React.FC = () => {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Descrição</TableHead>
-                <TableHead>Regras Tributárias</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredCategorias.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8">
+                  <TableCell colSpan={3} className="text-center py-8">
                     <p className="text-muted-foreground">
                       {searchTerm ? 'Nenhuma categoria encontrada.' : 'Nenhuma categoria cadastrada.'}
                     </p>
@@ -166,11 +154,6 @@ const Categorias: React.FC = () => {
                   <TableRow key={categoria.id}>
                     <TableCell className="font-medium">{categoria.nome}</TableCell>
                     <TableCell>{categoria.descricao || '-'}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-xs">
-                        {formatTributos((categoria as any).regras_tributacao)}
-                      </Badge>
-                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Button
