@@ -35,6 +35,17 @@ export interface ContaReceber {
   created_at: string;
   updated_at: string;
 
+  // FIN-E5: rastreabilidade de origem (opcional)
+  venda_id?: string | null;
+  venda_pagamento_id?: string | null;
+  venda_pagamento_parcela_id?: string | null;
+  origem_canal?: string | null;
+  origem_sistema?: string | null;
+  externo_id?: string | null;
+  idempotency_key?: string | null;
+  hash_payload?: string | null;
+  created_by?: string | null;
+
   // Aliases legados para não quebrar componentes já existentes.
   situacao: ContaReceberStatus;
   valor_pago?: number | null;
@@ -76,6 +87,7 @@ export interface ContaReceberFilters {
   valor_min?: number;
   valor_max?: number;
   forma_pagamento?: string; // legado — ignorado no filtro do banco
+  venda_id?: string;
 }
 
 export interface ContaReceberEstatisticas {
