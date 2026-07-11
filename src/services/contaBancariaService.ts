@@ -105,6 +105,13 @@ export const criarContaBancaria = async (input: ContaBancariaInput): Promise<Con
 export const atualizarContaBancaria = async (id: string, input: Partial<ContaBancariaInput>): Promise<ContaBancaria> => {
   console.log('[ContaBancariaService] Atualizando conta bancária:', id, input);
 
+  // [LOTE 3B] Guard de saldo_inicial (evita valor inválido antes de qualquer write)
+  if (typeof input.saldo_inicial === 'number') {
+    if (!Number.isFinite(input.saldo_inicial)) {
+      throw new Error('SALDO_INICIAL_INVALIDO: valor não é um número finito');
+    }
+  }
+
   // Ajustar agencia_id para contas cofre
   const updateData: Record<string, any> = {
     ...input,
@@ -131,6 +138,8 @@ export const atualizarContaBancaria = async (id: string, input: Partial<ContaBan
     }
   }
 
+  // [LOTE 3B] Qualquer falha aqui propaga via throw — TanStack Query reverte
+  // o cache; o componente não atualiza o state local (previne divergência).
   const { data, error } = await supabase
     .from('contas_bancarias')
     .update(updateData)
