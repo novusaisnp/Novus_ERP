@@ -73,6 +73,7 @@ import Contratos from './pages/contratos/Contratos';
 
 // Integração Pages
 import SyncDashboard from './pages/integracao/SyncDashboard';
+import { AdminRoute } from './components/auth/AdminRoute';
 
 const queryClient = new QueryClient();
 
@@ -174,9 +175,16 @@ function App() {
                     <Route path="relatorios" element={<Relatorios />} />
                   </Route>
 
-                  {/* Integração Routes */}
+                  {/* Integração Routes — admin-only (SM1-D) */}
                   <Route path="integracao">
-                    <Route path="sincronizacao" element={<SyncDashboard />} />
+                    <Route
+                      path="sincronizacao"
+                      element={
+                        <AdminRoute>
+                          <SyncDashboard />
+                        </AdminRoute>
+                      }
+                    />
                   </Route>
                   
                   {/* Configurações Routes */}
