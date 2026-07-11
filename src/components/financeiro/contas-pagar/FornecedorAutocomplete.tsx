@@ -48,10 +48,9 @@ export const FornecedorAutocomplete: React.FC<FornecedorAutocompleteProps> = ({
 
   const getFornecedorDisplayName = (fornecedor: any) => {
     if (fornecedor.tipo_pessoa === 'PJ') {
-      return fornecedor.nomeFantasia || fornecedor.razaoSocial || 'Empresa';
-    } else {
-      return fornecedor.nome_completo || 'Pessoa Física';
+      return fornecedor.nomeFantasia || fornecedor.razaoSocial || fornecedor.nome || 'Empresa';
     }
+    return fornecedor.nome_completo || fornecedor.nome || 'Pessoa Física';
   };
 
   const getFornecedorDocument = (fornecedor: any) => {
