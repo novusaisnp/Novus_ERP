@@ -154,6 +154,10 @@ const Orcamentos: React.FC = () => {
     return m;
   }, [clientes]);
 
+  const logosMapQ = useEmpresasLogosMap(empresas);
+  const logoOf = (empresaId: string) =>
+    logosMapQ.data?.get(empresaId) ?? null;
+
   const filtered = useMemo(() => {
     return (orcamentos ?? []).filter((o) => {
       const term = search.toLowerCase();
