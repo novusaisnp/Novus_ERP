@@ -293,12 +293,9 @@ export const ContasReceberForm: React.FC<ContasReceberFormProps> = ({
           )}
 
           {useRateio && (
-            <RateioManager
-              valorTotal={Number(formData.valor_original) || 0}
-              rateios={rateiosParaManager}
-              onRateiosChange={handleRateiosChangeInterno}
-              tipo="RECEITA"
-            />
+            <p className="text-sm text-muted-foreground">
+              Configuração de rateio disponível na aba "Rateio".
+            </p>
           )}
         </CardContent>
       </Card>
