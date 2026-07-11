@@ -5,22 +5,29 @@ const supabase: any = _supabase;
 import type { ContaPagarInput } from '@/types/contasPagar';
 
 // Monta payload apenas com colunas que realmente existem em public.contas_pagar.
-// Colunas de UI/legado (valor_atual, ativo, anexos, tags, periodicidade,
-// recorrente, conta_origem_id, data_competencia) não são persistidas.
-const buildPayload = (input: ContaPagarInput) => ({
-  numero_documento: input.numero_documento,
-  descricao: input.descricao,
-  fornecedor_id: input.fornecedor_id || null,
-  plano_conta_id: input.plano_conta_id || null,
-  centro_custo_id: input.centro_custo_id || null,
-  valor_original: input.valor_original,
-  data_vencimento: input.data_vencimento,
-  data_emissao: input.data_emissao,
-  status: uiStatusPagarToDb(input.situacao || 'ABERTA'),
-  observacoes: input.observacoes || null,
-  numero_parcela: input.numero_parcela || null,
-  total_parcelas: input.total_parcelas || null,
-});
+const buildPayload = (input: ContaPagarInput) => {
+  // 'UNICA' é sinônimo de "sem recorrência" na UI; DB só aceita periodicidades reais
+  const periodicidade = input.periodicidade && input.periodicidade !== 'UNICA'
+    ? input.periodicidade
+    : null;
+  return {
+    numero_documento: input.numero_documento,
+    descricao: input.descricao,
+    fornecedor_id: input.fornecedor_id || null,
+    plano_conta_id: input.plano_conta_id || null,
+    centro_custo_id: input.centro_custo_id || null,
+    valor_original: input.valor_original,
+    data_vencimento: input.data_vencimento,
+    data_emissao: input.data_emissao,
+    data_competencia: input.data_competencia || null,
+    status: uiStatusPagarToDb(input.situacao || 'ABERTA'),
+    observacoes: input.observacoes || null,
+    numero_parcela: input.numero_parcela || null,
+    total_parcelas: input.total_parcelas || null,
+    recorrente: Boolean(input.recorrente),
+    periodicidade,
+  };
+};
 
 export const createContaPagar = async (input: ContaPagarInput) => {
   const { data: contaData, error: contaError } = await supabase
