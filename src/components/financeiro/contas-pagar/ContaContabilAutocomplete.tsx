@@ -15,6 +15,7 @@ interface ContaContabilAutocompleteProps {
   placeholder?: string;
   label?: string;
   required?: boolean;
+  tipo?: 'RECEITA' | 'DESPESA';
 }
 
 export const ContaContabilAutocomplete: React.FC<ContaContabilAutocompleteProps> = ({
@@ -22,11 +23,12 @@ export const ContaContabilAutocomplete: React.FC<ContaContabilAutocompleteProps>
   onChange,
   placeholder = "Selecione uma conta analítica",
   label = "Conta Contábil",
-  required = false
+  required = false,
+  tipo = 'DESPESA',
 }) => {
   const [open, setOpen] = useState(false);
   const [internalSearchTerm, setInternalSearchTerm] = useState('');
-  const { contas, isLoading, handleSearchChange } = useContaContabilSearch();
+  const { contas, isLoading, handleSearchChange } = useContaContabilSearch(tipo);
 
   console.log('[ContaContabilAutocomplete] Renderizando com value:', value, 'contas disponíveis:', contas.length);
 
