@@ -88,19 +88,19 @@ export class FluxoCaixaService {
 
       // Processar contas a pagar (saídas)
       contasPagar?.forEach(conta => {
-        const liquidacao = liquidacoes?.find(l => 
-          l.titulo_id === conta.id && l.tipo_titulo === 'CONTAS_PAGAR'
-        );
+        const liquidacao = liquidacoes?.find(l => l.conta_pagar_id === conta.id);
 
         movimentacoes.push({
           id: conta.id,
-          data: liquidacao?.data_pagamento || conta.data_vencimento,
+          data: liquidacao?.data_liquidacao || conta.data_vencimento,
           tipo: 'SAIDA',
           descricao: conta.descricao,
           valor: liquidacao?.valor_pago || conta.valor_original,
           status: liquidacao ? 'REALIZADO' : 'PREVISTO',
           tipo_fluxo: 'OPERACIONAL',
-          conta_bancaria: liquidacao?.conta_bancaria as any || undefined,
+          conta_bancaria: liquidacao?.conta_bancaria_id
+            ? ({ id: liquidacao.conta_bancaria_id } as any)
+            : undefined,
           plano_conta: conta.plano_conta,
           centro_custo: conta.centro_custo,
           titulo_origem: {
@@ -114,19 +114,19 @@ export class FluxoCaixaService {
 
       // Processar contas a receber (entradas)
       contasReceber?.forEach(conta => {
-        const liquidacao = liquidacoes?.find(l => 
-          l.titulo_id === conta.id && l.tipo_titulo === 'CONTAS_RECEBER'
-        );
+        const liquidacao = liquidacoes?.find(l => l.conta_receber_id === conta.id);
 
         movimentacoes.push({
           id: conta.id,
-          data: liquidacao?.data_pagamento || conta.data_vencimento,
+          data: liquidacao?.data_liquidacao || conta.data_vencimento,
           tipo: 'ENTRADA',
           descricao: conta.cliente?.nome || 'Receita',
           valor: liquidacao?.valor_pago || conta.valor_original,
           status: liquidacao ? 'REALIZADO' : 'PREVISTO',
           tipo_fluxo: 'OPERACIONAL',
-          conta_bancaria: liquidacao?.conta_bancaria as any || undefined,
+          conta_bancaria: liquidacao?.conta_bancaria_id
+            ? ({ id: liquidacao.conta_bancaria_id } as any)
+            : undefined,
           titulo_origem: {
             id: conta.id,
             tipo: 'CONTAS_RECEBER',
