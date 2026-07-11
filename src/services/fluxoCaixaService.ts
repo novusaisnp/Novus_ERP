@@ -64,35 +64,24 @@ export class FluxoCaixaService {
       }
 
       // Buscar liquidações para determinar status realizado
+      // Nota: sem embed de contas_bancarias (FK ausente no schema atual)
       const { data: liquidacoes, error: errorLiquidacoes } = await supabase
         .from('liquidacoes_titulos')
         .select(`
-          titulo_id,
-          tipo_titulo,
-          data_pagamento,
+          conta_pagar_id,
+          conta_receber_id,
+          data_liquidacao,
           valor_pago,
-          conta_bancaria:contas_bancarias(id, titular, numero_conta)
+          conta_bancaria_id
         `)
-        .eq('estornado', false);
+        .eq('cancelada', false);
 
       if (errorLiquidacoes) {
         console.error('[FluxoCaixa] Erro ao buscar liquidações:', errorLiquidacoes);
       }
 
-      // Buscar liquidações múltiplas que podem ser movimentações diretas
-      const { data: liquidacoesMultiplas, error: errorMultiplas } = await supabase
-        .from('liquidacoes_multiplas')
-        .select(`
-          liquidacao_principal_id,
-          valor,
-          observacoes,
-          conta_bancaria:contas_bancarias(id, titular, numero_conta),
-          liquidacao_principal:liquidacoes_titulos(data_pagamento, forma_pagamento)
-        `);
-
-      if (errorMultiplas) {
-        console.error('[FluxoCaixa] Erro ao buscar liquidações múltiplas:', errorMultiplas);
-      }
+      // Liquidações múltiplas: schema simplificado — não usadas como movimentação direta
+      const liquidacoesMultiplas: any[] = [];
 
       // Transformar dados unificados
       const movimentacoes: FluxoCaixaItem[] = [];
