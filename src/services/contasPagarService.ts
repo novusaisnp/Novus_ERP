@@ -72,22 +72,28 @@ export const contasPagarService = {
       valor_total_pago: 0,
     };
 
-    data.forEach(conta => {
-      switch (conta.situacao) {
+    data.forEach((conta: any) => {
+      const situacao = dbStatusPagarToUi(conta.status ?? conta.situacao);
+      const valorAtual = Math.max(
+        Number(conta.valor_original || 0) - Number(conta.valor_pago || 0),
+        0,
+      );
+      switch (situacao) {
         case 'ABERTA':
           estatisticas.contas_abertas++;
-          estatisticas.valor_total_aberto += conta.valor_atual;
+          estatisticas.valor_total_aberto += valorAtual;
           break;
         case 'VENCIDA':
           estatisticas.contas_vencidas++;
-          estatisticas.valor_total_vencido += conta.valor_atual;
+          estatisticas.valor_total_vencido += valorAtual;
           break;
         case 'PAGA':
           estatisticas.contas_pagas++;
-          estatisticas.valor_total_pago += conta.valor_atual;
+          estatisticas.valor_total_pago += valorAtual;
           break;
       }
     });
+
 
     return estatisticas;
   },
