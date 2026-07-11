@@ -171,7 +171,7 @@ export const planosPagamentoService = {
       .from('planos_pagamento')
       .select('*')
       .is('deleted_at', null)
-      .order('nome_plano');
+      .order('nome');
 
     if (error) {
       console.error('[ConfigBasicasService] Erro ao buscar planos:', error);
