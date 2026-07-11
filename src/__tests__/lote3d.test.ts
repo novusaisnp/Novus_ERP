@@ -27,11 +27,11 @@ const { supabaseMock } = vi.hoisted(() => {
       estornado: false as boolean,
     },
     auth: { getUser: async () => ({ data: { user: { id: "user-1" } } }) },
-    rpc: (() => {
-      const fn: any = async () => ({ data: null, error: null });
-      fn.mock = { calls: [] as unknown[][] };
-      return fn;
-    })(),
+    rpcCalls: [] as unknown[][],
+    rpc: async (...args: unknown[]) => {
+      supabaseMock.rpcCalls.push(args);
+      return { data: null, error: null };
+    },
     from: (table: string) => {
       const state = supabaseMock.state;
       const builder: any = {
