@@ -123,12 +123,9 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
       });
       return next;
     });
-    // Propaga somente os já pré-registrados
-    const preservados = novosRateios.filter((_, i) => {
-      const origIdx = i < index ? i : i + 1;
-      return preRegistrados.has(origIdx) && origIdx !== index;
-    });
-    propagate(preservados);
+    // O pai precisa manter a lista completa para que uma edição em andamento
+    // não desapareça ao alternar entre cards. A persistência final é validada no submit.
+    propagate(novosRateios);
   };
 
   const atualizarRateio = (index: number, campo: keyof RateioContaPagar, valor: any) => {
@@ -212,9 +209,8 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
     setPreRegistrados(novosPre);
     setExpandedIndex(null);
 
-    // Propaga somente os rateios pré-registrados
-    const preservados = rateiosLocal.filter((_, i) => novosPre.has(i));
-    propagate(preservados);
+    // Mantém todos os rateios no pai; o pré-registro apenas marca o card como confirmado.
+    propagate(rateiosLocal);
 
     toast({
       title: 'Rateio pré-registrado',
@@ -255,12 +251,8 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
     });
 
     setRateiosLocal(novosRateios);
-    // "Distribuir Igualmente" só recalcula valores dos já existentes; mantém
-    // o status de pré-registro como estava. Não propaga automaticamente —
-    // o usuário deve confirmar via Pré-registrar em cada card ou já é pré.
-    // Para consistência, propagamos os que continuam pré-registrados.
-    const preservados = novosRateios.filter((_, i) => preRegistrados.has(i));
-    propagate(preservados);
+    // Propaga a lista completa recalculada para preservar cards em edição.
+    propagate(novosRateios);
   };
 
   const valorTotalRateios = rateiosLocal.reduce((total, rateio) => total + (rateio.valor || 0), 0);
@@ -431,7 +423,10 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => setExpandedIndex(index)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setExpandedIndex(index);
+                        }}
                         aria-label="Editar rateio"
                       >
                         <Pencil className="h-4 w-4" />
@@ -441,7 +436,10 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => removerRateio(index)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        removerRateio(index);
+                      }}
                       className="text-destructive hover:text-destructive"
                       aria-label="Remover rateio"
                     >
