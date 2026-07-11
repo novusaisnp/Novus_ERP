@@ -43,6 +43,8 @@ import type {
 import { calcItemTotal, calcTotal } from '@/services/orcamentosService';
 import { useClientes } from '@/hooks/useClientes';
 import { useEmpresasRepresentadas } from '@/hooks/useEmpresasRepresentadas';
+import { useCatalogoProdutos } from '@/hooks/useCatalogoOrcamento';
+import { CatalogoItemPicker } from '@/components/vendas/CatalogoItemPicker';
 import { toast } from 'sonner';
 
 const STATUS_OPTIONS: OrcamentoStatus[] = [
@@ -121,6 +123,14 @@ const Orcamentos: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | OrcamentoStatus>('all');
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyForm());
+  const produtosCatalogo = useCatalogoProdutos(form.empresaRepresentadaId || undefined);
+  const estoquePorProduto = useMemo(() => {
+    const m = new Map<string, { estoque: number; controla: boolean; nome: string }>();
+    (produtosCatalogo.data ?? []).forEach((p) =>
+      m.set(p.id, { estoque: p.estoque, controla: p.controlaEstoque, nome: p.nome }),
+    );
+    return m;
+  }, [produtosCatalogo.data]);
 
   const filtered = useMemo(() => {
     return (orcamentos ?? []).filter((o) => {
@@ -195,6 +205,15 @@ const Orcamentos: React.FC = () => {
       if (!(Number(it.quantidade) > 0)) {
         toast.error('Quantidade deve ser maior que zero.');
         return;
+      }
+      if (it.tipoItem === 'P' && it.produtoId) {
+        const info = estoquePorProduto.get(it.produtoId);
+        if (info?.controla && Number(it.quantidade) > info.estoque) {
+          toast.error(
+            `Estoque insuficiente para "${info.nome}". Disponível: ${info.estoque}, solicitado: ${it.quantidade}.`,
+          );
+          return;
+        }
       }
     }
     if (form.tipo === 'H' && form.itens.length > 0) {
@@ -485,10 +504,26 @@ const Orcamentos: React.FC = () => {
                       )}
                       <div className={form.tipo === 'H' ? 'col-span-3' : 'col-span-5'}>
                         {idx === 0 && <Label className="text-xs">Descrição</Label>}
-                        <Input
+                        <CatalogoItemPicker
+                          tipoItem={it.tipoItem}
+                          empresaId={form.empresaRepresentadaId}
                           value={it.descricao}
-                          onChange={(e) => updateItem(idx, { descricao: e.target.value })}
-                          placeholder="Descrição"
+                          selectedId={it.tipoItem === 'P' ? it.produtoId ?? undefined : it.servicoId ?? undefined}
+                          onSelect={(sel) =>
+                            updateItem(idx, {
+                              descricao: sel.descricao,
+                              precoUnitario: sel.preco,
+                              produtoId: it.tipoItem === 'P' ? sel.id : null,
+                              servicoId: it.tipoItem === 'S' ? sel.id : null,
+                            })
+                          }
+                          onChangeText={(txt) =>
+                            updateItem(idx, {
+                              descricao: txt,
+                              produtoId: null,
+                              servicoId: null,
+                            })
+                          }
                         />
                       </div>
                       <div className="col-span-2">
