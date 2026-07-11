@@ -90,7 +90,7 @@ export function AppSidebar({
       <div className="h-full flex flex-col text-white">
         {/* Menu Items - Ocupam toda a altura disponível */}
         <div className="flex-1 overflow-y-auto py-[63px]">
-          {sidebarItems.map(item => (
+          {visibleItems.map(item => (
             <div key={item.title} className="mb-1">
               {item.items ? (
                 <SidebarMenuGroup 
