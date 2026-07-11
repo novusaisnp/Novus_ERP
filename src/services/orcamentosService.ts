@@ -161,6 +161,7 @@ const insertItens = async (
   const rows = itens.map((i, idx) => ({
     orcamento_id: orcamentoId,
     empresa_representada_id: empresaId,
+    tipo_item: i.tipoItem,
     produto_id: i.produtoId ?? null,
     servico_id: i.servicoId ?? null,
     descricao: i.descricao,
@@ -175,15 +176,25 @@ const insertItens = async (
   if (error) throw error;
 };
 
+const inferTipo = (itens: OrcamentoItem[]): TipoOrcamento => {
+  const hasP = itens.some((i) => i.tipoItem === 'P');
+  const hasS = itens.some((i) => i.tipoItem === 'S');
+  if (hasP && hasS) return 'H';
+  if (hasS) return 'S';
+  return 'P';
+};
+
 export const createOrcamento = async (input: OrcamentoInput): Promise<Orcamento> => {
   const { data: authUser } = await supabase.auth.getUser();
   const itens = input.itens ?? [];
   const total = itens.length ? calcTotal(itens) : (input.valorTotal ?? 0);
+  const tipo = input.tipo ?? (itens.length ? inferTipo(itens) : 'P');
   const { data, error } = await supabase
     .from('orcamentos_venda')
     .insert({
       empresa_representada_id: input.empresaRepresentadaId,
       numero: input.numero,
+      tipo,
       cliente_id: input.clienteId ?? null,
       data_emissao: input.dataEmissao ?? new Date().toISOString().slice(0, 10),
       data_validade: input.dataValidade ?? null,
