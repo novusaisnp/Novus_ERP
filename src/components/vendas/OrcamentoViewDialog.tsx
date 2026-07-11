@@ -57,11 +57,11 @@ export const OrcamentoViewDialog: React.FC<Props> = ({
         <div className="space-y-4 text-sm">
           <div className="flex justify-between items-start border-b pb-3">
             <div>
-              <div className="font-semibold text-base">
+              <div className="font-black text-2xl tracking-wide uppercase text-primary border-b-2 border-primary inline-block pb-1">
                 {empresa?.nome ?? 'Empresa'}
               </div>
               {empresa?.cnpj && (
-                <div className="text-muted-foreground text-xs">
+                <div className="text-muted-foreground text-xs mt-1">
                   CNPJ: {empresa.cnpj}
                 </div>
               )}
