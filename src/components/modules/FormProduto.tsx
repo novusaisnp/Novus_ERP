@@ -263,12 +263,7 @@ export const FormProduto: React.FC<FormProdutoProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <span>{produto ? 'Editar Produto' : 'Novo Produto'}</span>
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
-          </DialogTitle>
+          <DialogTitle>{produto ? 'Editar Produto' : 'Novo Produto'}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col h-full">

@@ -2,23 +2,24 @@
 import { Produto, SupabaseProduto } from '@/types/produto';
 
 export const produtoUtils = {
-  transformSupabaseToProduto(item: SupabaseProduto): Produto {
+  transformSupabaseToProduto(item: any): Produto {
     return {
       id: item.id,
       nome: item.nome,
       descricao: item.descricao || '',
       codigo_barras: item.codigo_barras || '',
       categoria: item.categoria || '',
+      categoria_id: item.categoria_id ?? null,
       unidade_medida: item.unidade_medida || 'UN',
       peso: item.peso || undefined,
       altura: item.altura || undefined,
       largura: item.largura || undefined,
       comprimento: item.comprimento || undefined,
       variacoes: item.variacoes || [],
-      preco_compra: item.preco_compra || undefined,
+      preco_compra: item.preco_custo ?? item.preco_compra ?? undefined,
       preco_venda: item.preco_venda,
       margem_lucro: item.margem_lucro || undefined,
-      imagem: item.imagem || '',
+      imagem: item.imagem_url || item.imagem || '',
       ncm: item.ncm || '',
       cst_csosn: item.cst_csosn || '',
       cfop: item.cfop || '',
