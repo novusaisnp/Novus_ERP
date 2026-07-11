@@ -206,6 +206,11 @@ export const obterMovimentacaoBancaria = async (id: string): Promise<Movimentaca
 export const criarMovimentacaoBancaria = async (
   input: MovimentacaoBancariaInput
 ): Promise<MovimentacaoBancaria> => {
+  // [LOTE 3B] Guards
+  validarValorPositivo(input.valor);
+  if (TIPOS_SAIDA.includes(input.tipo_movimentacao)) {
+    await checarSaldoParaSaida(input.conta_bancaria_id, input.valor);
+  }
 
   const { data, error } = await supabase
     .from('movimentacoes_bancarias')
