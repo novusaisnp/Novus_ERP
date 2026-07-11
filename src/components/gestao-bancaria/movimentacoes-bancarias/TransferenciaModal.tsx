@@ -201,14 +201,11 @@ export function TransferenciaModal({
             {/* Valor */}
             <div>
               <Label htmlFor="valor">Valor da Transferência</Label>
-              <Input
+              <CurrencyInput
                 id="valor"
-                type="number"
-                step="0.01"
-                min="0.01"
-                placeholder="0,00"
-                value={formData.valor || ''}
-                onChange={(e) => updateFormData('valor', parseFloat(e.target.value) || 0)}
+                placeholder="R$ 0,00"
+                value={formData.valor ?? 0}
+                onValueChange={(v) => updateFormData('valor', v)}
                 required
               />
               {contaOrigem && formData.valor > contaOrigem.conta.saldo_atual && (
