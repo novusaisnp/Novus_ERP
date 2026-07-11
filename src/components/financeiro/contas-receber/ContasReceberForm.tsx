@@ -43,29 +43,8 @@ export const ContasReceberForm: React.FC<ContasReceberFormProps> = ({
   const { centrosCusto } = useCentrosCusto();
   const { empresas, loading: loadingEmpresas } = useEmpresasRepresentadas();
 
-  // O RateioManager de Contas a Pagar é estruturalmente compatível — mapeamos
-  // `descricao`↔`observacoes` na fronteira do componente.
-  const rateiosParaManager: RateioContaPagar[] = (formData.rateios || []).map((r) => ({
-    id: r.id,
-    plano_conta_id: r.plano_conta_id,
-    centro_custo_id: r.centro_custo_id ?? '',
-    valor: r.valor,
-    percentual: r.percentual,
-    descricao: r.observacoes ?? '',
-  }));
 
-  const handleRateiosChangeInterno = (rateios: RateioContaPagar[]) => {
-    onRateiosChange(
-      rateios.map((r) => ({
-        id: r.id,
-        plano_conta_id: r.plano_conta_id,
-        centro_custo_id: r.centro_custo_id || null,
-        valor: r.valor,
-        percentual: r.percentual,
-        observacoes: r.descricao || null,
-      })),
-    );
-  };
+
 
   return (
     <div className="space-y-6">
