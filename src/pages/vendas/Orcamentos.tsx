@@ -32,6 +32,8 @@ import {
   useOrcamentos,
   useCreateOrcamento,
   useUpdateOrcamentoStatus,
+  useDeleteOrcamento,
+  useDuplicarOrcamento,
 } from '@/hooks/useOrcamentos';
 import type {
   Orcamento,
@@ -45,6 +47,9 @@ import { useClientes } from '@/hooks/useClientes';
 import { useEmpresasRepresentadas } from '@/hooks/useEmpresasRepresentadas';
 import { useCatalogoProdutos } from '@/hooks/useCatalogoOrcamento';
 import { CatalogoItemPicker } from '@/components/vendas/CatalogoItemPicker';
+import { OrcamentoViewDialog } from '@/components/vendas/OrcamentoViewDialog';
+import { OrcamentoAcoesMenu } from '@/components/vendas/OrcamentoAcoesMenu';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { toast } from 'sonner';
 
 const STATUS_OPTIONS: OrcamentoStatus[] = [
