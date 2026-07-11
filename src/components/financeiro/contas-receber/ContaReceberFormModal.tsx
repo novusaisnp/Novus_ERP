@@ -117,6 +117,28 @@ export function ContaReceberFormModal({
   const handleRateiosChange = (rateios: RateioContaReceber[]) =>
     setForm((prev) => ({ ...prev, rateios }));
 
+  // Adapta rateios entre os tipos de Contas a Pagar (usado pelo RateioManager) e Contas a Receber
+  const rateiosParaManager: RateioContaPagar[] = (form.rateios || []).map((r) => ({
+    id: r.id,
+    plano_conta_id: r.plano_conta_id,
+    centro_custo_id: r.centro_custo_id ?? '',
+    valor: r.valor,
+    percentual: r.percentual,
+    descricao: r.observacoes ?? '',
+  }));
+
+  const handleRateiosManagerChange = (rateios: RateioContaPagar[]) =>
+    handleRateiosChange(
+      rateios.map((r) => ({
+        id: r.id,
+        plano_conta_id: r.plano_conta_id,
+        centro_custo_id: r.centro_custo_id || null,
+        valor: r.valor,
+        percentual: r.percentual,
+        observacoes: r.descricao || null,
+      })),
+    );
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErro(null);
