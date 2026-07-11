@@ -136,29 +136,7 @@ export class FluxoCaixaService {
         });
       });
 
-      // Processar liquidações múltiplas como movimentações diretas
-      liquidacoesMultiplas?.forEach(multipla => {
-        if (multipla.liquidacao_principal?.data_pagamento) {
-          const dataMovimento = multipla.liquidacao_principal.data_pagamento;
-          
-          // Verificar se está dentro do período filtrado
-          if ((!filtros.data_inicio || dataMovimento >= filtros.data_inicio) && 
-              (!filtros.data_fim || dataMovimento <= filtros.data_fim)) {
-            
-            movimentacoes.push({
-              id: `multipla-${multipla.liquidacao_principal_id}`,
-              data: dataMovimento,
-              tipo: 'SAIDA', // Assumindo que são transferências/saídas
-              descricao: multipla.observacoes || 'Movimentação bancária',
-              valor: multipla.valor,
-              status: 'REALIZADO',
-              tipo_fluxo: 'OPERACIONAL',
-              conta_bancaria: multipla.conta_bancaria as any,
-              observacoes: multipla.observacoes
-            });
-          }
-        }
-      });
+      // Liquidações múltiplas: schema atual não suporta rastreio direto; omitido.
 
       // Aplicar filtros
       let movimentacoesFiltradas = movimentacoes;
