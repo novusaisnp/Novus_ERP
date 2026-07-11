@@ -8,14 +8,17 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Save } from 'lucide-react';
 import { ContasReceberForm } from './ContasReceberForm';
+import { RateioManager } from '@/components/financeiro/contas-pagar/RateioManager';
 import { useEmpresasRepresentadas } from '@/hooks/useEmpresasRepresentadas';
 import type {
   ContaReceber,
   ContaReceberInput,
   RateioContaReceber,
 } from '@/types/contasReceber';
+import type { RateioContaPagar } from '@/types/contasPagar';
 
 interface Props {
   isOpen: boolean;
