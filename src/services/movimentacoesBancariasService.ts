@@ -1,5 +1,6 @@
 import { supabase as _supabase } from '@/integrations/supabase/client';
 const supabase: any = _supabase;
+import { BankingError } from '@/lib/bankingErrors';
 import {
   MovimentacaoBancaria,
   MovimentacaoBancariaInput,
@@ -12,6 +13,19 @@ import {
   DocumentoMovimentacao,
   TipoMovimentacao,
 } from '@/types/movimentacoesBancarias';
+
+/**
+ * [LOTE 3D] Estratégia futura de atomicidade de saldo (NÃO implementada neste lote):
+ *   - Envolver INSERT em `movimentacoes_bancarias` + recálculo de `saldo_atual`
+ *     em uma RPC PostgreSQL única, com `SELECT ... FOR UPDATE` na linha de
+ *     `contas_bancarias` correspondente para evitar race conditions em
+ *     concorrência (dois clientes lançando saída simultânea na mesma conta).
+ *   - Reutilizar o padrão já adotado em `transferencia_bancaria_atomica`.
+ *   - Alternativa intermediária: `pg_advisory_xact_lock(hashtext(conta_id))`
+ *     dentro de uma RPC sem alteração de schema.
+ *   - Ação: abrir lote separado com migration dedicada; guards atuais em JS
+ *     são best-effort e não substituem lock transacional.
+ */
 
 // [LOTE 3B] Hardening no service layer (sem migration).
 const TIPOS_SAIDA: TipoMovimentacao[] = ['SAQUE', 'TRANSFERENCIA_SAIDA', 'AJUSTE_NEGATIVO'];
