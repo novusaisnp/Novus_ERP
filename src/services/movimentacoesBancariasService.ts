@@ -354,7 +354,9 @@ export const estornarMovimentacao = async (
     throw new Error('ESTORNO_INVALIDO: Movimentação não encontrada');
   }
   if (existing.estornado) {
-    throw new Error('ESTORNO_DUPLICADO: Movimentação já estornada');
+    throw new BankingError('ESTORNO_DUPLICADO', 'Movimentação já estornada', {
+      movimentacaoId: estorno.movimentacao_id,
+    });
   }
 
   const userId = (await supabase.auth.getUser()).data.user?.id;
