@@ -9,6 +9,7 @@ import UsuarioFilters from '../usuarios/UsuarioFilters';
 import UsuarioFormModal from '../usuarios/UsuarioFormModal';
 import UsuarioEmptyState from '../usuarios/UsuarioEmptyState';
 import UsuarioLoadingState from '../usuarios/UsuarioLoadingState';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface UsuariosVinculadosListProps {
   usuarios: Usuario[];
@@ -38,6 +39,7 @@ const UsuariosVinculadosList: React.FC<UsuariosVinculadosListProps> = ({
   const [loading, setLoading] = useState(false);
   const [filtroEmpresa, setFiltroEmpresa] = useState<string>('');
   const [filtroPerfil, setFiltroPerfil] = useState<string>('');
+  const [confirmingDelete, setConfirmingDelete] = useState<Usuario | null>(null);
 
   // Verificar se dados essenciais estão carregados
   const isDadosCarregados = empresas.length > 0 && perfis.length > 0 && colaboradores.length > 0;
@@ -83,26 +85,28 @@ const UsuariosVinculadosList: React.FC<UsuariosVinculadosListProps> = ({
 
   const handleDelete = async (usuario: Usuario) => {
     if (!usuario.id) return;
-    
-    console.log('[Usuarios] Excluindo usuário:', usuario.nomeCompleto);
-    
-    if (window.confirm(`Tem certeza que deseja excluir o usuário ${usuario.nomeCompleto}?`)) {
-      try {
-        const sucesso = await onDelete(usuario.id);
-        if (sucesso) {
-          toast({
-            title: "Usuário Excluído",
-            description: "O usuário foi excluído com sucesso.",
-          });
-        }
-      } catch (error) {
-        console.error('[Usuarios] Erro ao excluir:', error);
+    setConfirmingDelete(usuario);
+  };
+
+  const confirmDelete = async () => {
+    const usuario = confirmingDelete;
+    if (!usuario?.id) return;
+    setConfirmingDelete(null);
+    try {
+      const sucesso = await onDelete(usuario.id);
+      if (sucesso) {
         toast({
-          title: "Erro ao excluir",
-          description: "Ocorreu um erro ao excluir o usuário.",
-          variant: "destructive"
+          title: 'Usuário Excluído',
+          description: 'O usuário foi excluído com sucesso.',
         });
       }
+    } catch (error) {
+      console.error('[Usuarios] Erro ao excluir:', error);
+      toast({
+        title: 'Erro ao excluir',
+        description: 'Ocorreu um erro ao excluir o usuário.',
+        variant: 'destructive',
+      });
     }
   };
 
