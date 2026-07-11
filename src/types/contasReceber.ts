@@ -67,7 +67,7 @@ export interface ContaReceber {
     valor: number;
     percentual: number;
     observacoes: string | null;
-    plano_conta?: { id: string; codigo: string; nome: string };
+    plano_conta?: { id: string; codigo: string; nome: string; tipo?: 'RECEITA' | 'DESPESA' };
     centro_custo?: { id: string; nome: string; codigo?: string };
   }>;
 }
