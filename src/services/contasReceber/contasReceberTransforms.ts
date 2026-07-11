@@ -102,9 +102,8 @@ export const transformToSupabase = (input: ContaReceberInput & Record<string, an
       : null;
   const dataRecebimento = input.data_recebimento ?? input.data_pagamento ?? null;
 
-  const periodicidade = input.periodicidade && input.periodicidade !== 'UNICA'
-    ? input.periodicidade
-    : null;
+  const rawPeriod = (input.periodicidade ?? null) as string | null;
+  const periodicidade = rawPeriod && rawPeriod !== 'UNICA' ? rawPeriod : null;
 
   return {
     empresa_representada_id: input.empresa_representada_id,
