@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FiscalConfigForm } from "@/components/modules/FiscalConfigForm";
 import { NaturezaOperacaoForm } from "@/components/modules/NaturezaOperacaoForm";
 import { CFOPConfig } from "@/components/modules/CFOPConfig";
+import { NCMConfig } from "@/components/modules/NCMConfig";
 import { TributosTab } from "@/components/modules/fiscal/TributosTab";
 import {
   Dialog,
@@ -33,10 +34,11 @@ const Tributos: React.FC = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="configuracoes">Configurações</TabsTrigger>
           <TabsTrigger value="naturezas">Naturezas</TabsTrigger>
           <TabsTrigger value="cfop">CFOP</TabsTrigger>
+          <TabsTrigger value="ncm">NCM</TabsTrigger>
           <TabsTrigger value="tributos">Tributos</TabsTrigger>
         </TabsList>
 
@@ -110,6 +112,10 @@ const Tributos: React.FC = () => {
 
         <TabsContent value="cfop">
           <CFOPConfig />
+        </TabsContent>
+
+        <TabsContent value="ncm">
+          <NCMConfig />
         </TabsContent>
 
         <TabsContent value="tributos">
