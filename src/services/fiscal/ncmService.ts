@@ -7,7 +7,7 @@ console.log('[Fiscal] Inicializando serviço de NCMs');
 export const fetchNCMs = async (): Promise<NCM[]> => {
   console.log('[Fiscal] Buscando NCMs');
   const { data, error } = await supabase
-    .from('ncm' as any)
+    .from('ncm')
     .select('*')
     .order('codigo');
   

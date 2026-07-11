@@ -7,7 +7,7 @@ console.log('[Fiscal] Inicializando serviço de tributos');
 export const fetchTributos = async (): Promise<Tributo[]> => {
   console.log('[Fiscal] Buscando tributos');
   const { data, error } = await supabase
-    .from('tributos' as any)
+    .from('tributos')
     .select('*')
     .order('tipo', { ascending: true });
   

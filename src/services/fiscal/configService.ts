@@ -7,7 +7,7 @@ console.log('[Fiscal] Inicializando serviço de configurações fiscais');
 export const fetchConfiguracoesFiscais = async (): Promise<ConfiguracaoFiscal[]> => {
   console.log('[Fiscal] Buscando configurações fiscais');
   const { data, error } = await supabase
-    .from('configuracoes_fiscais' as any)
+    .from('configuracoes_fiscais')
     .select('*')
     .order('created_at', { ascending: false });
   
@@ -43,7 +43,7 @@ export const fetchConfiguracoesFiscais = async (): Promise<ConfiguracaoFiscal[]>
 export const createConfiguracaoFiscal = async (config: Omit<ConfiguracaoFiscal, 'id' | 'createdAt' | 'updatedAt'>): Promise<ConfiguracaoFiscal> => {
   console.log('[Fiscal] Criando configuração fiscal:', config);
   const { data, error } = await supabase
-    .from('configuracoes_fiscais' as any)
+    .from('configuracoes_fiscais')
     .insert([{
       empresa_representada_id: config.empresaRepresentadaId,
       ambiente: config.ambiente,

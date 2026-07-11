@@ -7,7 +7,7 @@ console.log('[Fiscal] Inicializando serviço de CFOPs');
 export const fetchCFOPs = async (): Promise<CFOP[]> => {
   console.log('[Fiscal] Buscando CFOPs');
   const { data, error } = await supabase
-    .from('cfop' as any)
+    .from('cfop')
     .select('*')
     .order('codigo');
   
