@@ -433,6 +433,26 @@ const Orcamentos: React.FC = () => {
               </div>
             </div>
 
+            <div>
+              <Label>Tipo do orçamento *</Label>
+              <Select
+                value={form.tipo}
+                onValueChange={(v) => setTipo(v as TipoOrcamento)}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="P">Produtos (NF-e)</SelectItem>
+                  <SelectItem value="S">Serviços (NFS-e)</SelectItem>
+                  <SelectItem value="H">Híbrido (NF-e + NFS-e)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                {form.tipo === 'P' && 'Somente itens de produto; emite NF-e.'}
+                {form.tipo === 'S' && 'Somente itens de serviço; emite NFS-e.'}
+                {form.tipo === 'H' && 'Combina produtos e serviços; emite NF-e e NFS-e no split fiscal.'}
+              </p>
+            </div>
+
             <div className="border rounded-lg p-3 space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-base">Itens</Label>
