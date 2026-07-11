@@ -4217,6 +4217,7 @@ export type Database = {
           deleted_at: string | null
           desconto: number | null
           empresa_representada_id: string
+          hash_payload: string | null
           id: string
           numero_venda: string | null
           observacoes: string | null
@@ -4242,6 +4243,7 @@ export type Database = {
           deleted_at?: string | null
           desconto?: number | null
           empresa_representada_id: string
+          hash_payload?: string | null
           id?: string
           numero_venda?: string | null
           observacoes?: string | null
@@ -4267,6 +4269,7 @@ export type Database = {
           deleted_at?: string | null
           desconto?: number | null
           empresa_representada_id?: string
+          hash_payload?: string | null
           id?: string
           numero_venda?: string | null
           observacoes?: string | null
@@ -4377,6 +4380,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      converter_orcamento_em_venda: { Args: { p_payload: Json }; Returns: Json }
       get_audit_trail: {
         Args: { p_movimentacao_id: string }
         Returns: {
