@@ -10,6 +10,13 @@ import {
   TipoTitulo
 } from '@/types/movimentacoesFinanceiras';
 import { qk } from '@/lib/queryKeys';
+import {
+  dbStatusPagarToUi,
+  uiStatusPagarToDb,
+  dbStatusReceberToUi,
+  uiStatusReceberToDb,
+} from '@/lib/statusMappers';
+
 
 export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
 
@@ -37,7 +44,7 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
         }
         
         if (filtros.situacao && filtros.situacao !== 'TODOS') {
-          queryPagar = queryPagar.eq('situacao', filtros.situacao);
+          queryPagar = queryPagar.eq('status', uiStatusPagarToDb(filtros.situacao));
         }
         
         if (filtros.data_inicio) {
@@ -69,10 +76,13 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
         }
 
         if (!filtros.incluir_cancelados) {
-          queryPagar = queryPagar.neq('situacao', 'CANCELADA');
+          queryPagar = queryPagar.neq('status', 'CANCELADO');
         }
 
+        queryPagar = queryPagar.is('deleted_at', null);
+
         const { data: contasPagar, error: errorPagar } = await queryPagar.order('data_vencimento', { ascending: false });
+
 
         if (errorPagar) {
           console.error('[useMovimentacoesFinanceiras] Erro ao buscar contas a pagar:', errorPagar);
@@ -84,10 +94,14 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
               numero_documento: conta.numero_documento,
               descricao: conta.descricao,
               valor_original: Number(conta.valor_original),
-              valor_atual: Number(conta.valor_atual),
+              valor_atual: Math.max(
+                Number(conta.valor_original || 0) - Number(conta.valor_pago || 0),
+                0,
+              ),
               data_emissao: conta.data_emissao,
               data_vencimento: conta.data_vencimento,
-              situacao: conta.situacao as any,
+              situacao: dbStatusPagarToUi(conta.status ?? conta.situacao) as any,
+
               observacoes: conta.observacoes,
               created_at: conta.created_at,
               updated_at: conta.updated_at,
@@ -120,7 +134,7 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
         }
         
         if (filtros.situacao && filtros.situacao !== 'TODOS') {
-          queryReceber = queryReceber.eq('situacao', filtros.situacao);
+          queryReceber = queryReceber.eq('status', uiStatusReceberToDb(filtros.situacao));
         }
         
         if (filtros.data_inicio) {
@@ -144,13 +158,16 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
         }
 
         if (!filtros.incluir_cancelados) {
-          queryReceber = queryReceber.neq('situacao', 'CANCELADA');
+          queryReceber = queryReceber.neq('status', 'CANCELADO');
         }
+
+        queryReceber = queryReceber.is('deleted_at', null);
 
         const { data: contasReceber, error: errorReceber } = await queryReceber.order('data_vencimento', { ascending: false });
 
         if (errorReceber) {
           console.error('[useMovimentacoesFinanceiras] Erro ao buscar contas a receber:', errorReceber);
+
         } else if (contasReceber) {
           contasReceber.forEach((conta: any) => {
             const titulo: TituloFinanceiro = {
@@ -158,11 +175,16 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
               tipo: 'CONTAS_RECEBER',
               numero_documento: conta.numero_documento,
               valor_original: Number(conta.valor_original),
-              valor_pago: conta.valor_pago ? Number(conta.valor_pago) : undefined,
+              valor_pago: conta.valor_recebido != null
+                ? Number(conta.valor_recebido)
+                : conta.valor_pago != null
+                ? Number(conta.valor_pago)
+                : undefined,
               data_emissao: conta.data_emissao,
               data_vencimento: conta.data_vencimento,
-              data_pagamento: conta.data_pagamento,
-              situacao: conta.situacao as any,
+              data_pagamento: conta.data_recebimento ?? conta.data_pagamento,
+              situacao: dbStatusReceberToUi(conta.status ?? conta.situacao) as any,
+
               observacoes: conta.observacoes,
               created_at: conta.created_at,
               updated_at: conta.updated_at,

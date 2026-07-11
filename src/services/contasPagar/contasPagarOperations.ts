@@ -1,35 +1,31 @@
 
 import { supabase as _supabase } from '@/integrations/supabase/client';
+import { uiStatusPagarToDb } from '@/lib/statusMappers';
 const supabase: any = _supabase;
 import type { ContaPagarInput } from '@/types/contasPagar';
 
+// Monta payload apenas com colunas que realmente existem em public.contas_pagar.
+// Colunas de UI/legado (valor_atual, ativo, anexos, tags, periodicidade,
+// recorrente, conta_origem_id, data_competencia) não são persistidas.
+const buildPayload = (input: ContaPagarInput) => ({
+  numero_documento: input.numero_documento,
+  descricao: input.descricao,
+  fornecedor_id: input.fornecedor_id || null,
+  plano_conta_id: input.plano_conta_id || null,
+  centro_custo_id: input.centro_custo_id || null,
+  valor_original: input.valor_original,
+  data_vencimento: input.data_vencimento,
+  data_emissao: input.data_emissao,
+  status: uiStatusPagarToDb(input.situacao || 'ABERTA'),
+  observacoes: input.observacoes || null,
+  numero_parcela: input.numero_parcela || null,
+  total_parcelas: input.total_parcelas || null,
+});
+
 export const createContaPagar = async (input: ContaPagarInput) => {
-  
-  // Iniciar transação
   const { data: contaData, error: contaError } = await supabase
     .from('contas_pagar')
-    .insert([{
-      numero_documento: input.numero_documento,
-      descricao: input.descricao,
-      fornecedor_id: input.fornecedor_id || null,
-      plano_conta_id: input.plano_conta_id || null,
-      centro_custo_id: input.centro_custo_id || null,
-      valor_original: input.valor_original,
-      valor_atual: input.valor_atual,
-      data_vencimento: input.data_vencimento,
-      data_emissao: input.data_emissao,
-      data_competencia: input.data_competencia || null,
-      situacao: input.situacao || 'ABERTA',
-      observacoes: input.observacoes || null,
-      anexos: input.anexos || [],
-      tags: input.tags || [],
-      periodicidade: input.periodicidade || null,
-      recorrente: input.recorrente || false,
-      conta_origem_id: input.conta_origem_id || null,
-      numero_parcela: input.numero_parcela || null,
-      total_parcelas: input.total_parcelas || null,
-      ativo: input.ativo !== false,
-    }])
+    .insert([buildPayload(input)])
     .select('id')
     .single();
 
@@ -83,31 +79,9 @@ export const createContaPagar = async (input: ContaPagarInput) => {
 };
 
 export const updateContaPagar = async (id: string, input: ContaPagarInput) => {
-
-  // Atualizar dados principais da conta
-  const { data: contaData, error: contaError } = await supabase
+  const { error: contaError } = await supabase
     .from('contas_pagar')
-    .update({
-      numero_documento: input.numero_documento,
-      descricao: input.descricao,
-      fornecedor_id: input.fornecedor_id || null,
-      plano_conta_id: input.plano_conta_id || null,
-      centro_custo_id: input.centro_custo_id || null,
-      valor_original: input.valor_original,
-      valor_atual: input.valor_atual,
-      data_vencimento: input.data_vencimento,
-      data_emissao: input.data_emissao,
-      data_competencia: input.data_competencia || null,
-      situacao: input.situacao || 'ABERTA',
-      observacoes: input.observacoes || null,
-      anexos: input.anexos || [],
-      tags: input.tags || [],
-      periodicidade: input.periodicidade || null,
-      recorrente: input.recorrente || false,
-      conta_origem_id: input.conta_origem_id || null,
-      numero_parcela: input.numero_parcela || null,
-      total_parcelas: input.total_parcelas || null,
-    })
+    .update(buildPayload(input))
     .eq('id', id)
     .select('id')
     .single();
@@ -171,17 +145,14 @@ export const updateContaPagar = async (id: string, input: ContaPagarInput) => {
 };
 
 export const deleteContaPagar = async (id: string) => {
-
-  // Usar soft delete para manter histórico dos rateios
+  // Soft delete via deleted_at (coluna real na tabela)
   const { error } = await supabase
     .from('contas_pagar')
-    .update({ ativo: false })
+    .update({ deleted_at: new Date().toISOString() })
     .eq('id', id);
 
   if (error) {
     console.error('[ContasPagarOperations] Erro ao remover conta a pagar:', error);
     throw new Error(`Erro ao remover conta a pagar: ${error.message}`);
   }
-
-  // Nota: Os rateios são mantidos para auditoria, não são removidos
 };
