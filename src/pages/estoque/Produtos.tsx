@@ -137,9 +137,9 @@ const Produtos: React.FC = () => {
                 {filteredProdutos.map((produto) => (
                   <TableRow key={produto.id} className="hover:bg-muted/50">
                     <TableCell>
-                      {produto.imagem ? (
+                      {produto.imagem_url ? (
                         <img 
-                          src={produto.imagem} 
+                          src={produto.imagem_url} 
                           alt={produto.nome}
                           className="w-10 h-10 object-cover rounded"
                         />
@@ -161,8 +161,8 @@ const Produtos: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <div>
-                        {produto.codigo_barras && (
-                          <div className="text-sm font-mono">{produto.codigo_barras}</div>
+                        {produto.codigo && (
+                          <div className="text-sm font-mono">{produto.codigo}</div>
                         )}
                         {produto.ncm && (
                           <div className="text-xs text-muted-foreground">NCM: {produto.ncm}</div>
