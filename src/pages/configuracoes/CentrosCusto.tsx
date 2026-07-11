@@ -143,6 +143,18 @@ const CentrosCusto: React.FC = () => {
         onSave={handleSave}
         loading={isLoaderActive}
       />
+
+      <ConfirmDialog
+        open={!!confirmingDelete}
+        onOpenChange={(open) => !open && setConfirmingDelete(null)}
+        title="Remover centro de custo"
+        description={confirmingDelete ? `Tem certeza que deseja remover o centro de custo "${confirmingDelete.nome}"?` : ''}
+        confirmLabel="Remover"
+        onConfirm={() => {
+          if (confirmingDelete) excluir(confirmingDelete.id);
+          setConfirmingDelete(null);
+        }}
+      />
     </div>
   );
 };
