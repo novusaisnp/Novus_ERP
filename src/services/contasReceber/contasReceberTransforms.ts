@@ -75,6 +75,19 @@ export const transformFromSupabase = (data: any): ContaReceber => {
           cpf_cnpj: data.cliente.cnpj ?? data.cliente.cpf ?? null,
         }
       : null,
+
+    rateios: Array.isArray(data.rateios)
+      ? data.rateios.map((r: any) => ({
+          id: r.id,
+          plano_conta_id: r.plano_conta_id ?? null,
+          centro_custo_id: r.centro_custo_id ?? null,
+          valor: Number(r.valor) || 0,
+          percentual: Number(r.percentual) || 0,
+          observacoes: r.observacoes ?? null,
+          plano_conta: r.plano_conta ?? undefined,
+          centro_custo: r.centro_custo ?? undefined,
+        }))
+      : [],
   };
 };
 
