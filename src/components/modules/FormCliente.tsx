@@ -18,6 +18,7 @@ import { EmailManager } from '@/components/modules/clientes/EmailManager';
 import { ContatoEmpresaManager } from '@/components/modules/clientes/ContatoEmpresaManager';
 import { CNAEAutocomplete } from '@/components/modules/clientes/CNAEAutocomplete';
 import { MultiSelectComunicacao } from '@/components/modules/clientes/MultiSelectComunicacao';
+import { CreditoPagamentoSection } from '@/components/modules/clientes/CreditoPagamentoSection';
 import { DocumentUpload } from '@/components/modules/DocumentUpload';
 import { estadosCivis } from '@/data/estadosCivis';
 import { niveisEscolaridade } from '@/data/niveisEscolaridade';
