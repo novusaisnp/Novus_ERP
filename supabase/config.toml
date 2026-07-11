@@ -1,1 +1,4 @@
 project_id = "vypjygroqljchdselzqm"
+
+[functions.job-recorrencias]
+verify_jwt = false

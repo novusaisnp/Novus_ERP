@@ -37,6 +37,7 @@ import ContasReceber from './pages/financeiro/ContasReceber';
 import MovimentacoesFinanceiras from './pages/financeiro/MovimentacoesFinanceiras';
 import ConfigBasicas from './pages/financeiro/ConfigBasicas';
 import FluxoCaixaPage from './pages/financeiro/FluxoCaixaPage';
+import FluxoCompetenciaPage from './pages/financeiro/FluxoCompetenciaPage';
 
 // Gestão Bancária Pages
 import Bancos from './pages/gestao-bancaria/bancos/index';
@@ -143,6 +144,7 @@ function App() {
                     <Route path="contas-pagar" element={<ContasPagar />} />
                     <Route path="movimentacoes" element={<MovimentacoesFinanceiras />} />
                     <Route path="fluxo-caixa" element={<FluxoCaixaPage />} />
+                    <Route path="fluxo-competencia" element={<FluxoCompetenciaPage />} />
                     <Route path="centros-custo" element={<CentrosCusto />} />
                     <Route path="plano-contas" element={<PlanoContas />} />
                     <Route path="config-basicas" element={<ConfigBasicas />} />
