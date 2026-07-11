@@ -150,10 +150,11 @@ export const CatalogoItemPicker: React.FC<Props> = ({
                         />
                         <div className="flex flex-col">
                           <span className="text-sm">{i.label}</span>
-                        <span className="text-xs text-muted-foreground">{i.hint}</span>
-                      </div>
-                    </CommandItem>
-                  ))}
+                          <span className="text-xs text-muted-foreground">{i.hint}</span>
+                        </div>
+                      </CommandItem>
+                    );
+                  })}
                 </CommandGroup>
               </>
             )}
