@@ -160,23 +160,13 @@ export class AuditableServiceTemplate<T extends { id: string; deleted_at?: strin
 
   /**
    * Soft delete usando função SQL com auditoria
+   * [Lote 4B.1] RPC soft_delete_with_audit ausente no backend — lança erro estruturado.
    */
   async softDelete(id: string): Promise<void> {
-    console.log(`[${this.entityName}Service] Executando soft delete: ${id}`);
-    
-    // Buscar dados atuais para auditoria
-    const currentData = await this.getById(id);
-    
-    const { error } = await (supabase as any).rpc('soft_delete_with_audit', {
-      p_tabela_nome: this.tableName,
-      p_registro_id: id,
-      p_dados_antigos: currentData ? JSON.stringify(currentData) : null
-    });
-
-    if (error) {
-      console.error(`[${this.entityName}Service] Erro no soft delete:`, error);
-      throw error;
-    }
+    console.warn(`[${this.entityName}Service] softDelete indisponível: RPC soft_delete_with_audit não provisionada.`);
+    const err = new Error(`Arquivamento auditado indisponível para ${this.entityName}.`);
+    (err as any).code = 'FEATURE_UNAVAILABLE';
+    throw err;
 
     console.log(`[${this.entityName}Service] Soft delete executado com sucesso`);
   }
