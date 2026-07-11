@@ -4415,6 +4415,10 @@ export type Database = {
         }
         Returns: string
       }
+      user_has_access_to_empresa: {
+        Args: { _empresa_id: string }
+        Returns: boolean
+      }
       validar_pagamento_venda: { Args: { p_venda_id: string }; Returns: Json }
     }
     Enums: {
