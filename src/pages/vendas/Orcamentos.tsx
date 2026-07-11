@@ -425,6 +425,7 @@ const Orcamentos: React.FC = () => {
                             <Select
                               value={o.status}
                               onValueChange={(v) => handleStatusChange(o, v as OrcamentoStatus)}
+                              disabled={o.status === 'convertido'}
                             >
                               <SelectTrigger className="h-8 w-32">
                                 <SelectValue />
@@ -449,6 +450,7 @@ const Orcamentos: React.FC = () => {
                             onView={() => setViewOrc(o)}
                             onDuplicate={() => duplicarMut.mutate(o.id)}
                             onDelete={() => setDeleteOrc(o)}
+                            onConverter={() => setConverterOrc(o)}
                           />
                         </TableCell>
                       </TableRow>
