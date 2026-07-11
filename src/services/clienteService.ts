@@ -39,10 +39,7 @@ export const clienteService = {
   async fetchClientes() {
     const { data, error } = await supabase
       .from('clientes')
-      .select(`
-        *,
-        setor:setores_empresa(id, codigo, descricao)
-      `)
+      .select('*')
       .order('nome');
 
     if (error) {
