@@ -20,6 +20,7 @@ const Fornecedores: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFornecedor, setEditingFornecedor] = useState<Fornecedor | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const handleEdit = (fornecedor: Fornecedor) => {
     console.log('[Fornecedores] Editando fornecedor:', fornecedor.id);
@@ -27,17 +28,20 @@ const Fornecedores: React.FC = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
+  const requestDelete = (id: string) => {
     if (!id) return;
-    
-    console.log('[Fornecedores] Solicitando exclusão do fornecedor:', id);
-    if (window.confirm('Tem certeza que deseja excluir este fornecedor? Esta ação não pode ser desfeita.')) {
-      setDeleteLoading(id);
-      try {
-        await deleteFornecedor(id);
-      } finally {
-        setDeleteLoading(null);
-      }
+    setConfirmDeleteId(id);
+  };
+
+  const confirmDelete = async () => {
+    const id = confirmDeleteId;
+    if (!id) return;
+    setConfirmDeleteId(null);
+    setDeleteLoading(id);
+    try {
+      await deleteFornecedor(id);
+    } finally {
+      setDeleteLoading(null);
     }
   };
 
