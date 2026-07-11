@@ -38,6 +38,7 @@ interface Props {
   onView: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
+  onConverter: () => void;
 }
 
 const digits = (s?: string | null) => (s ?? '').replace(/\D/g, '');
