@@ -144,8 +144,14 @@ const Orcamentos: React.FC = () => {
     setOpen(true);
   };
 
+  const defaultItemType = (): TipoItem =>
+    form.tipo === 'S' ? 'S' : 'P';
+
   const addItem = () =>
-    setForm((p) => ({ ...p, itens: [...p.itens, emptyItem()] }));
+    setForm((p) => ({
+      ...p,
+      itens: [...p.itens, emptyItem(p.tipo === 'S' ? 'S' : 'P')],
+    }));
 
   const removeItem = (idx: number) =>
     setForm((p) => ({ ...p, itens: p.itens.filter((_, i) => i !== idx) }));
@@ -154,6 +160,17 @@ const Orcamentos: React.FC = () => {
     setForm((p) => ({
       ...p,
       itens: p.itens.map((it, i) => (i === idx ? { ...it, ...patch } : it)),
+    }));
+
+  // Coerção quando muda o tipo do orçamento
+  const setTipo = (tipo: TipoOrcamento) =>
+    setForm((p) => ({
+      ...p,
+      tipo,
+      itens:
+        tipo === 'H'
+          ? p.itens
+          : p.itens.map((it) => ({ ...it, tipoItem: tipo === 'S' ? 'S' : 'P' })),
     }));
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -180,10 +197,19 @@ const Orcamentos: React.FC = () => {
         return;
       }
     }
+    if (form.tipo === 'H' && form.itens.length > 0) {
+      const hasP = form.itens.some((i) => i.tipoItem === 'P');
+      const hasS = form.itens.some((i) => i.tipoItem === 'S');
+      if (!(hasP && hasS)) {
+        toast.error('Orçamento HÍBRIDO exige ao menos 1 item de PRODUTO e 1 de SERVIÇO.');
+        return;
+      }
+    }
     try {
       await createMut.mutateAsync({
         empresaRepresentadaId: form.empresaRepresentadaId,
         numero: form.numero.trim(),
+        tipo: form.tipo,
         clienteId: form.clienteId || null,
         dataEmissao: form.dataEmissao,
         dataValidade: form.dataValidade || null,
@@ -197,6 +223,7 @@ const Orcamentos: React.FC = () => {
       /* toast pelo hook */
     }
   };
+  void defaultItemType;
 
   const handleStatusChange = (o: Orcamento, status: OrcamentoStatus) => {
     if (status === o.status) return;
