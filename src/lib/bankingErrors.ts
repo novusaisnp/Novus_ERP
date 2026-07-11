@@ -65,13 +65,15 @@ const extractCode = (err: unknown): BankingErrorCode | null => {
 
   if (!err || typeof err !== "object") return null;
   const anyErr = err as Record<string, unknown>;
-  const candidate =
-    (typeof anyErr.code === "string" && anyErr.code) ||
-    (typeof anyErr.name === "string" && anyErr.name) ||
-    (typeof anyErr.message === "string" && anyErr.message) ||
-    null;
-  if (!candidate) return null;
-  return extractCodeFromString(candidate);
+  // Tenta code, depois name, depois message — retorna o primeiro match válido.
+  const candidates = [anyErr.code, anyErr.name, anyErr.message].filter(
+    (c): c is string => typeof c === "string" && c.length > 0
+  );
+  for (const c of candidates) {
+    const found = extractCodeFromString(c);
+    if (found) return found;
+  }
+  return null;
 };
 
 export const mapBankingError = (err: unknown, fallbackTitle = "Erro"): BankingErrorToast => {
