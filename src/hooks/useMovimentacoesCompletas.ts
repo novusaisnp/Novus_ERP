@@ -1,13 +1,34 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { movimentacoesService } from '@/services/movimentacoesService';
-import type { 
-  TituloFinanceiro, 
+import { qk } from '@/lib/queryKeys';
+import type {
+  TituloFinanceiro,
   LiquidacaoTitulo,
   EdicaoTitulo,
   CancelamentoTitulo,
   HistoricoMovimentacao
 } from '@/types/movimentacoesFinanceiras';
+
+// [LOTE 3B] Invalidação refinada por tipo do título; evita refetch amplo.
+const invalidarPorTipo = (queryClient: ReturnType<typeof useQueryClient>, tipo?: string, contaId?: string) => {
+  queryClient.invalidateQueries({ queryKey: qk.movimentacoesFinanceiras.all });
+  if (tipo === 'CONTAS_PAGAR') {
+    queryClient.invalidateQueries({ queryKey: qk.contasPagar.all });
+    queryClient.invalidateQueries({ queryKey: qk.contasPagar.stats() });
+  } else if (tipo === 'CONTAS_RECEBER') {
+    queryClient.invalidateQueries({ queryKey: qk.contasReceber.all });
+    queryClient.invalidateQueries({ queryKey: qk.contasReceber.stats() });
+  } else {
+    // Fallback: sem tipo, invalida ambos (mantém compat)
+    queryClient.invalidateQueries({ queryKey: qk.contasPagar.all });
+    queryClient.invalidateQueries({ queryKey: qk.contasReceber.all });
+  }
+  if (contaId) {
+    queryClient.invalidateQueries({ queryKey: qk.contasBancarias.detail(contaId) });
+    queryClient.invalidateQueries({ queryKey: qk.contasBancarias.stats() });
+  }
+};
 
 export const useMovimentacoesCompletas = () => {
   const { toast } = useToast();
