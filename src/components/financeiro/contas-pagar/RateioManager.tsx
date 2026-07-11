@@ -34,8 +34,21 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
   const [preRegistrados, setPreRegistrados] = useState<Set<number>>(
     () => new Set(rateios.map((_, i) => i)),
   );
-  // Serialização do último payload emitido/recebido para evitar loops de sync
-  const lastSyncedRef = useRef<string>(JSON.stringify(rateios));
+  // Serialização funcional do último payload emitido/recebido para evitar loops de sync.
+  // Ignora metadados de exibição (plano_conta/centro_custo), pois alguns adapters
+  // removem esses objetos no parent e isso não deve sobrescrever a edição local.
+  const serializeRateios = (items: RateioContaPagar[]) =>
+    JSON.stringify(
+      items.map((item) => ({
+        id: item.id ?? null,
+        plano_conta_id: item.plano_conta_id ?? '',
+        centro_custo_id: item.centro_custo_id ?? '',
+        valor: Number(item.valor || 0),
+        percentual: Number(item.percentual || 0),
+        descricao: item.descricao ?? '',
+      })),
+    );
+  const lastSyncedRef = useRef<string>(serializeRateios(rateios));
 
   console.log('[RateioContas] Centros de custo disponíveis:', centrosCusto.length);
 
@@ -47,7 +60,7 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
   // Sincroniza com props somente quando o pai realmente enviou algo diferente
   // do que este componente propagou (evita reset ao clicar em outro card).
   useEffect(() => {
-    const incoming = JSON.stringify(rateios);
+    const incoming = serializeRateios(rateios);
     if (incoming !== lastSyncedRef.current) {
       console.log('[RateioContas] Sync externo detectado, atualizando local');
       setRateiosLocal(rateios);
@@ -58,7 +71,7 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
 
   // Propaga alterações para o pai de forma explícita (sem useEffect encadeado)
   const propagate = (novos: RateioContaPagar[]) => {
-    lastSyncedRef.current = JSON.stringify(novos);
+    lastSyncedRef.current = serializeRateios(novos);
     onRateiosChange(novos);
   };
 
@@ -110,12 +123,9 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
       });
       return next;
     });
-    // Propaga somente os já pré-registrados
-    const preservados = novosRateios.filter((_, i) => {
-      const origIdx = i < index ? i : i + 1;
-      return preRegistrados.has(origIdx) && origIdx !== index;
-    });
-    propagate(preservados);
+    // O pai precisa manter a lista completa para que uma edição em andamento
+    // não desapareça ao alternar entre cards. A persistência final é validada no submit.
+    propagate(novosRateios);
   };
 
   const atualizarRateio = (index: number, campo: keyof RateioContaPagar, valor: any) => {
@@ -199,9 +209,8 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
     setPreRegistrados(novosPre);
     setExpandedIndex(null);
 
-    // Propaga somente os rateios pré-registrados
-    const preservados = rateiosLocal.filter((_, i) => novosPre.has(i));
-    propagate(preservados);
+    // Mantém todos os rateios no pai; o pré-registro apenas marca o card como confirmado.
+    propagate(rateiosLocal);
 
     toast({
       title: 'Rateio pré-registrado',
@@ -242,12 +251,8 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
     });
 
     setRateiosLocal(novosRateios);
-    // "Distribuir Igualmente" só recalcula valores dos já existentes; mantém
-    // o status de pré-registro como estava. Não propaga automaticamente —
-    // o usuário deve confirmar via Pré-registrar em cada card ou já é pré.
-    // Para consistência, propagamos os que continuam pré-registrados.
-    const preservados = novosRateios.filter((_, i) => preRegistrados.has(i));
-    propagate(preservados);
+    // Propaga a lista completa recalculada para preservar cards em edição.
+    propagate(novosRateios);
   };
 
   const valorTotalRateios = rateiosLocal.reduce((total, rateio) => total + (rateio.valor || 0), 0);
@@ -418,7 +423,10 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => setExpandedIndex(index)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setExpandedIndex(index);
+                        }}
                         aria-label="Editar rateio"
                       >
                         <Pencil className="h-4 w-4" />
@@ -428,7 +436,10 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => removerRateio(index)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        removerRateio(index);
+                      }}
                       className="text-destructive hover:text-destructive"
                       aria-label="Remover rateio"
                     >
@@ -445,7 +456,23 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
                           label="Conta Contábil"
                           placeholder="Selecione uma conta analítica"
                           value={rateio.plano_conta_id}
-                          onChange={(value) => atualizarRateio(index, 'plano_conta_id', value)}
+                          onChange={(value, conta) => {
+                            const novosRateios = [...rateiosLocal];
+                            novosRateios[index] = {
+                              ...novosRateios[index],
+                              plano_conta_id: value,
+                              plano_conta: conta,
+                            };
+                            setRateiosLocal(novosRateios);
+                            if (preRegistrados.has(index)) {
+                              setPreRegistrados((prev) => {
+                                const next = new Set(prev);
+                                next.delete(index);
+                                return next;
+                              });
+                            }
+                          }}
+                          selectedConta={rateio.plano_conta}
                           required
                           tipo={tipo}
                         />

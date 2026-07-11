@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -78,6 +78,8 @@ const fromConta = (c: ContaReceber): ContaReceberInput => ({
     valor: Number(r.valor),
     percentual: Number(r.percentual),
     observacoes: r.observacoes ?? null,
+    plano_conta: r.plano_conta,
+    centro_custo: r.centro_custo,
   })),
 });
 
@@ -92,9 +94,17 @@ export function ContaReceberFormModal({
   const [useRateio, setUseRateio] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const { empresas } = useEmpresasRepresentadas();
+  const initializedKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      initializedKeyRef.current = null;
+      return;
+    }
+
+    const initializationKey = editing ? `edit:${editing.id}` : 'new';
+    if (initializedKeyRef.current === initializationKey) return;
+
     setErro(null);
     if (editing) {
       const base = fromConta(editing);
@@ -102,11 +112,23 @@ export function ContaReceberFormModal({
       setUseRateio((base.rateios?.length ?? 0) > 0);
     } else {
       const base = empty();
-      const ativas = empresas.filter((e) => e.ativo);
-      if (ativas.length === 1) base.empresa_representada_id = ativas[0].id!;
       setForm(base);
       setUseRateio(false);
     }
+    initializedKeyRef.current = initializationKey;
+  }, [isOpen, editing]);
+
+  useEffect(() => {
+    if (!isOpen || editing) return;
+
+    const ativas = empresas.filter((e) => e.ativo && e.id);
+    if (ativas.length !== 1) return;
+
+    setForm((prev) =>
+      prev.empresa_representada_id
+        ? prev
+        : { ...prev, empresa_representada_id: ativas[0].id! },
+    );
   }, [isOpen, editing, empresas]);
 
   const handleChange = <K extends keyof ContaReceberInput>(
@@ -131,6 +153,8 @@ export function ContaReceberFormModal({
         valor: r.valor,
         percentual: r.percentual,
         descricao: r.observacoes ?? '',
+        plano_conta: r.plano_conta,
+        centro_custo: r.centro_custo,
       })),
     [form.rateios],
   );
@@ -145,6 +169,8 @@ export function ContaReceberFormModal({
           valor: r.valor,
           percentual: r.percentual,
           observacoes: r.descricao || null,
+          plano_conta: r.plano_conta,
+          centro_custo: r.centro_custo,
         })),
       ),
     [handleRateiosChange],

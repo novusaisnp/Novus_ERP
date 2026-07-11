@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { ContaPagar, ContaPagarInput, RateioContaPagar } from '@/types/contasPagar';
 
 interface UseContasPagarFormProps {
@@ -9,6 +9,7 @@ interface UseContasPagarFormProps {
 
 export const useContasPagarForm = ({ conta, isOpen }: UseContasPagarFormProps) => {
   console.log('[ContasPagarForm] Hook inicializado', { conta: conta?.id, isOpen });
+  const initializedKeyRef = useRef<string | null>(null);
 
   const [formData, setFormData] = useState<ContaPagarInput>({
     numero_documento: '',
@@ -27,6 +28,14 @@ export const useContasPagarForm = ({ conta, isOpen }: UseContasPagarFormProps) =
 
   useEffect(() => {
     console.log('[ContasPagarForm] Reinicializando formulário', { conta: conta?.id, isOpen });
+
+    if (!isOpen) {
+      initializedKeyRef.current = null;
+      return;
+    }
+
+    const initializationKey = conta ? `edit:${conta.id}` : 'new';
+    if (initializedKeyRef.current === initializationKey) return;
     
     if (conta) {
       console.log('[ContasPagarForm] Dados da conta para edição:', {
@@ -75,6 +84,7 @@ export const useContasPagarForm = ({ conta, isOpen }: UseContasPagarFormProps) =
       });
       setUseRateio(false);
     }
+    initializedKeyRef.current = initializationKey;
   }, [conta, isOpen]);
 
   const handleInputChange = useCallback((field: keyof ContaPagarInput, value: any) => {

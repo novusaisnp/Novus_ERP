@@ -8,14 +8,18 @@ import { Button } from '@/components/ui/button';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useContaContabilSearch } from '@/hooks/useContaContabilSearch';
+import type { PlanoContas } from '@/types/planoContas';
+
+type SelectedConta = Pick<PlanoContas, 'id' | 'codigo' | 'nome'>;
 
 interface ContaContabilAutocompleteProps {
   value?: string;
-  onChange: (value: string) => void;
+  onChange: (value: string, conta?: SelectedConta) => void;
   placeholder?: string;
   label?: string;
   required?: boolean;
   tipo?: 'RECEITA' | 'DESPESA';
+  selectedConta?: SelectedConta;
 }
 
 export const ContaContabilAutocomplete: React.FC<ContaContabilAutocompleteProps> = ({
@@ -25,6 +29,7 @@ export const ContaContabilAutocomplete: React.FC<ContaContabilAutocompleteProps>
   label = "Conta Contábil",
   required = false,
   tipo = 'DESPESA',
+  selectedConta,
 }) => {
   const [open, setOpen] = useState(false);
   const [internalSearchTerm, setInternalSearchTerm] = useState('');
@@ -32,7 +37,7 @@ export const ContaContabilAutocomplete: React.FC<ContaContabilAutocompleteProps>
 
   console.log('[ContaContabilAutocomplete] Renderizando com value:', value, 'contas disponíveis:', contas.length);
 
-  const selectedConta = contas.find(conta => conta.id === value);
+  const displayedConta = contas.find(conta => conta.id === value) || (selectedConta?.id === value ? selectedConta : undefined);
 
   // Resetar busca quando o popover abre
   useEffect(() => {
@@ -42,9 +47,9 @@ export const ContaContabilAutocomplete: React.FC<ContaContabilAutocompleteProps>
     }
   }, [open, handleSearchChange]);
 
-  const handleSelect = (contaId: string) => {
+  const handleSelect = (contaId: string, conta?: SelectedConta) => {
     console.log('[ContaContabilAutocomplete] Conta selecionada:', contaId);
-    onChange(contaId);
+    onChange(contaId, conta);
     setOpen(false);
     setInternalSearchTerm('');
   };
@@ -61,7 +66,11 @@ export const ContaContabilAutocomplete: React.FC<ContaContabilAutocompleteProps>
       // Se há apenas uma conta na lista, selecionar automaticamente
       if (contas.length === 1) {
         console.log('[ContaContabilAutocomplete] Enter pressionado - selecionando única conta disponível');
-        handleSelect(contas[0].id);
+        handleSelect(contas[0].id, {
+          id: contas[0].id,
+          codigo: contas[0].codigo,
+          nome: contas[0].nome,
+        });
       }
     }
   };
@@ -82,8 +91,8 @@ export const ContaContabilAutocomplete: React.FC<ContaContabilAutocompleteProps>
             className="w-full justify-between"
             type="button"
           >
-            {selectedConta 
-              ? `${selectedConta.codigo} - ${selectedConta.nome}`
+            {displayedConta 
+              ? `${displayedConta.codigo} - ${displayedConta.nome}`
               : placeholder
             }
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -105,12 +114,16 @@ export const ContaContabilAutocomplete: React.FC<ContaContabilAutocompleteProps>
               </CommandEmpty>
               <CommandGroup>
                 {contas.map((conta) => (
-                  <CommandItem
+        <CommandItem
                     key={conta.id}
                     value={conta.id}
-                    onSelect={(currentValue) => {
+          onSelect={(currentValue) => {
                       console.log('[ContaContabilAutocomplete] CommandItem onSelect chamado:', currentValue);
-                      handleSelect(conta.id);
+            handleSelect(conta.id, {
+              id: conta.id,
+              codigo: conta.codigo,
+              nome: conta.nome,
+            });
                     }}
                     className="cursor-pointer"
                   >
