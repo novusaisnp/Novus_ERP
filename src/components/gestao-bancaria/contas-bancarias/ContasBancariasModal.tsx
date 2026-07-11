@@ -362,13 +362,12 @@ export const ContasBancariasModal = ({
             {/* Saldo Inicial */}
             <div className="space-y-2">
               <Label htmlFor="saldo_inicial">Saldo Inicial</Label>
-              <Input
+              <CurrencyInput
                 id="saldo_inicial"
-                type="number"
-                step="0.01"
                 value={formData.saldo_inicial}
-                onChange={(e) => setFormData({ ...formData, saldo_inicial: parseFloat(e.target.value) || 0 })}
-                placeholder="0,00"
+                onValueChange={(v) => setFormData({ ...formData, saldo_inicial: v })}
+                placeholder="R$ 0,00"
+                allowNegative
               />
             </div>
 
