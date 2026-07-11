@@ -261,6 +261,7 @@ export const ContasReceberForm: React.FC<ContasReceberFormProps> = ({
                 placeholder="Selecione uma conta analítica"
                 label="Conta Contábil"
                 required={!useRateio}
+                tipo="RECEITA"
               />
 
               <div className="space-y-2">
