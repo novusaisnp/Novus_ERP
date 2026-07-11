@@ -1063,17 +1063,23 @@ export type Database = {
           centro_custo_id: string | null
           cliente_id: string | null
           created_at: string
+          created_by: string | null
           data_emissao: string | null
           data_recebimento: string | null
           data_vencimento: string
           deleted_at: string | null
           descricao: string
           empresa_representada_id: string
+          externo_id: string | null
+          hash_payload: string | null
           id: string
+          idempotency_key: string | null
           natureza_id: string | null
           numero_documento: string | null
           numero_parcela: number | null
           observacoes: string | null
+          origem_canal: string | null
+          origem_sistema: string | null
           plano_conta_id: string | null
           plano_pagamento_id: string | null
           status: string | null
@@ -1084,22 +1090,31 @@ export type Database = {
           valor_multa: number | null
           valor_original: number
           valor_recebido: number | null
+          venda_id: string | null
+          venda_pagamento_id: string | null
+          venda_pagamento_parcela_id: string | null
         }
         Insert: {
           centro_custo_id?: string | null
           cliente_id?: string | null
           created_at?: string
+          created_by?: string | null
           data_emissao?: string | null
           data_recebimento?: string | null
           data_vencimento: string
           deleted_at?: string | null
           descricao: string
           empresa_representada_id: string
+          externo_id?: string | null
+          hash_payload?: string | null
           id?: string
+          idempotency_key?: string | null
           natureza_id?: string | null
           numero_documento?: string | null
           numero_parcela?: number | null
           observacoes?: string | null
+          origem_canal?: string | null
+          origem_sistema?: string | null
           plano_conta_id?: string | null
           plano_pagamento_id?: string | null
           status?: string | null
@@ -1110,22 +1125,31 @@ export type Database = {
           valor_multa?: number | null
           valor_original: number
           valor_recebido?: number | null
+          venda_id?: string | null
+          venda_pagamento_id?: string | null
+          venda_pagamento_parcela_id?: string | null
         }
         Update: {
           centro_custo_id?: string | null
           cliente_id?: string | null
           created_at?: string
+          created_by?: string | null
           data_emissao?: string | null
           data_recebimento?: string | null
           data_vencimento?: string
           deleted_at?: string | null
           descricao?: string
           empresa_representada_id?: string
+          externo_id?: string | null
+          hash_payload?: string | null
           id?: string
+          idempotency_key?: string | null
           natureza_id?: string | null
           numero_documento?: string | null
           numero_parcela?: number | null
           observacoes?: string | null
+          origem_canal?: string | null
+          origem_sistema?: string | null
           plano_conta_id?: string | null
           plano_pagamento_id?: string | null
           status?: string | null
@@ -1136,6 +1160,9 @@ export type Database = {
           valor_multa?: number | null
           valor_original?: number
           valor_recebido?: number | null
+          venda_id?: string | null
+          venda_pagamento_id?: string | null
+          venda_pagamento_parcela_id?: string | null
         }
         Relationships: [
           {
@@ -1178,6 +1205,27 @@ export type Database = {
             columns: ["plano_pagamento_id"]
             isOneToOne: false
             referencedRelation: "planos_pagamento"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_receber_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_receber_venda_pagamento_id_fkey"
+            columns: ["venda_pagamento_id"]
+            isOneToOne: false
+            referencedRelation: "venda_pagamento"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_receber_venda_pagamento_parcela_id_fkey"
+            columns: ["venda_pagamento_parcela_id"]
+            isOneToOne: false
+            referencedRelation: "venda_pagamento_parcelas"
             referencedColumns: ["id"]
           },
         ]
@@ -4381,6 +4429,10 @@ export type Database = {
     }
     Functions: {
       converter_orcamento_em_venda: { Args: { p_payload: Json }; Returns: Json }
+      gerar_contas_receber_da_venda: {
+        Args: { p_idempotency_key?: string; p_venda_id: string }
+        Returns: Json
+      }
       get_audit_trail: {
         Args: { p_movimentacao_id: string }
         Returns: {
