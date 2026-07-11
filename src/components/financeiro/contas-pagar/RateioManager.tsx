@@ -76,12 +76,19 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
       descricao: '',
     };
     setRateiosLocal([...rateiosLocal, novoRateio]);
+    setExpandedIndex(rateiosLocal.length);
   };
 
   const removerRateio = (index: number) => {
     console.log('[RateioContas] Removendo rateio no índice:', index);
     const novosRateios = rateiosLocal.filter((_, i) => i !== index);
     setRateiosLocal(novosRateios);
+    setExpandedIndex((prev) => {
+      if (prev === null) return null;
+      if (prev === index) return null;
+      if (prev > index) return prev - 1;
+      return prev;
+    });
   };
 
   const atualizarRateio = (index: number, campo: keyof RateioContaPagar, valor: any) => {
