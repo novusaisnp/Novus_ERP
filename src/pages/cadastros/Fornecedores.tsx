@@ -231,7 +231,7 @@ const Fornecedores: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDelete(fornecedor.id!)}
+                          onClick={() => requestDelete(fornecedor.id!)}
                           disabled={loading || deleteLoading === fornecedor.id}
                         >
                           {deleteLoading === fornecedor.id ? (
