@@ -19,69 +19,74 @@ import { qk } from "@/lib/queryKeys";
 
 // ---- Mock do supabase client usado pelo service ---------------------------
 
-const supabaseMock = {
-  state: {
-    contaSaldo: 100,
-    contaStatus: "ATIVA" as string,
-    estornado: false as boolean,
-  },
-  auth: { getUser: vi.fn(async () => ({ data: { user: { id: "user-1" } } })) },
-  rpc: vi.fn(async () => ({ data: null, error: null })),
-  from: vi.fn((table: string) => {
-    const state = supabaseMock.state;
-    const builder: any = {
-      _table: table,
-      _op: "select",
-      _filters: {} as Record<string, unknown>,
-      select: () => builder,
-      insert: () => {
-        builder._op = "insert";
-        return builder;
-      },
-      update: () => {
-        builder._op = "update";
-        return builder;
-      },
-      eq: () => builder,
-      in: () => builder,
-      order: () => builder,
-      ilike: () => builder,
-      or: () => builder,
-      gte: () => builder,
-      lte: () => builder,
-      is: () => builder,
-      maybeSingle: async () => {
-        if (table === "movimentacoes_bancarias") {
-          return {
-            data: { id: "mov-1", estornado: state.estornado, ativo: true },
-            error: null,
-          };
-        }
-        return { data: null, error: null };
-      },
-      single: async () => {
-        if (table === "contas_bancarias") {
-          return {
-            data: {
-              saldo_atual: state.contaSaldo,
-              status: state.contaStatus,
-              configuracoes: { permitir_saldo_negativo: false },
-            },
-            error: null,
-          };
-        }
-        if (table === "movimentacoes_bancarias" && builder._op === "insert") {
-          return {
-            data: { id: "mov-new", conta_bancaria_id: "conta-A", tipo_movimentacao: "DEPOSITO" },
-            error: null,
-          };
-        }
-        return { data: null, error: null };
-      },
-    };
-    return builder;
-  }),
-};
+const { supabaseMock } = vi.hoisted(() => {
+  const supabaseMock: any = {
+    state: {
+      contaSaldo: 100,
+      contaStatus: "ATIVA" as string,
+      estornado: false as boolean,
+    },
+    auth: { getUser: async () => ({ data: { user: { id: "user-1" } } }) },
+    rpc: (() => {
+      const fn: any = async () => ({ data: null, error: null });
+      fn.mock = { calls: [] as unknown[][] };
+      return fn;
+    })(),
+    from: (table: string) => {
+      const state = supabaseMock.state;
+      const builder: any = {
+        _op: "select",
+        select: () => builder,
+        insert: () => {
+          builder._op = "insert";
+          return builder;
+        },
+        update: () => {
+          builder._op = "update";
+          return builder;
+        },
+        eq: () => builder,
+        in: () => builder,
+        order: () => builder,
+        ilike: () => builder,
+        or: () => builder,
+        gte: () => builder,
+        lte: () => builder,
+        is: () => builder,
+        maybeSingle: async () => {
+          if (table === "movimentacoes_bancarias") {
+            return {
+              data: { id: "mov-1", estornado: state.estornado, ativo: true },
+              error: null,
+            };
+          }
+          return { data: null, error: null };
+        },
+        single: async () => {
+          if (table === "contas_bancarias") {
+            return {
+              data: {
+                saldo_atual: state.contaSaldo,
+                status: state.contaStatus,
+                configuracoes: { permitir_saldo_negativo: false },
+              },
+              error: null,
+            };
+          }
+          if (table === "movimentacoes_bancarias" && builder._op === "insert") {
+            return {
+              data: { id: "mov-new", conta_bancaria_id: "conta-A", tipo_movimentacao: "DEPOSITO" },
+              error: null,
+            };
+          }
+          return { data: null, error: null };
+        },
+      };
+      return builder;
+    },
+  };
+  return { supabaseMock };
+});
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: supabaseMock,
