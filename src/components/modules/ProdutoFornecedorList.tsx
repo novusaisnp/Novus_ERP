@@ -231,11 +231,10 @@ export const ProdutoFornecedorList: React.FC<ProdutoFornecedorListProps> = ({
               </div>
               <div className="space-y-2">
                 <Label>Preço de Compra</Label>
-                <Input
-                  type="number"
-                  step="0.01"
+                <CurrencyInput
                   value={formData.preco_compra}
-                  onChange={(e) => handleInputChange('preco_compra', parseFloat(e.target.value) || 0)}
+                  onValueChange={(v) => handleInputChange('preco_compra', v)}
+                  placeholder="R$ 0,00"
                 />
               </div>
             </div>
