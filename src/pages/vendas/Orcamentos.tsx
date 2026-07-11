@@ -32,6 +32,8 @@ import {
   useOrcamentos,
   useCreateOrcamento,
   useUpdateOrcamentoStatus,
+  useDeleteOrcamento,
+  useDuplicarOrcamento,
 } from '@/hooks/useOrcamentos';
 import type {
   Orcamento,
@@ -45,6 +47,9 @@ import { useClientes } from '@/hooks/useClientes';
 import { useEmpresasRepresentadas } from '@/hooks/useEmpresasRepresentadas';
 import { useCatalogoProdutos } from '@/hooks/useCatalogoOrcamento';
 import { CatalogoItemPicker } from '@/components/vendas/CatalogoItemPicker';
+import { OrcamentoViewDialog } from '@/components/vendas/OrcamentoViewDialog';
+import { OrcamentoAcoesMenu } from '@/components/vendas/OrcamentoAcoesMenu';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { toast } from 'sonner';
 
 const STATUS_OPTIONS: OrcamentoStatus[] = [
@@ -118,11 +123,15 @@ const Orcamentos: React.FC = () => {
   const { empresas } = useEmpresasRepresentadas();
   const createMut = useCreateOrcamento();
   const statusMut = useUpdateOrcamentoStatus();
+  const deleteMut = useDeleteOrcamento();
+  const duplicarMut = useDuplicarOrcamento();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | OrcamentoStatus>('all');
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyForm());
+  const [viewOrc, setViewOrc] = useState<Orcamento | null>(null);
+  const [deleteOrc, setDeleteOrc] = useState<Orcamento | null>(null);
   const produtosCatalogo = useCatalogoProdutos(form.empresaRepresentadaId || undefined);
   const estoquePorProduto = useMemo(() => {
     const m = new Map<string, { estoque: number; controla: boolean; nome: string }>();
@@ -131,6 +140,18 @@ const Orcamentos: React.FC = () => {
     );
     return m;
   }, [produtosCatalogo.data]);
+
+  const empresaById = useMemo(() => {
+    const m = new Map<string, (typeof empresas)[number]>();
+    (empresas ?? []).forEach((e) => e.id && m.set(e.id, e));
+    return m;
+  }, [empresas]);
+
+  const clienteById = useMemo(() => {
+    const m = new Map<string, (typeof clientes)[number]>();
+    (clientes ?? []).forEach((c) => c.id && m.set(c.id, c));
+    return m;
+  }, [clientes]);
 
   const filtered = useMemo(() => {
     return (orcamentos ?? []).filter((o) => {
@@ -329,57 +350,97 @@ const Orcamentos: React.FC = () => {
                   <TableHead className="text-center">Itens</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       Carregando orçamentos...
                     </TableCell>
                   </TableRow>
                 ) : filtered.length > 0 ? (
-                  filtered.map((o) => (
-                    <TableRow key={o.id}>
-                      <TableCell className="font-mono font-semibold">{o.numero}</TableCell>
-                      <TableCell>{o.clienteNome ?? '-'}</TableCell>
-                      <TableCell>
-                        {new Date(o.dataEmissao).toLocaleDateString('pt-BR')}
-                      </TableCell>
-                      <TableCell>
-                        {o.dataValidade
-                          ? new Date(o.dataValidade).toLocaleDateString('pt-BR')
-                          : '-'}
-                      </TableCell>
-                      <TableCell className="text-center">{o.itens?.length ?? 0}</TableCell>
-                      <TableCell className="text-right">{brl(o.valorTotal)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={statusVariant(o.status)}>
-                            {STATUS_LABEL[o.status]}
-                          </Badge>
-                          <Select
-                            value={o.status}
-                            onValueChange={(v) => handleStatusChange(o, v as OrcamentoStatus)}
-                          >
-                            <SelectTrigger className="h-8 w-32">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {STATUS_OPTIONS.map((s) => (
-                                <SelectItem key={s} value={s}>
-                                  {STATUS_LABEL[s]}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  filtered.map((o) => {
+                    const emp = empresaById.get(o.empresaRepresentadaId);
+                    const cli = o.clienteId ? clienteById.get(o.clienteId) : undefined;
+                    const empresaPdf = emp
+                      ? {
+                          nome: emp.nome,
+                          cnpj: emp.cnpj,
+                          email: emp.email,
+                          telefone: emp.telefone,
+                          endereco: emp.endereco,
+                          cidade: emp.cidade,
+                          estado: emp.estado,
+                          cep: emp.cep,
+                        }
+                      : null;
+                    const clientePdf = cli
+                      ? {
+                          nome: cli.nome,
+                          cnpj: cli.tipo === 'J' ? cli.cpfCnpj : null,
+                          cpf: cli.tipo === 'F' ? cli.cpfCnpj : null,
+                          email: cli.emails?.[0] ?? null,
+                          telefone: cli.telefones?.[0] ?? null,
+                          cidade: cli.endereco?.cidade ?? null,
+                          estado: cli.endereco?.uf ?? null,
+                        }
+                      : { nome: o.clienteNome };
+                    return (
+                      <TableRow key={o.id}>
+                        <TableCell className="font-mono font-semibold">{o.numero}</TableCell>
+                        <TableCell>{o.clienteNome ?? '-'}</TableCell>
+                        <TableCell>
+                          {new Date(o.dataEmissao).toLocaleDateString('pt-BR')}
+                        </TableCell>
+                        <TableCell>
+                          {o.dataValidade
+                            ? new Date(o.dataValidade).toLocaleDateString('pt-BR')
+                            : '-'}
+                        </TableCell>
+                        <TableCell className="text-center">{o.itens?.length ?? 0}</TableCell>
+                        <TableCell className="text-right">{brl(o.valorTotal)}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={statusVariant(o.status)}>
+                              {STATUS_LABEL[o.status]}
+                            </Badge>
+                            <Select
+                              value={o.status}
+                              onValueChange={(v) => handleStatusChange(o, v as OrcamentoStatus)}
+                            >
+                              <SelectTrigger className="h-8 w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {STATUS_OPTIONS.map((s) => (
+                                  <SelectItem key={s} value={s}>
+                                    {STATUS_LABEL[s]}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <OrcamentoAcoesMenu
+                            orcamento={o}
+                            empresa={empresaPdf}
+                            cliente={clientePdf}
+                            clienteTelefone={cli?.telefones?.[0]}
+                            clienteEmail={cli?.emails?.[0]}
+                            onView={() => setViewOrc(o)}
+                            onDuplicate={() => duplicarMut.mutate(o.id)}
+                            onDelete={() => setDeleteOrc(o)}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       Nenhum orçamento encontrado.
                     </TableCell>
                   </TableRow>
@@ -615,6 +676,61 @@ const Orcamentos: React.FC = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      <OrcamentoViewDialog
+        orcamento={viewOrc}
+        empresa={
+          viewOrc
+            ? (() => {
+                const e = empresaById.get(viewOrc.empresaRepresentadaId);
+                return e
+                  ? {
+                      nome: e.nome,
+                      cnpj: e.cnpj,
+                      email: e.email,
+                      telefone: e.telefone,
+                      endereco: e.endereco,
+                      cidade: e.cidade,
+                      estado: e.estado,
+                      cep: e.cep,
+                    }
+                  : null;
+              })()
+            : null
+        }
+        cliente={
+          viewOrc && viewOrc.clienteId
+            ? (() => {
+                const c = clienteById.get(viewOrc.clienteId);
+                if (!c) return { nome: viewOrc.clienteNome };
+                return {
+                  nome: c.nome,
+                  cnpj: c.tipo === 'J' ? c.cpfCnpj : null,
+                  cpf: c.tipo === 'F' ? c.cpfCnpj : null,
+                  email: c.emails?.[0] ?? null,
+                  telefone: c.telefones?.[0] ?? null,
+                  cidade: c.endereco?.cidade ?? null,
+                  estado: c.endereco?.uf ?? null,
+                };
+              })()
+            : { nome: viewOrc?.clienteNome ?? null }
+        }
+        open={!!viewOrc}
+        onOpenChange={(v) => !v && setViewOrc(null)}
+      />
+
+      <ConfirmDialog
+        open={!!deleteOrc}
+        onOpenChange={(v) => !v && setDeleteOrc(null)}
+        title="Excluir orçamento"
+        description={`Deseja excluir o orçamento ${deleteOrc?.numero ?? ''}? Esta ação pode ser revertida pelo administrador.`}
+        confirmLabel="Excluir"
+        destructive
+        onConfirm={() => {
+          if (deleteOrc) deleteMut.mutate(deleteOrc.id);
+          setDeleteOrc(null);
+        }}
+      />
     </div>
   );
 };
