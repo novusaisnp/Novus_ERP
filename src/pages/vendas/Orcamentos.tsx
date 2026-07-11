@@ -379,6 +379,7 @@ const Orcamentos: React.FC = () => {
                           cidade: emp.cidade,
                           estado: emp.estado,
                           cep: emp.cep,
+                          logoUrl: logoOf(o.empresaRepresentadaId),
                         }
                       : null;
                     const clientePdf = cli
