@@ -71,28 +71,22 @@ export const ContasPagarForm: React.FC<ContasPagarFormProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="valor_original">Valor Original *</Label>
-              <Input
+              <CurrencyInput
                 id="valor_original"
-                type="number"
-                step="0.01"
-                min="0"
                 value={formData.valor_original}
-                onChange={(e) => onInputChange('valor_original', parseFloat(e.target.value) || 0)}
-                placeholder="0,00"
+                onValueChange={(v) => onInputChange('valor_original', v)}
+                placeholder="R$ 0,00"
                 required
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="valor_atual">Valor Atual *</Label>
-              <Input
+              <CurrencyInput
                 id="valor_atual"
-                type="number"
-                step="0.01"
-                min="0"
                 value={formData.valor_atual}
-                onChange={(e) => onInputChange('valor_atual', parseFloat(e.target.value) || 0)}
-                placeholder="0,00"
+                onValueChange={(v) => onInputChange('valor_atual', v)}
+                placeholder="R$ 0,00"
                 required
               />
             </div>
