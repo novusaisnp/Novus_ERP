@@ -151,7 +151,15 @@ export const useAuditableEntity = <T extends { id: string; deleted_at?: string |
         }
       }
 
-      // Usar função SQL de soft delete com auditoria
+      // [Lote 4B.1] RPC soft_delete_with_audit ausente — feature indisponível.
+      console.warn(`[${entityName}] softDelete indisponível: RPC soft_delete_with_audit não provisionada.`);
+      toast({
+        title: "Funcionalidade indisponível",
+        description: `O arquivamento auditado de ${entityName.toLowerCase()} ainda não está disponível.`,
+        variant: "destructive",
+      });
+      return false;
+      // eslint-disable-next-line no-unreachable
       const { error } = await (supabase as any).rpc('soft_delete_with_audit', {
         p_tabela_nome: tableName,
         p_registro_id: id,

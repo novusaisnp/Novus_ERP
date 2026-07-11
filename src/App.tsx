@@ -28,7 +28,7 @@ import Localizacoes from './pages/estoque/Localizacoes';
 import UnidadesMedida from './pages/estoque/UnidadesMedida';
 import Tamanhos from './pages/estoque/Tamanhos';
 import EmBreve from './pages/estoque/EmBreve';
-import { ArrowLeftRight, ClipboardList, BarChart3 } from 'lucide-react';
+import { ArrowLeftRight, ClipboardList, BarChart3, FileText } from 'lucide-react';
 
 // Financeiro Pages
 import PlanoContas from './pages/financeiro/PlanoContas';
@@ -47,7 +47,7 @@ import MovimentacoesBancarias from './pages/gestao-bancaria/movimentacoes-bancar
 // Fiscal Pages
 import NotasFiscais from './pages/fiscal/NotasFiscais';
 import SPED from './pages/fiscal/SPED';
-import Tributos from './pages/fiscal/Tributos';
+
 
 // RH Pages
 import Colaboradores from './pages/rh/Colaboradores';
@@ -153,7 +153,7 @@ function App() {
                   <Route path="fiscal">
                     <Route path="notas-fiscais" element={<NotasFiscais />} />
                     <Route path="sped" element={<SPED />} />
-                    <Route path="tributos" element={<Tributos />} />
+                    <Route path="tributos" element={<EmBreve titulo="Tributos" icon={FileText} descricao="O módulo Fiscal (Tributos, CFOP, NCM, Naturezas de Operação e Configurações Fiscais) será liberado em breve." />} />
                   </Route>
                   
                   {/* RH Routes */}
