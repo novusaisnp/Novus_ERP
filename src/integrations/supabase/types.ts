@@ -4034,6 +4034,178 @@ export type Database = {
           },
         ]
       }
+      venda_pagamento: {
+        Row: {
+          adquirente: string | null
+          autorizacao_nsu: string | null
+          bandeira: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          empresa_representada_id: string
+          externo_id: string | null
+          hash_payload: string | null
+          id: string
+          idempotency_key: string | null
+          modalidade_id: string
+          natureza_id: string | null
+          operador_id: string | null
+          origem_canal: string
+          origem_sistema: string | null
+          percentual_entrada: number
+          plano_pagamento_id: string | null
+          plano_snapshot: Json
+          qtd_parcelas: number
+          status: string
+          updated_at: string
+          valor_bruto: number
+          valor_desconto: number
+          valor_juros: number
+          valor_liquido: number
+          venda_id: string
+        }
+        Insert: {
+          adquirente?: string | null
+          autorizacao_nsu?: string | null
+          bandeira?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          empresa_representada_id: string
+          externo_id?: string | null
+          hash_payload?: string | null
+          id?: string
+          idempotency_key?: string | null
+          modalidade_id: string
+          natureza_id?: string | null
+          operador_id?: string | null
+          origem_canal?: string
+          origem_sistema?: string | null
+          percentual_entrada?: number
+          plano_pagamento_id?: string | null
+          plano_snapshot?: Json
+          qtd_parcelas?: number
+          status?: string
+          updated_at?: string
+          valor_bruto: number
+          valor_desconto?: number
+          valor_juros?: number
+          valor_liquido: number
+          venda_id: string
+        }
+        Update: {
+          adquirente?: string | null
+          autorizacao_nsu?: string | null
+          bandeira?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          empresa_representada_id?: string
+          externo_id?: string | null
+          hash_payload?: string | null
+          id?: string
+          idempotency_key?: string | null
+          modalidade_id?: string
+          natureza_id?: string | null
+          operador_id?: string | null
+          origem_canal?: string
+          origem_sistema?: string | null
+          percentual_entrada?: number
+          plano_pagamento_id?: string | null
+          plano_snapshot?: Json
+          qtd_parcelas?: number
+          status?: string
+          updated_at?: string
+          valor_bruto?: number
+          valor_desconto?: number
+          valor_juros?: number
+          valor_liquido?: number
+          venda_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venda_pagamento_modalidade_id_fkey"
+            columns: ["modalidade_id"]
+            isOneToOne: false
+            referencedRelation: "modalidades_pagamento"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venda_pagamento_natureza_id_fkey"
+            columns: ["natureza_id"]
+            isOneToOne: false
+            referencedRelation: "naturezas_pagamento"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venda_pagamento_plano_pagamento_id_fkey"
+            columns: ["plano_pagamento_id"]
+            isOneToOne: false
+            referencedRelation: "planos_pagamento"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venda_pagamento_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venda_pagamento_parcelas: {
+        Row: {
+          created_at: string
+          data_vencimento: string
+          empresa_representada_id: string
+          externo_id: string | null
+          id: string
+          is_entrada: boolean
+          numero: number
+          status: string
+          updated_at: string
+          valor: number
+          valor_juros: number
+          venda_pagamento_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_vencimento: string
+          empresa_representada_id: string
+          externo_id?: string | null
+          id?: string
+          is_entrada?: boolean
+          numero: number
+          status?: string
+          updated_at?: string
+          valor: number
+          valor_juros?: number
+          venda_pagamento_id: string
+        }
+        Update: {
+          created_at?: string
+          data_vencimento?: string
+          empresa_representada_id?: string
+          externo_id?: string | null
+          id?: string
+          is_entrada?: boolean
+          numero?: number
+          status?: string
+          updated_at?: string
+          valor?: number
+          valor_juros?: number
+          venda_pagamento_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venda_pagamento_parcelas_venda_pagamento_id_fkey"
+            columns: ["venda_pagamento_id"]
+            isOneToOne: false
+            referencedRelation: "venda_pagamento"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendas: {
         Row: {
           acrescimo: number | null
@@ -4243,6 +4415,7 @@ export type Database = {
         }
         Returns: string
       }
+      validar_pagamento_venda: { Args: { p_venda_id: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "gerente" | "operador" | "visualizador"
