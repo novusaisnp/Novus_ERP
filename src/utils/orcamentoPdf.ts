@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import type { Orcamento } from '@/services/orcamentosService';
+import type { Orcamento, OrcamentoItem } from '@/services/orcamentosService';
 import { calcItemTotal } from '@/services/orcamentosService';
 
 export interface OrcamentoPdfEmpresa {
@@ -12,6 +12,7 @@ export interface OrcamentoPdfEmpresa {
   cidade?: string | null;
   estado?: string | null;
   cep?: string | null;
+  logoUrl?: string | null;
 }
 
 export interface OrcamentoPdfCliente {
@@ -46,11 +47,19 @@ export const buildOrcamentoPdf = (
   const marginX = 15;
   let y = 15;
 
-  // Cabeçalho empresa
-  doc.setFont('helvetica', 'bold').setFontSize(14);
-  doc.text(empresa?.nome ?? 'Empresa', marginX, y);
+  // Cabeçalho empresa — tipografia oficial estilo logotipo
+  doc.setFont('helvetica', 'bold').setFontSize(18);
+  doc.setTextColor(30, 41, 59);
+  doc.text((empresa?.nome ?? 'Empresa').toUpperCase(), marginX, y + 2);
+  doc.setTextColor(0, 0, 0);
+  // Linha de acento sob o "logotipo"
+  const nomeWidth = doc.getTextWidth((empresa?.nome ?? 'Empresa').toUpperCase());
+  doc.setDrawColor(30, 41, 59);
+  doc.setLineWidth(0.8);
+  doc.line(marginX, y + 4, marginX + Math.min(nomeWidth, pageWidth - marginX * 2), y + 4);
+  doc.setLineWidth(0.2);
+  y += 9;
   doc.setFont('helvetica', 'normal').setFontSize(9);
-  y += 5;
   const empresaLinhas: string[] = [];
   if (empresa?.cnpj) empresaLinhas.push(`CNPJ: ${empresa.cnpj}`);
   const end = [empresa?.endereco, empresa?.cidade, empresa?.estado, empresa?.cep]
@@ -105,44 +114,95 @@ export const buildOrcamentoPdf = (
   });
   y += 3;
 
-  // Itens
-  const body = (orc.itens ?? []).map((it, idx) => [
-    String(idx + 1),
-    it.tipoItem === 'S' ? 'Serviço' : 'Produto',
-    it.descricao,
-    String(it.quantidade),
-    brl(Number(it.precoUnitario) || 0),
-    brl(Number(it.desconto) || 0),
-    brl(calcItemTotal(it)),
-  ]);
+  // Itens — separados por bloco (Produtos / Serviços)
+  const itens = orc.itens ?? [];
+  const produtos = itens.filter((i) => i.tipoItem === 'P');
+  const servicos = itens.filter((i) => i.tipoItem === 'S');
 
-  autoTable(doc, {
-    startY: y,
-    head: [['#', 'Tipo', 'Descrição', 'Qtd', 'Unitário', 'Desc.', 'Total']],
-    body,
-    styles: { fontSize: 9, cellPadding: 2 },
-    headStyles: { fillColor: [30, 41, 59], textColor: 255 },
-    columnStyles: {
-      0: { cellWidth: 8, halign: 'right' },
-      1: { cellWidth: 18 },
-      3: { cellWidth: 14, halign: 'right' },
-      4: { cellWidth: 25, halign: 'right' },
-      5: { cellWidth: 20, halign: 'right' },
-      6: { cellWidth: 25, halign: 'right' },
-    },
-    margin: { left: marginX, right: marginX },
-  });
+  const somaBloco = (arr: OrcamentoItem[]) =>
+    arr.reduce((s, i) => s + calcItemTotal(i), 0);
 
-  const afterTableY =
-    (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y;
-  let yy = afterTableY + 6;
+  const renderBloco = (
+    titulo: string,
+    corHeader: [number, number, number],
+    arr: OrcamentoItem[],
+    startY: number,
+  ): number => {
+    if (arr.length === 0) return startY;
+    doc.setFont('helvetica', 'bold').setFontSize(11);
+    doc.setTextColor(corHeader[0], corHeader[1], corHeader[2]);
+    doc.text(titulo, marginX, startY);
+    doc.setTextColor(0, 0, 0);
+    autoTable(doc, {
+      startY: startY + 2,
+      head: [['#', 'Descrição', 'Qtd', 'Unitário', 'Desc.', 'Total']],
+      body: arr.map((it, idx) => [
+        String(idx + 1),
+        it.descricao,
+        String(it.quantidade),
+        brl(Number(it.precoUnitario) || 0),
+        brl(Number(it.desconto) || 0),
+        brl(calcItemTotal(it)),
+      ]),
+      foot: [[
+        '',
+        `Subtotal ${titulo}`,
+        '',
+        '',
+        '',
+        brl(somaBloco(arr)),
+      ]],
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: corHeader, textColor: 255 },
+      footStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold' },
+      columnStyles: {
+        0: { cellWidth: 10, halign: 'right' },
+        2: { cellWidth: 16, halign: 'right' },
+        3: { cellWidth: 28, halign: 'right' },
+        4: { cellWidth: 22, halign: 'right' },
+        5: { cellWidth: 28, halign: 'right' },
+      },
+      margin: { left: marginX, right: marginX },
+    });
+    return (
+      (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? startY
+    ) + 6;
+  };
 
-  // Totais
-  doc.setFont('helvetica', 'bold').setFontSize(11);
-  doc.text(`Valor Total: ${brl(Number(orc.valorTotal) || 0)}`, pageWidth - marginX, yy, {
+  let cursor = y;
+  cursor = renderBloco('Produtos', [30, 41, 59], produtos, cursor);
+  cursor = renderBloco('Serviços', [15, 118, 110], servicos, cursor);
+
+  let yy = cursor + 2;
+
+  // Totais consolidados
+  doc.setDrawColor(200);
+  doc.line(marginX, yy, pageWidth - marginX, yy);
+  yy += 6;
+  doc.setFont('helvetica', 'normal').setFontSize(9);
+  if (produtos.length) {
+    doc.text(
+      `Subtotal Produtos: ${brl(somaBloco(produtos))}`,
+      pageWidth - marginX,
+      yy,
+      { align: 'right' },
+    );
+    yy += 4;
+  }
+  if (servicos.length) {
+    doc.text(
+      `Subtotal Serviços: ${brl(somaBloco(servicos))}`,
+      pageWidth - marginX,
+      yy,
+      { align: 'right' },
+    );
+    yy += 4;
+  }
+  doc.setFont('helvetica', 'bold').setFontSize(12);
+  doc.text(`Valor Total: ${brl(Number(orc.valorTotal) || 0)}`, pageWidth - marginX, yy + 2, {
     align: 'right',
   });
-  yy += 8;
+  yy += 10;
 
   // Observações
   if (orc.observacoes) {
