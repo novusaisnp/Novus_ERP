@@ -44,7 +44,7 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
         }
         
         if (filtros.situacao && filtros.situacao !== 'TODOS') {
-          queryPagar = queryPagar.eq('situacao', filtros.situacao);
+          queryPagar = queryPagar.eq('status', uiStatusPagarToDb(filtros.situacao));
         }
         
         if (filtros.data_inicio) {
@@ -76,10 +76,13 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
         }
 
         if (!filtros.incluir_cancelados) {
-          queryPagar = queryPagar.neq('situacao', 'CANCELADA');
+          queryPagar = queryPagar.neq('status', 'CANCELADO');
         }
 
+        queryPagar = queryPagar.is('deleted_at', null);
+
         const { data: contasPagar, error: errorPagar } = await queryPagar.order('data_vencimento', { ascending: false });
+
 
         if (errorPagar) {
           console.error('[useMovimentacoesFinanceiras] Erro ao buscar contas a pagar:', errorPagar);
