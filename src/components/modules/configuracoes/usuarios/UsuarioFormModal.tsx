@@ -208,13 +208,19 @@ const UsuarioFormModal: React.FC<UsuarioFormModalProps> = ({
         cpf: formData.cpf,
         email: formData.email,
         exceptId: editingUsuario?.id,
+        pessoaTipo: 'COLABORADOR',
+        exceptPessoaId: formData.colaboradorId || undefined,
       });
-      if (dup.cpf) {
-        toast({ title: 'CPF já cadastrado', description: 'Este CPF já está em uso por outro usuário no banco.', variant: 'destructive' });
+      if (dup.cpfColaborador) {
+        toast({ title: 'CPF já cadastrado para colaborador', description: 'Este CPF já está vinculado a outro colaborador.', variant: 'destructive' });
+        return;
+      }
+      if (dup.cpfSocio) {
+        toast({ title: 'CPF já cadastrado para sócio/representante', description: 'Este CPF já está vinculado a outro sócio/representante.', variant: 'destructive' });
         return;
       }
       if (dup.email) {
-        toast({ title: 'Email já cadastrado', description: 'Este email já está em uso por outro usuário no banco.', variant: 'destructive' });
+        toast({ title: 'E-mail já cadastrado', description: 'Este email já está em uso por outro usuário no banco.', variant: 'destructive' });
         return;
       }
     } catch (err: any) {

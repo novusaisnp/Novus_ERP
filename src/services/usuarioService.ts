@@ -36,25 +36,51 @@ export const usuarioService = {
    * Verifica duplicidade de CPF/email no banco (não apenas no array local).
    * Retorna { cpf?: boolean, email?: boolean } indicando quais campos já existem.
    */
-  async checkDuplicidade(params: { cpf?: string; email?: string; exceptId?: string }) {
-    const result: { cpf: boolean; email: boolean } = { cpf: false, email: false };
+  async checkDuplicidade(params: {
+    cpf?: string;
+    email?: string;
+    exceptId?: string;
+    pessoaTipo?: 'COLABORADOR' | 'SOCIO' | 'REPRESENTANTE_LEGAL' | 'PROCURADOR';
+    exceptPessoaId?: string;
+  }) {
+    const result: {
+      email: boolean;
+      cpfColaborador: boolean;
+      cpfSocio: boolean;
+    } = { email: false, cpfColaborador: false, cpfSocio: false };
+
     const cpfLimpo = params.cpf ? params.cpf.replace(/\D/g, '') : '';
     const emailLower = params.email ? params.email.toLowerCase() : '';
 
-    if (cpfLimpo) {
-      let q = supabase.from('usuarios').select('id').eq('cpf', cpfLimpo).limit(1);
-      if (params.exceptId) q = q.neq('id', params.exceptId);
-      const { data, error } = await q;
-      if (error) throw error;
-      result.cpf = (data || []).length > 0;
-    }
-
+    // Email: public.usuarios (case-insensitive)
     if (emailLower) {
       let q = supabase.from('usuarios').select('id').ilike('email', emailLower).limit(1);
       if (params.exceptId) q = q.neq('id', params.exceptId);
       const { data, error } = await q;
       if (error) throw error;
       result.email = (data || []).length > 0;
+    }
+
+    // CPF: tabela vinculada conforme pessoa_tipo
+    if (cpfLimpo && params.pessoaTipo) {
+      if (params.pessoaTipo === 'COLABORADOR') {
+        let q = supabase.from('colaboradores').select('id').eq('cpf', cpfLimpo).limit(1);
+        if (params.exceptPessoaId) q = q.neq('id', params.exceptPessoaId);
+        const { data, error } = await q;
+        if (error) throw error;
+        result.cpfColaborador = (data || []).length > 0;
+      } else {
+        // SOCIO / REPRESENTANTE_LEGAL / PROCURADOR
+        let q = supabase
+          .from('socios_representantes')
+          .select('id')
+          .eq('cpf', cpfLimpo)
+          .limit(1);
+        if (params.exceptPessoaId) q = q.neq('id', params.exceptPessoaId);
+        const { data, error } = await q;
+        if (error) throw error;
+        result.cpfSocio = (data || []).length > 0;
+      }
     }
 
     return result;
