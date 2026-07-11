@@ -80,14 +80,19 @@ export const LiquidacaoTituloModal = ({
         title: "Sucesso",
         description: "Título liquidado com sucesso!",
       });
-      // Invalidação ampla: listagens, estatísticas e saldos afetados
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes-financeiras'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-pagar-stats'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-receber'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-receber-stats'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-bancarias'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-bancarias-estatisticas'] });
+      // [LOTE 3B] Invalidação refinada por tipo do título + conta bancária afetada.
+      queryClient.invalidateQueries({ queryKey: qk.movimentacoesFinanceiras.all });
+      if (titulo.tipo === 'CONTAS_PAGAR') {
+        queryClient.invalidateQueries({ queryKey: qk.contasPagar.all });
+        queryClient.invalidateQueries({ queryKey: qk.contasPagar.stats() });
+      } else {
+        queryClient.invalidateQueries({ queryKey: qk.contasReceber.all });
+        queryClient.invalidateQueries({ queryKey: qk.contasReceber.stats() });
+      }
+      if (formData.conta_bancaria_id) {
+        queryClient.invalidateQueries({ queryKey: qk.contasBancarias.detail(formData.conta_bancaria_id) });
+        queryClient.invalidateQueries({ queryKey: qk.contasBancarias.stats() });
+      }
       onSuccess();
       onClose();
     },
