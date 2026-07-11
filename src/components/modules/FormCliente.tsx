@@ -933,6 +933,16 @@ export const FormCliente: React.FC<FormClienteProps> = ({
         </CardContent>
       </Card>
 
+      {/* Seção Crédito e Pagamento (FIN-E2) — disponível somente em edição */}
+      {cliente?.id && (
+        <CreditoPagamentoSection
+          clienteId={cliente.id}
+          canView
+          canEdit
+          canOverride={false}
+        />
+      )}
+
       {/* Botões */}
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={onCancel}>
