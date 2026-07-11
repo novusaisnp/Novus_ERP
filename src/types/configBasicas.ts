@@ -57,6 +57,14 @@ export interface PlanoPagamento {
   id: string;
   nome: string;
   ativo: boolean;
+  natureza_id?: string | null;
+  modalidade_default_id?: string | null;
+  qtd_parcelas?: number | null;
+  dias_primeira_parcela?: number | null;
+  intervalo_dias?: number | null;
+  percentual_entrada?: number | null;
+  juros_am?: number | null;
+  desconto_avista_perc?: number | null;
   created_at: string;
   updated_at: string;
   deleted_at?: string | null;
@@ -65,6 +73,14 @@ export interface PlanoPagamento {
 export interface PlanoPagamentoInput {
   nome: string;
   ativo: boolean;
+  natureza_id?: string | null;
+  modalidade_default_id?: string | null;
+  qtd_parcelas?: number | null;
+  dias_primeira_parcela?: number | null;
+  intervalo_dias?: number | null;
+  percentual_entrada?: number | null;
+  juros_am?: number | null;
+  desconto_avista_perc?: number | null;
 }
 
 export interface ModalidadeAPIVinculo {
