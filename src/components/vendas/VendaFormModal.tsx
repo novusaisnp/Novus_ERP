@@ -177,20 +177,16 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
                     </div>
                     <div className="col-span-4 md:col-span-2">
                       <Label className="text-xs">Preço Unit.</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
+                      <CurrencyInput
                         value={it.preco_unitario}
-                        onChange={(e) => updateItem(idx, { preco_unitario: parseFloat(e.target.value) || 0 })}
+                        onValueChange={(v) => updateItem(idx, { preco_unitario: v })}
                       />
                     </div>
                     <div className="col-span-4 md:col-span-2">
                       <Label className="text-xs">Desc.</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
+                      <CurrencyInput
                         value={it.desconto_item || 0}
-                        onChange={(e) => updateItem(idx, { desconto_item: parseFloat(e.target.value) || 0 })}
+                        onValueChange={(v) => updateItem(idx, { desconto_item: v })}
                       />
                     </div>
                     <div className="col-span-10 md:col-span-1 text-sm">
