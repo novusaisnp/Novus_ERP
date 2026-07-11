@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { ContaContabilAutocomplete } from '@/components/financeiro/contas-pagar/ContaContabilAutocomplete';
-import { RateioManager } from '@/components/financeiro/contas-pagar/RateioManager';
 import { ClienteAutocomplete } from './ClienteAutocomplete';
 import { useCentrosCusto } from '@/hooks/useCentrosCusto';
 import { useEmpresasRepresentadas } from '@/hooks/useEmpresasRepresentadas';
@@ -22,7 +21,6 @@ import type {
   RateioContaReceber,
   ContaReceberStatus,
 } from '@/types/contasReceber';
-import type { RateioContaPagar } from '@/types/contasPagar';
 
 interface ContasReceberFormProps {
   formData: ContaReceberInput;
@@ -45,29 +43,8 @@ export const ContasReceberForm: React.FC<ContasReceberFormProps> = ({
   const { centrosCusto } = useCentrosCusto();
   const { empresas, loading: loadingEmpresas } = useEmpresasRepresentadas();
 
-  // O RateioManager de Contas a Pagar é estruturalmente compatível — mapeamos
-  // `descricao`↔`observacoes` na fronteira do componente.
-  const rateiosParaManager: RateioContaPagar[] = (formData.rateios || []).map((r) => ({
-    id: r.id,
-    plano_conta_id: r.plano_conta_id,
-    centro_custo_id: r.centro_custo_id ?? '',
-    valor: r.valor,
-    percentual: r.percentual,
-    descricao: r.observacoes ?? '',
-  }));
 
-  const handleRateiosChangeInterno = (rateios: RateioContaPagar[]) => {
-    onRateiosChange(
-      rateios.map((r) => ({
-        id: r.id,
-        plano_conta_id: r.plano_conta_id,
-        centro_custo_id: r.centro_custo_id || null,
-        valor: r.valor,
-        percentual: r.percentual,
-        observacoes: r.descricao || null,
-      })),
-    );
-  };
+
 
   return (
     <div className="space-y-6">
@@ -293,12 +270,9 @@ export const ContasReceberForm: React.FC<ContasReceberFormProps> = ({
           )}
 
           {useRateio && (
-            <RateioManager
-              valorTotal={Number(formData.valor_original) || 0}
-              rateios={rateiosParaManager}
-              onRateiosChange={handleRateiosChangeInterno}
-              tipo="RECEITA"
-            />
+            <p className="text-sm text-muted-foreground">
+              Configuração de rateio disponível na aba "Rateio".
+            </p>
           )}
         </CardContent>
       </Card>

@@ -8,14 +8,17 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Save } from 'lucide-react';
 import { ContasReceberForm } from './ContasReceberForm';
+import { RateioManager } from '@/components/financeiro/contas-pagar/RateioManager';
 import { useEmpresasRepresentadas } from '@/hooks/useEmpresasRepresentadas';
 import type {
   ContaReceber,
   ContaReceberInput,
   RateioContaReceber,
 } from '@/types/contasReceber';
+import type { RateioContaPagar } from '@/types/contasPagar';
 
 interface Props {
   isOpen: boolean;
@@ -114,6 +117,28 @@ export function ContaReceberFormModal({
   const handleRateiosChange = (rateios: RateioContaReceber[]) =>
     setForm((prev) => ({ ...prev, rateios }));
 
+  // Adapta rateios entre os tipos de Contas a Pagar (usado pelo RateioManager) e Contas a Receber
+  const rateiosParaManager: RateioContaPagar[] = (form.rateios || []).map((r) => ({
+    id: r.id,
+    plano_conta_id: r.plano_conta_id,
+    centro_custo_id: r.centro_custo_id ?? '',
+    valor: r.valor,
+    percentual: r.percentual,
+    descricao: r.observacoes ?? '',
+  }));
+
+  const handleRateiosManagerChange = (rateios: RateioContaPagar[]) =>
+    handleRateiosChange(
+      rateios.map((r) => ({
+        id: r.id,
+        plano_conta_id: r.plano_conta_id,
+        centro_custo_id: r.centro_custo_id || null,
+        valor: r.valor,
+        percentual: r.percentual,
+        observacoes: r.descricao || null,
+      })),
+    );
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErro(null);
@@ -164,13 +189,47 @@ export function ContaReceberFormModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <ContasReceberForm
-            formData={form}
-            onInputChange={handleChange}
-            useRateio={useRateio}
-            onUseRateioChange={setUseRateio}
-            onRateiosChange={handleRateiosChange}
-          />
+          <Tabs defaultValue="basico" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="basico">Dados da Conta</TabsTrigger>
+              <TabsTrigger value="rateio">Rateio</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="basico" className="space-y-4">
+              <ContasReceberForm
+                formData={form}
+                onInputChange={handleChange}
+                useRateio={useRateio}
+                onUseRateioChange={setUseRateio}
+                onRateiosChange={handleRateiosChange}
+              />
+            </TabsContent>
+
+            <TabsContent value="rateio" className="space-y-4">
+              {useRateio ? (
+                <RateioManager
+                  valorTotal={Number(form.valor_original) || 0}
+                  rateios={rateiosParaManager}
+                  onRateiosChange={handleRateiosManagerChange}
+                  tipo="RECEITA"
+                />
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground mb-4">
+                    Para usar o rateio, marque a opção "Usar rateio entre contas contábeis" na aba "Dados da Conta".
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setUseRateio(true)}
+                    disabled={saving}
+                  >
+                    Ativar Rateio
+                  </Button>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
 
           {erro && (
             <div className="text-sm text-destructive border border-destructive/40 bg-destructive/10 rounded p-2">
