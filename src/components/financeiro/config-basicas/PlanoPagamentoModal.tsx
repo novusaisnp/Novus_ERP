@@ -28,7 +28,7 @@ export const PlanoPagamentoModal: React.FC<PlanoPagamentoModalProps> = ({
 }) => {
   const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<PlanoPagamentoInput>({
     defaultValues: {
-      nome_plano: '',
+      nome: '',
       ativo: true,
     }
   });
@@ -37,12 +37,12 @@ export const PlanoPagamentoModal: React.FC<PlanoPagamentoModalProps> = ({
     if (plano) {
       console.log('[PlanoPagamentoModal] Carregando dados para edição:', plano.id);
       reset({
-        nome_plano: plano.nome_plano,
+        nome: plano.nome,
         ativo: plano.ativo,
       });
     } else {
       reset({
-        nome_plano: '',
+        nome: '',
         ativo: true,
       });
     }
@@ -66,14 +66,14 @@ export const PlanoPagamentoModal: React.FC<PlanoPagamentoModalProps> = ({
 
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="nome_plano">Nome do Plano *</Label>
+            <Label htmlFor="nome">Nome do Plano *</Label>
             <Input
-              id="nome_plano"
-              {...register('nome_plano', { required: 'Nome do plano é obrigatório' })}
+              id="nome"
+              {...register('nome', { required: 'Nome do plano é obrigatório' })}
               placeholder="Digite o nome do plano"
             />
-            {errors.nome_plano && (
-              <span className="text-sm text-destructive">{errors.nome_plano.message}</span>
+            {errors.nome && (
+              <span className="text-sm text-destructive">{errors.nome.message}</span>
             )}
           </div>
 
