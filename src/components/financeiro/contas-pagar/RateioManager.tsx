@@ -13,6 +13,7 @@ import { useCentrosCusto } from '@/hooks/useCentrosCusto';
 import { RateioContaPagar } from '@/types/contasPagar';
 import { useToast } from '@/hooks/use-toast';
 import { ContaContabilAutocomplete } from './ContaContabilAutocomplete';
+import { cn } from '@/lib/utils';
 
 interface RateioManagerProps {
   valorTotal: number;
