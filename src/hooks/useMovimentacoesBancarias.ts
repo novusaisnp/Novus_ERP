@@ -22,25 +22,32 @@ import {
   MovimentacaoBancaria,
 } from '@/types/movimentacoesBancarias';
 import { qk } from '@/lib/queryKeys';
+import { mapBankingError } from '@/lib/bankingErrors';
 
-// [LOTE 3B.1] Invalidação refinada: prioriza detail(id) das contas afetadas.
-// Só invalida a chave raiz `contasBancarias.all` quando NÃO temos contaId
-// conhecido — evita refetch amplo em cada mutação bancária.
+// [LOTE 3C] Invalidação refinada:
+// - Com contaId conhecido: apenas detail(id) + stats() (+ raiz movimentacoes)
+// - Sem contaId: fallback para contasBancarias.all
+// stats() agora descende de movimentacoesBancarias.all, então invalidar
+// a raiz cobre stats por prefix match.
 const invalidarMovBancarias = (queryClient: QueryClient, contaIds: Array<string | undefined | null>) => {
   queryClient.invalidateQueries({ queryKey: qk.movimentacoesBancarias.all });
-  // Prefixo cobre todas as variações de filtros de stats — invalidateQueries
-  // faz match por prefixo, então usamos a raiz sem filtros aqui.
-  queryClient.invalidateQueries({ queryKey: ['movimentacoes-bancarias-estatisticas'] });
 
   const unique = Array.from(new Set(contaIds.filter((v): v is string => !!v)));
-  unique.forEach((id) => {
-    queryClient.invalidateQueries({ queryKey: qk.contasBancarias.detail(id) });
-  });
-  queryClient.invalidateQueries({ queryKey: qk.contasBancarias.stats() });
-  if (unique.length === 0) {
+  if (unique.length > 0) {
+    unique.forEach((id) => {
+      queryClient.invalidateQueries({ queryKey: qk.contasBancarias.detail(id) });
+    });
+    queryClient.invalidateQueries({ queryKey: qk.contasBancarias.stats() });
+  } else {
     // Fallback: sem id conhecido, invalida a raiz para manter listas coerentes.
     queryClient.invalidateQueries({ queryKey: qk.contasBancarias.all });
   }
+};
+
+const notifyBankingError = (err: unknown, fallbackTitle: string, logTag: string) => {
+  console.error(`[MovimentacoesBancarias] ${logTag}:`, err);
+  const { title, description } = mapBankingError(err, fallbackTitle);
+  toast({ title, description, variant: 'destructive' });
 };
 
 
