@@ -203,6 +203,14 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
       });
       return;
     }
+    if (rateio.plano_conta?.tipo && rateio.plano_conta.tipo !== tipo) {
+      toast({
+        title: 'Plano de contas incompatível',
+        description: `Este título é de ${tipo === 'RECEITA' ? 'receita' : 'despesa'}. Selecione uma conta contábil do tipo ${tipo}.`,
+        variant: 'destructive',
+      });
+      return;
+    }
 
     const novosPre = new Set(preRegistrados);
     novosPre.add(index);
