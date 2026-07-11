@@ -468,7 +468,22 @@ const Orcamentos: React.FC = () => {
                 <div className="space-y-2">
                   {form.itens.map((it, idx) => (
                     <div key={idx} className="grid grid-cols-12 gap-2 items-end">
-                      <div className="col-span-5">
+                      {form.tipo === 'H' && (
+                        <div className="col-span-2">
+                          {idx === 0 && <Label className="text-xs">Tipo</Label>}
+                          <Select
+                            value={it.tipoItem}
+                            onValueChange={(v) => updateItem(idx, { tipoItem: v as TipoItem })}
+                          >
+                            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="P">Produto</SelectItem>
+                              <SelectItem value="S">Serviço</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                      <div className={form.tipo === 'H' ? 'col-span-3' : 'col-span-5'}>
                         {idx === 0 && <Label className="text-xs">Descrição</Label>}
                         <Input
                           value={it.descricao}
