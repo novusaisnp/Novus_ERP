@@ -197,6 +197,15 @@ const PerfisConfig: React.FC<PerfisConfigProps> = ({ perfis, onAdd, onEdit, onDe
         loading={loading}
         readOnly={isReadOnly}
       />
+
+      <ConfirmDialog
+        open={!!confirmingDelete}
+        onOpenChange={(open) => !open && setConfirmingDelete(null)}
+        title="Excluir perfil"
+        description={confirmingDelete ? `Tem certeza que deseja excluir o perfil ${confirmingDelete.nome}?` : ''}
+        confirmLabel="Excluir"
+        onConfirm={confirmDeleteExecute}
+      />
     </div>
   );
 };
