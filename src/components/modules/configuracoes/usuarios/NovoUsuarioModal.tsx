@@ -102,26 +102,24 @@ const NovoUsuarioModal: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
         email,
         perfil_id: perfilId,
         pessoa_tipo: origem,
-        pessoa_pendente: false,
+        pessoa_pendente: true,
         ativo: true,
         updated_at: new Date().toISOString(),
       };
       if (origem === 'COLABORADOR') payload.colaborador_id = pessoaId;
       else payload.socio_id = pessoaId;
 
-      // Placeholder user_id — será substituído quando a pessoa aceitar o convite/fizer signup.
-      // Até lá o vínculo pessoa ↔ usuário já está registrado com segurança.
-      payload.user_id = (crypto as any).randomUUID?.() || `${Date.now()}`;
+      // user_id fica NULL até a pessoa aceitar o convite / fazer signup.
+      const { error } = await supabase.from('usuarios').insert(payload).select('id').single();
+      if (error) {
+        if (error.code === '23505') throw new Error('Esta pessoa já está vinculada a um usuário.');
+        if (error.code === '23503') throw new Error('Referência inválida (empresa, perfil ou pessoa).');
+        if (error.code === '42501') throw new Error('Sem permissão. Apenas administradores podem criar usuários.');
+        throw error;
+      }
 
-      const { data: created, error } = await supabase.from('usuarios').insert(payload).select('id, user_id').single();
-      if (error) throw error;
-
-      // atribui role (apenas se não for placeholder — evita poluir user_roles)
-      // Como é placeholder, deixamos o role para ser criado no aceite do convite.
       void role;
-
-
-      toast.success('Usuário vinculado com sucesso');
+      toast.success('Usuário vinculado com sucesso. Envie o convite para ativar o acesso.');
       onCreated();
       onOpenChange(false);
     } catch (err: any) {
