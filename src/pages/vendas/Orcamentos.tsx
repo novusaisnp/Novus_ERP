@@ -96,7 +96,7 @@ const emptyForm = () => ({
 const Orcamentos: React.FC = () => {
   const { data: orcamentos, isLoading } = useOrcamentos();
   const { clientes } = useClientes();
-  const { data: empresas } = useEmpresasRepresentadas();
+  const { empresas } = useEmpresasRepresentadas();
   const createMut = useCreateOrcamento();
   const statusMut = useUpdateOrcamentoStatus();
 
