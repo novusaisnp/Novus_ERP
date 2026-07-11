@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,10 +8,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { X, Upload, Calculator, Plus, Trash2, Building2 } from 'lucide-react';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import { X, Upload, Calculator, Plus, Trash2, Building2, AlertTriangle } from 'lucide-react';
 import { Produto, ProdutoVariacao, ProdutoFornecedor } from '@/types/produto';
 import { produtoUtils } from '@/utils/produtoUtils';
 import { ProdutoFornecedorList } from './ProdutoFornecedorList';
+import { useCategorias } from '@/hooks/useCategorias';
+
 
 interface FormProdutoProps {
   produto?: Produto;
