@@ -109,25 +109,28 @@ export const contasReceberService = {
         return estatisticas;
       }
 
-      // Calcular estatísticas
+      // Calcular estatísticas usando o schema real (status/valor_recebido)
+      const hoje = new Date().toISOString().slice(0, 10);
       estatisticas.total_contas = data.length;
 
-      data.forEach(conta => {
-        switch (conta.situacao) {
-          case 'ABERTA':
-            estatisticas.contas_abertas++;
-            estatisticas.valor_total_aberto += Number(conta.valor_original) || 0;
-            break;
-          case 'VENCIDA':
-            estatisticas.contas_vencidas++;
-            estatisticas.valor_total_vencido += Number(conta.valor_original) || 0;
-            break;
-          case 'RECEBIDA':
-            estatisticas.contas_recebidas++;
-            estatisticas.valor_total_recebido += Number(conta.valor_pago || conta.valor_original) || 0;
-            break;
+      data.forEach((conta: any) => {
+        const valor = Number(conta.valor_original) || 0;
+        const recebido = Number(conta.valor_recebido) || 0;
+        const status = String(conta.status || '').toUpperCase();
+        const venceu = conta.data_vencimento && conta.data_vencimento < hoje;
+
+        if (status === 'RECEBIDO') {
+          estatisticas.contas_recebidas++;
+          estatisticas.valor_total_recebido += recebido || valor;
+        } else if (status === 'VENCIDO' || (status === 'PENDENTE' && venceu)) {
+          estatisticas.contas_vencidas++;
+          estatisticas.valor_total_vencido += valor;
+        } else if (status === 'PENDENTE' || status === 'PARCIAL') {
+          estatisticas.contas_abertas++;
+          estatisticas.valor_total_aberto += valor - recebido;
         }
       });
+
 
       return estatisticas;
     } catch (error) {
