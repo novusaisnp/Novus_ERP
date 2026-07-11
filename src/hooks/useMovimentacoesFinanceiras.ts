@@ -191,7 +191,7 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
               pessoa: conta.cliente ? {
                 id: conta.cliente.id,
                 nome: conta.cliente.nome,
-                cpf_cnpj: conta.cliente.cpf_cnpj,
+                cpf_cnpj: conta.cliente.cnpj || conta.cliente.cpf,
                 tipo: 'cliente'
               } : undefined
             };
