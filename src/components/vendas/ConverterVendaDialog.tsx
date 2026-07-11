@@ -218,38 +218,47 @@ export const ConverterVendaDialog: React.FC<Props> = ({ orcamento, open, onOpenC
             </Select>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <Label>Parcelas</Label>
-              <Input
-                type="number"
-                min={1}
-                value={qtdParcelas}
-                onChange={(e) => setQtdParcelas(Math.max(1, Number(e.target.value) || 1))}
-                disabled={submitting}
-              />
+          {isAVista ? (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Dinheiro e PIX são pagamentos à vista (D+0). 1 parcela, sem prazo.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label>Parcelas</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={qtdParcelas}
+                  onChange={(e) => setQtdParcelas(Math.max(1, Number(e.target.value) || 1))}
+                  disabled={submitting}
+                />
+              </div>
+              <div>
+                <Label>1ª (dias)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={diasPrimeira}
+                  onChange={(e) => setDiasPrimeira(Math.max(0, Number(e.target.value) || 0))}
+                  disabled={submitting}
+                />
+              </div>
+              <div>
+                <Label>Intervalo (dias)</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={intervalo}
+                  onChange={(e) => setIntervalo(Math.max(1, Number(e.target.value) || 1))}
+                  disabled={submitting}
+                />
+              </div>
             </div>
-            <div>
-              <Label>1ª (dias)</Label>
-              <Input
-                type="number"
-                min={0}
-                value={diasPrimeira}
-                onChange={(e) => setDiasPrimeira(Math.max(0, Number(e.target.value) || 0))}
-                disabled={submitting}
-              />
-            </div>
-            <div>
-              <Label>Intervalo (dias)</Label>
-              <Input
-                type="number"
-                min={1}
-                value={intervalo}
-                onChange={(e) => setIntervalo(Math.max(1, Number(e.target.value) || 1))}
-                disabled={submitting}
-              />
-            </div>
-          </div>
+          )}
 
           {erros.length > 0 && (
             <Alert variant="destructive">
