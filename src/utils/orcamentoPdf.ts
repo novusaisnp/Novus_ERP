@@ -268,21 +268,21 @@ export const buildOrcamentoPdf = async (
   return doc;
 };
 
-export const downloadOrcamentoPdf = (
+export const downloadOrcamentoPdf = async (
   orc: Orcamento,
   empresa?: OrcamentoPdfEmpresa | null,
   cliente?: OrcamentoPdfCliente | null,
 ) => {
-  const doc = buildOrcamentoPdf(orc, empresa, cliente);
+  const doc = await buildOrcamentoPdf(orc, empresa, cliente);
   doc.save(`${orc.numero}.pdf`);
 };
 
-export const printOrcamentoPdf = (
+export const printOrcamentoPdf = async (
   orc: Orcamento,
   empresa?: OrcamentoPdfEmpresa | null,
   cliente?: OrcamentoPdfCliente | null,
 ) => {
-  const doc = buildOrcamentoPdf(orc, empresa, cliente);
+  const doc = await buildOrcamentoPdf(orc, empresa, cliente);
   const blob = doc.output('blob');
   const url = URL.createObjectURL(blob);
   const w = window.open(url, '_blank');
