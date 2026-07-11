@@ -50,7 +50,7 @@ export const buildContasReceberQuery = (filtros: ContaReceberFilters = {}) => {
     .select(
       `
       *,
-      cliente:clientes(id, nome, cpf_cnpj)
+      cliente:clientes(id, nome, cpf, cnpj)
     `,
     )
     .order('data_vencimento', { ascending: false });
@@ -64,7 +64,7 @@ export const getContaReceberByIdQuery = (id: string) => {
     .select(
       `
       *,
-      cliente:clientes(id, nome, cpf_cnpj)
+      cliente:clientes(id, nome, cpf, cnpj)
     `,
     )
     .eq('id', id)

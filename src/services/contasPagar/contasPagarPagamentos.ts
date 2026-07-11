@@ -22,8 +22,7 @@ export const registrarPagamento = async (pagamento: PagamentoContaPagar) => {
         plano_conta_id,
         centro_custo_id,
         valor,
-        percentual,
-        descricao
+        percentual
       )
     `)
     .eq('id', pagamento.conta_pagar_id)

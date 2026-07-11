@@ -72,7 +72,7 @@ export const transformFromSupabase = (data: any): ContaReceber => {
       ? {
           id: data.cliente.id,
           nome: data.cliente.nome,
-          cpf_cnpj: data.cliente.cpf_cnpj ?? null,
+          cpf_cnpj: data.cliente.cnpj ?? data.cliente.cpf ?? null,
         }
       : null,
   };

@@ -64,54 +64,43 @@ export class FluxoCaixaService {
       }
 
       // Buscar liquidações para determinar status realizado
+      // Nota: sem embed de contas_bancarias (FK ausente no schema atual)
       const { data: liquidacoes, error: errorLiquidacoes } = await supabase
         .from('liquidacoes_titulos')
         .select(`
-          titulo_id,
-          tipo_titulo,
-          data_pagamento,
+          conta_pagar_id,
+          conta_receber_id,
+          data_liquidacao,
           valor_pago,
-          conta_bancaria:contas_bancarias(id, titular, numero_conta)
+          conta_bancaria_id
         `)
-        .eq('estornado', false);
+        .eq('cancelada', false);
 
       if (errorLiquidacoes) {
         console.error('[FluxoCaixa] Erro ao buscar liquidações:', errorLiquidacoes);
       }
 
-      // Buscar liquidações múltiplas que podem ser movimentações diretas
-      const { data: liquidacoesMultiplas, error: errorMultiplas } = await supabase
-        .from('liquidacoes_multiplas')
-        .select(`
-          liquidacao_principal_id,
-          valor,
-          observacoes,
-          conta_bancaria:contas_bancarias(id, titular, numero_conta),
-          liquidacao_principal:liquidacoes_titulos(data_pagamento, forma_pagamento)
-        `);
-
-      if (errorMultiplas) {
-        console.error('[FluxoCaixa] Erro ao buscar liquidações múltiplas:', errorMultiplas);
-      }
+      // Liquidações múltiplas: schema simplificado — não usadas como movimentação direta
+      const liquidacoesMultiplas: any[] = [];
 
       // Transformar dados unificados
       const movimentacoes: FluxoCaixaItem[] = [];
 
       // Processar contas a pagar (saídas)
       contasPagar?.forEach(conta => {
-        const liquidacao = liquidacoes?.find(l => 
-          l.titulo_id === conta.id && l.tipo_titulo === 'CONTAS_PAGAR'
-        );
+        const liquidacao = liquidacoes?.find(l => l.conta_pagar_id === conta.id);
 
         movimentacoes.push({
           id: conta.id,
-          data: liquidacao?.data_pagamento || conta.data_vencimento,
+          data: liquidacao?.data_liquidacao || conta.data_vencimento,
           tipo: 'SAIDA',
           descricao: conta.descricao,
           valor: liquidacao?.valor_pago || conta.valor_original,
           status: liquidacao ? 'REALIZADO' : 'PREVISTO',
           tipo_fluxo: 'OPERACIONAL',
-          conta_bancaria: liquidacao?.conta_bancaria as any || undefined,
+          conta_bancaria: liquidacao?.conta_bancaria_id
+            ? ({ id: liquidacao.conta_bancaria_id } as any)
+            : undefined,
           plano_conta: conta.plano_conta,
           centro_custo: conta.centro_custo,
           titulo_origem: {
@@ -125,19 +114,19 @@ export class FluxoCaixaService {
 
       // Processar contas a receber (entradas)
       contasReceber?.forEach(conta => {
-        const liquidacao = liquidacoes?.find(l => 
-          l.titulo_id === conta.id && l.tipo_titulo === 'CONTAS_RECEBER'
-        );
+        const liquidacao = liquidacoes?.find(l => l.conta_receber_id === conta.id);
 
         movimentacoes.push({
           id: conta.id,
-          data: liquidacao?.data_pagamento || conta.data_vencimento,
+          data: liquidacao?.data_liquidacao || conta.data_vencimento,
           tipo: 'ENTRADA',
           descricao: conta.cliente?.nome || 'Receita',
           valor: liquidacao?.valor_pago || conta.valor_original,
           status: liquidacao ? 'REALIZADO' : 'PREVISTO',
           tipo_fluxo: 'OPERACIONAL',
-          conta_bancaria: liquidacao?.conta_bancaria as any || undefined,
+          conta_bancaria: liquidacao?.conta_bancaria_id
+            ? ({ id: liquidacao.conta_bancaria_id } as any)
+            : undefined,
           titulo_origem: {
             id: conta.id,
             tipo: 'CONTAS_RECEBER',
@@ -147,29 +136,7 @@ export class FluxoCaixaService {
         });
       });
 
-      // Processar liquidações múltiplas como movimentações diretas
-      liquidacoesMultiplas?.forEach(multipla => {
-        if (multipla.liquidacao_principal?.data_pagamento) {
-          const dataMovimento = multipla.liquidacao_principal.data_pagamento;
-          
-          // Verificar se está dentro do período filtrado
-          if ((!filtros.data_inicio || dataMovimento >= filtros.data_inicio) && 
-              (!filtros.data_fim || dataMovimento <= filtros.data_fim)) {
-            
-            movimentacoes.push({
-              id: `multipla-${multipla.liquidacao_principal_id}`,
-              data: dataMovimento,
-              tipo: 'SAIDA', // Assumindo que são transferências/saídas
-              descricao: multipla.observacoes || 'Movimentação bancária',
-              valor: multipla.valor,
-              status: 'REALIZADO',
-              tipo_fluxo: 'OPERACIONAL',
-              conta_bancaria: multipla.conta_bancaria as any,
-              observacoes: multipla.observacoes
-            });
-          }
-        }
-      });
+      // Liquidações múltiplas: schema atual não suporta rastreio direto; omitido.
 
       // Aplicar filtros
       let movimentacoesFiltradas = movimentacoes;
@@ -251,7 +218,7 @@ export class FluxoCaixaService {
       // Buscar saldos das contas bancárias ativas
       const { data: contasBancarias, error: errorContas } = await supabase
         .from('contas_bancarias')
-        .select('saldo_atual, conta_cofre')
+        .select('saldo_atual')
         .eq('ativo', true);
 
       if (errorContas) {
