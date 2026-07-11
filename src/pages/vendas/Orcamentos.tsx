@@ -90,7 +90,8 @@ const gerarNumero = () => {
   return `ORC-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}-${rnd}`;
 };
 
-const emptyItem = (): OrcamentoItem => ({
+const emptyItem = (tipoItem: TipoItem = 'P'): OrcamentoItem => ({
+  tipoItem,
   descricao: '',
   quantidade: 1,
   precoUnitario: 0,
@@ -100,6 +101,7 @@ const emptyItem = (): OrcamentoItem => ({
 const emptyForm = () => ({
   empresaRepresentadaId: '',
   numero: gerarNumero(),
+  tipo: 'P' as TipoOrcamento,
   clienteId: '',
   dataEmissao: new Date().toISOString().slice(0, 10),
   dataValidade: '',
