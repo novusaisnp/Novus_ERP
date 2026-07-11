@@ -164,53 +164,32 @@ export const ContasReceberForm: React.FC<ContasReceberFormProps> = ({
               <Label htmlFor="valor_original" className="flex items-center gap-1">
                 Valor Original <span className="text-destructive">*</span>
               </Label>
-              <Input
+              <CurrencyInput
                 id="valor_original"
-                type="number"
-                step="0.01"
-                min="0"
                 value={formData.valor_original}
-                onChange={(e) =>
-                  onInputChange('valor_original', parseFloat(e.target.value) || 0)
-                }
-                placeholder="0,00"
+                onValueChange={(v) => onInputChange('valor_original', v)}
+                placeholder="R$ 0,00"
                 required
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="valor_recebido">Valor Recebido</Label>
-              <Input
+              <CurrencyInput
                 id="valor_recebido"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.valor_recebido ?? ''}
-                onChange={(e) =>
-                  onInputChange(
-                    'valor_recebido',
-                    e.target.value ? parseFloat(e.target.value) : null,
-                  )
-                }
-                placeholder="0,00"
+                value={formData.valor_recebido ?? 0}
+                onValueChange={(v) => onInputChange('valor_recebido', v || null)}
+                placeholder="R$ 0,00"
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="valor_desconto">Desconto</Label>
-              <Input
+              <CurrencyInput
                 id="valor_desconto"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.valor_desconto ?? ''}
-                onChange={(e) =>
-                  onInputChange(
-                    'valor_desconto',
-                    e.target.value ? parseFloat(e.target.value) : null,
-                  )
-                }
-                placeholder="0,00"
+                value={formData.valor_desconto ?? 0}
+                onValueChange={(v) => onInputChange('valor_desconto', v || null)}
+                placeholder="R$ 0,00"
               />
             </div>
           </div>
