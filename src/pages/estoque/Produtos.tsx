@@ -195,7 +195,7 @@ const Produtos: React.FC = () => {
                             ? 'text-destructive' 
                             : 'text-foreground'
                         }`}>
-                          {produto.estoque_atual} {produto.unidade_medida}
+                          {produto.estoque_atual}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           Mín: {produto.estoque_minimo}
