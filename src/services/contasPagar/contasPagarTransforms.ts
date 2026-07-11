@@ -30,6 +30,12 @@ export const transformFromSupabase = (item: any): ContaPagar => {
   }
   
 
+  const valorOriginal = parseFloat(item.valor_original) || 0;
+  const valorPago = parseFloat(item.valor_pago) || 0;
+  const valorAtual = item.valor_atual != null
+    ? parseFloat(item.valor_atual) || 0
+    : Math.max(valorOriginal - valorPago, 0);
+
   return {
     id: item.id,
     numero_documento: item.numero_documento,
@@ -37,12 +43,12 @@ export const transformFromSupabase = (item: any): ContaPagar => {
     fornecedor_id: item.fornecedor_id,
     plano_conta_id: item.plano_conta_id,
     centro_custo_id: item.centro_custo_id,
-    valor_original: parseFloat(item.valor_original) || 0,
-    valor_atual: parseFloat(item.valor_atual) || 0,
+    valor_original: valorOriginal,
+    valor_atual: valorAtual,
     data_vencimento: item.data_vencimento,
     data_emissao: item.data_emissao,
     data_competencia: item.data_competencia,
-    situacao: item.situacao as 'ABERTA' | 'PAGA' | 'VENCIDA' | 'CANCELADA',
+    situacao: dbStatusPagarToUi(item.status ?? item.situacao) as 'ABERTA' | 'PAGA' | 'VENCIDA' | 'CANCELADA',
     observacoes: item.observacoes,
     anexos: Array.isArray(item.anexos) ? item.anexos : [],
     tags: Array.isArray(item.tags) ? item.tags : [],
@@ -51,9 +57,10 @@ export const transformFromSupabase = (item: any): ContaPagar => {
     conta_origem_id: item.conta_origem_id,
     numero_parcela: item.numero_parcela,
     total_parcelas: item.total_parcelas,
-    ativo: Boolean(item.ativo),
+    ativo: item.deleted_at == null,
     created_at: item.created_at,
     updated_at: item.updated_at,
+
     rateios: rateios,
     // Relacionamentos
     fornecedor: item.fornecedores ? {
