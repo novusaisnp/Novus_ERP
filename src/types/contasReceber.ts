@@ -60,6 +60,17 @@ export interface ContaReceber {
   } | null;
 }
 
+export interface RateioContaReceber {
+  id?: string;
+  plano_conta_id: string;
+  centro_custo_id?: string | null;
+  valor: number;
+  percentual: number;
+  observacoes?: string | null;
+  plano_conta?: { id: string; codigo: string; nome: string };
+  centro_custo?: { id: string; nome: string; codigo?: string };
+}
+
 export interface ContaReceberInput {
   empresa_representada_id: string;
   descricao: string;
@@ -76,6 +87,16 @@ export interface ContaReceberInput {
   centro_custo_id?: string | null;
   natureza_id?: string | null;
   observacoes?: string | null;
+
+  // Paridade com Contas a Pagar (UI-only, ainda não persistidos direto na tabela)
+  data_competencia?: string | null;
+  recorrente?: boolean;
+  periodicidade?: 'MENSAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL' | null;
+  numero_parcela?: number | null;
+  total_parcelas?: number | null;
+
+  // Rateio contábil
+  rateios?: RateioContaReceber[];
 }
 
 export interface ContaReceberFilters {
