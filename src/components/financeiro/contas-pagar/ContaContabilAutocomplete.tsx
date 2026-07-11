@@ -70,6 +70,7 @@ export const ContaContabilAutocomplete: React.FC<ContaContabilAutocompleteProps>
           id: contas[0].id,
           codigo: contas[0].codigo,
           nome: contas[0].nome,
+          tipo: contas[0].tipo,
         });
       }
     }
