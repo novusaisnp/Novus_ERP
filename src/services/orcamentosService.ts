@@ -31,6 +31,7 @@ export interface Orcamento {
   id: string;
   empresaRepresentadaId: string;
   numero: string;
+  tipo: TipoOrcamento;
   clienteId: string | null;
   clienteNome?: string | null;
   dataEmissao: string;
@@ -46,6 +47,7 @@ export interface Orcamento {
 export interface OrcamentoInput {
   empresaRepresentadaId: string;
   numero: string;
+  tipo: TipoOrcamento;
   clienteId?: string | null;
   dataEmissao?: string;
   dataValidade?: string | null;
