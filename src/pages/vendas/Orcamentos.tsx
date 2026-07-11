@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Plus, Search } from 'lucide-react';
+import { FileText, Plus, Search, Trash2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -33,7 +33,12 @@ import {
   useCreateOrcamento,
   useUpdateOrcamentoStatus,
 } from '@/hooks/useOrcamentos';
-import type { Orcamento, OrcamentoStatus } from '@/services/orcamentosService';
+import type {
+  Orcamento,
+  OrcamentoItem,
+  OrcamentoStatus,
+} from '@/services/orcamentosService';
+import { calcItemTotal, calcTotal } from '@/services/orcamentosService';
 import { useClientes } from '@/hooks/useClientes';
 import { useEmpresasRepresentadas } from '@/hooks/useEmpresasRepresentadas';
 import { toast } from 'sonner';
@@ -83,14 +88,22 @@ const gerarNumero = () => {
   return `ORC-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}-${rnd}`;
 };
 
+const emptyItem = (): OrcamentoItem => ({
+  descricao: '',
+  quantidade: 1,
+  precoUnitario: 0,
+  desconto: 0,
+});
+
 const emptyForm = () => ({
   empresaRepresentadaId: '',
   numero: gerarNumero(),
   clienteId: '',
   dataEmissao: new Date().toISOString().slice(0, 10),
   dataValidade: '',
-  valorTotal: 0,
+  status: 'rascunho' as OrcamentoStatus,
   observacoes: '',
+  itens: [] as OrcamentoItem[],
 });
 
 const Orcamentos: React.FC = () => {
@@ -117,6 +130,8 @@ const Orcamentos: React.FC = () => {
     });
   }, [orcamentos, search, statusFilter]);
 
+  const totalForm = useMemo(() => calcTotal(form.itens), [form.itens]);
+
   const openCreate = () => {
     setForm({
       ...emptyForm(),
@@ -124,6 +139,18 @@ const Orcamentos: React.FC = () => {
     });
     setOpen(true);
   };
+
+  const addItem = () =>
+    setForm((p) => ({ ...p, itens: [...p.itens, emptyItem()] }));
+
+  const removeItem = (idx: number) =>
+    setForm((p) => ({ ...p, itens: p.itens.filter((_, i) => i !== idx) }));
+
+  const updateItem = (idx: number, patch: Partial<OrcamentoItem>) =>
+    setForm((p) => ({
+      ...p,
+      itens: p.itens.map((it, i) => (i === idx ? { ...it, ...patch } : it)),
+    }));
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -135,6 +162,20 @@ const Orcamentos: React.FC = () => {
       toast.error('Número do orçamento é obrigatório.');
       return;
     }
+    if (form.status !== 'rascunho' && form.itens.length === 0) {
+      toast.error('Adicione ao menos um item para status diferente de rascunho.');
+      return;
+    }
+    for (const it of form.itens) {
+      if (!it.descricao.trim()) {
+        toast.error('Todos os itens precisam de descrição.');
+        return;
+      }
+      if (!(Number(it.quantidade) > 0)) {
+        toast.error('Quantidade deve ser maior que zero.');
+        return;
+      }
+    }
     try {
       await createMut.mutateAsync({
         empresaRepresentadaId: form.empresaRepresentadaId,
@@ -142,9 +183,10 @@ const Orcamentos: React.FC = () => {
         clienteId: form.clienteId || null,
         dataEmissao: form.dataEmissao,
         dataValidade: form.dataValidade || null,
-        valorTotal: Number(form.valorTotal) || 0,
+        valorTotal: totalForm,
         observacoes: form.observacoes || null,
-        status: 'rascunho',
+        status: form.status,
+        itens: form.itens,
       });
       setOpen(false);
     } catch {
@@ -219,6 +261,7 @@ const Orcamentos: React.FC = () => {
                   <TableHead>Cliente</TableHead>
                   <TableHead>Emissão</TableHead>
                   <TableHead>Validade</TableHead>
+                  <TableHead className="text-center">Itens</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
@@ -226,7 +269,7 @@ const Orcamentos: React.FC = () => {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       Carregando orçamentos...
                     </TableCell>
                   </TableRow>
@@ -243,6 +286,7 @@ const Orcamentos: React.FC = () => {
                           ? new Date(o.dataValidade).toLocaleDateString('pt-BR')
                           : '-'}
                       </TableCell>
+                      <TableCell className="text-center">{o.itens?.length ?? 0}</TableCell>
                       <TableCell className="text-right">{brl(o.valorTotal)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -270,7 +314,7 @@ const Orcamentos: React.FC = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       Nenhum orçamento encontrado.
                     </TableCell>
                   </TableRow>
@@ -282,7 +326,7 @@ const Orcamentos: React.FC = () => {
       </Card>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Novo Orçamento</DialogTitle>
           </DialogHeader>
@@ -343,16 +387,99 @@ const Orcamentos: React.FC = () => {
                 />
               </div>
               <div>
-                <Label>Valor total</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={form.valorTotal}
-                  onChange={(e) => setForm((p) => ({ ...p, valorTotal: parseFloat(e.target.value) || 0 }))}
-                />
+                <Label>Status</Label>
+                <Select
+                  value={form.status}
+                  onValueChange={(v) => setForm((p) => ({ ...p, status: v as OrcamentoStatus }))}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map((s) => (
+                      <SelectItem key={s} value={s}>{STATUS_LABEL[s]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
+
+            <div className="border rounded-lg p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-base">Itens</Label>
+                <Button type="button" size="sm" variant="outline" onClick={addItem}>
+                  <Plus className="h-3 w-3 mr-1" /> Adicionar item
+                </Button>
+              </div>
+              {form.itens.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Nenhum item adicionado.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {form.itens.map((it, idx) => (
+                    <div key={idx} className="grid grid-cols-12 gap-2 items-end">
+                      <div className="col-span-5">
+                        {idx === 0 && <Label className="text-xs">Descrição</Label>}
+                        <Input
+                          value={it.descricao}
+                          onChange={(e) => updateItem(idx, { descricao: e.target.value })}
+                          placeholder="Descrição"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        {idx === 0 && <Label className="text-xs">Qtd</Label>}
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={it.quantidade}
+                          onChange={(e) => updateItem(idx, { quantidade: parseFloat(e.target.value) || 0 })}
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        {idx === 0 && <Label className="text-xs">Preço</Label>}
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={it.precoUnitario}
+                          onChange={(e) => updateItem(idx, { precoUnitario: parseFloat(e.target.value) || 0 })}
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        {idx === 0 && <Label className="text-xs">Desc.</Label>}
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={it.desconto ?? 0}
+                          onChange={(e) => updateItem(idx, { desconto: parseFloat(e.target.value) || 0 })}
+                        />
+                      </div>
+                      <div className="col-span-1 flex justify-end">
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => removeItem(idx)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                      <div className="col-span-12 text-right text-xs text-muted-foreground -mt-1">
+                        Subtotal: {brl(calcItemTotal(it))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex justify-end pt-2 border-t">
+                <div className="text-right">
+                  <div className="text-xs text-muted-foreground">Total</div>
+                  <div className="text-lg font-semibold">{brl(totalForm)}</div>
+                </div>
+              </div>
+            </div>
+
             <div>
               <Label>Observações</Label>
               <Textarea
