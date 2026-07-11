@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Trash2, Plus } from 'lucide-react';
+import { toast } from 'sonner';
 import { Venda, ItemVenda, VendaStatus } from '@/types/vendas';
 import { vendasService } from '@/services/vendasService';
 import { clienteService } from '@/services/clienteService';
