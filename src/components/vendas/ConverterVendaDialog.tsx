@@ -115,8 +115,10 @@ export const ConverterVendaDialog: React.FC<Props> = ({ orcamento, open, onOpenC
           },
         },
       };
-      const { data, error } = await supabase.rpc(
-        // @ts-expect-error - RPC recém-criada, aguardando regen de types
+      const { data, error } = await (supabase.rpc as unknown as (
+        fn: string,
+        args: Record<string, unknown>,
+      ) => Promise<{ data: unknown; error: { message: string } | null }>)(
         'converter_orcamento_em_venda',
         { p_payload: payload },
       );
