@@ -10,6 +10,13 @@ import {
   TipoTitulo
 } from '@/types/movimentacoesFinanceiras';
 import { qk } from '@/lib/queryKeys';
+import {
+  dbStatusPagarToUi,
+  uiStatusPagarToDb,
+  dbStatusReceberToUi,
+  uiStatusReceberToDb,
+} from '@/lib/statusMappers';
+
 
 export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
 
