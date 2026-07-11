@@ -1,4 +1,3 @@
-
 import { supabase as _supabase } from '@/integrations/supabase/client';
 const supabase: any = _supabase;
 import type { CentroCusto, CentroCustoInput, SupabaseCentroCusto } from '@/types/configuracoes';
@@ -13,10 +12,35 @@ const transformFromSupabase = (data: SupabaseCentroCusto): CentroCusto => ({
   updated_at: data.updated_at,
 });
 
+async function getEmpresaId(): Promise<string> {
+  const { data, error } = await supabase.rpc('get_user_empresa_id');
+  if (error) {
+    console.error('[CentroCusto] Erro ao obter empresa do usuário:', error);
+    throw new Error('Não foi possível identificar a empresa do usuário logado');
+  }
+  if (!data) {
+    throw new Error('Usuário sem empresa vinculada. Configure o vínculo antes de continuar.');
+  }
+  return data as string;
+}
+
+function translateError(error: any, fallback: string): Error {
+  const code = error?.code;
+  const msg = error?.message || '';
+  if (code === '23505' || /duplicate key|already exists/i.test(msg)) {
+    return new Error('Já existe um centro de custo com este nome ou código');
+  }
+  if (code === '42501' || /row-level security|permission/i.test(msg)) {
+    return new Error('Sem permissão para esta operação na empresa selecionada');
+  }
+  if (code === '23502') {
+    return new Error('Dados obrigatórios ausentes para salvar o centro de custo');
+  }
+  return new Error(`${fallback}: ${msg || 'erro desconhecido'}`);
+}
+
 export const centroCustoService = {
   async getAll(): Promise<CentroCusto[]> {
-    console.log('[CentroCusto] Buscando todos os centros de custo');
-    
     const { data, error } = await supabase
       .from('centros_custo')
       .select('*')
@@ -27,12 +51,10 @@ export const centroCustoService = {
       throw new Error(`Erro ao buscar centros de custo: ${error.message}`);
     }
 
-    return data.map(transformFromSupabase);
+    return (data || []).map(transformFromSupabase);
   },
 
   async getById(id: string): Promise<CentroCusto | null> {
-    console.log('[CentroCusto] Buscando centro de custo por ID:', id);
-    
     const { data, error } = await supabase
       .from('centros_custo')
       .select('*')
@@ -40,68 +62,66 @@ export const centroCustoService = {
       .maybeSingle();
 
     if (error) {
-      console.error('[CentroCusto] Erro ao buscar centro de custo:', error);
       throw new Error(`Erro ao buscar centro de custo: ${error.message}`);
     }
-
     return data ? transformFromSupabase(data) : null;
   },
 
   async create(input: CentroCustoInput): Promise<CentroCusto> {
-    console.log('[CentroCusto] Criando novo centro de custo:', input);
+    const empresa_representada_id = await getEmpresaId();
 
-    // Validar se já existe um centro de custo com o mesmo nome
+    // Nome único no escopo da empresa
     const { data: existing } = await supabase
       .from('centros_custo')
       .select('id')
-      .eq('nome', input.nome)
+      .eq('empresa_representada_id', empresa_representada_id)
+      .eq('nome', input.nome.trim())
       .maybeSingle();
 
     if (existing) {
-      throw new Error('Já existe um centro de custo com este nome');
+      throw new Error('Já existe um centro de custo com este nome nesta empresa');
     }
 
     const { data, error } = await supabase
       .from('centros_custo')
       .insert([{
-        nome: input.nome,
-        codigo: input.codigo || null,
-        descricao: input.descricao || null,
+        empresa_representada_id,
+        nome: input.nome.trim(),
+        codigo: input.codigo?.trim() || null,
+        descricao: input.descricao?.trim() || null,
         ativo: input.ativo,
       }])
       .select()
       .single();
 
     if (error) {
-      console.error('[CentroCusto] Erro ao criar centro de custo:', error);
-      throw new Error(`Erro ao criar centro de custo: ${error.message}`);
+      console.error('[CentroCusto] Erro ao criar:', error);
+      throw translateError(error, 'Erro ao criar centro de custo');
     }
-
-    console.log('[CentroCusto] Centro de custo criado com sucesso:', data);
     return transformFromSupabase(data);
   },
 
   async update(id: string, input: CentroCustoInput): Promise<CentroCusto> {
-    console.log('[CentroCusto] Atualizando centro de custo:', id, input);
+    const empresa_representada_id = await getEmpresaId();
 
-    // Validar se já existe outro centro de custo com o mesmo nome
     const { data: existing } = await supabase
       .from('centros_custo')
       .select('id')
-      .eq('nome', input.nome)
+      .eq('empresa_representada_id', empresa_representada_id)
+      .eq('nome', input.nome.trim())
       .neq('id', id)
       .maybeSingle();
 
     if (existing) {
-      throw new Error('Já existe um centro de custo com este nome');
+      throw new Error('Já existe um centro de custo com este nome nesta empresa');
     }
 
     const { data, error } = await supabase
       .from('centros_custo')
       .update({
-        nome: input.nome,
-        codigo: input.codigo || null,
-        descricao: input.descricao || null,
+        nome: input.nome.trim(),
+        codigo: input.codigo?.trim() || null,
+        descricao: input.descricao?.trim() || null,
         ativo: input.ativo,
       })
       .eq('id', id)
@@ -109,27 +129,20 @@ export const centroCustoService = {
       .single();
 
     if (error) {
-      console.error('[CentroCusto] Erro ao atualizar centro de custo:', error);
-      throw new Error(`Erro ao atualizar centro de custo: ${error.message}`);
+      console.error('[CentroCusto] Erro ao atualizar:', error);
+      throw translateError(error, 'Erro ao atualizar centro de custo');
     }
-
-    console.log('[CentroCusto] Centro de custo atualizado com sucesso:', data);
     return transformFromSupabase(data);
   },
 
   async delete(id: string): Promise<void> {
-    console.log('[CentroCusto] Removendo centro de custo:', id);
-
     const { error } = await supabase
       .from('centros_custo')
       .delete()
       .eq('id', id);
 
     if (error) {
-      console.error('[CentroCusto] Erro ao remover centro de custo:', error);
-      throw new Error(`Erro ao remover centro de custo: ${error.message}`);
+      throw translateError(error, 'Erro ao remover centro de custo');
     }
-
-    console.log('[CentroCusto] Centro de custo removido com sucesso');
   },
 };
