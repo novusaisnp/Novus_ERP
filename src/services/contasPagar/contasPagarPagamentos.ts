@@ -85,10 +85,11 @@ export const consultarRateiosOrigiais = async (contaId: string) => {
     .select(`
       *,
       plano_contas (
-        id,
-        codigo,
-        nome
-      ),
+          id,
+          codigo,
+          nome,
+          tipo
+        ),
       centros_custo (
         id,
         nome,

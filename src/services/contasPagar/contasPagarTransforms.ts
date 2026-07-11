@@ -20,6 +20,7 @@ export const transformFromSupabase = (item: any): ContaPagar => {
         id: rateio.plano_contas.id,
         codigo: rateio.plano_contas.codigo,
         nome: rateio.plano_contas.nome,
+        tipo: rateio.plano_contas.tipo,
       } : undefined,
       centro_custo: rateio.centros_custo ? {
         id: rateio.centros_custo.id,
@@ -72,6 +73,7 @@ export const transformFromSupabase = (item: any): ContaPagar => {
       id: item.plano_contas.id,
       codigo: item.plano_contas.codigo,
       nome: item.plano_contas.nome,
+      tipo: item.plano_contas.tipo,
     } : undefined,
     centro_custo: item.centros_custo ? {
       id: item.centros_custo.id,

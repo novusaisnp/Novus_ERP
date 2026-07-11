@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { useContaContabilSearch } from '@/hooks/useContaContabilSearch';
 import type { PlanoContas } from '@/types/planoContas';
 
-type SelectedConta = Pick<PlanoContas, 'id' | 'codigo' | 'nome'>;
+type SelectedConta = Pick<PlanoContas, 'id' | 'codigo' | 'nome'> & { tipo?: 'RECEITA' | 'DESPESA' };
 
 interface ContaContabilAutocompleteProps {
   value?: string;
@@ -70,6 +70,7 @@ export const ContaContabilAutocomplete: React.FC<ContaContabilAutocompleteProps>
           id: contas[0].id,
           codigo: contas[0].codigo,
           nome: contas[0].nome,
+          tipo: contas[0].tipo,
         });
       }
     }
@@ -123,6 +124,7 @@ export const ContaContabilAutocomplete: React.FC<ContaContabilAutocompleteProps>
               id: conta.id,
               codigo: conta.codigo,
               nome: conta.nome,
+              tipo: conta.tipo,
             });
                     }}
                     className="cursor-pointer"

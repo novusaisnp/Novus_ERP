@@ -54,7 +54,7 @@ const selectComRelacionamentos = `
     valor,
     percentual,
     observacoes,
-    plano_conta:plano_contas (id, codigo, nome),
+    plano_conta:plano_contas (id, codigo, nome, tipo),
     centro_custo:centros_custo (id, nome, codigo)
   )
 `;

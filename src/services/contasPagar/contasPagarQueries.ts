@@ -15,10 +15,11 @@ export const buildContasPagarQuery = (filtros: any = {}) => {
         nome_fantasia
       ),
       plano_contas (
-        id,
-        codigo,
-        nome
-      ),
+          id,
+          codigo,
+          nome,
+          tipo
+        ),
       centros_custo (
         id,
         nome,
@@ -33,7 +34,8 @@ export const buildContasPagarQuery = (filtros: any = {}) => {
         plano_contas (
           id,
           codigo,
-          nome
+          nome,
+          tipo
         ),
         centros_custo (
           id,
@@ -89,10 +91,11 @@ export const getContaPagarByIdQuery = (id: string) => {
         nome_fantasia
       ),
       plano_contas (
-        id,
-        codigo,
-        nome
-      ),
+          id,
+          codigo,
+          nome,
+          tipo
+        ),
       centros_custo (
         id,
         nome,
@@ -107,7 +110,8 @@ export const getContaPagarByIdQuery = (id: string) => {
         plano_contas (
           id,
           codigo,
-          nome
+          nome,
+          tipo
         ),
         centros_custo (
           id,

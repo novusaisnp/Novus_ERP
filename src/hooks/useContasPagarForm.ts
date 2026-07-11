@@ -179,7 +179,13 @@ export const useContasPagarForm = ({ conta, isOpen }: UseContasPagarFormProps) =
       if (rateiosSemConta.length > 0) {
         throw new Error('Todos os rateios devem ter uma conta contábil analítica selecionada');
       }
-      
+
+      // Validar tipo do plano de contas (deve ser DESPESA)
+      const rateiosTipoInvalido = dataToSubmit.rateios.filter(r => r.plano_conta?.tipo && r.plano_conta.tipo !== 'DESPESA');
+      if (rateiosTipoInvalido.length > 0) {
+        throw new Error('Todos os rateios devem usar contas contábeis do tipo DESPESA');
+      }
+
       // Validar se todos os valores são válidos
       const rateiosComValorInvalido = dataToSubmit.rateios.filter(r => !r.valor || r.valor <= 0);
       if (rateiosComValorInvalido.length > 0) {
