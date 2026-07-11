@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -344,13 +345,10 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange }: RateioMa
 
                 <div>
                   <Label>Valor (R$)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={rateio.valor || ''}
-                    onChange={(e) => atualizarRateio(index, 'valor', e.target.value)}
-                    placeholder="0,00"
+                  <CurrencyInput
+                    value={Number(rateio.valor) || 0}
+                    onValueChange={(v) => atualizarRateio(index, 'valor', String(v))}
+                    placeholder="R$ 0,00"
                   />
                 </div>
 

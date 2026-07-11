@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -155,14 +156,11 @@ export function NovaMovimentacaoModal({
             {/* Valor */}
             <div>
               <Label htmlFor="valor">Valor</Label>
-              <Input
+              <CurrencyInput
                 id="valor"
-                type="number"
-                step="0.01"
-                min="0.01"
-                placeholder="0,00"
-                value={formData.valor || ''}
-                onChange={(e) => updateFormData('valor', parseFloat(e.target.value) || 0)}
+                placeholder="R$ 0,00"
+                value={formData.valor ?? 0}
+                onValueChange={(v) => updateFormData('valor', v)}
                 required
               />
             </div>

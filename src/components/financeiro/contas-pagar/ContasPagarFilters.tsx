@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -132,25 +133,21 @@ export const ContasPagarFilters = ({ onFilter }: ContasPagarFiltersProps) => {
 
             <div>
               <Label htmlFor="valor_min">Valor mínimo</Label>
-              <Input
+              <CurrencyInput
                 id="valor_min"
-                type="number"
-                step="0.01"
-                placeholder="0,00"
-                value={filtros.valor_min || ''}
-                onChange={(e) => handleFilterChange('valor_min', parseFloat(e.target.value) || undefined)}
+                placeholder="R$ 0,00"
+                value={filtros.valor_min ?? 0}
+                onValueChange={(v) => handleFilterChange('valor_min', v || undefined)}
               />
             </div>
 
             <div>
               <Label htmlFor="valor_max">Valor máximo</Label>
-              <Input
+              <CurrencyInput
                 id="valor_max"
-                type="number"
-                step="0.01"
-                placeholder="0,00"
-                value={filtros.valor_max || ''}
-                onChange={(e) => handleFilterChange('valor_max', parseFloat(e.target.value) || undefined)}
+                placeholder="R$ 0,00"
+                value={filtros.valor_max ?? 0}
+                onValueChange={(v) => handleFilterChange('valor_max', v || undefined)}
               />
             </div>
           </div>

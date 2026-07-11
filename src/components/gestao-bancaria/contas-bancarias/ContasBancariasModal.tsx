@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
@@ -361,13 +362,12 @@ export const ContasBancariasModal = ({
             {/* Saldo Inicial */}
             <div className="space-y-2">
               <Label htmlFor="saldo_inicial">Saldo Inicial</Label>
-              <Input
+              <CurrencyInput
                 id="saldo_inicial"
-                type="number"
-                step="0.01"
                 value={formData.saldo_inicial}
-                onChange={(e) => setFormData({ ...formData, saldo_inicial: parseFloat(e.target.value) || 0 })}
-                placeholder="0,00"
+                onValueChange={(v) => setFormData({ ...formData, saldo_inicial: v })}
+                placeholder="R$ 0,00"
+                allowNegative
               />
             </div>
 
@@ -383,13 +383,13 @@ export const ContasBancariasModal = ({
                     (auto)
                   </span>
                 </Label>
-                <Input
+                <CurrencyInput
                   id="saldo_atual"
-                  type="number"
-                  step="0.01"
                   value={(conta as any)?.saldo_atual ?? 0}
+                  onValueChange={() => {}}
                   readOnly
                   disabled
+                  allowNegative
                   className="bg-muted cursor-not-allowed"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -428,13 +428,11 @@ export const ContasBancariasModal = ({
           {!formData.conta_cofre && (
             <div className="space-y-2">
               <Label htmlFor="limite_credito">Limite de Crédito</Label>
-              <Input
+              <CurrencyInput
                 id="limite_credito"
-                type="number"
-                step="0.01"
-                value={formData.limite_credito || ''}
-                onChange={(e) => setFormData({ ...formData, limite_credito: parseFloat(e.target.value) || undefined })}
-                placeholder="0,00"
+                value={formData.limite_credito ?? 0}
+                onValueChange={(v) => setFormData({ ...formData, limite_credito: v || undefined })}
+                placeholder="R$ 0,00"
               />
             </div>
           )}

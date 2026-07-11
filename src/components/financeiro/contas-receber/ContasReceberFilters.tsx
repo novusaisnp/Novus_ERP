@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -144,25 +145,21 @@ export const ContasReceberFilters = ({ onFilter }: ContasReceberFiltersProps) =>
 
               <div className="space-y-2">
                 <Label htmlFor="valor_min">Valor Mínimo</Label>
-                <Input
+                <CurrencyInput
                   id="valor_min"
-                  type="number"
-                  placeholder="0,00"
-                  step="0.01"
-                  value={filtros.valor_min || ''}
-                  onChange={(e) => handleInputChange('valor_min', parseFloat(e.target.value) || 0)}
+                  placeholder="R$ 0,00"
+                  value={filtros.valor_min ?? 0}
+                  onValueChange={(v) => handleInputChange('valor_min', v)}
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="valor_max">Valor Máximo</Label>
-                <Input
+                <CurrencyInput
                   id="valor_max"
-                  type="number"
-                  placeholder="0,00"
-                  step="0.01"
-                  value={filtros.valor_max || ''}
-                  onChange={(e) => handleInputChange('valor_max', parseFloat(e.target.value) || 0)}
+                  placeholder="R$ 0,00"
+                  value={filtros.valor_max ?? 0}
+                  onValueChange={(v) => handleInputChange('valor_max', v)}
                 />
               </div>
             </div>
