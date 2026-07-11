@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { ContaContabilAutocomplete } from '@/components/financeiro/contas-pagar/ContaContabilAutocomplete';
-import { RateioManager } from '@/components/financeiro/contas-pagar/RateioManager';
 import { ClienteAutocomplete } from './ClienteAutocomplete';
 import { useCentrosCusto } from '@/hooks/useCentrosCusto';
 import { useEmpresasRepresentadas } from '@/hooks/useEmpresasRepresentadas';
@@ -22,7 +21,6 @@ import type {
   RateioContaReceber,
   ContaReceberStatus,
 } from '@/types/contasReceber';
-import type { RateioContaPagar } from '@/types/contasPagar';
 
 interface ContasReceberFormProps {
   formData: ContaReceberInput;
