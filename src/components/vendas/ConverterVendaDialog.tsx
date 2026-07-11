@@ -147,7 +147,7 @@ export const ConverterVendaDialog: React.FC<Props> = ({ orcamento, open, onOpenC
         return;
       }
 
-      const result = data as RpcResult;
+      const result = data as unknown as RpcResult;
       if (!result?.ok) {
         setErros(result?.erros ?? [{ codigo: 'ERRO', mensagem: 'Falha desconhecida.' }]);
         toast.error('Conversão não concluída.');
