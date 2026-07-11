@@ -2,6 +2,8 @@
 import { buildContasPagarQuery, getContaPagarByIdQuery, getEstatisticasQuery } from './contasPagar/contasPagarQueries';
 import { transformFromSupabase } from './contasPagar/contasPagarTransforms';
 import { createContaPagar, updateContaPagar, deleteContaPagar } from './contasPagar/contasPagarOperations';
+import { dbStatusPagarToUi } from '@/lib/statusMappers';
+
 import type { 
   ContaPagar, 
   ContaPagarInput, 
