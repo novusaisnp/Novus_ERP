@@ -22,11 +22,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { CFOPFormModal } from '@/components/modules/fiscal/CFOPFormModal';
+
 export const CFOPConfig: React.FC = () => {
   const { data: cfops, isLoading } = useCFOPs();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDestino, setFilterDestino] = useState<string>('all');
   const [filterTipo, setFilterTipo] = useState<string>('all');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'view' | 'edit' | 'create'>('create');
+  const [selected, setSelected] = useState<CFOP | null>(null);
+
+  const openCreate = () => { setSelected(null); setModalMode('create'); setModalOpen(true); };
+  const openView = (c: CFOP) => { setSelected(c); setModalMode('view'); setModalOpen(true); };
+  const openEdit = (c: CFOP) => { setSelected(c); setModalMode('edit'); setModalOpen(true); };
 
   const filteredCFOPs = cfops?.filter(cfop => {
     const matchesSearch = cfop.codigo.includes(searchTerm) || 
@@ -78,7 +87,7 @@ export const CFOPConfig: React.FC = () => {
               Gerencie os Códigos Fiscais de Operações e Prestações
             </CardDescription>
           </div>
-          <Button>
+          <Button onClick={openCreate}>
             <Plus className="h-4 w-4 mr-2" />
             Novo CFOP
           </Button>
@@ -197,10 +206,10 @@ export const CFOPConfig: React.FC = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" onClick={() => openView(cfop)} title="Visualizar">
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" onClick={() => openEdit(cfop)} title="Editar">
                           <Edit className="h-4 w-4" />
                         </Button>
                       </div>
@@ -223,6 +232,7 @@ export const CFOPConfig: React.FC = () => {
           </Table>
         </div>
       </CardContent>
+      <CFOPFormModal open={modalOpen} onOpenChange={setModalOpen} cfop={selected} mode={modalMode} />
     </Card>
   );
 };
