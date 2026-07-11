@@ -6,7 +6,11 @@ import {
   fetchCFOPs, 
   fetchTributos, 
   fetchNCMs,
-  createConfiguracaoFiscal
+  createConfiguracaoFiscal,
+  createCFOP,
+  updateCFOP,
+  toggleCFOPAtivo,
+  CFOPInput,
 } from "@/services/fiscalService";
 import { toast } from "sonner";
 

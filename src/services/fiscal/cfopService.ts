@@ -65,7 +65,7 @@ export const createCFOP = async (input: CFOPInput): Promise<CFOP> => {
 };
 
 export const updateCFOP = async (id: string, input: Partial<CFOPInput>): Promise<CFOP> => {
-  const payload: Record<string, unknown> = {};
+  const payload: any = {};
   if (input.codigo !== undefined) payload.codigo = input.codigo;
   if (input.descricao !== undefined) payload.descricao = input.descricao;
   if (input.aplicacao !== undefined) payload.aplicacao = input.aplicacao ?? null;
