@@ -1,14 +1,14 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Trash2, Calculator, AlertCircle, Percent, Pencil, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, Calculator, AlertCircle, Percent, Pencil, ChevronDown, CheckCircle2 } from 'lucide-react';
 import { useCentrosCusto } from '@/hooks/useCentrosCusto';
 import { RateioContaPagar } from '@/types/contasPagar';
 import { useToast } from '@/hooks/use-toast';
@@ -30,6 +30,12 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
   
   const [rateiosLocal, setRateiosLocal] = useState<RateioContaPagar[]>(rateios);
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  // Índices já pré-registrados (commitados no estado local do manager)
+  const [preRegistrados, setPreRegistrados] = useState<Set<number>>(
+    () => new Set(rateios.map((_, i) => i)),
+  );
+  // Serialização do último payload emitido/recebido para evitar loops de sync
+  const lastSyncedRef = useRef<string>(JSON.stringify(rateios));
 
   console.log('[RateioContas] Centros de custo disponíveis:', centrosCusto.length);
 
@@ -38,32 +44,23 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
     return Math.round(value * 100) / 100;
   };
 
-  // Memoizar callback para evitar loops infinitos
-  const handleRateiosChange = useCallback((novosRateios: RateioContaPagar[]) => {
-    console.log('[RateioContas] Atualizando rateios:', novosRateios);
-    onRateiosChange(novosRateios);
-  }, [onRateiosChange]);
-
+  // Sincroniza com props somente quando o pai realmente enviou algo diferente
+  // do que este componente propagou (evita reset ao clicar em outro card).
   useEffect(() => {
-    console.log('[RateioContas] Sincronizando rateios locais com props');
-    setRateiosLocal(rateios);
+    const incoming = JSON.stringify(rateios);
+    if (incoming !== lastSyncedRef.current) {
+      console.log('[RateioContas] Sync externo detectado, atualizando local');
+      setRateiosLocal(rateios);
+      setPreRegistrados(new Set(rateios.map((_, i) => i)));
+      lastSyncedRef.current = incoming;
+    }
   }, [rateios]);
 
-  useEffect(() => {
-    console.log('[RateioContas] Propagando mudanças dos rateios locais');
-    handleRateiosChange(rateiosLocal);
-  }, [rateiosLocal, handleRateiosChange]);
-
-  // Auto-recolher o rateio expandido assim que estiver preenchido (conta + valor)
-  useEffect(() => {
-    if (expandedIndex === null) return;
-    const rateioAtual = rateiosLocal[expandedIndex];
-    if (!rateioAtual) return;
-    if (rateioAtual.plano_conta_id && (rateioAtual.valor || 0) > 0) {
-      const timer = setTimeout(() => setExpandedIndex(null), 250);
-      return () => clearTimeout(timer);
-    }
-  }, [expandedIndex, rateiosLocal]);
+  // Propaga alterações para o pai de forma explícita (sem useEffect encadeado)
+  const propagate = (novos: RateioContaPagar[]) => {
+    lastSyncedRef.current = JSON.stringify(novos);
+    onRateiosChange(novos);
+  };
 
   // Tratar erros de carregamento
   useEffect(() => {
@@ -79,7 +76,7 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
 
   const adicionarRateio = () => {
     console.log('[RateioContas] Adicionando novo rateio');
-    
+
     const novoRateio: RateioContaPagar = {
       plano_conta_id: '',
       centro_custo_id: '',
@@ -87,8 +84,11 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
       percentual: 0,
       descricao: '',
     };
-    setRateiosLocal([...rateiosLocal, novoRateio]);
-    setExpandedIndex(rateiosLocal.length);
+    const novos = [...rateiosLocal, novoRateio];
+    setRateiosLocal(novos);
+    setExpandedIndex(novos.length - 1);
+    // Novo rateio ainda NÃO está pré-registrado: só ao clicar "Pré-registrar".
+    // Não propaga ao pai ainda para manter a lista consistente.
   };
 
   const removerRateio = (index: number) => {
@@ -101,11 +101,26 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
       if (prev > index) return prev - 1;
       return prev;
     });
+    // Reindexa pré-registrados removendo o índice e deslocando os posteriores
+    setPreRegistrados((prev) => {
+      const next = new Set<number>();
+      prev.forEach((i) => {
+        if (i === index) return;
+        next.add(i > index ? i - 1 : i);
+      });
+      return next;
+    });
+    // Propaga somente os já pré-registrados
+    const preservados = novosRateios.filter((_, i) => {
+      const origIdx = i < index ? i : i + 1;
+      return preRegistrados.has(origIdx) && origIdx !== index;
+    });
+    propagate(preservados);
   };
 
   const atualizarRateio = (index: number, campo: keyof RateioContaPagar, valor: any) => {
     console.log('[RateioContas] Atualizando rateio', index, campo, valor);
-    
+
     const novosRateios = [...rateiosLocal];
     novosRateios[index] = { ...novosRateios[index], [campo]: valor };
 
@@ -122,7 +137,6 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
       }
       novosRateios[index].valor = valorNumerico;
       if (valorTotal > 0) {
-        // Calcular percentual automaticamente com 2 casas decimais
         const percentualCalculado = (valorNumerico / valorTotal) * 100;
         novosRateios[index].percentual = roundToTwoDecimals(percentualCalculado);
       }
@@ -132,28 +146,72 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
       const percentualNumerico = parseFloat(valor) || 0;
       if (percentualNumerico < 0 || percentualNumerico > 100) {
         toast({
-          title: "Percentual inválido", 
+          title: "Percentual inválido",
           description: "O percentual deve estar entre 0% e 100%",
           variant: "destructive",
         });
         return;
       }
-      // Arredondar para 2 casas decimais
       const percentualArredondado = roundToTwoDecimals(percentualNumerico);
       novosRateios[index].percentual = percentualArredondado;
       if (valorTotal > 0) {
-        // Calcular valor automaticamente com base no percentual arredondado
         const valorCalculado = (valorTotal * percentualArredondado) / 100;
         novosRateios[index].valor = roundToTwoDecimals(valorCalculado);
       }
     }
 
     setRateiosLocal(novosRateios);
+    // Alteração torna o rateio "sujo": remove flag de pré-registrado
+    if (preRegistrados.has(index)) {
+      setPreRegistrados((prev) => {
+        const next = new Set(prev);
+        next.delete(index);
+        return next;
+      });
+    }
+    // Não propaga durante edição — só ao pré-registrar
+  };
+
+  const preRegistrarRateio = (index: number) => {
+    console.log('[RateioContas] Pré-registrando rateio no índice:', index);
+    const rateio = rateiosLocal[index];
+    if (!rateio) return;
+
+    if (!rateio.plano_conta_id) {
+      toast({
+        title: 'Plano de contas obrigatório',
+        description: 'Selecione a conta contábil antes de pré-registrar.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (!rateio.valor || rateio.valor <= 0) {
+      toast({
+        title: 'Valor inválido',
+        description: 'Informe um valor maior que zero antes de pré-registrar.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const novosPre = new Set(preRegistrados);
+    novosPre.add(index);
+    setPreRegistrados(novosPre);
+    setExpandedIndex(null);
+
+    // Propaga somente os rateios pré-registrados
+    const preservados = rateiosLocal.filter((_, i) => novosPre.has(i));
+    propagate(preservados);
+
+    toast({
+      title: 'Rateio pré-registrado',
+      description: 'Clique em Atualizar/Criar para salvar definitivamente.',
+    });
   };
 
   const distribuirIgualmente = () => {
     console.log('[RateioContas] Distribuindo valores igualmente');
-    
+
     if (rateiosLocal.length === 0 || valorTotal === 0) {
       toast({
         title: "Não é possível distribuir",
@@ -167,7 +225,6 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
     const percentualPorRateio = roundToTwoDecimals(100 / rateiosLocal.length);
 
     const novosRateios = rateiosLocal.map((rateio, index) => {
-      // Para o último rateio, ajustar para garantir que a soma seja exata
       if (index === rateiosLocal.length - 1) {
         const valorRestante = valorTotal - (valorPorRateio * (rateiosLocal.length - 1));
         const percentualRestante = 100 - (percentualPorRateio * (rateiosLocal.length - 1));
@@ -185,6 +242,12 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
     });
 
     setRateiosLocal(novosRateios);
+    // "Distribuir Igualmente" só recalcula valores dos já existentes; mantém
+    // o status de pré-registro como estava. Não propaga automaticamente —
+    // o usuário deve confirmar via Pré-registrar em cada card ou já é pré.
+    // Para consistência, propagamos os que continuam pré-registrados.
+    const preservados = novosRateios.filter((_, i) => preRegistrados.has(i));
+    propagate(preservados);
   };
 
   const valorTotalRateios = rateiosLocal.reduce((total, rateio) => total + (rateio.valor || 0), 0);
@@ -314,9 +377,10 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
         {rateiosLocal.map((rateio, index) => {
           const isExpanded = expandedIndex === index;
           const preenchido = !!rateio.plano_conta_id && (rateio.valor || 0) > 0;
+          const isPreRegistrado = preRegistrados.has(index);
 
           return (
-            <Card key={index}>
+            <Card key={index} className={cn(!isPreRegistrado && 'border-orange-300')}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <button
@@ -332,6 +396,15 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
                       )}
                     />
                     <h4 className="font-medium">Rateio {index + 1}</h4>
+                    {isPreRegistrado ? (
+                      <Badge variant="secondary" className="gap-1">
+                        <CheckCircle2 className="h-3 w-3" /> Pré-registrado
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-orange-700 border-orange-400">
+                        Não salvo
+                      </Badge>
+                    )}
                     {!isExpanded && preenchido && (
                       <span className="text-sm text-muted-foreground truncate">
                         · R$ {(rateio.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ({(rateio.percentual || 0).toFixed(2)}%)
@@ -443,6 +516,18 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
                         {` | R$ ${(rateio.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (${(rateio.percentual || 0).toFixed(2)}%)`}
                       </div>
                     )}
+
+                    <div className="mt-3 flex justify-end">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => preRegistrarRateio(index)}
+                        disabled={!rateio.plano_conta_id || !rateio.valor || rateio.valor <= 0}
+                      >
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        Pré-registrar rateio
+                      </Button>
+                    </div>
                   </>
                 )}
               </CardContent>
