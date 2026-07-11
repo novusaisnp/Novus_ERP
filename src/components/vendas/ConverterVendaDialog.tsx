@@ -1,5 +1,5 @@
 // FIN-E4.1: diálogo para converter orçamento aprovado em venda
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
@@ -71,6 +71,9 @@ function parseRpcError(err: unknown): { codigo: string; mensagem: string } {
   return { codigo: 'ERRO', mensagem: msg };
 }
 
+// Modalidades estritamente à vista (D+0, 1 parcela)
+const MODALIDADES_A_VISTA = new Set(['DINHEIRO', 'PIX']);
+
 export const ConverterVendaDialog: React.FC<Props> = ({ orcamento, open, onOpenChange }) => {
   const navigate = useNavigate();
   const modsQ = usePagamentoModalidades(true);
@@ -80,6 +83,15 @@ export const ConverterVendaDialog: React.FC<Props> = ({ orcamento, open, onOpenC
   const [intervalo, setIntervalo] = useState<number>(30);
   const [submitting, setSubmitting] = useState(false);
   const [erros, setErros] = useState<RpcErro[]>([]);
+
+  const modalidadeSelecionada = useMemo(
+    () => (modsQ.data ?? []).find((m: { id: string }) => m.id === modalidadeId),
+    [modsQ.data, modalidadeId],
+  );
+  const codigoSel = String(
+    (modalidadeSelecionada as { codigo?: string } | undefined)?.codigo ?? '',
+  ).toUpperCase();
+  const isAVista = MODALIDADES_A_VISTA.has(codigoSel);
 
   const handleClose = (o: boolean) => {
     if (submitting) return;
@@ -103,15 +115,19 @@ export const ConverterVendaDialog: React.FC<Props> = ({ orcamento, open, onOpenC
     setSubmitting(true);
     setErros([]);
     try {
+      // Regra à vista: DINHEIRO/PIX => sempre 1x, D+0. Normalização final antes do RPC.
+      const qtd = isAVista ? 1 : qtdParcelas;
+      const dias1 = isAVista ? 0 : diasPrimeira;
+      const inter = isAVista ? 0 : intervalo;
       const payload = {
         orcamento_id: orcamento.id,
         pagamento: {
           modalidade_id: modalidadeId,
           valor_bruto: Number(orcamento.valorTotal) || 0,
-          qtd_parcelas: qtdParcelas,
+          qtd_parcelas: qtd,
           parcelamento: {
-            dias_primeira: diasPrimeira,
-            intervalo_dias: intervalo,
+            dias_primeira: dias1,
+            intervalo_dias: inter,
           },
         },
       };
@@ -202,38 +218,47 @@ export const ConverterVendaDialog: React.FC<Props> = ({ orcamento, open, onOpenC
             </Select>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <Label>Parcelas</Label>
-              <Input
-                type="number"
-                min={1}
-                value={qtdParcelas}
-                onChange={(e) => setQtdParcelas(Math.max(1, Number(e.target.value) || 1))}
-                disabled={submitting}
-              />
+          {isAVista ? (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Dinheiro e PIX são pagamentos à vista (D+0). 1 parcela, sem prazo.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label>Parcelas</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={qtdParcelas}
+                  onChange={(e) => setQtdParcelas(Math.max(1, Number(e.target.value) || 1))}
+                  disabled={submitting}
+                />
+              </div>
+              <div>
+                <Label>1ª (dias)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={diasPrimeira}
+                  onChange={(e) => setDiasPrimeira(Math.max(0, Number(e.target.value) || 0))}
+                  disabled={submitting}
+                />
+              </div>
+              <div>
+                <Label>Intervalo (dias)</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={intervalo}
+                  onChange={(e) => setIntervalo(Math.max(1, Number(e.target.value) || 1))}
+                  disabled={submitting}
+                />
+              </div>
             </div>
-            <div>
-              <Label>1ª (dias)</Label>
-              <Input
-                type="number"
-                min={0}
-                value={diasPrimeira}
-                onChange={(e) => setDiasPrimeira(Math.max(0, Number(e.target.value) || 0))}
-                disabled={submitting}
-              />
-            </div>
-            <div>
-              <Label>Intervalo (dias)</Label>
-              <Input
-                type="number"
-                min={1}
-                value={intervalo}
-                onChange={(e) => setIntervalo(Math.max(1, Number(e.target.value) || 1))}
-                disabled={submitting}
-              />
-            </div>
-          </div>
+          )}
 
           {erros.length > 0 && (
             <Alert variant="destructive">
