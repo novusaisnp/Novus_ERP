@@ -110,39 +110,46 @@ export const CatalogoItemPicker: React.FC<Props> = ({
                     )}
                   </div>
                 </CommandEmpty>
-                <CommandGroup>
-                  {filtered.map((i) => (
-                    <CommandItem
-                      key={i.id}
-                      value={i.id}
-                      onSelect={() => {
-                        const sel: CatalogoSelecao =
-                          tipoItem === 'P'
-                            ? {
-                                id: i.id,
-                                descricao: (i.raw as any).nome,
-                                preco: (i.raw as any).preco,
-                                estoqueDisponivel: (i.raw as any).estoque,
-                                controlaEstoque: (i.raw as any).controlaEstoque,
-                              }
-                            : {
-                                id: i.id,
-                                descricao: (i.raw as any).nome,
-                                preco: (i.raw as any).preco,
-                              };
-                        onSelect(sel);
-                        setOpen(false);
-                        setQuery('');
-                      }}
-                    >
-                      <Check
-                        className={cn(
-                          'mr-2 h-4 w-4',
-                          selectedId === i.id ? 'opacity-100' : 'opacity-0',
-                        )}
-                      />
-                      <div className="flex flex-col">
-                        <span className="text-sm">{i.label}</span>
+                <CommandGroup className="max-h-[320px] overflow-auto">
+                  {filtered.map((i) => {
+                    const handleChoose = () => {
+                      const sel: CatalogoSelecao =
+                        tipoItem === 'P'
+                          ? {
+                              id: i.id,
+                              descricao: (i.raw as any).nome,
+                              preco: (i.raw as any).preco,
+                              estoqueDisponivel: (i.raw as any).estoque,
+                              controlaEstoque: (i.raw as any).controlaEstoque,
+                            }
+                          : {
+                              id: i.id,
+                              descricao: (i.raw as any).nome,
+                              preco: (i.raw as any).preco,
+                            };
+                      onSelect(sel);
+                      setOpen(false);
+                      setQuery('');
+                    };
+                    return (
+                      <CommandItem
+                        key={i.id}
+                        value={`${i.id}-${i.label}`}
+                        onSelect={handleChoose}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleChoose();
+                        }}
+                        className="cursor-pointer"
+                      >
+                        <Check
+                          className={cn(
+                            'mr-2 h-4 w-4',
+                            selectedId === i.id ? 'opacity-100' : 'opacity-0',
+                          )}
+                        />
+                        <div className="flex flex-col">
+                          <span className="text-sm">{i.label}</span>
                         <span className="text-xs text-muted-foreground">{i.hint}</span>
                       </div>
                     </CommandItem>
