@@ -42,6 +42,8 @@ export function AppSidebar({
     staleTime: 60_000,
   });
   const visibleItems = getVisibleSidebarItems({ isAdmin });
+
+  useEffect(() => {
     console.log('[Sidebar] Estado hover alterado:', isHovered);
     onExpandedChange?.(isHovered);
   }, [isHovered, onExpandedChange]);
