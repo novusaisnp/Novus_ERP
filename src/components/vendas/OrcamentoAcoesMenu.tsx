@@ -38,6 +38,7 @@ interface Props {
   onView: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
+  onConverter: () => void;
 }
 
 const digits = (s?: string | null) => (s ?? '').replace(/\D/g, '');
@@ -51,6 +52,7 @@ export const OrcamentoAcoesMenu: React.FC<Props> = ({
   onView,
   onDuplicate,
   onDelete,
+  onConverter,
 }) => {
   const handleEmail = () => {
     const assunto = encodeURIComponent(`Orçamento ${orcamento.numero}`);
@@ -71,6 +73,7 @@ export const OrcamentoAcoesMenu: React.FC<Props> = ({
     window.open(url, '_blank');
   };
 
+  const isConvertido = orcamento.status === 'convertido';
   const podeConverter = orcamento.status === 'aprovado';
 
   return (
@@ -85,14 +88,10 @@ export const OrcamentoAcoesMenu: React.FC<Props> = ({
         <DropdownMenuItem onClick={onView}>
           <Eye className="h-4 w-4 mr-2" /> Visualizar
         </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => printOrcamentoPdf(orcamento, empresa, cliente)}
-        >
+        <DropdownMenuItem onClick={() => printOrcamentoPdf(orcamento, empresa, cliente)}>
           <Printer className="h-4 w-4 mr-2" /> Imprimir
         </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => downloadOrcamentoPdf(orcamento, empresa, cliente)}
-        >
+        <DropdownMenuItem onClick={() => downloadOrcamentoPdf(orcamento, empresa, cliente)}>
           <Download className="h-4 w-4 mr-2" /> Baixar PDF
         </DropdownMenuItem>
         <DropdownMenuSeparator />
@@ -102,26 +101,26 @@ export const OrcamentoAcoesMenu: React.FC<Props> = ({
         <DropdownMenuItem onClick={handleWhats}>
           <MessageCircle className="h-4 w-4 mr-2" /> WhatsApp
         </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={onDuplicate}>
-          <Copy className="h-4 w-4 mr-2" /> Duplicar
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          disabled={!podeConverter}
-          onClick={() =>
-            toast.info('Conversão em Venda estará disponível no próximo lote.')
-          }
-        >
-          <ShoppingCart className="h-4 w-4 mr-2" /> Converter em Venda
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          className="text-destructive focus:text-destructive"
-          onClick={onDelete}
-        >
-          <Trash2 className="h-4 w-4 mr-2" /> Excluir
-        </DropdownMenuItem>
+        {!isConvertido && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onDuplicate}>
+              <Copy className="h-4 w-4 mr-2" /> Duplicar
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={!podeConverter} onClick={onConverter}>
+              <ShoppingCart className="h-4 w-4 mr-2" /> Converter em Venda
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onClick={onDelete}
+            >
+              <Trash2 className="h-4 w-4 mr-2" /> Excluir
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
 };
+

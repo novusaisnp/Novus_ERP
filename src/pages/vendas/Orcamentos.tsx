@@ -50,6 +50,7 @@ import { CatalogoItemPicker } from '@/components/vendas/CatalogoItemPicker';
 import { OrcamentoViewDialog } from '@/components/vendas/OrcamentoViewDialog';
 import { OrcamentoAcoesMenu } from '@/components/vendas/OrcamentoAcoesMenu';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConverterVendaDialog } from '@/components/vendas/ConverterVendaDialog';
 import { useEmpresasLogosMap } from '@/hooks/useEmpresasLogosMap';
 import { toast } from 'sonner';
 
@@ -133,6 +134,7 @@ const Orcamentos: React.FC = () => {
   const [form, setForm] = useState(emptyForm());
   const [viewOrc, setViewOrc] = useState<Orcamento | null>(null);
   const [deleteOrc, setDeleteOrc] = useState<Orcamento | null>(null);
+  const [converterOrc, setConverterOrc] = useState<Orcamento | null>(null);
   const produtosCatalogo = useCatalogoProdutos(form.empresaRepresentadaId || undefined);
   const estoquePorProduto = useMemo(() => {
     const m = new Map<string, { estoque: number; controla: boolean; nome: string }>();
@@ -287,6 +289,14 @@ const Orcamentos: React.FC = () => {
 
   const handleStatusChange = (o: Orcamento, status: OrcamentoStatus) => {
     if (status === o.status) return;
+    if (o.status === 'convertido') {
+      toast.error('Orçamento já convertido em venda não pode ser alterado.');
+      return;
+    }
+    if (status === 'convertido') {
+      toast.info('Use "Converter em Venda" no menu de ações para converter.');
+      return;
+    }
     statusMut.mutate({ id: o.id, status });
   };
 
@@ -415,6 +425,7 @@ const Orcamentos: React.FC = () => {
                             <Select
                               value={o.status}
                               onValueChange={(v) => handleStatusChange(o, v as OrcamentoStatus)}
+                              disabled={o.status === 'convertido'}
                             >
                               <SelectTrigger className="h-8 w-32">
                                 <SelectValue />
@@ -439,6 +450,7 @@ const Orcamentos: React.FC = () => {
                             onView={() => setViewOrc(o)}
                             onDuplicate={() => duplicarMut.mutate(o.id)}
                             onDelete={() => setDeleteOrc(o)}
+                            onConverter={() => setConverterOrc(o)}
                           />
                         </TableCell>
                       </TableRow>
@@ -737,6 +749,12 @@ const Orcamentos: React.FC = () => {
           if (deleteOrc) deleteMut.mutate(deleteOrc.id);
           setDeleteOrc(null);
         }}
+      />
+
+      <ConverterVendaDialog
+        orcamento={converterOrc}
+        open={!!converterOrc}
+        onOpenChange={(v) => !v && setConverterOrc(null)}
       />
     </div>
   );
