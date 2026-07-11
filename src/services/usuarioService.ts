@@ -32,6 +32,35 @@ export const usuarioService = {
     return data || [];
   },
 
+  /**
+   * Verifica duplicidade de CPF/email no banco (não apenas no array local).
+   * Retorna { cpf?: boolean, email?: boolean } indicando quais campos já existem.
+   */
+  async checkDuplicidade(params: { cpf?: string; email?: string; exceptId?: string }) {
+    const result: { cpf: boolean; email: boolean } = { cpf: false, email: false };
+    const cpfLimpo = params.cpf ? params.cpf.replace(/\D/g, '') : '';
+    const emailLower = params.email ? params.email.toLowerCase() : '';
+
+    if (cpfLimpo) {
+      let q = supabase.from('usuarios').select('id').eq('cpf', cpfLimpo).limit(1);
+      if (params.exceptId) q = q.neq('id', params.exceptId);
+      const { data, error } = await q;
+      if (error) throw error;
+      result.cpf = (data || []).length > 0;
+    }
+
+    if (emailLower) {
+      let q = supabase.from('usuarios').select('id').ilike('email', emailLower).limit(1);
+      if (params.exceptId) q = q.neq('id', params.exceptId);
+      const { data, error } = await q;
+      if (error) throw error;
+      result.email = (data || []).length > 0;
+    }
+
+    return result;
+  },
+
+
   async createUsuario(usuarioData: Usuario) {
     const dataToSave = {
       empresa_representada_id: usuarioData.empresaRepresentadaId,

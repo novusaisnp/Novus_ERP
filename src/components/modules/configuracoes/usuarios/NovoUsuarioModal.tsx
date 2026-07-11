@@ -110,7 +110,11 @@ const NovoUsuarioModal: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
       else payload.socio_id = pessoaId;
 
       // user_id fica NULL até a pessoa aceitar o convite / fazer signup.
-      const { error } = await supabase.from('usuarios').insert(payload).select('id').single();
+      const { data: created, error } = await supabase
+        .from('usuarios')
+        .insert(payload)
+        .select('id')
+        .single();
       if (error) {
         if (error.code === '23505') throw new Error('Esta pessoa já está vinculada a um usuário.');
         if (error.code === '23503') throw new Error('Referência inválida (empresa, perfil ou pessoa).');
@@ -119,9 +123,27 @@ const NovoUsuarioModal: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
       }
 
       void role;
-      toast.success('Usuário vinculado com sucesso. Envie o convite para ativar o acesso.');
+
+      // Dispara convite via edge function (não bloqueia a criação em caso de falha)
+      try {
+        const { data: inviteData, error: inviteError } = await supabase.functions.invoke(
+          'enviar-convite-usuario',
+          { body: { usuario_id: created?.id, email, nome } },
+        );
+        if (inviteError) throw inviteError;
+        if (inviteData?.invited) {
+          toast.success('Usuário criado e convite enviado por e-mail.');
+        } else {
+          toast.success('Usuário criado. Convite pendente: ' + (inviteData?.message || 'envio manual necessário.'));
+        }
+      } catch (inviteErr: any) {
+        console.error('[NovoUsuario] Falha ao enviar convite:', inviteErr);
+        toast.warning('Usuário criado, porém falhou ao enviar convite: ' + (inviteErr?.message || 'erro desconhecido'));
+      }
+
       onCreated();
       onOpenChange(false);
+
     } catch (err: any) {
       toast.error(err?.message || 'Falha ao criar usuário');
     } finally {

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { usuarioService } from '@/services/usuarioService';
 import { Save, X, Users } from 'lucide-react';
 import { Usuario, EmpresaRepresentada, Perfil } from '@/types/empresa';
 import { Colaborador } from '@/types/rh';
@@ -196,17 +197,37 @@ const UsuarioFormModal: React.FC<UsuarioFormModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('[Usuarios] Submetendo formulário...');
-    
+
     if (!validateForm()) {
       return;
+    }
+
+    // Validação de duplicidade contra o banco (não apenas array local)
+    try {
+      const dup = await usuarioService.checkDuplicidade({
+        cpf: formData.cpf,
+        email: formData.email,
+        exceptId: editingUsuario?.id,
+      });
+      if (dup.cpf) {
+        toast({ title: 'CPF já cadastrado', description: 'Este CPF já está em uso por outro usuário no banco.', variant: 'destructive' });
+        return;
+      }
+      if (dup.email) {
+        toast({ title: 'Email já cadastrado', description: 'Este email já está em uso por outro usuário no banco.', variant: 'destructive' });
+        return;
+      }
+    } catch (err: any) {
+      console.error('[Usuarios] Falha ao checar duplicidade:', err);
     }
 
     const usuarioSalvar = {
       ...formData,
       cpf: formData.cpf.replace(/\D/g, ''),
       email: formData.email.toLowerCase(),
-      updatedAt: new Date()
+      // updated_at é escrito pelo service em snake_case; não enviar Date camelCase.
     };
+
 
     console.log('[Usuarios] Dados a salvar:', usuarioSalvar);
 
