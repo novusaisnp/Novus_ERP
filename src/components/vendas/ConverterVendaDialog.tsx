@@ -115,15 +115,19 @@ export const ConverterVendaDialog: React.FC<Props> = ({ orcamento, open, onOpenC
     setSubmitting(true);
     setErros([]);
     try {
+      // Regra à vista: DINHEIRO/PIX => sempre 1x, D+0. Normalização final antes do RPC.
+      const qtd = isAVista ? 1 : qtdParcelas;
+      const dias1 = isAVista ? 0 : diasPrimeira;
+      const inter = isAVista ? 0 : intervalo;
       const payload = {
         orcamento_id: orcamento.id,
         pagamento: {
           modalidade_id: modalidadeId,
           valor_bruto: Number(orcamento.valorTotal) || 0,
-          qtd_parcelas: qtdParcelas,
+          qtd_parcelas: qtd,
           parcelamento: {
-            dias_primeira: diasPrimeira,
-            intervalo_dias: intervalo,
+            dias_primeira: dias1,
+            intervalo_dias: inter,
           },
         },
       };
