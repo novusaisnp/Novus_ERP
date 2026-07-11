@@ -34,7 +34,7 @@ export default function FluxoCompetenciaPage() {
   const { data, isLoading, error, refetch } = useQuery<LinhaRelatorio[]>({
     queryKey: ['fluxo-competencia', dataIni, dataFim],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('relatorio_fluxo_competencia' as never, {
+      const { data, error } = await (supabase.rpc as any)('relatorio_fluxo_competencia', {
         p_data_ini: dataIni,
         p_data_fim: dataFim,
         p_empresa_id: null,
