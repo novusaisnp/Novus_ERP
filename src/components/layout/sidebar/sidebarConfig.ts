@@ -148,7 +148,7 @@ export const sidebarItems: MenuItem[] = [
       },
       {
         title: "Centro de Custos",
-        url: "/configuracoes/centros-custo",
+        url: "/financeiro/centros-custo",
       },
       {
         title: "Plano de Contas",

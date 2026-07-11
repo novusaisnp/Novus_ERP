@@ -62,7 +62,7 @@ import IntegracaoPonto from './pages/rh/IntegracaoPonto';
 import RegistrosPonto from './pages/rh/RegistrosPonto';
 
 // Vendas Pages
-import Pedidos from './pages/vendas/Pedidos';
+
 import Vendas from './pages/vendas/Vendas';
 
 // Contratos Pages
