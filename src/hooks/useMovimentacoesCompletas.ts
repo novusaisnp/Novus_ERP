@@ -101,16 +101,16 @@ export const useMovimentacoesCompletas = () => {
   });
 
   return {
-    liquidarTitulo: liquidacaoMutation.mutate,
+    // liquidarTitulo removido: usar `LiquidacaoTituloModal` (caminho único).
     estornarTitulo: estornoMutation.mutate,
     editarTitulo: edicaoMutation.mutate,
     cancelarTitulo: cancelamentoMutation.mutate,
-    isLiquidando: liquidacaoMutation.isPending,
     isEstornando: estornoMutation.isPending,
     isEditando: edicaoMutation.isPending,
     isCancelando: cancelamentoMutation.isPending,
   };
 };
+
 
 // Hook para buscar histórico de movimentações
 export const useHistoricoMovimentacoes = (tituloId: string, tipoTitulo: string) => {
