@@ -385,6 +385,107 @@ export type Database = {
         }
         Relationships: []
       }
+      cliente_modalidades_bloqueadas: {
+        Row: {
+          cliente_id: string
+          created_at: string
+          created_by: string | null
+          empresa_representada_id: string
+          id: string
+          modalidade_id: string
+          motivo: string | null
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string
+          created_by?: string | null
+          empresa_representada_id: string
+          id?: string
+          modalidade_id: string
+          motivo?: string | null
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string
+          created_by?: string | null
+          empresa_representada_id?: string
+          id?: string
+          modalidade_id?: string
+          motivo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_modalidades_bloqueadas_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_modalidades_bloqueadas_modalidade_id_fkey"
+            columns: ["modalidade_id"]
+            isOneToOne: false
+            referencedRelation: "modalidades_pagamento"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cliente_politica_pagamento: {
+        Row: {
+          cliente_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          dias_max_atraso: number | null
+          empresa_representada_id: string
+          id: string
+          limite_crediario: number
+          limite_utilizado: number
+          motivo_bloqueio: string | null
+          permite_crediario: boolean
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          dias_max_atraso?: number | null
+          empresa_representada_id: string
+          id?: string
+          limite_crediario?: number
+          limite_utilizado?: number
+          motivo_bloqueio?: string | null
+          permite_crediario?: boolean
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          dias_max_atraso?: number | null
+          empresa_representada_id?: string
+          id?: string
+          limite_crediario?: number
+          limite_utilizado?: number
+          motivo_bloqueio?: string | null
+          permite_crediario?: boolean
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_politica_pagamento_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: true
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clientes: {
         Row: {
           ativo: boolean
