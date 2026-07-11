@@ -101,7 +101,7 @@ export const ContaContabilAutocomplete: React.FC<ContaContabilAutocompleteProps>
               <CommandEmpty>
                 {isLoading ? "Carregando..." : 
                  internalSearchTerm.length < 2 ? "Digite pelo menos 2 caracteres..." : 
-                 "Nenhuma conta de despesa encontrada."}
+                 `Nenhuma conta de ${tipo === 'RECEITA' ? 'receita' : 'despesa'} encontrada.`}
               </CommandEmpty>
               <CommandGroup>
                 {contas.map((conta) => (
