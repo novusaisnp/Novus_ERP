@@ -180,8 +180,23 @@ const Orcamentos: React.FC = () => {
       itens:
         tipo === 'H'
           ? p.itens
-          : p.itens.map((it) => ({ ...it, tipoItem: tipo === 'S' ? 'S' : 'P' })),
+          : p.itens.map((it) => ({
+              ...it,
+              tipoItem: tipo === 'S' ? 'S' : 'P',
+              produtoId: tipo === 'S' ? null : it.produtoId,
+              servicoId: tipo === 'S' ? it.servicoId : null,
+            })),
     }));
+
+  const setItemTipo = (idx: number, tipoItem: TipoItem) => {
+    updateItem(idx, {
+      tipoItem,
+      produtoId: null,
+      servicoId: null,
+      descricao: '',
+      precoUnitario: 0,
+    });
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -492,7 +507,7 @@ const Orcamentos: React.FC = () => {
                           {idx === 0 && <Label className="text-xs">Tipo</Label>}
                           <Select
                             value={it.tipoItem}
-                            onValueChange={(v) => updateItem(idx, { tipoItem: v as TipoItem })}
+                            onValueChange={(v) => setItemTipo(idx, v as TipoItem)}
                           >
                             <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                             <SelectContent>
