@@ -51,10 +51,10 @@ export const CatalogoItemPicker: React.FC<Props> = ({
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return items.slice(0, 50);
+    if (!q) return items.slice(0, 200);
     return items
       .filter((i) => i.label.toLowerCase().includes(q))
-      .slice(0, 50);
+      .slice(0, 200);
   }, [items, query]);
 
   const loading = tipoItem === 'P' ? produtosQ.isLoading : servicosQ.isLoading;
