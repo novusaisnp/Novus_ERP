@@ -1,14 +1,14 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Trash2, Calculator, AlertCircle, Percent, Pencil, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, Calculator, AlertCircle, Percent, Pencil, ChevronDown, CheckCircle2 } from 'lucide-react';
 import { useCentrosCusto } from '@/hooks/useCentrosCusto';
 import { RateioContaPagar } from '@/types/contasPagar';
 import { useToast } from '@/hooks/use-toast';
