@@ -428,13 +428,11 @@ export const ContasBancariasModal = ({
           {!formData.conta_cofre && (
             <div className="space-y-2">
               <Label htmlFor="limite_credito">Limite de Crédito</Label>
-              <Input
+              <CurrencyInput
                 id="limite_credito"
-                type="number"
-                step="0.01"
-                value={formData.limite_credito || ''}
-                onChange={(e) => setFormData({ ...formData, limite_credito: parseFloat(e.target.value) || undefined })}
-                placeholder="0,00"
+                value={formData.limite_credito ?? 0}
+                onValueChange={(v) => setFormData({ ...formData, limite_credito: v || undefined })}
+                placeholder="R$ 0,00"
               />
             </div>
           )}
