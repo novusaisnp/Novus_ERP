@@ -258,7 +258,9 @@ describe('[T2] Cenários negativos de segurança e regra de negócio', () => {
       erros: [],
       avisos: [],
     };
-    expect(primeira.gerados + replay.reaproveitados).toBe(2);
+    expect(primeira.gerados).toBe(2);
+    expect(replay.reaproveitados).toBe(2);
+    expect(replay.gerados).toBe(0);
     expect(replay.titulos.every((t) => t.replay)).toBe(true);
     // mesmos ids => nenhuma duplicidade
     const ids = new Set(replay.titulos.map((t) => t.conta_receber_id));
