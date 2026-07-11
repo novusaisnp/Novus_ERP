@@ -1838,6 +1838,7 @@ export type Database = {
           produto_id: string | null
           quantidade: number
           servico_id: string | null
+          tipo_item: string
           unidade: string | null
           updated_at: string
           valor_total_item: number | null
@@ -1856,6 +1857,7 @@ export type Database = {
           produto_id?: string | null
           quantidade?: number
           servico_id?: string | null
+          tipo_item: string
           unidade?: string | null
           updated_at?: string
           valor_total_item?: number | null
@@ -1874,6 +1876,7 @@ export type Database = {
           produto_id?: string | null
           quantidade?: number
           servico_id?: string | null
+          tipo_item?: string
           unidade?: string | null
           updated_at?: string
           valor_total_item?: number | null
@@ -2592,8 +2595,10 @@ export type Database = {
           numero: string
           observacoes: string | null
           status: string
+          tipo: string
           updated_at: string
           valor_total: number
+          versao: number
         }
         Insert: {
           cliente_id?: string | null
@@ -2607,8 +2612,10 @@ export type Database = {
           numero: string
           observacoes?: string | null
           status?: string
+          tipo: string
           updated_at?: string
           valor_total?: number
+          versao?: number
         }
         Update: {
           cliente_id?: string | null
@@ -2622,8 +2629,10 @@ export type Database = {
           numero?: string
           observacoes?: string | null
           status?: string
+          tipo?: string
           updated_at?: string
           valor_total?: number
+          versao?: number
         }
         Relationships: [
           {
@@ -2656,6 +2665,7 @@ export type Database = {
           produto_id: string | null
           quantidade: number
           servico_id: string | null
+          tipo_item: string
           updated_at: string
           valor_total: number
         }
@@ -2672,6 +2682,7 @@ export type Database = {
           produto_id?: string | null
           quantidade?: number
           servico_id?: string | null
+          tipo_item: string
           updated_at?: string
           valor_total?: number
         }
@@ -2688,6 +2699,7 @@ export type Database = {
           produto_id?: string | null
           quantidade?: number
           servico_id?: string | null
+          tipo_item?: string
           updated_at?: string
           valor_total?: number
         }
@@ -3802,10 +3814,13 @@ export type Database = {
           numero_venda: string | null
           observacoes: string | null
           observacoes_internas: string | null
+          orcamento_id: string | null
           origem: string | null
           plano_pagamento_id: string | null
           status: string | null
+          status_fiscal: string
           subtotal: number | null
+          tipo: string
           updated_at: string
           valor_frete: number | null
           valor_total: number | null
@@ -3824,10 +3839,13 @@ export type Database = {
           numero_venda?: string | null
           observacoes?: string | null
           observacoes_internas?: string | null
+          orcamento_id?: string | null
           origem?: string | null
           plano_pagamento_id?: string | null
           status?: string | null
+          status_fiscal?: string
           subtotal?: number | null
+          tipo: string
           updated_at?: string
           valor_frete?: number | null
           valor_total?: number | null
@@ -3846,10 +3864,13 @@ export type Database = {
           numero_venda?: string | null
           observacoes?: string | null
           observacoes_internas?: string | null
+          orcamento_id?: string | null
           origem?: string | null
           plano_pagamento_id?: string | null
           status?: string | null
+          status_fiscal?: string
           subtotal?: number | null
+          tipo?: string
           updated_at?: string
           valor_frete?: number | null
           valor_total?: number | null
@@ -3867,6 +3888,13 @@ export type Database = {
             columns: ["empresa_representada_id"]
             isOneToOne: false
             referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_orcamento_id_fkey"
+            columns: ["orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "orcamentos_venda"
             referencedColumns: ["id"]
           },
           {
