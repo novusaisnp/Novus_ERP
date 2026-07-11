@@ -46,13 +46,15 @@ const checarSaldoParaSaida = async (contaId: string, valor: number): Promise<voi
     throw new Error(`Erro ao validar conta: ${error.message}`);
   }
   if (conta?.status && conta.status !== 'ATIVA') {
-    throw new Error('CONTA_INATIVA: Conta bancária não está ativa');
+    throw new BankingError('CONTA_INATIVA', 'Conta bancária não está ativa', { contaId });
   }
   const permitirNegativo = conta?.configuracoes?.permitir_saldo_negativo === true;
   const saldo = Number(conta?.saldo_atual ?? 0);
   if (!permitirNegativo && saldo < valor) {
-    throw new Error(
-      `SALDO_INSUFICIENTE: Saldo (${saldo.toFixed(2)}) insuficiente para operação de ${valor.toFixed(2)}`
+    throw new BankingError(
+      'SALDO_INSUFICIENTE',
+      `Saldo (${saldo.toFixed(2)}) insuficiente para operação de ${valor.toFixed(2)}`,
+      { contaId, saldo, valor }
     );
   }
 };
