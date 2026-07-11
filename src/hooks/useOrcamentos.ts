@@ -83,3 +83,15 @@ export const useDeleteOrcamento = () => {
     onError: (err) => toast.error(mapErr(err)),
   });
 };
+
+export const useDuplicarOrcamento = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => duplicarOrcamento(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEY });
+      toast.success('Orçamento duplicado como rascunho.');
+    },
+    onError: (err) => toast.error(mapErr(err)),
+  });
+};
