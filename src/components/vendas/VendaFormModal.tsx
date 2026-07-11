@@ -137,7 +137,7 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
                 <SelectTrigger><SelectValue placeholder="Selecione um plano" /></SelectTrigger>
                 <SelectContent>
                   {(planos as any[]).filter((p) => p.id).map((p: any) => (
-                    <SelectItem key={p.id} value={p.id}>{p.nome_plano}</SelectItem>
+                    <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

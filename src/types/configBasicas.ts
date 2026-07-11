@@ -55,7 +55,7 @@ export interface ModalidadeCaixaInput {
 
 export interface PlanoPagamento {
   id: string;
-  nome_plano: string;
+  nome: string;
   ativo: boolean;
   created_at: string;
   updated_at: string;
@@ -63,7 +63,7 @@ export interface PlanoPagamento {
 }
 
 export interface PlanoPagamentoInput {
-  nome_plano: string;
+  nome: string;
   ativo: boolean;
 }
 

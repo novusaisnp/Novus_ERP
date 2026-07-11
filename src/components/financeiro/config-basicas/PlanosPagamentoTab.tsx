@@ -79,7 +79,7 @@ export const PlanosPagamentoTab = () => {
             <Card key={plano.id} className="hover:shadow-md transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">{plano.nome_plano}</CardTitle>
+                  <CardTitle className="text-base">{plano.nome}</CardTitle>
                   <Badge variant={plano.ativo ? 'default' : 'secondary'}>
                     {plano.ativo ? 'Ativo' : 'Inativo'}
                   </Badge>
@@ -109,7 +109,7 @@ export const PlanosPagamentoTab = () => {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Tem certeza que deseja excluir o plano de pagamento "{plano.nome_plano}"?
+                          Tem certeza que deseja excluir o plano de pagamento "{plano.nome}"?
                           Esta ação não pode ser desfeita.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
