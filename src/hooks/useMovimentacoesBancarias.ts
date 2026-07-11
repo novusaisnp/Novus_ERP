@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
 import {
   listarMovimentacoesBancarias,
@@ -19,7 +19,22 @@ import {
   TransferenciaBancaria,
   EstornoMovimentacao,
   ConciliacaoMovimentacao,
+  MovimentacaoBancaria,
 } from '@/types/movimentacoesBancarias';
+import { qk } from '@/lib/queryKeys';
+
+// [LOTE 3B] Invalidação refinada: lista + stats + detail da conta afetada.
+const invalidarMovBancarias = (queryClient: QueryClient, contaIds: Array<string | undefined | null>) => {
+  queryClient.invalidateQueries({ queryKey: qk.movimentacoesBancarias.all });
+  queryClient.invalidateQueries({ queryKey: ['movimentacoes-bancarias-estatisticas'] });
+  const unique = Array.from(new Set(contaIds.filter((v): v is string => !!v)));
+  unique.forEach((id) => {
+    queryClient.invalidateQueries({ queryKey: qk.contasBancarias.detail(id) });
+  });
+  // Lista de contas contém saldo_atual (necessária para refletir saldo)
+  queryClient.invalidateQueries({ queryKey: qk.contasBancarias.list() });
+  queryClient.invalidateQueries({ queryKey: qk.contasBancarias.stats() });
+};
 
 
 export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
