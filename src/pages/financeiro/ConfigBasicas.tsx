@@ -35,12 +35,12 @@ const ConfigBasicas = () => {
             <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4">
               <TabsTrigger value="natureza-caixas" className="flex items-center gap-2">
                 <Settings className="w-4 h-4" />
-                <span className="hidden sm:inline">Natureza de Caixas</span>
+                <span className="hidden sm:inline">Naturezas de Pagamento</span>
                 <span className="sm:hidden">Natureza</span>
               </TabsTrigger>
               <TabsTrigger value="modalidade-caixas" className="flex items-center gap-2">
                 <CreditCard className="w-4 h-4" />
-                <span className="hidden sm:inline">Modalidade de Caixa</span>
+                <span className="hidden sm:inline">Modalidades de Pagamento</span>
                 <span className="sm:hidden">Modalidade</span>
               </TabsTrigger>
               <TabsTrigger value="planos-pagamento" className="flex items-center gap-2">
