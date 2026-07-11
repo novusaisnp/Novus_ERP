@@ -382,13 +382,11 @@ export const ColaboradorFormModal: React.FC<ColaboradorFormModalProps> = ({
                 </div>
                 <div>
                   <Label htmlFor="salarioBase">Salário Base</Label>
-                  <Input
+                  <CurrencyInput
                     id="salarioBase"
-                    type="number"
-                    step="0.01"
-                    value={formData.salarioBase || ''}
-                    onChange={(e) => handleInputChange('salarioBase', parseFloat(e.target.value) || 0)}
-                    placeholder="0,00"
+                    value={formData.salarioBase ?? 0}
+                    onValueChange={(v) => handleInputChange('salarioBase', v)}
+                    placeholder="R$ 0,00"
                   />
                 </div>
                 <div>
