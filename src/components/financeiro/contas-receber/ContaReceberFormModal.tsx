@@ -199,6 +199,8 @@ export function ContaReceberFormModal({
         );
       if (form.rateios.some((r) => !r.plano_conta_id))
         return setErro('Todo rateio precisa de conta contábil.');
+      if (form.rateios.some((r) => r.plano_conta?.tipo && r.plano_conta.tipo !== 'RECEITA'))
+        return setErro('Todos os rateios devem usar contas contábeis do tipo RECEITA.');
     }
 
     const payload: ContaReceberInput = {
