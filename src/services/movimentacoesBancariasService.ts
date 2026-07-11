@@ -278,27 +278,35 @@ export const realizarTransferenciaBancaria = async (
   // [LOTE 3B] Guards pré-RPC
   validarValorPositivo(transferencia.valor);
   if (transferencia.conta_origem_id === transferencia.conta_destino_id) {
-    throw new Error('TRANSFERENCIA_INVALIDA: Conta origem e destino não podem ser iguais');
+    throw new BankingError(
+      'TRANSFERENCIA_INVALIDA',
+      'Conta origem e destino não podem ser iguais',
+      { origem: transferencia.conta_origem_id, destino: transferencia.conta_destino_id }
+    );
   }
   const { data: contas, error: contasErr } = await supabase
     .from('contas_bancarias')
     .select('id, status, saldo_atual, configuracoes')
     .in('id', [transferencia.conta_origem_id, transferencia.conta_destino_id]);
   if (contasErr) {
-    throw new Error(`TRANSFERENCIA_INVALIDA: ${contasErr.message}`);
+    throw new BankingError('TRANSFERENCIA_INVALIDA', contasErr.message);
   }
   if (!contas || contas.length !== 2) {
-    throw new Error('TRANSFERENCIA_INVALIDA: Contas de origem/destino não localizadas');
+    throw new BankingError('TRANSFERENCIA_INVALIDA', 'Contas de origem/destino não localizadas');
   }
   for (const c of contas) {
     if (c.status && c.status !== 'ATIVA') {
-      throw new Error('TRANSFERENCIA_INVALIDA: Ambas as contas devem estar ativas');
+      throw new BankingError('TRANSFERENCIA_INVALIDA', 'Ambas as contas devem estar ativas', { contaId: c.id });
     }
   }
   const origem = contas.find((c: any) => c.id === transferencia.conta_origem_id);
   const permitirNegativo = origem?.configuracoes?.permitir_saldo_negativo === true;
   if (!permitirNegativo && Number(origem?.saldo_atual ?? 0) < transferencia.valor) {
-    throw new Error('SALDO_INSUFICIENTE: Saldo insuficiente para transferência');
+    throw new BankingError('SALDO_INSUFICIENTE', 'Saldo insuficiente para transferência', {
+      contaId: transferencia.conta_origem_id,
+      saldo: Number(origem?.saldo_atual ?? 0),
+      valor: transferencia.valor,
+    });
   }
 
   // Obter empresa do usuário atual
