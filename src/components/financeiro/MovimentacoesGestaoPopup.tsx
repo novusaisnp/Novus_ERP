@@ -114,11 +114,17 @@ export const MovimentacoesGestaoPopup = ({
     
     switch (operacao) {
       case 'liquidar':
-        toast({
-          title: "Baixar Título",
-          description: "Modal de baixa será implementado em breve",
-        });
-        break;
+        // [LOTE 3B] Único caminho de liquidação: LiquidacaoTituloModal (via parent).
+        if (onLiquidar) {
+          onLiquidar(titulo);
+        } else {
+          toast({
+            title: 'Baixar Título',
+            description: 'Fluxo de liquidação indisponível neste contexto',
+            variant: 'destructive',
+          });
+        }
+        return;
       case 'editar':
         // Fechar o modal e navegar para a página de edição
         onClose();
