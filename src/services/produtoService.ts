@@ -36,22 +36,23 @@ export const produtoService = {
   },
 
   async criar(produto: Produto): Promise<SupabaseProduto> {
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       nome: produto.nome,
       descricao: produto.descricao || null,
+      codigo: produto.codigo ?? null,
       categoria_id: produto.categoria_id || null,
-      peso: produto.peso || null,
-      altura: produto.altura || null,
-      largura: produto.largura || null,
-      comprimento: produto.comprimento || null,
-      preco_custo: produto.preco_compra || null,
+      peso: produto.peso ?? null,
+      altura: produto.altura ?? null,
+      largura: produto.largura ?? null,
+      comprimento: produto.comprimento ?? null,
+      preco_custo: produto.preco_custo ?? null,
       preco_venda: produto.preco_venda,
-      margem_lucro: produto.margem_lucro || null,
-      imagem_url: produto.imagem || null,
+      margem_lucro: produto.margem_lucro ?? null,
+      imagem_url: produto.imagem_url || null,
       ncm: produto.ncm || null,
       cest: produto.cest || null,
-      estoque_atual: produto.estoque_atual || 0,
-      estoque_minimo: produto.estoque_minimo || 0,
+      estoque_atual: produto.estoque_atual ?? 0,
+      estoque_minimo: produto.estoque_minimo ?? 0,
       ativo: produto.ativo !== false,
     };
     const { data, error } = await supabase
@@ -69,22 +70,23 @@ export const produtoService = {
   },
 
   async atualizar(id: string, produto: Produto): Promise<SupabaseProduto> {
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       nome: produto.nome,
       descricao: produto.descricao || null,
+      codigo: produto.codigo ?? null,
       categoria_id: produto.categoria_id || null,
-      peso: produto.peso || null,
-      altura: produto.altura || null,
-      largura: produto.largura || null,
-      comprimento: produto.comprimento || null,
-      preco_custo: produto.preco_compra || null,
+      peso: produto.peso ?? null,
+      altura: produto.altura ?? null,
+      largura: produto.largura ?? null,
+      comprimento: produto.comprimento ?? null,
+      preco_custo: produto.preco_custo ?? null,
       preco_venda: produto.preco_venda,
-      margem_lucro: produto.margem_lucro || null,
-      imagem_url: produto.imagem || null,
+      margem_lucro: produto.margem_lucro ?? null,
+      imagem_url: produto.imagem_url || null,
       ncm: produto.ncm || null,
       cest: produto.cest || null,
-      estoque_atual: produto.estoque_atual || 0,
-      estoque_minimo: produto.estoque_minimo || 0,
+      estoque_atual: produto.estoque_atual ?? 0,
+      estoque_minimo: produto.estoque_minimo ?? 0,
       ativo: produto.ativo !== false,
       updated_at: new Date().toISOString(),
     };

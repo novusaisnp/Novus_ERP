@@ -22,7 +22,7 @@ const Produtos: React.FC = () => {
 
   const filteredProdutos = produtos.filter(produto =>
     produto.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (produto.codigo_barras && produto.codigo_barras.includes(searchTerm)) ||
+    (produto.codigo && produto.codigo.includes(searchTerm)) ||
     (produto.categoria && produto.categoria.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (produto.ncm && produto.ncm.includes(searchTerm))
   );
@@ -137,9 +137,9 @@ const Produtos: React.FC = () => {
                 {filteredProdutos.map((produto) => (
                   <TableRow key={produto.id} className="hover:bg-muted/50">
                     <TableCell>
-                      {produto.imagem ? (
+                      {produto.imagem_url ? (
                         <img 
-                          src={produto.imagem} 
+                          src={produto.imagem_url} 
                           alt={produto.nome}
                           className="w-10 h-10 object-cover rounded"
                         />
@@ -161,8 +161,8 @@ const Produtos: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <div>
-                        {produto.codigo_barras && (
-                          <div className="text-sm font-mono">{produto.codigo_barras}</div>
+                        {produto.codigo && (
+                          <div className="text-sm font-mono">{produto.codigo}</div>
                         )}
                         {produto.ncm && (
                           <div className="text-xs text-muted-foreground">NCM: {produto.ncm}</div>
@@ -195,7 +195,7 @@ const Produtos: React.FC = () => {
                             ? 'text-destructive' 
                             : 'text-foreground'
                         }`}>
-                          {produto.estoque_atual} {produto.unidade_medida}
+                          {produto.estoque_atual}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           Mín: {produto.estoque_minimo}
