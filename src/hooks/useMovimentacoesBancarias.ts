@@ -82,13 +82,8 @@ export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
         description: 'Movimentação criada com sucesso!',
       });
     },
-    onError: (error: any) => {
-      console.error('[MovimentacoesBancarias] Erro ao criar movimentação:', error);
-      toast({
-        title: 'Erro',
-        description: error.message || 'Erro ao criar movimentação',
-        variant: 'destructive',
-      });
+    onError: (error: unknown) => {
+      notifyBankingError(error, 'Erro ao criar movimentação', 'Erro ao criar movimentação');
     },
   });
 
