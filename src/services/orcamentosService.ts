@@ -9,9 +9,13 @@ export type OrcamentoStatus =
   | 'cancelado'
   | 'convertido';
 
+export type TipoOrcamento = 'P' | 'S' | 'H';
+export type TipoItem = 'P' | 'S';
+
 export interface OrcamentoItem {
   id?: string;
   orcamentoId?: string;
+  tipoItem: TipoItem;
   produtoId?: string | null;
   servicoId?: string | null;
   descricao: string;
