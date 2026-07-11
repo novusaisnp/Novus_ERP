@@ -130,7 +130,11 @@ export const VendaPagamentoSection: React.FC<Props> = ({
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Valor (R$)</Label>
-              <Input type="number" step="0.01" min={0} value={valorBruto} onChange={(e) => setValorBruto(e.target.value)} />
+              <CurrencyInput
+                value={Number(valorBruto) || 0}
+                onValueChange={(v) => setValorBruto(v ? String(v) : '')}
+                placeholder="R$ 0,00"
+              />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Parcelas</Label>
