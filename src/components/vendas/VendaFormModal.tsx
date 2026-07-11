@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Trash2, Plus } from 'lucide-react';
+import { toast } from 'sonner';
 import { Venda, ItemVenda, VendaStatus } from '@/types/vendas';
 import { vendasService } from '@/services/vendasService';
 import { clienteService } from '@/services/clienteService';
@@ -74,9 +75,26 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await saveVenda(form);
-    onOpenChange(false);
+    // Validação client-side (SM1-A)
+    if (!form.cliente_id) {
+      toast.error('Selecione o cliente antes de salvar.');
+      return;
+    }
+    const itens = (form.itens || []).filter((i) => (i.descricao || '').trim().length > 0);
+    if (itens.length === 0) {
+      toast.error('Adicione ao menos um item com descrição.');
+      return;
+    }
+    try {
+      await saveVenda({ ...form, itens });
+      onOpenChange(false);
+    } catch (err) {
+      // Não fechar o modal em erro. Preservar estado do usuário.
+      const msg = err instanceof Error ? err.message : 'Falha ao salvar venda';
+      toast.error(msg);
+    }
   };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

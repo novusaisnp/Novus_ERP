@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,8 +44,17 @@ export const ContasBancariasModal = ({
   const { agencias } = useAgencias();
 
   const isEditing = Boolean(conta);
+  // SM1-C: guarda de re-hidratação — só resetar quando (re)abrir com alvo diferente
+  const initializedKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
+    if (!isOpen) {
+      initializedKeyRef.current = null;
+      return;
+    }
+    const key = conta ? `edit:${conta.id}` : 'new';
+    if (initializedKeyRef.current === key) return;
+
     if (conta) {
       setFormData({
         agencia_id: conta.agencia_id,
@@ -77,7 +86,9 @@ export const ContasBancariasModal = ({
       });
     }
     setErrors({});
+    initializedKeyRef.current = key;
   }, [conta, isOpen]);
+
 
   const validateForm = (): boolean => {
     const newErrors: { [key: string]: string } = {};

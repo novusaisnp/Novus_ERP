@@ -108,7 +108,21 @@ export const LiquidacaoTituloModal = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    // SM1-C: guard de idempotência — impede tentativa duplicada de liquidação
+    const situacao = String(titulo.situacao || '').toUpperCase();
+    if (situacao === 'LIQUIDADA' || situacao === 'BAIXADA' || situacao === 'PAGA') {
+      toast({
+        title: 'Título já liquidado',
+        description: 'Este título já foi baixado e não pode ser liquidado novamente.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (liquidarMutation.isPending) {
+      return; // evita duplo submit por clique rápido
+    }
+
     if (!formData.conta_bancaria_id && formData.forma_pagamento !== 'DINHEIRO') {
       toast({
         title: "Erro",
@@ -130,6 +144,7 @@ export const LiquidacaoTituloModal = ({
 
     liquidarMutation.mutate(dadosLiquidacao);
   };
+
 
   const formasPagamento = [
     { value: 'DINHEIRO' as FormaPagamento, label: 'Dinheiro' },

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase as _supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
@@ -14,8 +14,6 @@ import { usePerfis } from '@/hooks/usePerfis';
 import PerfisConfig from '@/components/modules/configuracoes/empresas/PerfisConfig';
 import NovoUsuarioModal from '@/components/modules/configuracoes/usuarios/NovoUsuarioModal';
 import type { Perfil } from '@/types/empresa';
-
-const supabase: any = _supabase;
 
 interface UsuarioRow {
   id: string;

@@ -1,10 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useSidebar } from "@/components/ui/sidebar";
 import { SidebarMenuItem } from './sidebar/SidebarMenuItem';
 import { SidebarMenuGroup } from './sidebar/SidebarMenuGroup';
-import { sidebarItems } from './sidebar/sidebarConfig';
+import { getVisibleSidebarItems } from './sidebar/sidebarVisibility';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 console.log('[Sidebar] Inicializando AppSidebar com padrão das imagens 2 e 3');
 
@@ -22,6 +25,23 @@ export function AppSidebar({
   } = useSidebar();
   const [isHovered, setIsHovered] = useState(false);
   const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const { user } = useAuth();
+
+  // SM1-D: filtra itens do sidebar por feature flag + role admin
+  const { data: isAdmin = false } = useQuery({
+    queryKey: ['is-admin', user?.id ?? null],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('has_role', {
+        _user_id: user!.id,
+        _role: 'admin',
+      });
+      if (error) return false;
+      return Boolean(data);
+    },
+    staleTime: 60_000,
+  });
+  const visibleItems = getVisibleSidebarItems({ isAdmin });
 
   useEffect(() => {
     console.log('[Sidebar] Estado hover alterado:', isHovered);
@@ -70,7 +90,7 @@ export function AppSidebar({
       <div className="h-full flex flex-col text-white">
         {/* Menu Items - Ocupam toda a altura disponível */}
         <div className="flex-1 overflow-y-auto py-[63px]">
-          {sidebarItems.map(item => (
+          {visibleItems.map(item => (
             <div key={item.title} className="mb-1">
               {item.items ? (
                 <SidebarMenuGroup 

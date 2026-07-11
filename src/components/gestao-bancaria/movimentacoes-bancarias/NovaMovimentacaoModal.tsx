@@ -6,6 +6,7 @@ import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
 import { useMovimentacoesBancarias } from '@/hooks/useMovimentacoesBancarias';
 import { MovimentacaoBancariaInput, TipoMovimentacao } from '@/types/movimentacoesBancarias';
 import { ArrowDownLeft, ArrowUpRight, Settings } from 'lucide-react';
@@ -67,8 +68,18 @@ export function NovaMovimentacaoModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.conta_bancaria_id || !formData.descricao || formData.valor <= 0) {
+
+    // SM1-A: validação com feedback semântico. Nunca retornar silenciosamente.
+    if (!formData.conta_bancaria_id) {
+      toast.error('Selecione a conta bancária.');
+      return;
+    }
+    if (!formData.descricao?.trim()) {
+      toast.error('Informe a descrição da movimentação.');
+      return;
+    }
+    if (!(formData.valor > 0)) {
+      toast.error('O valor deve ser maior que zero.');
       return;
     }
 
@@ -77,8 +88,10 @@ export function NovaMovimentacaoModal({
         onSuccess();
         handleClose();
       },
+      // erro: hook já dispara toast destrutivo — modal permanece aberto (não chama handleClose)
     });
   };
+
 
   const handleClose = () => {
     setFormData({
