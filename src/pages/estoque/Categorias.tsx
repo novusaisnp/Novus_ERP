@@ -137,46 +137,57 @@ const Categorias: React.FC = () => {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Descrição</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Classificação</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredCategorias.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center py-8">
+                  <TableCell colSpan={5} className="text-center py-8">
                     <p className="text-muted-foreground">
                       {searchTerm ? 'Nenhuma categoria encontrada.' : 'Nenhuma categoria cadastrada.'}
                     </p>
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredCategorias.map((categoria) => (
-                  <TableRow key={categoria.id}>
-                    <TableCell className="font-medium">{categoria.nome}</TableCell>
-                    <TableCell>{categoria.descricao || '-'}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(categoria)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(categoria)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                filteredCategorias.map((categoria) => {
+                  const c = categoria as any;
+                  const temReceita = !!c.plano_conta_receita_id;
+                  const temDespesa = !!c.plano_conta_despesa_id;
+                  const completa = temReceita && temDespesa;
+                  return (
+                    <TableRow key={categoria.id}>
+                      <TableCell className="font-medium">{categoria.nome}</TableCell>
+                      <TableCell>{categoria.descricao || '-'}</TableCell>
+                      <TableCell>
+                        <Badge variant={c.ativo ? 'default' : 'secondary'}>
+                          {c.ativo ? 'Ativa' : 'Rascunho'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={completa ? 'default' : 'outline'} className={completa ? '' : 'text-amber-600 border-amber-500'}>
+                          {completa ? 'Completa' : temReceita || temDespesa ? 'Parcial' : 'Pendente'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button variant="ghost" size="sm" onClick={() => handleEdit(categoria)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDelete(categoria)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
+
         </CardContent>
       </Card>
 

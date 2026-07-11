@@ -5,20 +5,13 @@ import { planoContasService } from '@/services/planoContasService';
 import { PlanoContas } from '@/types/planoContas';
 import { useToast } from '@/hooks/use-toast';
 
-export const useContaContabilSearch = () => {
+export const useContaContabilSearch = (tipo: 'RECEITA' | 'DESPESA' = 'DESPESA') => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const { toast } = useToast();
 
-  console.log('[ContaContabilSearch] Hook inicializado');
-
-  // Debounce do termo de busca
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-      console.log('[ContaContabilSearch] Termo debounced:', searchTerm);
-    }, 300);
-
+    const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 300);
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
@@ -27,42 +20,27 @@ export const useContaContabilSearch = () => {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['contas-analiticas-search', debouncedSearchTerm],
-    queryFn: () => {
-      console.log('[ContaContabilSearch] Executando busca com termo:', debouncedSearchTerm, 'tipo: DESPESA');
-      return planoContasService.searchContasAnaliticas(debouncedSearchTerm, 'DESPESA');
-    },
+    queryKey: ['contas-analiticas-search', tipo, debouncedSearchTerm],
+    queryFn: () => planoContasService.searchContasAnaliticas(debouncedSearchTerm, tipo),
     enabled: debouncedSearchTerm.length >= 2,
-    staleTime: 1000 * 60 * 5, // 5 minutos
+    staleTime: 1000 * 60 * 5,
   });
 
   useEffect(() => {
     if (error) {
       console.error('[ContaContabilSearch] Erro na busca:', error);
       toast({
-        title: "Erro na busca",
-        description: "Não foi possível buscar as contas contábeis",
-        variant: "destructive",
+        title: 'Erro na busca',
+        description: 'Não foi possível buscar as contas contábeis',
+        variant: 'destructive',
       });
     }
   }, [error, toast]);
 
-  const handleSearchChange = useCallback((value: string) => {
-    console.log('[ContaContabilSearch] Termo de busca alterado:', value);
-    setSearchTerm(value);
-  }, []);
+  const handleSearchChange = useCallback((value: string) => setSearchTerm(value), []);
 
   const shouldShowResults = debouncedSearchTerm.length >= 2;
   const hasResults = contas.length > 0;
-
-  console.log('[ContaContabilSearch] Estado atual:', {
-    searchTerm,
-    debouncedSearchTerm,
-    shouldShowResults,
-    hasResults,
-    contasCount: contas.length,
-    isLoading
-  });
 
   return {
     searchTerm,
@@ -74,3 +52,4 @@ export const useContaContabilSearch = () => {
     handleSearchChange,
   };
 };
+
