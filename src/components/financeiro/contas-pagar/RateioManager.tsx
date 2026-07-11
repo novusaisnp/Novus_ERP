@@ -345,13 +345,10 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange }: RateioMa
 
                 <div>
                   <Label>Valor (R$)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={rateio.valor || ''}
-                    onChange={(e) => atualizarRateio(index, 'valor', e.target.value)}
-                    placeholder="0,00"
+                  <CurrencyInput
+                    value={Number(rateio.valor) || 0}
+                    onValueChange={(v) => atualizarRateio(index, 'valor', String(v))}
+                    placeholder="R$ 0,00"
                   />
                 </div>
 
