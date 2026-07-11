@@ -7,7 +7,7 @@ console.log('[Fiscal] Inicializando serviço de naturezas de operação');
 export const fetchNaturezasOperacao = async (): Promise<NaturezaOperacao[]> => {
   console.log('[Fiscal] Buscando naturezas de operação');
   const { data, error } = await supabase
-    .from('natureza_operacao' as any)
+    .from('natureza_operacao')
     .select('*')
     .order('codigo');
   

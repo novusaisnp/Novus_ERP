@@ -349,6 +349,42 @@ export type Database = {
           },
         ]
       }
+      cfop: {
+        Row: {
+          aplicacao: string | null
+          ativo: boolean
+          categoria: string | null
+          codigo: string
+          created_at: string
+          descricao: string
+          destino: string
+          id: string
+          tipo: string
+        }
+        Insert: {
+          aplicacao?: string | null
+          ativo?: boolean
+          categoria?: string | null
+          codigo: string
+          created_at?: string
+          descricao: string
+          destino: string
+          id?: string
+          tipo: string
+        }
+        Update: {
+          aplicacao?: string | null
+          ativo?: boolean
+          categoria?: string | null
+          codigo?: string
+          created_at?: string
+          descricao?: string
+          destino?: string
+          id?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
       clientes: {
         Row: {
           ativo: boolean
@@ -625,6 +661,77 @@ export type Database = {
             columns: ["setor_id"]
             isOneToOne: false
             referencedRelation: "setores_empresa"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      configuracoes_fiscais: {
+        Row: {
+          aliquota_cofins_padrao: number
+          aliquota_icms_padrao: number
+          aliquota_ipi_padrao: number
+          aliquota_iss_padrao: number
+          aliquota_pis_padrao: number
+          ambiente: string
+          ativo: boolean
+          certificado_digital: string | null
+          created_at: string
+          empresa_representada_id: string
+          id: string
+          numero_ultimo_nfce: number
+          numero_ultimo_nfe: number
+          regime_tributario: string
+          senha_certificado: string | null
+          serie_nfce: string
+          serie_nfe: string
+          updated_at: string
+        }
+        Insert: {
+          aliquota_cofins_padrao?: number
+          aliquota_icms_padrao?: number
+          aliquota_ipi_padrao?: number
+          aliquota_iss_padrao?: number
+          aliquota_pis_padrao?: number
+          ambiente?: string
+          ativo?: boolean
+          certificado_digital?: string | null
+          created_at?: string
+          empresa_representada_id: string
+          id?: string
+          numero_ultimo_nfce?: number
+          numero_ultimo_nfe?: number
+          regime_tributario: string
+          senha_certificado?: string | null
+          serie_nfce?: string
+          serie_nfe?: string
+          updated_at?: string
+        }
+        Update: {
+          aliquota_cofins_padrao?: number
+          aliquota_icms_padrao?: number
+          aliquota_ipi_padrao?: number
+          aliquota_iss_padrao?: number
+          aliquota_pis_padrao?: number
+          ambiente?: string
+          ativo?: boolean
+          certificado_digital?: string | null
+          created_at?: string
+          empresa_representada_id?: string
+          id?: string
+          numero_ultimo_nfce?: number
+          numero_ultimo_nfe?: number
+          regime_tributario?: string
+          senha_certificado?: string | null
+          serie_nfce?: string
+          serie_nfe?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "configuracoes_fiscais_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: true
+            referencedRelation: "empresas_representadas"
             referencedColumns: ["id"]
           },
         ]
@@ -2341,6 +2448,137 @@ export type Database = {
           },
         ]
       }
+      natureza_operacao: {
+        Row: {
+          ativo: boolean
+          calcula_icms: boolean
+          calcula_ipi: boolean
+          calcula_pis_cofins: boolean
+          cfop_dentro_estado: string | null
+          cfop_exterior: string | null
+          cfop_fora_estado: string | null
+          codigo: string
+          created_at: string
+          deleted_at: string | null
+          descricao: string
+          empresa_representada_id: string
+          finalidade: string
+          gera_duplicata: boolean
+          id: string
+          movimenta_estoque: boolean
+          observacoes: string | null
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          calcula_icms?: boolean
+          calcula_ipi?: boolean
+          calcula_pis_cofins?: boolean
+          cfop_dentro_estado?: string | null
+          cfop_exterior?: string | null
+          cfop_fora_estado?: string | null
+          codigo: string
+          created_at?: string
+          deleted_at?: string | null
+          descricao: string
+          empresa_representada_id: string
+          finalidade: string
+          gera_duplicata?: boolean
+          id?: string
+          movimenta_estoque?: boolean
+          observacoes?: string | null
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          calcula_icms?: boolean
+          calcula_ipi?: boolean
+          calcula_pis_cofins?: boolean
+          cfop_dentro_estado?: string | null
+          cfop_exterior?: string | null
+          cfop_fora_estado?: string | null
+          codigo?: string
+          created_at?: string
+          deleted_at?: string | null
+          descricao?: string
+          empresa_representada_id?: string
+          finalidade?: string
+          gera_duplicata?: boolean
+          id?: string
+          movimenta_estoque?: boolean
+          observacoes?: string | null
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "natureza_operacao_cfop_dentro_estado_fkey"
+            columns: ["cfop_dentro_estado"]
+            isOneToOne: false
+            referencedRelation: "cfop"
+            referencedColumns: ["codigo"]
+          },
+          {
+            foreignKeyName: "natureza_operacao_cfop_exterior_fkey"
+            columns: ["cfop_exterior"]
+            isOneToOne: false
+            referencedRelation: "cfop"
+            referencedColumns: ["codigo"]
+          },
+          {
+            foreignKeyName: "natureza_operacao_cfop_fora_estado_fkey"
+            columns: ["cfop_fora_estado"]
+            isOneToOne: false
+            referencedRelation: "cfop"
+            referencedColumns: ["codigo"]
+          },
+          {
+            foreignKeyName: "natureza_operacao_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ncm: {
+        Row: {
+          aliquota_ipi: number
+          ativo: boolean
+          categoria: string | null
+          codigo: string
+          created_at: string
+          descricao: string
+          id: string
+          observacoes: string | null
+          unidade: string | null
+        }
+        Insert: {
+          aliquota_ipi?: number
+          ativo?: boolean
+          categoria?: string | null
+          codigo: string
+          created_at?: string
+          descricao: string
+          id?: string
+          observacoes?: string | null
+          unidade?: string | null
+        }
+        Update: {
+          aliquota_ipi?: number
+          ativo?: boolean
+          categoria?: string | null
+          codigo?: string
+          created_at?: string
+          descricao?: string
+          id?: string
+          observacoes?: string | null
+          unidade?: string | null
+        }
+        Relationships: []
+      }
       perfis: {
         Row: {
           ativo: boolean
@@ -3151,6 +3389,77 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "tamanhos_produtos_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tributos: {
+        Row: {
+          aliquota: number
+          ativo: boolean
+          base_calculo: number
+          created_at: string
+          data_fim: string | null
+          data_inicio: string
+          deleted_at: string | null
+          descricao: string
+          empresa_representada_id: string
+          id: string
+          ncm_fim: string | null
+          ncm_inicio: string | null
+          observacoes: string | null
+          regime_tributario: string | null
+          subtipo: string | null
+          tipo: string
+          uf: string | null
+          updated_at: string
+        }
+        Insert: {
+          aliquota?: number
+          ativo?: boolean
+          base_calculo?: number
+          created_at?: string
+          data_fim?: string | null
+          data_inicio?: string
+          deleted_at?: string | null
+          descricao: string
+          empresa_representada_id: string
+          id?: string
+          ncm_fim?: string | null
+          ncm_inicio?: string | null
+          observacoes?: string | null
+          regime_tributario?: string | null
+          subtipo?: string | null
+          tipo: string
+          uf?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aliquota?: number
+          ativo?: boolean
+          base_calculo?: number
+          created_at?: string
+          data_fim?: string | null
+          data_inicio?: string
+          deleted_at?: string | null
+          descricao?: string
+          empresa_representada_id?: string
+          id?: string
+          ncm_fim?: string | null
+          ncm_inicio?: string | null
+          observacoes?: string | null
+          regime_tributario?: string | null
+          subtipo?: string | null
+          tipo?: string
+          uf?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tributos_empresa_representada_id_fkey"
             columns: ["empresa_representada_id"]
             isOneToOne: false
             referencedRelation: "empresas_representadas"

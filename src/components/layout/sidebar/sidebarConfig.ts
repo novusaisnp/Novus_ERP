@@ -176,11 +176,10 @@ export const sidebarItems: MenuItem[] = [
         title: "SPED",
         url: "/fiscal/sped",
       },
-      // Tributos oculto até tabelas fiscais serem provisionadas (Lote 4B.1)
-      // {
-      //   title: "Tributos",
-      //   url: "/fiscal/tributos",
-      // },
+      {
+        title: "Tributos",
+        url: "/fiscal/tributos",
+      },
     ],
   },
   {
