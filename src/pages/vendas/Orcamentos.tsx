@@ -134,6 +134,7 @@ const Orcamentos: React.FC = () => {
   const [form, setForm] = useState(emptyForm());
   const [viewOrc, setViewOrc] = useState<Orcamento | null>(null);
   const [deleteOrc, setDeleteOrc] = useState<Orcamento | null>(null);
+  const [converterOrc, setConverterOrc] = useState<Orcamento | null>(null);
   const produtosCatalogo = useCatalogoProdutos(form.empresaRepresentadaId || undefined);
   const estoquePorProduto = useMemo(() => {
     const m = new Map<string, { estoque: number; controla: boolean; nome: string }>();
