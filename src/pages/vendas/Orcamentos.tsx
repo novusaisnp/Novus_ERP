@@ -504,10 +504,26 @@ const Orcamentos: React.FC = () => {
                       )}
                       <div className={form.tipo === 'H' ? 'col-span-3' : 'col-span-5'}>
                         {idx === 0 && <Label className="text-xs">Descrição</Label>}
-                        <Input
+                        <CatalogoItemPicker
+                          tipoItem={it.tipoItem}
+                          empresaId={form.empresaRepresentadaId}
                           value={it.descricao}
-                          onChange={(e) => updateItem(idx, { descricao: e.target.value })}
-                          placeholder="Descrição"
+                          selectedId={it.tipoItem === 'P' ? it.produtoId ?? undefined : it.servicoId ?? undefined}
+                          onSelect={(sel) =>
+                            updateItem(idx, {
+                              descricao: sel.descricao,
+                              precoUnitario: sel.preco,
+                              produtoId: it.tipoItem === 'P' ? sel.id : null,
+                              servicoId: it.tipoItem === 'S' ? sel.id : null,
+                            })
+                          }
+                          onChangeText={(txt) =>
+                            updateItem(idx, {
+                              descricao: txt,
+                              produtoId: null,
+                              servicoId: null,
+                            })
+                          }
                         />
                       </div>
                       <div className="col-span-2">
