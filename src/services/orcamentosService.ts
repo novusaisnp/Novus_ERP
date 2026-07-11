@@ -194,7 +194,15 @@ export const updateOrcamento = async (
   id: string,
   input: Partial<OrcamentoInput>,
 ): Promise<Orcamento> => {
-  const payload: Record<string, unknown> = {};
+  const payload: {
+    numero?: string;
+    cliente_id?: string | null;
+    data_emissao?: string;
+    data_validade?: string | null;
+    status?: OrcamentoStatus;
+    observacoes?: string | null;
+    valor_total?: number;
+  } = {};
   if (input.numero !== undefined) payload.numero = input.numero;
   if (input.clienteId !== undefined) payload.cliente_id = input.clienteId ?? null;
   if (input.dataEmissao !== undefined) payload.data_emissao = input.dataEmissao;
