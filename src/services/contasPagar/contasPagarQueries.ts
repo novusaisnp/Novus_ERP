@@ -30,7 +30,6 @@ export const buildContasPagarQuery = (filtros: any = {}) => {
         centro_custo_id,
         valor,
         percentual,
-        descricao,
         plano_contas (
           id,
           codigo,
@@ -105,7 +104,6 @@ export const getContaPagarByIdQuery = (id: string) => {
         centro_custo_id,
         valor,
         percentual,
-        descricao,
         plano_contas (
           id,
           codigo,
