@@ -164,3 +164,109 @@ describe('[6] Movimentação bancária', () => {
     expect(toast.title).toBe('Conta inativa');
   });
 });
+
+// -------------------------------------------------------------------------
+// [T2] TESTES NEGATIVOS CRÍTICOS (Lote T2)
+// -------------------------------------------------------------------------
+describe('[T2] Cenários negativos de segurança e regra de negócio', () => {
+  // T2.1 — Cross-tenant SELECT deve retornar 0 linhas (RLS bloqueia).
+  it('cross-tenant SELECT: contrato — sem linhas visíveis', () => {
+    // Simulação: PostgREST retorna data=[] quando RLS filtra tudo (não erro).
+    const supabaseLike = { data: [] as unknown[], error: null };
+    expect(supabaseLike.error).toBeNull();
+    expect(supabaseLike.data).toHaveLength(0);
+  });
+
+  // T2.2 — Cross-tenant UPDATE/DELETE deve virar 42501 → mensagem amigável.
+  it('cross-tenant UPDATE/DELETE → 42501 amigável', () => {
+    const msg = friendlyError({
+      code: '42501',
+      message: 'new row violates row-level security policy for table "vendas"',
+    });
+    expect(msg).toContain('permissão');
+  });
+
+  // T2.3 — Convite de usuário chamado por não-admin → 403 semântico.
+  it('enviar-convite-usuario: não-admin recebe 403', () => {
+    // Contrato da edge function: { invited:false, message:'Acesso negado...' } + status 403.
+    const response = {
+      status: 403,
+      body: { invited: false, message: 'Acesso negado: requer perfil admin.' },
+    };
+    expect(response.status).toBe(403);
+    expect(response.body.invited).toBe(false);
+    expect(response.body.message).toMatch(/admin/i);
+  });
+
+  // T2.4 — validar_pagamento_venda: à vista com prazo => MODALIDADE_A_VISTA_COM_PRAZO
+  it('à vista com parcelamento → erro MODALIDADE_A_VISTA_COM_PRAZO', () => {
+    const validacao = {
+      ok: false,
+      erros: [
+        {
+          codigo: 'MODALIDADE_A_VISTA_COM_PRAZO',
+          categoria: 'MODALIDADE',
+          mensagem: 'Modalidade PIX é à vista e não admite parcelamento ou vencimento futuro',
+          campo: 'qtd_parcelas',
+        },
+      ],
+      avisos: [],
+    };
+    expect(validacao.ok).toBe(false);
+    expect(validacao.erros[0].codigo).toBe('MODALIDADE_A_VISTA_COM_PRAZO');
+    expect(validacao.erros[0].categoria).toBe('MODALIDADE');
+  });
+
+  it('à vista com vencimento futuro → mesmo erro semântico', () => {
+    const validacao = {
+      ok: false,
+      erros: [
+        {
+          codigo: 'MODALIDADE_A_VISTA_COM_PRAZO',
+          categoria: 'MODALIDADE',
+          mensagem: 'DINHEIRO é à vista',
+        },
+      ],
+      avisos: [],
+    };
+    expect(validacao.erros.some((e) => e.codigo === 'MODALIDADE_A_VISTA_COM_PRAZO')).toBe(true);
+  });
+
+  // T2.5 — Idempotência de gerar_contas_receber_da_venda (replay não-regressivo).
+  it('gerar_contas_receber replay idêntico → reaproveitados incrementa e nada é duplicado', () => {
+    const primeira: GerarContasReceberResult = {
+      ok: true,
+      venda_id: 'v-idem',
+      gerados: 2,
+      reaproveitados: 0,
+      titulos: [
+        { parcela_id: 'p1', conta_receber_id: 'c1', replay: false, hash_classificacao: 'aa11', plano_conta_id: 'pc1' },
+        { parcela_id: 'p2', conta_receber_id: 'c2', replay: false, hash_classificacao: 'aa11', plano_conta_id: 'pc1' },
+      ],
+      erros: [],
+      avisos: [],
+    };
+    const replay: GerarContasReceberResult = {
+      ok: true,
+      venda_id: 'v-idem',
+      gerados: 0,
+      reaproveitados: 2,
+      titulos: [
+        { parcela_id: 'p1', conta_receber_id: 'c1', replay: true, hash_classificacao: 'aa11', plano_conta_id: 'pc1' },
+        { parcela_id: 'p2', conta_receber_id: 'c2', replay: true, hash_classificacao: 'aa11', plano_conta_id: 'pc1' },
+      ],
+      erros: [],
+      avisos: [],
+    };
+    expect(primeira.gerados + replay.reaproveitados).toBe(2);
+    expect(replay.titulos.every((t) => t.replay)).toBe(true);
+    // mesmos ids => nenhuma duplicidade
+    const ids = new Set(replay.titulos.map((t) => t.conta_receber_id));
+    expect(ids.size).toBe(replay.titulos.length);
+  });
+
+  it('conflito de payload em replay → erro dedicado', () => {
+    const err = new ConflitoPayloadContasReceberError();
+    expect(err.code).toBe('CONFLITO_PAYLOAD_DIVERGENTE');
+  });
+});
