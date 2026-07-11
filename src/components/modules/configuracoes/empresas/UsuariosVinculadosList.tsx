@@ -229,6 +229,15 @@ const UsuariosVinculadosList: React.FC<UsuariosVinculadosListProps> = ({
         onClose={handleCloseModal}
         onSubmit={handleFormSubmit}
       />
+
+      <ConfirmDialog
+        open={!!confirmingDelete}
+        onOpenChange={(open) => !open && setConfirmingDelete(null)}
+        title="Excluir usuário"
+        description={confirmingDelete ? `Tem certeza que deseja excluir o usuário ${confirmingDelete.nomeCompleto}?` : ''}
+        confirmLabel="Excluir"
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 };
