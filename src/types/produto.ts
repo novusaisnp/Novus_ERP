@@ -5,6 +5,8 @@ export interface Produto {
   descricao?: string;
   codigo_barras?: string;
   categoria?: string;
+  categoria_id?: string | null;
+
   unidade_medida?: string;
   peso?: number;
   altura?: number;
