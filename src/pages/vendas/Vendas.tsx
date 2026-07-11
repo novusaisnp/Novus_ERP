@@ -10,6 +10,7 @@ import { ShoppingCart, Plus, Pencil, Trash2, Ban } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useVendas } from '@/hooks/useVendas';
 import { VendaFormModal } from '@/components/vendas/VendaFormModal';
+import { GerarTitulosButton } from '@/components/vendas/GerarTitulosButton';
 import { Venda, VendaStatus, VendaFiltros } from '@/types/vendas';
 
 const STATUS: VendaStatus[] = ['RASCUNHO', 'CONFIRMADO', 'EM_PRODUCAO', 'FATURADO', 'ENTREGUE', 'CANCELADO'];
@@ -102,6 +103,7 @@ const Vendas: React.FC = () => {
                     </TableCell>
                     <TableCell className="text-right space-x-1">
                       <Button size="icon" variant="ghost" onClick={() => abrirEdit(v)}><Pencil className="h-4 w-4" /></Button>
+                      <GerarTitulosButton venda={v} />
                       {v.status !== 'CANCELADO' && (
                         <Button size="icon" variant="ghost" onClick={() => setToCancel(v)} title="Cancelar">
                           <Ban className="h-4 w-4" />

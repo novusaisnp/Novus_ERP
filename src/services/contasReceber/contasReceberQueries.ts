@@ -37,6 +37,10 @@ const aplicarFiltrosComuns = (query: any, filtros: ContaReceberFilters) => {
     query = query.lte('valor_original', filtros.valor_max);
   }
 
+  if (filtros.venda_id) {
+    query = query.eq('venda_id', filtros.venda_id);
+  }
+
   return query;
 };
 

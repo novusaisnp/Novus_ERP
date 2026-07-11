@@ -51,6 +51,17 @@ export const transformFromSupabase = (data: any): ContaReceber => {
     created_at: data.created_at,
     updated_at: data.updated_at,
 
+    // FIN-E5: rastreabilidade
+    venda_id: data.venda_id ?? null,
+    venda_pagamento_id: data.venda_pagamento_id ?? null,
+    venda_pagamento_parcela_id: data.venda_pagamento_parcela_id ?? null,
+    origem_canal: data.origem_canal ?? null,
+    origem_sistema: data.origem_sistema ?? null,
+    externo_id: data.externo_id ?? null,
+    idempotency_key: data.idempotency_key ?? null,
+    hash_payload: data.hash_payload ?? null,
+    created_by: data.created_by ?? null,
+
     // aliases
     situacao: status,
     valor_pago: valorRecebido,
