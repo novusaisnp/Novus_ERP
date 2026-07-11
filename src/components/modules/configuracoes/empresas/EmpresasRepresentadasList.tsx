@@ -172,20 +172,44 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
   const setField = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((p) => ({ ...p, [k]: v }));
 
+  const humanizeStorageError = (err: any): string => {
+    const raw = err?.message || err?.error || String(err || '');
+    const lower = raw.toLowerCase();
+    if (lower.includes('bucket') && lower.includes('not found')) {
+      return 'Bucket de armazenamento não encontrado. Contate o administrador.';
+    }
+    if (lower.includes('permission') || lower.includes('unauthorized') || lower.includes('rls')) {
+      return 'Sem permissão para enviar o arquivo. Verifique seu perfil de acesso.';
+    }
+    if (lower.includes('payload') || lower.includes('too large') || lower.includes('exceeded')) {
+      return 'Arquivo muito grande para o servidor.';
+    }
+    if (lower.includes('network') || lower.includes('failed to fetch')) {
+      return 'Falha de rede ao enviar o arquivo. Tente novamente.';
+    }
+    return raw || 'Erro desconhecido no envio.';
+  };
+
   const handleLogoUpload = async (file: File) => {
-    if (!file.type.startsWith('image/')) { toast.error('Selecione um arquivo de imagem'); return; }
+    if (!file) { toast.error('Nenhum arquivo selecionado'); return; }
+    if (!file.type.startsWith('image/')) { toast.error('Selecione um arquivo de imagem (PNG, JPG, WEBP)'); return; }
+    if (!['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.type)) {
+      toast.error('Formato de imagem não suportado. Use PNG, JPG ou WEBP.');
+      return;
+    }
+    if (file.size === 0) { toast.error('Arquivo vazio ou inválido.'); return; }
     if (file.size > 2 * 1024 * 1024) { toast.error('Logo deve ter no máximo 2 MB'); return; }
     setUploadingLogo(true);
     try {
-      // remove logo anterior
-      if (form.logo_path) await empresasRepresentadasService.removeLogo(form.logo_path);
+      if (form.logo_path) await empresasRepresentadasService.removeLogo(form.logo_path).catch(() => {});
       const { path } = await empresasRepresentadasService.uploadLogo(folderKeyRef.current, file);
       setForm((p) => ({ ...p, logo_path: path }));
       const url = await empresasRepresentadasService.getSignedUrl('empresa-logos', path);
       setLogoPreviewUrl(url);
       toast.success('Logo enviada com sucesso');
     } catch (err: any) {
-      toast.error(`Falha ao enviar logo: ${err?.message || 'erro'}`);
+      console.error('[EmpresaLogo] upload falhou:', err);
+      toast.error(`Falha ao enviar logo: ${humanizeStorageError(err)}`);
     } finally {
       setUploadingLogo(false);
     }
@@ -198,18 +222,21 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
   };
 
   const handleCertUpload = async (file: File) => {
+    if (!file) { toast.error('Nenhum arquivo selecionado'); return; }
     const ext = (file.name.split('.').pop() || '').toLowerCase();
     if (!['pfx', 'p12'].includes(ext)) { toast.error('Envie um arquivo .pfx ou .p12'); return; }
+    if (file.size === 0) { toast.error('Arquivo vazio ou inválido.'); return; }
     if (file.size > 200 * 1024) { toast.error('Certificado deve ter no máximo 200 KB'); return; }
     setUploadingCert(true);
     try {
-      if (form.cert_path) await empresasRepresentadasService.removeCertificado(form.cert_path);
+      if (form.cert_path) await empresasRepresentadasService.removeCertificado(form.cert_path).catch(() => {});
       const { path, filename } = await empresasRepresentadasService.uploadCertificado(folderKeyRef.current, file);
       const now = new Date().toISOString();
       setForm((p) => ({ ...p, cert_path: path, cert_filename: filename, cert_uploaded_at: now }));
       toast.success('Certificado digital enviado com sucesso');
     } catch (err: any) {
-      toast.error(`Falha ao enviar certificado: ${err?.message || 'erro'}`);
+      console.error('[EmpresaCert] upload falhou:', err);
+      toast.error(`Falha ao enviar certificado: ${humanizeStorageError(err)}`);
     } finally {
       setUploadingCert(false);
     }
