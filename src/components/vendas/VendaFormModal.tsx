@@ -216,26 +216,23 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
             </div>
             <div>
               <Label>Desconto</Label>
-              <Input
-                type="number" step="0.01"
+              <CurrencyInput
                 value={form.desconto || 0}
-                onChange={(e) => setField('desconto', parseFloat(e.target.value) || 0)}
+                onValueChange={(v) => setField('desconto', v)}
               />
             </div>
             <div>
               <Label>Acréscimo</Label>
-              <Input
-                type="number" step="0.01"
+              <CurrencyInput
                 value={form.acrescimo || 0}
-                onChange={(e) => setField('acrescimo', parseFloat(e.target.value) || 0)}
+                onValueChange={(v) => setField('acrescimo', v)}
               />
             </div>
             <div>
               <Label>Frete</Label>
-              <Input
-                type="number" step="0.01"
+              <CurrencyInput
                 value={form.valor_frete || 0}
-                onChange={(e) => setField('valor_frete', parseFloat(e.target.value) || 0)}
+                onValueChange={(v) => setField('valor_frete', v)}
               />
             </div>
             <div className="col-span-2 md:col-span-4">
