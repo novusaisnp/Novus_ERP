@@ -289,6 +289,14 @@ const Orcamentos: React.FC = () => {
 
   const handleStatusChange = (o: Orcamento, status: OrcamentoStatus) => {
     if (status === o.status) return;
+    if (o.status === 'convertido') {
+      toast.error('Orçamento já convertido em venda não pode ser alterado.');
+      return;
+    }
+    if (status === 'convertido') {
+      toast.info('Use "Converter em Venda" no menu de ações para converter.');
+      return;
+    }
     statusMut.mutate({ id: o.id, status });
   };
 
