@@ -144,13 +144,8 @@ export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
         description: 'Movimentação atualizada com sucesso!',
       });
     },
-    onError: (error: any) => {
-      console.error('[MovimentacoesBancarias] Erro ao atualizar movimentação:', error);
-      toast({
-        title: 'Erro',
-        description: error.message || 'Erro ao atualizar movimentação',
-        variant: 'destructive',
-      });
+    onError: (error: unknown) => {
+      notifyBankingError(error, 'Erro ao atualizar movimentação', 'Erro ao atualizar movimentação');
     },
   });
 
