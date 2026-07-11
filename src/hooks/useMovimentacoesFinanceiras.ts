@@ -134,7 +134,7 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
         }
         
         if (filtros.situacao && filtros.situacao !== 'TODOS') {
-          queryReceber = queryReceber.eq('situacao', filtros.situacao);
+          queryReceber = queryReceber.eq('status', uiStatusReceberToDb(filtros.situacao));
         }
         
         if (filtros.data_inicio) {
@@ -158,13 +158,16 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
         }
 
         if (!filtros.incluir_cancelados) {
-          queryReceber = queryReceber.neq('situacao', 'CANCELADA');
+          queryReceber = queryReceber.neq('status', 'CANCELADO');
         }
+
+        queryReceber = queryReceber.is('deleted_at', null);
 
         const { data: contasReceber, error: errorReceber } = await queryReceber.order('data_vencimento', { ascending: false });
 
         if (errorReceber) {
           console.error('[useMovimentacoesFinanceiras] Erro ao buscar contas a receber:', errorReceber);
+
         } else if (contasReceber) {
           contasReceber.forEach((conta: any) => {
             const titulo: TituloFinanceiro = {
