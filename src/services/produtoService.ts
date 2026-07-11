@@ -86,7 +86,6 @@ export const produtoService = {
         nome: produto.nome,
         descricao: produto.descricao || null,
         codigo_barras: produto.codigo_barras || null,
-        categoria: produto.categoria || null,
         categoria_id: produto.categoria_id || null,
 
         unidade_medida: produto.unidade_medida || 'UN',
