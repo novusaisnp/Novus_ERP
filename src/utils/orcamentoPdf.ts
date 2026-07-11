@@ -47,11 +47,19 @@ export const buildOrcamentoPdf = (
   const marginX = 15;
   let y = 15;
 
-  // Cabeçalho empresa
-  doc.setFont('helvetica', 'bold').setFontSize(14);
-  doc.text(empresa?.nome ?? 'Empresa', marginX, y);
+  // Cabeçalho empresa — tipografia oficial estilo logotipo
+  doc.setFont('helvetica', 'bold').setFontSize(18);
+  doc.setTextColor(30, 41, 59);
+  doc.text((empresa?.nome ?? 'Empresa').toUpperCase(), marginX, y + 2);
+  doc.setTextColor(0, 0, 0);
+  // Linha de acento sob o "logotipo"
+  const nomeWidth = doc.getTextWidth((empresa?.nome ?? 'Empresa').toUpperCase());
+  doc.setDrawColor(30, 41, 59);
+  doc.setLineWidth(0.8);
+  doc.line(marginX, y + 4, marginX + Math.min(nomeWidth, pageWidth - marginX * 2), y + 4);
+  doc.setLineWidth(0.2);
+  y += 9;
   doc.setFont('helvetica', 'normal').setFontSize(9);
-  y += 5;
   const empresaLinhas: string[] = [];
   if (empresa?.cnpj) empresaLinhas.push(`CNPJ: ${empresa.cnpj}`);
   const end = [empresa?.endereco, empresa?.cidade, empresa?.estado, empresa?.cep]
