@@ -750,6 +750,12 @@ const Orcamentos: React.FC = () => {
           setDeleteOrc(null);
         }}
       />
+
+      <ConverterVendaDialog
+        orcamento={converterOrc}
+        open={!!converterOrc}
+        onOpenChange={(v) => !v && setConverterOrc(null)}
+      />
     </div>
   );
 };
