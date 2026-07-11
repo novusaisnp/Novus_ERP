@@ -118,7 +118,6 @@ const Orcamentos: React.FC = () => {
   const { empresas } = useEmpresasRepresentadas();
   const createMut = useCreateOrcamento();
   const statusMut = useUpdateOrcamentoStatus();
-  const produtosCatalogoQ = useCatalogoProdutos(undefined); // placeholder; real query abaixo
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | OrcamentoStatus>('all');
