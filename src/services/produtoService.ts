@@ -36,37 +36,27 @@ export const produtoService = {
   },
 
   async criar(produto: Produto): Promise<SupabaseProduto> {
-    
+    const payload: any = {
+      nome: produto.nome,
+      descricao: produto.descricao || null,
+      categoria_id: produto.categoria_id || null,
+      peso: produto.peso || null,
+      altura: produto.altura || null,
+      largura: produto.largura || null,
+      comprimento: produto.comprimento || null,
+      preco_custo: produto.preco_compra || null,
+      preco_venda: produto.preco_venda,
+      margem_lucro: produto.margem_lucro || null,
+      imagem_url: produto.imagem || null,
+      ncm: produto.ncm || null,
+      cest: produto.cest || null,
+      estoque_atual: produto.estoque_atual || 0,
+      estoque_minimo: produto.estoque_minimo || 0,
+      ativo: produto.ativo !== false,
+    };
     const { data, error } = await supabase
       .from('produtos')
-      .insert({
-        nome: produto.nome,
-        descricao: produto.descricao || null,
-        codigo_barras: produto.codigo_barras || null,
-        categoria_id: produto.categoria_id || null,
-        unidade_medida: produto.unidade_medida || 'UN',
-
-        peso: produto.peso || null,
-        altura: produto.altura || null,
-        largura: produto.largura || null,
-        comprimento: produto.comprimento || null,
-        variacoes: produto.variacoes ? JSON.parse(JSON.stringify(produto.variacoes)) : [],
-        preco_compra: produto.preco_compra || null,
-        preco_venda: produto.preco_venda,
-        margem_lucro: produto.margem_lucro || null,
-        imagem: produto.imagem || null,
-        ncm: produto.ncm || null,
-        cst_csosn: produto.cst_csosn || null,
-        cfop: produto.cfop || null,
-        cest: produto.cest || null,
-        ficha_tecnica: produto.ficha_tecnica || null,
-        modo_preparo: produto.modo_preparo || null,
-        codigo_delivery: produto.codigo_delivery || null,
-        estoque_atual: produto.estoque_atual || 0,
-        estoque_minimo: produto.estoque_minimo || 0,
-        custo_total: produto.custo_total || null,
-        ativo: produto.ativo !== false,
-      })
+      .insert(payload)
       .select()
       .single();
 
@@ -79,38 +69,28 @@ export const produtoService = {
   },
 
   async atualizar(id: string, produto: Produto): Promise<SupabaseProduto> {
-    
+    const payload: any = {
+      nome: produto.nome,
+      descricao: produto.descricao || null,
+      categoria_id: produto.categoria_id || null,
+      peso: produto.peso || null,
+      altura: produto.altura || null,
+      largura: produto.largura || null,
+      comprimento: produto.comprimento || null,
+      preco_custo: produto.preco_compra || null,
+      preco_venda: produto.preco_venda,
+      margem_lucro: produto.margem_lucro || null,
+      imagem_url: produto.imagem || null,
+      ncm: produto.ncm || null,
+      cest: produto.cest || null,
+      estoque_atual: produto.estoque_atual || 0,
+      estoque_minimo: produto.estoque_minimo || 0,
+      ativo: produto.ativo !== false,
+      updated_at: new Date().toISOString(),
+    };
     const { data, error } = await supabase
       .from('produtos')
-      .update({
-        nome: produto.nome,
-        descricao: produto.descricao || null,
-        codigo_barras: produto.codigo_barras || null,
-        categoria_id: produto.categoria_id || null,
-
-        unidade_medida: produto.unidade_medida || 'UN',
-        peso: produto.peso || null,
-        altura: produto.altura || null,
-        largura: produto.largura || null,
-        comprimento: produto.comprimento || null,
-        variacoes: produto.variacoes ? JSON.parse(JSON.stringify(produto.variacoes)) : [],
-        preco_compra: produto.preco_compra || null,
-        preco_venda: produto.preco_venda,
-        margem_lucro: produto.margem_lucro || null,
-        imagem: produto.imagem || null,
-        ncm: produto.ncm || null,
-        cst_csosn: produto.cst_csosn || null,
-        cfop: produto.cfop || null,
-        cest: produto.cest || null,
-        ficha_tecnica: produto.ficha_tecnica || null,
-        modo_preparo: produto.modo_preparo || null,
-        codigo_delivery: produto.codigo_delivery || null,
-        estoque_atual: produto.estoque_atual || 0,
-        estoque_minimo: produto.estoque_minimo || 0,
-        custo_total: produto.custo_total || null,
-        ativo: produto.ativo !== false,
-        updated_at: new Date().toISOString(),
-      })
+      .update(payload)
       .eq('id', id)
       .select()
       .single();
