@@ -8,6 +8,7 @@ import { useCentrosCusto } from '@/hooks/useCentrosCusto';
 import { CentroCustoModal } from '@/components/configuracoes/CentroCustoModal';
 import { CentroCustoCard } from '@/components/configuracoes/CentroCustoCard';
 import { CentroCustoEmptyState } from '@/components/configuracoes/CentroCustoEmptyState';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { CentroCusto } from '@/types/configuracoes';
 
@@ -15,6 +16,7 @@ const CentrosCusto: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCentroCusto, setEditingCentroCusto] = useState<CentroCusto | undefined>();
+  const [confirmingDelete, setConfirmingDelete] = useState<CentroCusto | null>(null);
   
   const {
     centrosCusto,
@@ -44,9 +46,7 @@ const CentrosCusto: React.FC = () => {
   };
 
   const handleDelete = async (centroCusto: CentroCusto) => {
-    if (window.confirm(`Tem certeza que deseja remover o centro de custo "${centroCusto.nome}"?`)) {
-      excluir(centroCusto.id);
-    }
+    setConfirmingDelete(centroCusto);
   };
 
   const handleSave = async (data: any) => {
