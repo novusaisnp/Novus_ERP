@@ -65,6 +65,7 @@ import RegistrosPonto from './pages/rh/RegistrosPonto';
 // Vendas Pages
 
 import Vendas from './pages/vendas/Vendas';
+import Orcamentos from './pages/vendas/Orcamentos';
 
 // Contratos Pages
 import Contratos from './pages/contratos/Contratos';
@@ -120,7 +121,7 @@ function App() {
                   <Route path="vendas">
                     <Route index element={<Navigate to="/vendas/pedidos" replace />} />
                     <Route path="pedidos" element={<Vendas />} />
-                    <Route path="orcamentos" element={<div className="p-8"><h1 className="text-3xl font-bold text-primary mb-2">Orçamentos</h1><p className="text-muted-foreground">Em breve</p></div>} />
+                    <Route path="orcamentos" element={<Orcamentos />} />
                     <Route path="contratos" element={<Contratos />} />
                     <Route path="relatorios" element={<div className="p-8"><h1 className="text-3xl font-bold text-primary mb-2">Relatórios de Vendas</h1><p className="text-muted-foreground">Em breve</p></div>} />
                   </Route>
