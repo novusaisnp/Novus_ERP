@@ -372,25 +372,19 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
 
                   <div>
                     <label className="text-sm font-medium mb-2 block">Valor Mínimo</label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={filtros.valor_min || ''}
-                      onChange={(e) => handleFiltroChange('valor_min', parseFloat(e.target.value) || undefined)}
-                      placeholder="0,00"
+                    <CurrencyInput
+                      value={filtros.valor_min ?? 0}
+                      onValueChange={(v) => handleFiltroChange('valor_min', v || undefined)}
+                      placeholder="R$ 0,00"
                     />
                   </div>
 
                   <div>
                     <label className="text-sm font-medium mb-2 block">Valor Máximo</label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={filtros.valor_max || ''}
-                      onChange={(e) => handleFiltroChange('valor_max', parseFloat(e.target.value) || undefined)}
-                      placeholder="0,00"
+                    <CurrencyInput
+                      value={filtros.valor_max ?? 0}
+                      onValueChange={(v) => handleFiltroChange('valor_max', v || undefined)}
+                      placeholder="R$ 0,00"
                     />
                   </div>
 
