@@ -60,6 +60,7 @@ export interface OrcamentoInput {
 type ItemRow = {
   id: string;
   orcamento_id: string;
+  tipo_item: TipoItem;
   produto_id: string | null;
   servico_id: string | null;
   descricao: string;
@@ -75,6 +76,7 @@ type Row = {
   id: string;
   empresa_representada_id: string;
   numero: string;
+  tipo: TipoOrcamento;
   cliente_id: string | null;
   data_emissao: string;
   data_validade: string | null;
@@ -90,6 +92,7 @@ type Row = {
 const mapItem = (r: ItemRow): OrcamentoItem => ({
   id: r.id,
   orcamentoId: r.orcamento_id,
+  tipoItem: r.tipo_item,
   produtoId: r.produto_id,
   servicoId: r.servico_id,
   descricao: r.descricao,
@@ -105,6 +108,7 @@ const mapRow = (r: Row): Orcamento => ({
   id: r.id,
   empresaRepresentadaId: r.empresa_representada_id,
   numero: r.numero,
+  tipo: r.tipo,
   clienteId: r.cliente_id,
   clienteNome: r.clientes?.nome ?? null,
   dataEmissao: r.data_emissao,
