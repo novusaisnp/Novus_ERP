@@ -125,3 +125,52 @@ export const useToggleCFOPAtivo = () => {
     onError: (err) => toast.error(mapCFOPError(err)),
   });
 };
+
+// ===== NCM mutations (admin only via RLS) =====
+const mapNCMError = (err: any): string => {
+  const msg = String(err?.message || err?.error_description || '');
+  const code = err?.code;
+  if (code === '42501' || /permission denied|violates row-level security/i.test(msg)) {
+    return 'Sem permissão: apenas administradores podem alterar NCMs.';
+  }
+  if (code === '23505' || /duplicate key/i.test(msg)) {
+    return 'Já existe um NCM com esse código.';
+  }
+  if (code === '23514' || /check constraint/i.test(msg)) {
+    return 'Código NCM inválido: deve ter 8 dígitos numéricos.';
+  }
+  return msg || 'Falha ao processar NCM.';
+};
+
+export const useCreateNCM = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: NCMInput) => createNCM(input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['ncms'] });
+      toast.success('NCM criado com sucesso!');
+    },
+    onError: (err) => toast.error(mapNCMError(err)),
+  });
+};
+
+export const useUpdateNCM = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: Partial<NCMInput> }) => updateNCM(id, input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['ncms'] });
+      toast.success('NCM atualizado!');
+    },
+    onError: (err) => toast.error(mapNCMError(err)),
+  });
+};
+
+export const useToggleNCMAtivo = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ativo }: { id: string; ativo: boolean }) => toggleNCMAtivo(id, ativo),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['ncms'] }),
+    onError: (err) => toast.error(mapNCMError(err)),
+  });
+};
