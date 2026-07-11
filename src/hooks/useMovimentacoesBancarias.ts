@@ -121,22 +121,15 @@ export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
   const conciliacaoMutation = useMutation({
     mutationFn: conciliarMovimentacao,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: qk.movimentacoesBancarias.all });
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes-bancarias-estatisticas'] });
-
-
+      // Sem contaId — invalida raiz de movimentações (cobre stats por prefix match)
+      invalidarMovBancarias(queryClient, []);
       toast({
         title: 'Sucesso',
         description: 'Movimentação conciliada com sucesso!',
       });
     },
-    onError: (error: any) => {
-      console.error('[MovimentacoesBancarias] Erro ao conciliar movimentação:', error);
-      toast({
-        title: 'Erro',
-        description: error.message || 'Erro ao conciliar movimentação',
-        variant: 'destructive',
-      });
+    onError: (error: unknown) => {
+      notifyBankingError(error, 'Erro ao conciliar movimentação', 'Erro ao conciliar movimentação');
     },
   });
 
