@@ -117,6 +117,8 @@ export const transformToSupabase = (input: ContaReceberInput & Record<string, an
     plano_conta_id: input.plano_conta_id || null,
     centro_custo_id: input.centro_custo_id || null,
     natureza_id: input.natureza_id || null,
+    numero_parcela: input.numero_parcela ?? null,
+    total_parcelas: input.total_parcelas ?? null,
     observacoes: input.observacoes || null,
   };
 };
