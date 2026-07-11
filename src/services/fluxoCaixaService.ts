@@ -25,7 +25,7 @@ export class FluxoCaixaService {
           valor_original,
           data_vencimento,
           data_emissao,
-          situacao,
+          status,
           observacoes,
           fornecedor:fornecedores(id, razao_social),
           plano_conta:plano_contas(id, codigo, nome),
@@ -33,7 +33,7 @@ export class FluxoCaixaService {
         `)
         .gte('data_vencimento', filtros.data_inicio || '2024-01-01')
         .lte('data_vencimento', filtros.data_fim || '2025-12-31')
-        .eq('ativo', true);
+        .is('deleted_at', null);
 
       if (errorPagar) {
         console.error('[FluxoCaixa] Erro ao buscar contas a pagar:', errorPagar);
@@ -49,12 +49,14 @@ export class FluxoCaixaService {
           valor_original,
           data_vencimento,
           data_emissao,
-          situacao,
+          status,
           observacoes,
           cliente:clientes(id, nome)
         `)
         .gte('data_vencimento', filtros.data_inicio || '2024-01-01')
-        .lte('data_vencimento', filtros.data_fim || '2025-12-31');
+        .lte('data_vencimento', filtros.data_fim || '2025-12-31')
+        .is('deleted_at', null);
+
 
       if (errorReceber) {
         console.error('[FluxoCaixa] Erro ao buscar contas a receber:', errorReceber);
