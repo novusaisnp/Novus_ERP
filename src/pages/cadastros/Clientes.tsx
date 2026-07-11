@@ -186,7 +186,7 @@ const Clientes: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDelete(cliente.id!)}
+                          onClick={() => requestDelete(cliente.id!)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
