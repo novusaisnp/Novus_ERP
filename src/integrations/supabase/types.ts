@@ -2642,6 +2642,65 @@ export type Database = {
           },
         ]
       }
+      orcamentos_venda_itens: {
+        Row: {
+          created_at: string
+          desconto: number
+          descricao: string
+          empresa_representada_id: string
+          id: string
+          observacoes: string | null
+          orcamento_id: string
+          ordem: number
+          preco_unitario: number
+          produto_id: string | null
+          quantidade: number
+          servico_id: string | null
+          updated_at: string
+          valor_total: number
+        }
+        Insert: {
+          created_at?: string
+          desconto?: number
+          descricao: string
+          empresa_representada_id: string
+          id?: string
+          observacoes?: string | null
+          orcamento_id: string
+          ordem?: number
+          preco_unitario?: number
+          produto_id?: string | null
+          quantidade?: number
+          servico_id?: string | null
+          updated_at?: string
+          valor_total?: number
+        }
+        Update: {
+          created_at?: string
+          desconto?: number
+          descricao?: string
+          empresa_representada_id?: string
+          id?: string
+          observacoes?: string | null
+          orcamento_id?: string
+          ordem?: number
+          preco_unitario?: number
+          produto_id?: string | null
+          quantidade?: number
+          servico_id?: string | null
+          updated_at?: string
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orcamentos_venda_itens_orcamento_id_fkey"
+            columns: ["orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "orcamentos_venda"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       perfis: {
         Row: {
           ativo: boolean
