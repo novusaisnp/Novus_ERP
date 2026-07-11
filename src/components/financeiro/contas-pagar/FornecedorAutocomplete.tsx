@@ -29,14 +29,15 @@ export const FornecedorAutocomplete: React.FC<FornecedorAutocompleteProps> = ({
 
   // Filtrar fornecedores baseado no termo de pesquisa
   const filteredFornecedores = fornecedores.filter(fornecedor => {
-    const searchLower = searchTerm.toLowerCase();
-    const nome = fornecedor.tipo_pessoa === 'PJ' 
-      ? fornecedor.razaoSocial || fornecedor.nomeFantasia || ''
-      : fornecedor.nome_completo || '';
+    const searchLower = searchTerm.toLowerCase().trim();
+    if (!searchLower) return true;
+    const nome = fornecedor.tipo_pessoa === 'PJ'
+      ? (fornecedor.razaoSocial || fornecedor.nomeFantasia || (fornecedor as any).nome || '')
+      : ((fornecedor as any).nome_completo || (fornecedor as any).nome || '');
     const documento = fornecedor.tipo_pessoa === 'PJ' ? fornecedor.cnpj : fornecedor.cpf;
-    
+
     return nome.toLowerCase().includes(searchLower) ||
-           (documento && documento.includes(searchLower));
+           (documento && documento.toLowerCase().includes(searchLower));
   });
 
   const selectedFornecedor = fornecedores.find(fornecedor => fornecedor.id === value);
