@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Trash2, Calculator, AlertCircle, Percent } from 'lucide-react';
+import { Plus, Trash2, Calculator, AlertCircle, Percent, Pencil, ChevronDown } from 'lucide-react';
 import { useCentrosCusto } from '@/hooks/useCentrosCusto';
 import { RateioContaPagar } from '@/types/contasPagar';
 import { useToast } from '@/hooks/use-toast';
@@ -18,15 +18,17 @@ interface RateioManagerProps {
   valorTotal: number;
   rateios: RateioContaPagar[];
   onRateiosChange: (rateios: RateioContaPagar[]) => void;
+  tipo?: 'RECEITA' | 'DESPESA';
 }
 
-export const RateioManager = ({ valorTotal, rateios, onRateiosChange }: RateioManagerProps) => {
+export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DESPESA' }: RateioManagerProps) => {
   console.log('[RateioContas] Inicializando RateioManager com valor total:', valorTotal);
   
   const { centrosCusto, isLoading: isLoadingCentros, error: errorCentros } = useCentrosCusto();
   const { toast } = useToast();
   
   const [rateiosLocal, setRateiosLocal] = useState<RateioContaPagar[]>(rateios);
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   console.log('[RateioContas] Centros de custo disponíveis:', centrosCusto.length);
 
