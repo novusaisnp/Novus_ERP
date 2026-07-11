@@ -114,6 +114,10 @@ const Tributos: React.FC = () => {
           <CFOPConfig />
         </TabsContent>
 
+        <TabsContent value="ncm">
+          <NCMConfig />
+        </TabsContent>
+
         <TabsContent value="tributos">
           <TributosTab />
         </TabsContent>
