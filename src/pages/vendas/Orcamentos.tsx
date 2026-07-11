@@ -37,6 +37,8 @@ import type {
   Orcamento,
   OrcamentoItem,
   OrcamentoStatus,
+  TipoOrcamento,
+  TipoItem,
 } from '@/services/orcamentosService';
 import { calcItemTotal, calcTotal } from '@/services/orcamentosService';
 import { useClientes } from '@/hooks/useClientes';
@@ -88,7 +90,8 @@ const gerarNumero = () => {
   return `ORC-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}-${rnd}`;
 };
 
-const emptyItem = (): OrcamentoItem => ({
+const emptyItem = (tipoItem: TipoItem = 'P'): OrcamentoItem => ({
+  tipoItem,
   descricao: '',
   quantidade: 1,
   precoUnitario: 0,
@@ -98,6 +101,7 @@ const emptyItem = (): OrcamentoItem => ({
 const emptyForm = () => ({
   empresaRepresentadaId: '',
   numero: gerarNumero(),
+  tipo: 'P' as TipoOrcamento,
   clienteId: '',
   dataEmissao: new Date().toISOString().slice(0, 10),
   dataValidade: '',
@@ -140,8 +144,14 @@ const Orcamentos: React.FC = () => {
     setOpen(true);
   };
 
+  const defaultItemType = (): TipoItem =>
+    form.tipo === 'S' ? 'S' : 'P';
+
   const addItem = () =>
-    setForm((p) => ({ ...p, itens: [...p.itens, emptyItem()] }));
+    setForm((p) => ({
+      ...p,
+      itens: [...p.itens, emptyItem(p.tipo === 'S' ? 'S' : 'P')],
+    }));
 
   const removeItem = (idx: number) =>
     setForm((p) => ({ ...p, itens: p.itens.filter((_, i) => i !== idx) }));
@@ -150,6 +160,17 @@ const Orcamentos: React.FC = () => {
     setForm((p) => ({
       ...p,
       itens: p.itens.map((it, i) => (i === idx ? { ...it, ...patch } : it)),
+    }));
+
+  // Coerção quando muda o tipo do orçamento
+  const setTipo = (tipo: TipoOrcamento) =>
+    setForm((p) => ({
+      ...p,
+      tipo,
+      itens:
+        tipo === 'H'
+          ? p.itens
+          : p.itens.map((it) => ({ ...it, tipoItem: tipo === 'S' ? 'S' : 'P' })),
     }));
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -176,10 +197,19 @@ const Orcamentos: React.FC = () => {
         return;
       }
     }
+    if (form.tipo === 'H' && form.itens.length > 0) {
+      const hasP = form.itens.some((i) => i.tipoItem === 'P');
+      const hasS = form.itens.some((i) => i.tipoItem === 'S');
+      if (!(hasP && hasS)) {
+        toast.error('Orçamento HÍBRIDO exige ao menos 1 item de PRODUTO e 1 de SERVIÇO.');
+        return;
+      }
+    }
     try {
       await createMut.mutateAsync({
         empresaRepresentadaId: form.empresaRepresentadaId,
         numero: form.numero.trim(),
+        tipo: form.tipo,
         clienteId: form.clienteId || null,
         dataEmissao: form.dataEmissao,
         dataValidade: form.dataValidade || null,
@@ -193,6 +223,7 @@ const Orcamentos: React.FC = () => {
       /* toast pelo hook */
     }
   };
+  void defaultItemType;
 
   const handleStatusChange = (o: Orcamento, status: OrcamentoStatus) => {
     if (status === o.status) return;
@@ -402,6 +433,26 @@ const Orcamentos: React.FC = () => {
               </div>
             </div>
 
+            <div>
+              <Label>Tipo do orçamento *</Label>
+              <Select
+                value={form.tipo}
+                onValueChange={(v) => setTipo(v as TipoOrcamento)}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="P">Produtos (NF-e)</SelectItem>
+                  <SelectItem value="S">Serviços (NFS-e)</SelectItem>
+                  <SelectItem value="H">Híbrido (NF-e + NFS-e)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                {form.tipo === 'P' && 'Somente itens de produto; emite NF-e.'}
+                {form.tipo === 'S' && 'Somente itens de serviço; emite NFS-e.'}
+                {form.tipo === 'H' && 'Combina produtos e serviços; emite NF-e e NFS-e no split fiscal.'}
+              </p>
+            </div>
+
             <div className="border rounded-lg p-3 space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-base">Itens</Label>
@@ -417,7 +468,22 @@ const Orcamentos: React.FC = () => {
                 <div className="space-y-2">
                   {form.itens.map((it, idx) => (
                     <div key={idx} className="grid grid-cols-12 gap-2 items-end">
-                      <div className="col-span-5">
+                      {form.tipo === 'H' && (
+                        <div className="col-span-2">
+                          {idx === 0 && <Label className="text-xs">Tipo</Label>}
+                          <Select
+                            value={it.tipoItem}
+                            onValueChange={(v) => updateItem(idx, { tipoItem: v as TipoItem })}
+                          >
+                            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="P">Produto</SelectItem>
+                              <SelectItem value="S">Serviço</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                      <div className={form.tipo === 'H' ? 'col-span-3' : 'col-span-5'}>
                         {idx === 0 && <Label className="text-xs">Descrição</Label>}
                         <Input
                           value={it.descricao}
