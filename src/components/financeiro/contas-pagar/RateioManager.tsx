@@ -53,6 +53,17 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
     handleRateiosChange(rateiosLocal);
   }, [rateiosLocal, handleRateiosChange]);
 
+  // Auto-recolher o rateio expandido assim que estiver preenchido (conta + valor)
+  useEffect(() => {
+    if (expandedIndex === null) return;
+    const rateioAtual = rateiosLocal[expandedIndex];
+    if (!rateioAtual) return;
+    if (rateioAtual.plano_conta_id && (rateioAtual.valor || 0) > 0) {
+      const timer = setTimeout(() => setExpandedIndex(null), 250);
+      return () => clearTimeout(timer);
+    }
+  }, [expandedIndex, rateiosLocal]);
+
   // Tratar erros de carregamento
   useEffect(() => {
     if (errorCentros) {
