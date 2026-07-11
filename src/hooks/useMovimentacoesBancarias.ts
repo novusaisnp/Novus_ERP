@@ -189,7 +189,7 @@ export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
 // Hook para obter uma movimentação específica
 export const useMovimentacaoBancaria = (id: string) => {
   return useQuery({
-    queryKey: ['movimentacao-bancaria', id],
+    queryKey: qk.movimentacoesBancarias.detail(id),
     queryFn: () => obterMovimentacaoBancaria(id),
     enabled: !!id,
   });
