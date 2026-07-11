@@ -218,7 +218,7 @@ export class FluxoCaixaService {
       // Buscar saldos das contas bancárias ativas
       const { data: contasBancarias, error: errorContas } = await supabase
         .from('contas_bancarias')
-        .select('saldo_atual, conta_cofre')
+        .select('saldo_atual')
         .eq('ativo', true);
 
       if (errorContas) {
