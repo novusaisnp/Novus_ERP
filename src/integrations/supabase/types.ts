@@ -2579,6 +2579,69 @@ export type Database = {
         }
         Relationships: []
       }
+      orcamentos_venda: {
+        Row: {
+          cliente_id: string | null
+          created_at: string
+          created_by: string | null
+          data_emissao: string
+          data_validade: string | null
+          deleted_at: string | null
+          empresa_representada_id: string
+          id: string
+          numero: string
+          observacoes: string | null
+          status: string
+          updated_at: string
+          valor_total: number
+        }
+        Insert: {
+          cliente_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_emissao?: string
+          data_validade?: string | null
+          deleted_at?: string | null
+          empresa_representada_id: string
+          id?: string
+          numero: string
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+          valor_total?: number
+        }
+        Update: {
+          cliente_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_emissao?: string
+          data_validade?: string | null
+          deleted_at?: string | null
+          empresa_representada_id?: string
+          id?: string
+          numero?: string
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orcamentos_venda_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orcamentos_venda_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       perfis: {
         Row: {
           ativo: boolean
