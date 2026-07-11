@@ -28,7 +28,10 @@ import { qk } from '@/lib/queryKeys';
 // conhecido — evita refetch amplo em cada mutação bancária.
 const invalidarMovBancarias = (queryClient: QueryClient, contaIds: Array<string | undefined | null>) => {
   queryClient.invalidateQueries({ queryKey: qk.movimentacoesBancarias.all });
-  queryClient.invalidateQueries({ queryKey: qk.movimentacoesBancarias.stats() });
+  // Prefixo cobre todas as variações de filtros de stats — invalidateQueries
+  // faz match por prefixo, então usamos a raiz sem filtros aqui.
+  queryClient.invalidateQueries({ queryKey: ['movimentacoes-bancarias-estatisticas'] });
+
   const unique = Array.from(new Set(contaIds.filter((v): v is string => !!v)));
   unique.forEach((id) => {
     queryClient.invalidateQueries({ queryKey: qk.contasBancarias.detail(id) });
