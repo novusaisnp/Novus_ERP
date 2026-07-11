@@ -350,57 +350,97 @@ const Orcamentos: React.FC = () => {
                   <TableHead className="text-center">Itens</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       Carregando orçamentos...
                     </TableCell>
                   </TableRow>
                 ) : filtered.length > 0 ? (
-                  filtered.map((o) => (
-                    <TableRow key={o.id}>
-                      <TableCell className="font-mono font-semibold">{o.numero}</TableCell>
-                      <TableCell>{o.clienteNome ?? '-'}</TableCell>
-                      <TableCell>
-                        {new Date(o.dataEmissao).toLocaleDateString('pt-BR')}
-                      </TableCell>
-                      <TableCell>
-                        {o.dataValidade
-                          ? new Date(o.dataValidade).toLocaleDateString('pt-BR')
-                          : '-'}
-                      </TableCell>
-                      <TableCell className="text-center">{o.itens?.length ?? 0}</TableCell>
-                      <TableCell className="text-right">{brl(o.valorTotal)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={statusVariant(o.status)}>
-                            {STATUS_LABEL[o.status]}
-                          </Badge>
-                          <Select
-                            value={o.status}
-                            onValueChange={(v) => handleStatusChange(o, v as OrcamentoStatus)}
-                          >
-                            <SelectTrigger className="h-8 w-32">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {STATUS_OPTIONS.map((s) => (
-                                <SelectItem key={s} value={s}>
-                                  {STATUS_LABEL[s]}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  filtered.map((o) => {
+                    const emp = empresaById.get(o.empresaRepresentadaId);
+                    const cli = o.clienteId ? clienteById.get(o.clienteId) : undefined;
+                    const empresaPdf = emp
+                      ? {
+                          nome: emp.nome,
+                          cnpj: emp.cnpj,
+                          email: emp.email,
+                          telefone: emp.telefone,
+                          endereco: emp.endereco,
+                          cidade: emp.cidade,
+                          estado: emp.estado,
+                          cep: emp.cep,
+                        }
+                      : null;
+                    const clientePdf = cli
+                      ? {
+                          nome: cli.nome,
+                          cnpj: cli.tipo === 'J' ? cli.cpfCnpj : null,
+                          cpf: cli.tipo === 'F' ? cli.cpfCnpj : null,
+                          email: cli.emails?.[0] ?? null,
+                          telefone: cli.telefones?.[0] ?? null,
+                          cidade: cli.endereco?.cidade ?? null,
+                          estado: cli.endereco?.uf ?? null,
+                        }
+                      : { nome: o.clienteNome };
+                    return (
+                      <TableRow key={o.id}>
+                        <TableCell className="font-mono font-semibold">{o.numero}</TableCell>
+                        <TableCell>{o.clienteNome ?? '-'}</TableCell>
+                        <TableCell>
+                          {new Date(o.dataEmissao).toLocaleDateString('pt-BR')}
+                        </TableCell>
+                        <TableCell>
+                          {o.dataValidade
+                            ? new Date(o.dataValidade).toLocaleDateString('pt-BR')
+                            : '-'}
+                        </TableCell>
+                        <TableCell className="text-center">{o.itens?.length ?? 0}</TableCell>
+                        <TableCell className="text-right">{brl(o.valorTotal)}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={statusVariant(o.status)}>
+                              {STATUS_LABEL[o.status]}
+                            </Badge>
+                            <Select
+                              value={o.status}
+                              onValueChange={(v) => handleStatusChange(o, v as OrcamentoStatus)}
+                            >
+                              <SelectTrigger className="h-8 w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {STATUS_OPTIONS.map((s) => (
+                                  <SelectItem key={s} value={s}>
+                                    {STATUS_LABEL[s]}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <OrcamentoAcoesMenu
+                            orcamento={o}
+                            empresa={empresaPdf}
+                            cliente={clientePdf}
+                            clienteTelefone={cli?.telefones?.[0]}
+                            clienteEmail={cli?.emails?.[0]}
+                            onView={() => setViewOrc(o)}
+                            onDuplicate={() => duplicarMut.mutate(o.id)}
+                            onDelete={() => setDeleteOrc(o)}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       Nenhum orçamento encontrado.
                     </TableCell>
                   </TableRow>
