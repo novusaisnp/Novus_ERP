@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { useContaContabilSearch } from '@/hooks/useContaContabilSearch';
 import type { PlanoContas } from '@/types/planoContas';
 
-type SelectedConta = Pick<PlanoContas, 'id' | 'codigo' | 'nome'>;
+type SelectedConta = Pick<PlanoContas, 'id' | 'codigo' | 'nome' | 'tipo'>;
 
 interface ContaContabilAutocompleteProps {
   value?: string;
