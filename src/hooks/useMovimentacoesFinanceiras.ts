@@ -94,10 +94,14 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
               numero_documento: conta.numero_documento,
               descricao: conta.descricao,
               valor_original: Number(conta.valor_original),
-              valor_atual: Number(conta.valor_atual),
+              valor_atual: Math.max(
+                Number(conta.valor_original || 0) - Number(conta.valor_pago || 0),
+                0,
+              ),
               data_emissao: conta.data_emissao,
               data_vencimento: conta.data_vencimento,
-              situacao: conta.situacao as any,
+              situacao: dbStatusPagarToUi(conta.status ?? conta.situacao) as any,
+
               observacoes: conta.observacoes,
               created_at: conta.created_at,
               updated_at: conta.updated_at,
