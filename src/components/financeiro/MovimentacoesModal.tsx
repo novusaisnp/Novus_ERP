@@ -431,6 +431,7 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
           onClose={handlePopupClose}
           titulo={tituloSelecionado}
           permissoes={permissoes}
+          onLiquidar={handleLiquidarFromPopup}
         />
       )}
 
