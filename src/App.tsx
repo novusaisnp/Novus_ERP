@@ -148,7 +148,6 @@ function App() {
                   </Route>
                   <Route path="configuracoes/centros-custo" element={<Navigate to="/financeiro/centros-custo" replace />} />
                   <Route path="centros-custo" element={<Navigate to="/financeiro/centros-custo" replace />} />
-                  </Route>
                   
                   {/* Fiscal Routes */}
                   <Route path="fiscal">
