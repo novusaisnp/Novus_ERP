@@ -160,13 +160,8 @@ export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
         description: 'Movimentação excluída com sucesso!',
       });
     },
-    onError: (error: any) => {
-      console.error('[MovimentacoesBancarias] Erro ao excluir movimentação:', error);
-      toast({
-        title: 'Erro',
-        description: error.message || 'Erro ao excluir movimentação',
-        variant: 'destructive',
-      });
+    onError: (error: unknown) => {
+      notifyBankingError(error, 'Erro ao excluir movimentação', 'Erro ao excluir movimentação');
     },
   });
 
