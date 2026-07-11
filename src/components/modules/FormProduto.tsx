@@ -34,6 +34,8 @@ export const FormProduto: React.FC<FormProdutoProps> = ({
   loading = false,
 }) => {
   const [activeTab, setActiveTab] = useState('dados');
+  const { data: categorias = [] } = useCategorias();
+
   const [formData, setFormData] = useState<Produto>({
     nome: '',
     descricao: '',
