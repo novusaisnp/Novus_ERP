@@ -58,6 +58,18 @@ export interface ContaReceber {
     nome: string;
     cpf_cnpj?: string | null;
   } | null;
+
+  // Rateios (paridade com contas_pagar)
+  rateios?: Array<{
+    id: string;
+    plano_conta_id: string | null;
+    centro_custo_id: string | null;
+    valor: number;
+    percentual: number;
+    observacoes: string | null;
+    plano_conta?: { id: string; codigo: string; nome: string };
+    centro_custo?: { id: string; nome: string; codigo?: string };
+  }>;
 }
 
 export interface RateioContaReceber {
