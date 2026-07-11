@@ -11,6 +11,10 @@ import {
   updateCFOP,
   toggleCFOPAtivo,
   CFOPInput,
+  createNCM,
+  updateNCM,
+  toggleNCMAtivo,
+  NCMInput,
 } from "@/services/fiscalService";
 import { toast } from "sonner";
 

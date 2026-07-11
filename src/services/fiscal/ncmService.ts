@@ -58,7 +58,15 @@ export const createNCM = async (input: NCMInput): Promise<NCM> => {
 };
 
 export const updateNCM = async (id: string, input: Partial<NCMInput>): Promise<NCM> => {
-  const payload: Record<string, unknown> = {};
+  const payload: {
+    codigo?: string;
+    descricao?: string;
+    unidade?: string | null;
+    aliquota_ipi?: number;
+    categoria?: string | null;
+    observacoes?: string | null;
+    ativo?: boolean;
+  } = {};
   if (input.codigo !== undefined) payload.codigo = input.codigo;
   if (input.descricao !== undefined) payload.descricao = input.descricao;
   if (input.unidade !== undefined) payload.unidade = input.unidade ?? null;
