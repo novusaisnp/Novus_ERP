@@ -123,11 +123,15 @@ const Orcamentos: React.FC = () => {
   const { empresas } = useEmpresasRepresentadas();
   const createMut = useCreateOrcamento();
   const statusMut = useUpdateOrcamentoStatus();
+  const deleteMut = useDeleteOrcamento();
+  const duplicarMut = useDuplicarOrcamento();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | OrcamentoStatus>('all');
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyForm());
+  const [viewOrc, setViewOrc] = useState<Orcamento | null>(null);
+  const [deleteOrc, setDeleteOrc] = useState<Orcamento | null>(null);
   const produtosCatalogo = useCatalogoProdutos(form.empresaRepresentadaId || undefined);
   const estoquePorProduto = useMemo(() => {
     const m = new Map<string, { estoque: number; controla: boolean; nome: string }>();
@@ -136,6 +140,18 @@ const Orcamentos: React.FC = () => {
     );
     return m;
   }, [produtosCatalogo.data]);
+
+  const empresaById = useMemo(() => {
+    const m = new Map<string, (typeof empresas)[number]>();
+    (empresas ?? []).forEach((e) => e.id && m.set(e.id, e));
+    return m;
+  }, [empresas]);
+
+  const clienteById = useMemo(() => {
+    const m = new Map<string, (typeof clientes)[number]>();
+    (clientes ?? []).forEach((c) => c.id && m.set(c.id, c));
+    return m;
+  }, [clientes]);
 
   const filtered = useMemo(() => {
     return (orcamentos ?? []).filter((o) => {
