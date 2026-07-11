@@ -23,20 +23,26 @@ import {
 } from '@/types/movimentacoesBancarias';
 import { qk } from '@/lib/queryKeys';
 
-// [LOTE 3B] Invalidação refinada: apenas o escopo bancário + detail das contas
-// afetadas. Não invalida chaves de contas a pagar/receber nem de movimentações
-// financeiras (não são impactadas por movimentações bancárias diretas).
+// [LOTE 3B.1] Invalidação refinada: prioriza detail(id) das contas afetadas.
+// Só invalida a chave raiz `contasBancarias.all` quando NÃO temos contaId
+// conhecido — evita refetch amplo em cada mutação bancária.
 const invalidarMovBancarias = (queryClient: QueryClient, contaIds: Array<string | undefined | null>) => {
   queryClient.invalidateQueries({ queryKey: qk.movimentacoesBancarias.all });
+  // Prefixo cobre todas as variações de filtros de stats — invalidateQueries
+  // faz match por prefixo, então usamos a raiz sem filtros aqui.
   queryClient.invalidateQueries({ queryKey: ['movimentacoes-bancarias-estatisticas'] });
+
   const unique = Array.from(new Set(contaIds.filter((v): v is string => !!v)));
   unique.forEach((id) => {
     queryClient.invalidateQueries({ queryKey: qk.contasBancarias.detail(id) });
   });
-  // Lista de contas (saldo_atual) e stats globais — chave legada mantida
-  queryClient.invalidateQueries({ queryKey: qk.contasBancarias.all });
   queryClient.invalidateQueries({ queryKey: qk.contasBancarias.stats() });
+  if (unique.length === 0) {
+    // Fallback: sem id conhecido, invalida a raiz para manter listas coerentes.
+    queryClient.invalidateQueries({ queryKey: qk.contasBancarias.all });
+  }
 };
+
 
 
 export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
@@ -125,6 +131,8 @@ export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: qk.movimentacoesBancarias.all });
       queryClient.invalidateQueries({ queryKey: ['movimentacoes-bancarias-estatisticas'] });
+
+
       toast({
         title: 'Sucesso',
         description: 'Movimentação conciliada com sucesso!',
