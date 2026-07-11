@@ -50,6 +50,7 @@ import { CatalogoItemPicker } from '@/components/vendas/CatalogoItemPicker';
 import { OrcamentoViewDialog } from '@/components/vendas/OrcamentoViewDialog';
 import { OrcamentoAcoesMenu } from '@/components/vendas/OrcamentoAcoesMenu';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { useEmpresasLogosMap } from '@/hooks/useEmpresasLogosMap';
 import { toast } from 'sonner';
 
 const STATUS_OPTIONS: OrcamentoStatus[] = [
@@ -152,6 +153,10 @@ const Orcamentos: React.FC = () => {
     (clientes ?? []).forEach((c) => c.id && m.set(c.id, c));
     return m;
   }, [clientes]);
+
+  const logosMapQ = useEmpresasLogosMap(empresas);
+  const logoOf = (empresaId: string) =>
+    logosMapQ.data?.get(empresaId) ?? null;
 
   const filtered = useMemo(() => {
     return (orcamentos ?? []).filter((o) => {
@@ -374,6 +379,7 @@ const Orcamentos: React.FC = () => {
                           cidade: emp.cidade,
                           estado: emp.estado,
                           cep: emp.cep,
+                          logoUrl: logoOf(o.empresaRepresentadaId),
                         }
                       : null;
                     const clientePdf = cli
@@ -693,6 +699,7 @@ const Orcamentos: React.FC = () => {
                       cidade: e.cidade,
                       estado: e.estado,
                       cep: e.cep,
+                      logoUrl: logoOf(viewOrc.empresaRepresentadaId),
                     }
                   : null;
               })()

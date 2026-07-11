@@ -55,23 +55,32 @@ export const OrcamentoViewDialog: React.FC<Props> = ({
         </DialogHeader>
 
         <div className="space-y-4 text-sm">
-          <div className="flex justify-between items-start border-b pb-3">
-            <div>
-              <div className="font-black text-2xl tracking-wide uppercase text-primary border-b-2 border-primary inline-block pb-1">
-                {empresa?.nome ?? 'Empresa'}
+          <div className="flex justify-between items-start border-b pb-3 gap-4">
+            <div className="flex items-start gap-3">
+              {empresa?.logoUrl && (
+                <img
+                  src={empresa.logoUrl}
+                  alt={`Logo ${empresa?.nome ?? ''}`}
+                  className="h-16 w-auto object-contain"
+                />
+              )}
+              <div>
+                <div className="font-semibold text-base">
+                  {empresa?.nome ?? 'Empresa'}
+                </div>
+                {empresa?.cnpj && (
+                  <div className="text-muted-foreground text-xs">
+                    CNPJ: {empresa.cnpj}
+                  </div>
+                )}
+                {(empresa?.endereco || empresa?.cidade) && (
+                  <div className="text-muted-foreground text-xs">
+                    {[empresa?.endereco, empresa?.cidade, empresa?.estado]
+                      .filter(Boolean)
+                      .join(' - ')}
+                  </div>
+                )}
               </div>
-              {empresa?.cnpj && (
-                <div className="text-muted-foreground text-xs mt-1">
-                  CNPJ: {empresa.cnpj}
-                </div>
-              )}
-              {(empresa?.endereco || empresa?.cidade) && (
-                <div className="text-muted-foreground text-xs">
-                  {[empresa?.endereco, empresa?.cidade, empresa?.estado]
-                    .filter(Boolean)
-                    .join(' - ')}
-                </div>
-              )}
             </div>
             <div className="text-right">
               <Badge>{TIPO_LABEL[orcamento.tipo] ?? orcamento.tipo}</Badge>
@@ -80,6 +89,9 @@ export const OrcamentoViewDialog: React.FC<Props> = ({
               </div>
               <div className="text-xs text-muted-foreground">
                 Validade: {fmtDate(orcamento.dataValidade)}
+              </div>
+              <div className="text-xs text-muted-foreground font-mono mt-1">
+                Nº {orcamento.numero}
               </div>
             </div>
           </div>
