@@ -383,13 +383,13 @@ export const ContasBancariasModal = ({
                     (auto)
                   </span>
                 </Label>
-                <Input
+                <CurrencyInput
                   id="saldo_atual"
-                  type="number"
-                  step="0.01"
                   value={(conta as any)?.saldo_atual ?? 0}
+                  onValueChange={() => {}}
                   readOnly
                   disabled
+                  allowNegative
                   className="bg-muted cursor-not-allowed"
                 />
                 <p className="text-xs text-muted-foreground">
