@@ -3288,7 +3288,7 @@ export type Database = {
             foreignKeyName: "usuarios_perfil_id_fkey"
             columns: ["perfil_id"]
             isOneToOne: false
-            referencedRelation: "perfis"
+            referencedRelation: "perfis_acesso"
             referencedColumns: ["id"]
           },
           {
