@@ -2,28 +2,19 @@ import { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Loader2, Save } from 'lucide-react';
-import { useClientes } from '@/hooks/useClientes';
+import { ContasReceberForm } from './ContasReceberForm';
 import { useEmpresasRepresentadas } from '@/hooks/useEmpresasRepresentadas';
 import type {
   ContaReceber,
   ContaReceberInput,
-  ContaReceberStatus,
+  RateioContaReceber,
 } from '@/types/contasReceber';
 
 interface Props {
@@ -34,42 +25,57 @@ interface Props {
   saving?: boolean;
 }
 
-interface FormState {
-  empresa_representada_id: string;
-  cliente_id: string;
-  descricao: string;
-  numero_documento: string;
-  valor_original: string;
-  data_emissao: string;
-  data_vencimento: string;
-  status: ContaReceberStatus;
-  observacoes: string;
-}
-
 const hoje = () => new Date().toISOString().slice(0, 10);
 
-const empty = (): FormState => ({
+const empty = (): ContaReceberInput => ({
   empresa_representada_id: '',
-  cliente_id: '',
+  cliente_id: null,
   descricao: '',
   numero_documento: '',
-  valor_original: '',
+  valor_original: 0,
+  valor_recebido: null,
+  valor_desconto: null,
   data_emissao: hoje(),
   data_vencimento: hoje(),
+  data_competencia: null,
   status: 'PENDENTE',
-  observacoes: '',
+  plano_conta_id: null,
+  centro_custo_id: null,
+  observacoes: null,
+  recorrente: false,
+  periodicidade: null,
+  numero_parcela: null,
+  total_parcelas: null,
+  rateios: [],
 });
 
-const fromConta = (c: ContaReceber): FormState => ({
+const fromConta = (c: ContaReceber): ContaReceberInput => ({
   empresa_representada_id: c.empresa_representada_id || '',
-  cliente_id: c.cliente_id || '',
+  cliente_id: c.cliente_id || null,
   descricao: c.descricao || '',
   numero_documento: c.numero_documento || '',
-  valor_original: String(c.valor_original ?? ''),
+  valor_original: Number(c.valor_original ?? 0),
+  valor_recebido: c.valor_recebido ?? null,
+  valor_desconto: c.valor_desconto ?? null,
   data_emissao: c.data_emissao || hoje(),
   data_vencimento: c.data_vencimento || hoje(),
+  data_competencia: null,
   status: c.status || 'PENDENTE',
-  observacoes: c.observacoes || '',
+  plano_conta_id: c.plano_conta_id ?? null,
+  centro_custo_id: c.centro_custo_id ?? null,
+  observacoes: c.observacoes ?? null,
+  recorrente: false,
+  periodicidade: null,
+  numero_parcela: c.numero_parcela ?? null,
+  total_parcelas: c.total_parcelas ?? null,
+  rateios: (c.rateios || []).map((r) => ({
+    id: r.id,
+    plano_conta_id: r.plano_conta_id ?? '',
+    centro_custo_id: r.centro_custo_id ?? null,
+    valor: Number(r.valor),
+    percentual: Number(r.percentual),
+    observacoes: r.observacoes ?? null,
+  })),
 });
 
 export function ContaReceberFormModal({
@@ -79,60 +85,66 @@ export function ContaReceberFormModal({
   editing,
   saving,
 }: Props) {
-  const [form, setForm] = useState<FormState>(empty());
+  const [form, setForm] = useState<ContaReceberInput>(empty());
+  const [useRateio, setUseRateio] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
-  const { clientes, loading: loadingClientes } = useClientes();
-  const { empresas, loading: loadingEmpresas } = useEmpresasRepresentadas();
+  const { empresas } = useEmpresasRepresentadas();
 
   useEffect(() => {
     if (!isOpen) return;
     setErro(null);
     if (editing) {
-      setForm(fromConta(editing));
+      const base = fromConta(editing);
+      setForm(base);
+      setUseRateio((base.rateios?.length ?? 0) > 0);
     } else {
       const base = empty();
-      // Pré-seleciona a primeira empresa ativa quando existir apenas uma
       const ativas = empresas.filter((e) => e.ativo);
       if (ativas.length === 1) base.empresa_representada_id = ativas[0].id!;
       setForm(base);
+      setUseRateio(false);
     }
   }, [isOpen, editing, empresas]);
 
-  const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
-    setForm((p) => ({ ...p, [k]: v }));
+  const handleChange = <K extends keyof ContaReceberInput>(
+    field: K,
+    value: ContaReceberInput[K],
+  ) => setForm((prev) => ({ ...prev, [field]: value }));
+
+  const handleRateiosChange = (rateios: RateioContaReceber[]) =>
+    setForm((prev) => ({ ...prev, rateios }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErro(null);
 
-    if (!form.empresa_representada_id) {
-      setErro('Selecione a empresa.');
-      return;
-    }
-    if (!form.descricao.trim()) {
-      setErro('Descrição é obrigatória.');
-      return;
-    }
-    const valor = Number(String(form.valor_original).replace(',', '.'));
-    if (!valor || valor <= 0) {
-      setErro('Informe um valor válido (maior que zero).');
-      return;
-    }
-    if (!form.data_vencimento) {
-      setErro('Informe a data de vencimento.');
-      return;
+    if (!form.empresa_representada_id) return setErro('Selecione a empresa.');
+    if (!form.descricao?.trim()) return setErro('Descrição é obrigatória.');
+    if (!form.numero_documento?.trim())
+      return setErro('Número do documento é obrigatório.');
+    const valor = Number(form.valor_original);
+    if (!valor || valor <= 0)
+      return setErro('Informe um valor válido (maior que zero).');
+    if (!form.data_vencimento) return setErro('Informe a data de vencimento.');
+
+    if (useRateio) {
+      if (!form.rateios || form.rateios.length === 0)
+        return setErro('Adicione ao menos um rateio ou desative o rateio.');
+      const soma = form.rateios.reduce((s, r) => s + Number(r.valor || 0), 0);
+      if (Math.abs(soma - valor) > 0.01)
+        return setErro(
+          'A soma dos rateios não confere com o valor original.',
+        );
+      if (form.rateios.some((r) => !r.plano_conta_id))
+        return setErro('Todo rateio precisa de conta contábil.');
     }
 
     const payload: ContaReceberInput = {
-      empresa_representada_id: form.empresa_representada_id,
+      ...form,
       descricao: form.descricao.trim(),
-      numero_documento: form.numero_documento.trim() || null,
-      cliente_id: form.cliente_id || null,
-      valor_original: valor,
-      data_emissao: form.data_emissao || null,
-      data_vencimento: form.data_vencimento,
-      status: form.status,
-      observacoes: form.observacoes.trim() || null,
+      numero_documento: form.numero_documento?.trim() || null,
+      observacoes: form.observacoes?.toString().trim() || null,
+      rateios: useRateio ? form.rateios : [],
     };
 
     await onSubmit(payload, editing?.id);
@@ -140,133 +152,25 @@ export function ContaReceberFormModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {editing ? 'Editar Conta a Receber' : 'Nova Conta a Receber'}
           </DialogTitle>
+          <DialogDescription>
+            Preencha os dados do título a receber, classifique contabilmente e,
+            se necessário, aplique rateio entre contas.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2 md:col-span-2">
-              <Label>Empresa *</Label>
-              <Select
-                value={form.empresa_representada_id || undefined}
-                onValueChange={(v) => set('empresa_representada_id', v)}
-                disabled={loadingEmpresas}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a empresa" />
-                </SelectTrigger>
-                <SelectContent>
-                  {empresas
-                    .filter((e) => !!e.id)
-                    .map((e) => (
-                      <SelectItem key={e.id} value={e.id!}>
-                        {e.nome}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2 md:col-span-2">
-              <Label>Descrição *</Label>
-              <Input
-                value={form.descricao}
-                onChange={(e) => set('descricao', e.target.value)}
-                placeholder="Ex.: Mensalidade agosto/2026"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Número do Documento</Label>
-              <Input
-                value={form.numero_documento}
-                onChange={(e) => set('numero_documento', e.target.value)}
-                placeholder="NF/Boleto/Recibo"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Cliente</Label>
-              <Select
-                value={form.cliente_id || '__none__'}
-                onValueChange={(v) => set('cliente_id', v === '__none__' ? '' : v)}
-                disabled={loadingClientes}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um cliente (opcional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">Sem cliente</SelectItem>
-                  {clientes
-                    .filter((c: any) => !!c.id)
-                    .map((c: any) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.nome}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Valor Original (R$) *</Label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                value={form.valor_original}
-                onChange={(e) => set('valor_original', e.target.value)}
-                placeholder="0,00"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Situação</Label>
-              <Select value={form.status} onValueChange={(v) => set('status', v as ContaReceberStatus)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="PENDENTE">Em Aberto</SelectItem>
-                  <SelectItem value="PARCIAL">Parcial</SelectItem>
-                  <SelectItem value="RECEBIDO">Recebida</SelectItem>
-                  <SelectItem value="VENCIDO">Vencida</SelectItem>
-                  <SelectItem value="CANCELADO">Cancelada</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Data de Emissão</Label>
-              <Input
-                type="date"
-                value={form.data_emissao}
-                onChange={(e) => set('data_emissao', e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Data de Vencimento *</Label>
-              <Input
-                type="date"
-                value={form.data_vencimento}
-                onChange={(e) => set('data_vencimento', e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2 md:col-span-2">
-              <Label>Observações</Label>
-              <Textarea
-                rows={3}
-                value={form.observacoes}
-                onChange={(e) => set('observacoes', e.target.value)}
-              />
-            </div>
-          </div>
+          <ContasReceberForm
+            formData={form}
+            onInputChange={handleChange}
+            useRateio={useRateio}
+            onUseRateioChange={setUseRateio}
+            onRateiosChange={handleRateiosChange}
+          />
 
           {erro && (
             <div className="text-sm text-destructive border border-destructive/40 bg-destructive/10 rounded p-2">
@@ -275,7 +179,12 @@ export function ContaReceberFormModal({
           )}
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={saving}
+            >
               Cancelar
             </Button>
             <Button type="submit" disabled={saving}>
@@ -285,7 +194,8 @@ export function ContaReceberFormModal({
                 </>
               ) : (
                 <>
-                  <Save className="w-4 h-4 mr-2" /> {editing ? 'Atualizar' : 'Cadastrar'}
+                  <Save className="w-4 h-4 mr-2" />{' '}
+                  {editing ? 'Atualizar' : 'Cadastrar'}
                 </>
               )}
             </Button>
