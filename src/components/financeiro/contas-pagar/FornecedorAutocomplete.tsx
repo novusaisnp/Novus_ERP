@@ -29,14 +29,15 @@ export const FornecedorAutocomplete: React.FC<FornecedorAutocompleteProps> = ({
 
   // Filtrar fornecedores baseado no termo de pesquisa
   const filteredFornecedores = fornecedores.filter(fornecedor => {
-    const searchLower = searchTerm.toLowerCase();
-    const nome = fornecedor.tipo_pessoa === 'PJ' 
-      ? fornecedor.razaoSocial || fornecedor.nomeFantasia || ''
-      : fornecedor.nome_completo || '';
+    const searchLower = searchTerm.toLowerCase().trim();
+    if (!searchLower) return true;
+    const nome = fornecedor.tipo_pessoa === 'PJ'
+      ? (fornecedor.razaoSocial || fornecedor.nomeFantasia || (fornecedor as any).nome || '')
+      : ((fornecedor as any).nome_completo || (fornecedor as any).nome || '');
     const documento = fornecedor.tipo_pessoa === 'PJ' ? fornecedor.cnpj : fornecedor.cpf;
-    
+
     return nome.toLowerCase().includes(searchLower) ||
-           (documento && documento.includes(searchLower));
+           (documento && documento.toLowerCase().includes(searchLower));
   });
 
   const selectedFornecedor = fornecedores.find(fornecedor => fornecedor.id === value);
@@ -48,10 +49,9 @@ export const FornecedorAutocomplete: React.FC<FornecedorAutocompleteProps> = ({
 
   const getFornecedorDisplayName = (fornecedor: any) => {
     if (fornecedor.tipo_pessoa === 'PJ') {
-      return fornecedor.nomeFantasia || fornecedor.razaoSocial || 'Empresa';
-    } else {
-      return fornecedor.nome_completo || 'Pessoa Física';
+      return fornecedor.nomeFantasia || fornecedor.razaoSocial || fornecedor.nome || 'Empresa';
     }
+    return fornecedor.nome_completo || fornecedor.nome || 'Pessoa Física';
   };
 
   const getFornecedorDocument = (fornecedor: any) => {
@@ -81,7 +81,7 @@ export const FornecedorAutocomplete: React.FC<FornecedorAutocompleteProps> = ({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-full p-0" align="start">
-          <Command>
+          <Command shouldFilter={false}>
             <CommandInput 
               placeholder="Digite para pesquisar fornecedor..."
               value={searchTerm}
