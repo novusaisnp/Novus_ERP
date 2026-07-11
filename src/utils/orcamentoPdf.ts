@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import type { Orcamento } from '@/services/orcamentosService';
+import type { Orcamento, OrcamentoItem } from '@/services/orcamentosService';
 import { calcItemTotal } from '@/services/orcamentosService';
 
 export interface OrcamentoPdfEmpresa {
@@ -12,6 +12,7 @@ export interface OrcamentoPdfEmpresa {
   cidade?: string | null;
   estado?: string | null;
   cep?: string | null;
+  logoUrl?: string | null;
 }
 
 export interface OrcamentoPdfCliente {
