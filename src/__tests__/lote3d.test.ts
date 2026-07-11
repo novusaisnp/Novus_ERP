@@ -171,7 +171,7 @@ describe("realizarTransferenciaBancaria — origem=destino", () => {
         descricao: "teste",
       } as any)
     ).rejects.toMatchObject({ code: "TRANSFERENCIA_INVALIDA" });
-    expect(supabaseMock.rpc).not.toHaveBeenCalled();
+    expect(supabaseMock.rpcCalls.length).toBe(0);
   });
 });
 
