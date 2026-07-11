@@ -144,6 +144,7 @@ function App() {
                     <Route path="contas-pagar" element={<ContasPagar />} />
                     <Route path="movimentacoes" element={<MovimentacoesFinanceiras />} />
                     <Route path="fluxo-caixa" element={<FluxoCaixaPage />} />
+                    <Route path="fluxo-competencia" element={<FluxoCompetenciaPage />} />
                     <Route path="centros-custo" element={<CentrosCusto />} />
                     <Route path="plano-contas" element={<PlanoContas />} />
                     <Route path="config-basicas" element={<ConfigBasicas />} />
