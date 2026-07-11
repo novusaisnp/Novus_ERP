@@ -37,6 +37,7 @@ import ContasReceber from './pages/financeiro/ContasReceber';
 import MovimentacoesFinanceiras from './pages/financeiro/MovimentacoesFinanceiras';
 import ConfigBasicas from './pages/financeiro/ConfigBasicas';
 import FluxoCaixaPage from './pages/financeiro/FluxoCaixaPage';
+import FluxoCompetenciaPage from './pages/financeiro/FluxoCompetenciaPage';
 
 // Gestão Bancária Pages
 import Bancos from './pages/gestao-bancaria/bancos/index';
