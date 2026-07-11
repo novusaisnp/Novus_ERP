@@ -106,10 +106,30 @@ export const atualizarContaBancaria = async (id: string, input: Partial<ContaBan
   console.log('[ContaBancariaService] Atualizando conta bancária:', id, input);
 
   // Ajustar agencia_id para contas cofre
-  const updateData = {
+  const updateData: Record<string, any> = {
     ...input,
-    agencia_id: input.conta_cofre ? null : input.agencia_id
+    agencia_id: input.conta_cofre ? null : input.agencia_id,
   };
+
+  // Se saldo_inicial foi editado, ajustar saldo_atual pela diferença
+  // (o trigger só recalcula quando há movimentação; ajuste manual não dispara)
+  if (typeof input.saldo_inicial === 'number') {
+    const { data: atual, error: readErr } = await supabase
+      .from('contas_bancarias')
+      .select('saldo_inicial, saldo_atual')
+      .eq('id', id)
+      .single();
+    if (readErr) {
+      console.error('[ContaBancariaService] Falha ao ler saldos anteriores:', readErr);
+      throw new Error(readErr.message);
+    }
+    const oldInicial = Number(atual?.saldo_inicial ?? 0);
+    const oldAtual = Number(atual?.saldo_atual ?? 0);
+    const delta = Number(input.saldo_inicial) - oldInicial;
+    if (delta !== 0) {
+      updateData.saldo_atual = oldAtual + delta;
+    }
+  }
 
   const { data, error } = await supabase
     .from('contas_bancarias')

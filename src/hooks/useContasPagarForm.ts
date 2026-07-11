@@ -79,15 +79,37 @@ export const useContasPagarForm = ({ conta, isOpen }: UseContasPagarFormProps) =
 
   const handleInputChange = useCallback((field: keyof ContaPagarInput, value: any) => {
     console.log('[ContasPagarForm] Atualizando campo:', field, value);
-    
+
     setFormData(prev => {
-      const newData = { ...prev, [field]: value };
-      
+      const newData: ContaPagarInput = { ...prev, [field]: value };
+
       // Sincronizar valor_atual com valor_original se não foi editado manualmente
       if (field === 'valor_original' && prev.valor_atual === prev.valor_original) {
         newData.valor_atual = value;
       }
-      
+
+      // Recalcular rateios quando valor_atual (ou valor_original em sync) mudar
+      const novoValorTotal = newData.valor_atual;
+      const totalMudou = field === 'valor_atual' || field === 'valor_original';
+      if (totalMudou && prev.rateios && prev.rateios.length > 0 && novoValorTotal > 0) {
+        const round2 = (n: number) => Math.round(n * 100) / 100;
+        const rateiosRecalculados = prev.rateios.map((r) => {
+          const percentual = r.percentual || 0;
+          const valorNovo = round2((novoValorTotal * percentual) / 100);
+          return { ...r, valor: valorNovo };
+        });
+        // Ajustar arredondamento no último rateio para bater exatamente o total
+        const somaParcial = rateiosRecalculados
+          .slice(0, -1)
+          .reduce((s, r) => s + (r.valor || 0), 0);
+        const idxLast = rateiosRecalculados.length - 1;
+        rateiosRecalculados[idxLast] = {
+          ...rateiosRecalculados[idxLast],
+          valor: round2(novoValorTotal - somaParcial),
+        };
+        newData.rateios = rateiosRecalculados;
+      }
+
       return newData;
     });
   }, []);
