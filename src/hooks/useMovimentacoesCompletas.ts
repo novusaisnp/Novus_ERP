@@ -37,10 +37,8 @@ export const useMovimentacoesCompletas = () => {
   // Hook para liquidação/baixa de títulos
   const liquidacaoMutation = useMutation({
     mutationFn: movimentacoesService.liquidarTitulo,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes-financeiras'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-receber'] });
+    onSuccess: (_data, variables: LiquidacaoTitulo) => {
+      invalidarPorTipo(queryClient, variables?.tipo_titulo, variables?.conta_bancaria_id);
       toast({
         title: 'Sucesso',
         description: 'Título liquidado com sucesso!',
@@ -59,10 +57,8 @@ export const useMovimentacoesCompletas = () => {
   // Hook para estorno de títulos
   const estornoMutation = useMutation({
     mutationFn: movimentacoesService.estornarTitulo,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes-financeiras'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-receber'] });
+    onSuccess: (_data, variables: any) => {
+      invalidarPorTipo(queryClient, variables?.tipo_titulo);
       toast({
         title: 'Sucesso',
         description: 'Título estornado com sucesso!',
@@ -81,10 +77,8 @@ export const useMovimentacoesCompletas = () => {
   // Hook para edição de títulos
   const edicaoMutation = useMutation({
     mutationFn: movimentacoesService.editarTitulo,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes-financeiras'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-receber'] });
+    onSuccess: (_data, variables: EdicaoTitulo) => {
+      invalidarPorTipo(queryClient, variables?.tipo_titulo);
       toast({
         title: 'Sucesso',
         description: 'Título editado com sucesso!',
@@ -103,10 +97,8 @@ export const useMovimentacoesCompletas = () => {
   // Hook para cancelamento de títulos
   const cancelamentoMutation = useMutation({
     mutationFn: movimentacoesService.cancelarTitulo,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes-financeiras'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-receber'] });
+    onSuccess: (_data, variables: CancelamentoTitulo) => {
+      invalidarPorTipo(queryClient, variables?.tipo_titulo);
       toast({
         title: 'Sucesso',
         description: 'Título cancelado com sucesso!',
