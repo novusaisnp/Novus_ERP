@@ -42,13 +42,16 @@ interface MovimentacoesGestaoPopupProps {
   onClose: () => void;
   titulo: TituloFinanceiro;
   permissoes: PermissoesMovimentacao;
+  /** [LOTE 3B] Delegar liquidação exclusivamente ao LiquidacaoTituloModal. */
+  onLiquidar?: (titulo: TituloFinanceiro) => void;
 }
 
-export const MovimentacoesGestaoPopup = ({ 
-  isOpen, 
-  onClose, 
-  titulo, 
-  permissoes 
+export const MovimentacoesGestaoPopup = ({
+  isOpen,
+  onClose,
+  titulo,
+  permissoes,
+  onLiquidar,
 }: MovimentacoesGestaoPopupProps) => {
   console.log('[MovimentacoesGestaoPopup] Renderizando popup para título:', titulo.id);
 
