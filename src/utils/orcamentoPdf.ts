@@ -37,29 +37,66 @@ const TIPO_LABEL: Record<string, string> = {
   H: 'Híbrido (NF-e + NFS-e)',
 };
 
-export const buildOrcamentoPdf = (
+const fetchImageAsDataUrl = async (
+  url: string,
+): Promise<{ data: string; format: 'PNG' | 'JPEG'; w: number; h: number } | null> => {
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) return null;
+    const blob = await resp.blob();
+    const data = await new Promise<string>((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result));
+      r.onerror = () => reject(new Error('read fail'));
+      r.readAsDataURL(blob);
+    });
+    const dims = await new Promise<{ w: number; h: number }>((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve({ w: img.width, h: img.height });
+      img.onerror = () => resolve({ w: 0, h: 0 });
+      img.src = data;
+    });
+    const format: 'PNG' | 'JPEG' = /jpe?g/i.test(blob.type) ? 'JPEG' : 'PNG';
+    return { data, format, w: dims.w, h: dims.h };
+  } catch {
+    return null;
+  }
+};
+
+export const buildOrcamentoPdf = async (
   orc: Orcamento,
   empresa?: OrcamentoPdfEmpresa | null,
   cliente?: OrcamentoPdfCliente | null,
-): jsPDF => {
+): Promise<jsPDF> => {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const marginX = 15;
   let y = 15;
 
-  // Cabeçalho empresa — tipografia oficial estilo logotipo
-  doc.setFont('helvetica', 'bold').setFontSize(18);
-  doc.setTextColor(30, 41, 59);
-  doc.text((empresa?.nome ?? 'Empresa').toUpperCase(), marginX, y + 2);
-  doc.setTextColor(0, 0, 0);
-  // Linha de acento sob o "logotipo"
-  const nomeWidth = doc.getTextWidth((empresa?.nome ?? 'Empresa').toUpperCase());
-  doc.setDrawColor(30, 41, 59);
-  doc.setLineWidth(0.8);
-  doc.line(marginX, y + 4, marginX + Math.min(nomeWidth, pageWidth - marginX * 2), y + 4);
-  doc.setLineWidth(0.2);
-  y += 9;
+  // Timbrado: logo da empresa (se cadastrada) + dados
+  let logoAlturaMm = 0;
+  if (empresa?.logoUrl) {
+    const logo = await fetchImageAsDataUrl(empresa.logoUrl);
+    if (logo && logo.w > 0 && logo.h > 0) {
+      const maxW = 40;
+      const maxH = 22;
+      const ratio = Math.min(maxW / (logo.w * 0.264583), maxH / (logo.h * 0.264583));
+      const w = logo.w * 0.264583 * ratio;
+      const h = logo.h * 0.264583 * ratio;
+      try {
+        doc.addImage(logo.data, logo.format, marginX, y - 3, w, h);
+        logoAlturaMm = h;
+      } catch {
+        /* fallback abaixo */
+      }
+    }
+  }
+
+  const textoOffsetX = logoAlturaMm > 0 ? marginX + 45 : marginX;
+  doc.setFont('helvetica', 'bold').setFontSize(12);
+  doc.text(empresa?.nome ?? 'Empresa', textoOffsetX, y);
   doc.setFont('helvetica', 'normal').setFontSize(9);
+  y += 5;
   const empresaLinhas: string[] = [];
   if (empresa?.cnpj) empresaLinhas.push(`CNPJ: ${empresa.cnpj}`);
   const end = [empresa?.endereco, empresa?.cidade, empresa?.estado, empresa?.cep]
@@ -69,9 +106,12 @@ export const buildOrcamentoPdf = (
   const contato = [empresa?.email, empresa?.telefone].filter(Boolean).join(' | ');
   if (contato) empresaLinhas.push(contato);
   empresaLinhas.forEach((l) => {
-    doc.text(l, marginX, y);
+    doc.text(l, textoOffsetX, y);
     y += 4;
   });
+  if (logoAlturaMm > 0) {
+    y = Math.max(y, 15 + logoAlturaMm + 2);
+  }
 
   // Título orçamento (direita)
   doc.setFont('helvetica', 'bold').setFontSize(16);
