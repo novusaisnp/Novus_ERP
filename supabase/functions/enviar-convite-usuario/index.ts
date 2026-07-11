@@ -1,7 +1,7 @@
 // Edge Function: enviar-convite-usuario
-// Envia convite (magic link) para o e-mail do usuário criado e mantém user_id NULL
-// até o aceite. Não falha o fluxo principal se o SMTP não estiver configurado —
-// retorna { invited: false, message } para tratamento gracioso pelo frontend.
+// Envia convite (magic link) para o e-mail do usuário criado. Requer que o
+// chamador esteja autenticado E possua o papel 'admin' (defesa server-side
+// contra escalonamento de privilégio). Só após validação executa inviteUserByEmail.
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
@@ -18,6 +18,55 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // --- AuthN: exige bearer token ---
+    const authHeader = req.headers.get('Authorization') || '';
+    if (!authHeader.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ invited: false, message: 'Autenticação obrigatória.' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+    const token = authHeader.replace('Bearer ', '');
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!supabaseUrl || !anonKey || !serviceRole) {
+      return new Response(
+        JSON.stringify({ invited: false, message: 'Backend não configurado.' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    // Cliente com o JWT do chamador para descobrir uid.
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(token);
+    if (claimsErr || !claimsData?.claims?.sub) {
+      return new Response(
+        JSON.stringify({ invited: false, message: 'Sessão inválida.' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+    const callerUid = claimsData.claims.sub as string;
+
+    // --- AuthZ: exige role admin ---
+    const admin = createClient(supabaseUrl, serviceRole, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const { data: isAdmin, error: roleErr } = await admin.rpc('has_role', {
+      _user_id: callerUid,
+      _role: 'admin',
+    });
+    if (roleErr || !isAdmin) {
+      return new Response(
+        JSON.stringify({ invited: false, message: 'Acesso negado: requer perfil admin.' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    // --- Validação de entrada ---
     const body = (await req.json().catch(() => ({}))) as Body;
     const email = (body.email || '').trim().toLowerCase();
     const usuarioId = (body.usuario_id || '').trim();
@@ -34,19 +83,6 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    if (!supabaseUrl || !serviceRole) {
-      return new Response(
-        JSON.stringify({ invited: false, message: 'Backend não configurado para envio de convite.' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
-    }
-
-    const admin = createClient(supabaseUrl, serviceRole, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
 
     const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
       data: { usuario_id: usuarioId, nome: body.nome || null },
