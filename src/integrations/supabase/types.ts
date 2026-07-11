@@ -263,41 +263,57 @@ export type Database = {
       categorias_produtos: {
         Row: {
           ativo: boolean
+          centro_custo_despesa_id: string | null
           centro_custo_id: string | null
           created_at: string
           descricao: string | null
           empresa_representada_id: string
           id: string
+          natureza_despesa_id: string | null
           natureza_receita_id: string | null
           nome: string
+          plano_conta_despesa_id: string | null
           plano_conta_receita_id: string | null
           updated_at: string
         }
         Insert: {
           ativo?: boolean
+          centro_custo_despesa_id?: string | null
           centro_custo_id?: string | null
           created_at?: string
           descricao?: string | null
           empresa_representada_id: string
           id?: string
+          natureza_despesa_id?: string | null
           natureza_receita_id?: string | null
           nome: string
+          plano_conta_despesa_id?: string | null
           plano_conta_receita_id?: string | null
           updated_at?: string
         }
         Update: {
           ativo?: boolean
+          centro_custo_despesa_id?: string | null
           centro_custo_id?: string | null
           created_at?: string
           descricao?: string | null
           empresa_representada_id?: string
           id?: string
+          natureza_despesa_id?: string | null
           natureza_receita_id?: string | null
           nome?: string
+          plano_conta_despesa_id?: string | null
           plano_conta_receita_id?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "categorias_produtos_centro_custo_despesa_id_fkey"
+            columns: ["centro_custo_despesa_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "categorias_produtos_centro_custo_id_fkey"
             columns: ["centro_custo_id"]
@@ -313,10 +329,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "categorias_produtos_natureza_despesa_id_fkey"
+            columns: ["natureza_despesa_id"]
+            isOneToOne: false
+            referencedRelation: "naturezas_pagamento"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "categorias_produtos_natureza_receita_id_fkey"
             columns: ["natureza_receita_id"]
             isOneToOne: false
             referencedRelation: "naturezas_receita"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categorias_produtos_plano_conta_despesa_id_fkey"
+            columns: ["plano_conta_despesa_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
             referencedColumns: ["id"]
           },
           {
@@ -1643,6 +1673,7 @@ export type Database = {
         Row: {
           ativo: boolean
           centro_custo_default_id: string | null
+          centro_custo_despesa_default_id: string | null
           cep: string | null
           cidade: string | null
           cnpj: string | null
@@ -1652,8 +1683,10 @@ export type Database = {
           endereco: string | null
           estado: string | null
           id: string
+          natureza_despesa_default_id: string | null
           natureza_receita_default_id: string | null
           nome: string
+          plano_conta_despesa_default_id: string | null
           plano_conta_receita_default_id: string | null
           telefone: string | null
           updated_at: string
@@ -1661,6 +1694,7 @@ export type Database = {
         Insert: {
           ativo?: boolean
           centro_custo_default_id?: string | null
+          centro_custo_despesa_default_id?: string | null
           cep?: string | null
           cidade?: string | null
           cnpj?: string | null
@@ -1670,8 +1704,10 @@ export type Database = {
           endereco?: string | null
           estado?: string | null
           id?: string
+          natureza_despesa_default_id?: string | null
           natureza_receita_default_id?: string | null
           nome: string
+          plano_conta_despesa_default_id?: string | null
           plano_conta_receita_default_id?: string | null
           telefone?: string | null
           updated_at?: string
@@ -1679,6 +1715,7 @@ export type Database = {
         Update: {
           ativo?: boolean
           centro_custo_default_id?: string | null
+          centro_custo_despesa_default_id?: string | null
           cep?: string | null
           cidade?: string | null
           cnpj?: string | null
@@ -1688,8 +1725,10 @@ export type Database = {
           endereco?: string | null
           estado?: string | null
           id?: string
+          natureza_despesa_default_id?: string | null
           natureza_receita_default_id?: string | null
           nome?: string
+          plano_conta_despesa_default_id?: string | null
           plano_conta_receita_default_id?: string | null
           telefone?: string | null
           updated_at?: string
@@ -1703,10 +1742,31 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "empresas_representadas_centro_custo_despesa_default_id_fkey"
+            columns: ["centro_custo_despesa_default_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empresas_representadas_natureza_despesa_default_id_fkey"
+            columns: ["natureza_despesa_default_id"]
+            isOneToOne: false
+            referencedRelation: "naturezas_pagamento"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "empresas_representadas_natureza_receita_default_id_fkey"
             columns: ["natureza_receita_default_id"]
             isOneToOne: false
             referencedRelation: "naturezas_receita"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empresas_representadas_plano_conta_despesa_default_id_fkey"
+            columns: ["plano_conta_despesa_default_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
             referencedColumns: ["id"]
           },
           {
