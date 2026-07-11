@@ -40,26 +40,37 @@ export const ContasReceberContent = ({
   };
 
   const getSituacaoBadge = (situacao: string) => {
-    const variants = {
+    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+      PENDENTE: 'default',
       ABERTA: 'default',
+      PARCIAL: 'secondary',
+      RECEBIDO: 'secondary',
       RECEBIDA: 'secondary',
+      VENCIDO: 'destructive',
       VENCIDA: 'destructive',
+      CANCELADO: 'outline',
       CANCELADA: 'outline',
-    } as const;
+    };
 
-    const labels = {
+    const labels: Record<string, string> = {
+      PENDENTE: 'Em Aberto',
       ABERTA: 'Em Aberto',
+      PARCIAL: 'Parcial',
+      RECEBIDO: 'Recebida',
       RECEBIDA: 'Recebida',
+      VENCIDO: 'Vencida',
       VENCIDA: 'Vencida',
+      CANCELADO: 'Cancelada',
       CANCELADA: 'Cancelada',
-    } as const;
+    };
 
     return (
-      <Badge variant={variants[situacao as keyof typeof variants] || 'default'}>
-        {labels[situacao as keyof typeof labels] || situacao}
+      <Badge variant={variants[situacao] || 'default'}>
+        {labels[situacao] || situacao}
       </Badge>
     );
   };
+
 
   if (isLoading) {
     return (
