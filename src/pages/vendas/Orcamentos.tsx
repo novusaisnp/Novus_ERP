@@ -37,6 +37,8 @@ import type {
   Orcamento,
   OrcamentoItem,
   OrcamentoStatus,
+  TipoOrcamento,
+  TipoItem,
 } from '@/services/orcamentosService';
 import { calcItemTotal, calcTotal } from '@/services/orcamentosService';
 import { useClientes } from '@/hooks/useClientes';
