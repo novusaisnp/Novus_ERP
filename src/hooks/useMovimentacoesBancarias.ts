@@ -23,7 +23,9 @@ import {
 } from '@/types/movimentacoesBancarias';
 import { qk } from '@/lib/queryKeys';
 
-// [LOTE 3B] Invalidação refinada: lista + stats + detail da conta afetada.
+// [LOTE 3B] Invalidação refinada: apenas o escopo bancário + detail das contas
+// afetadas. Não invalida chaves de contas a pagar/receber nem de movimentações
+// financeiras (não são impactadas por movimentações bancárias diretas).
 const invalidarMovBancarias = (queryClient: QueryClient, contaIds: Array<string | undefined | null>) => {
   queryClient.invalidateQueries({ queryKey: qk.movimentacoesBancarias.all });
   queryClient.invalidateQueries({ queryKey: ['movimentacoes-bancarias-estatisticas'] });
@@ -31,8 +33,8 @@ const invalidarMovBancarias = (queryClient: QueryClient, contaIds: Array<string 
   unique.forEach((id) => {
     queryClient.invalidateQueries({ queryKey: qk.contasBancarias.detail(id) });
   });
-  // Lista de contas contém saldo_atual (necessária para refletir saldo)
-  queryClient.invalidateQueries({ queryKey: qk.contasBancarias.list() });
+  // Lista de contas (saldo_atual) e stats globais — chave legada mantida
+  queryClient.invalidateQueries({ queryKey: qk.contasBancarias.all });
   queryClient.invalidateQueries({ queryKey: qk.contasBancarias.stats() });
 };
 
