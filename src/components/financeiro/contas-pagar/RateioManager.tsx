@@ -377,9 +377,10 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
         {rateiosLocal.map((rateio, index) => {
           const isExpanded = expandedIndex === index;
           const preenchido = !!rateio.plano_conta_id && (rateio.valor || 0) > 0;
+          const isPreRegistrado = preRegistrados.has(index);
 
           return (
-            <Card key={index}>
+            <Card key={index} className={cn(!isPreRegistrado && 'border-orange-300')}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <button
@@ -395,6 +396,15 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
                       )}
                     />
                     <h4 className="font-medium">Rateio {index + 1}</h4>
+                    {isPreRegistrado ? (
+                      <Badge variant="secondary" className="gap-1">
+                        <CheckCircle2 className="h-3 w-3" /> Pré-registrado
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-orange-700 border-orange-400">
+                        Não salvo
+                      </Badge>
+                    )}
                     {!isExpanded && preenchido && (
                       <span className="text-sm text-muted-foreground truncate">
                         · R$ {(rateio.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ({(rateio.percentual || 0).toFixed(2)}%)
@@ -506,6 +516,18 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
                         {` | R$ ${(rateio.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (${(rateio.percentual || 0).toFixed(2)}%)`}
                       </div>
                     )}
+
+                    <div className="mt-3 flex justify-end">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => preRegistrarRateio(index)}
+                        disabled={!rateio.plano_conta_id || !rateio.valor || rateio.valor <= 0}
+                      >
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        Pré-registrar rateio
+                      </Button>
+                    </div>
                   </>
                 )}
               </CardContent>
