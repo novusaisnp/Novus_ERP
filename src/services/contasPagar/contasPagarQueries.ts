@@ -1,5 +1,6 @@
 
 import { supabase as _supabase } from '@/integrations/supabase/client';
+import { uiStatusPagarToDb } from '@/lib/statusMappers';
 const supabase: any = _supabase;
 
 export const buildContasPagarQuery = (filtros: any = {}) => {
@@ -42,7 +43,7 @@ export const buildContasPagarQuery = (filtros: any = {}) => {
         )
       )
     `)
-    .eq('ativo', true)
+    .is('deleted_at', null)
     .order('data_vencimento', { ascending: false });
 
   // Aplicar filtros
@@ -51,7 +52,7 @@ export const buildContasPagarQuery = (filtros: any = {}) => {
   }
 
   if (filtros.situacao) {
-    query = query.eq('situacao', filtros.situacao);
+    query = query.eq('status', uiStatusPagarToDb(filtros.situacao));
   }
 
   if (filtros.fornecedor_id) {
@@ -67,11 +68,11 @@ export const buildContasPagarQuery = (filtros: any = {}) => {
   }
 
   if (filtros.valor_min) {
-    query = query.gte('valor_atual', filtros.valor_min);
+    query = query.gte('valor_original', filtros.valor_min);
   }
 
   if (filtros.valor_max) {
-    query = query.lte('valor_atual', filtros.valor_max);
+    query = query.lte('valor_original', filtros.valor_max);
   }
 
   return query;
@@ -118,7 +119,7 @@ export const getContaPagarByIdQuery = (id: string) => {
       )
     `)
     .eq('id', id)
-    .eq('ativo', true)
+    .is('deleted_at', null)
     .single();
 };
 
@@ -126,8 +127,8 @@ export const getEstatisticasQuery = (filtros: any = {}) => {
   
   let query = supabase
     .from('contas_pagar')
-    .select('situacao, valor_atual')
-    .eq('ativo', true);
+    .select('status, valor_original, valor_pago')
+    .is('deleted_at', null);
 
   // Aplicar os mesmos filtros da listagem
   if (filtros.busca) {
@@ -135,7 +136,7 @@ export const getEstatisticasQuery = (filtros: any = {}) => {
   }
 
   if (filtros.situacao) {
-    query = query.eq('situacao', filtros.situacao);
+    query = query.eq('status', uiStatusPagarToDb(filtros.situacao));
   }
 
   if (filtros.fornecedor_id) {
@@ -151,11 +152,11 @@ export const getEstatisticasQuery = (filtros: any = {}) => {
   }
 
   if (filtros.valor_min) {
-    query = query.gte('valor_atual', filtros.valor_min);
+    query = query.gte('valor_original', filtros.valor_min);
   }
 
   if (filtros.valor_max) {
-    query = query.lte('valor_atual', filtros.valor_max);
+    query = query.lte('valor_original', filtros.valor_max);
   }
 
   return query;
