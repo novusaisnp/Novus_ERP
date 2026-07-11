@@ -112,13 +112,8 @@ export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
         description: 'Movimentação estornada com sucesso!',
       });
     },
-    onError: (error: any) => {
-      console.error('[MovimentacoesBancarias] Erro ao estornar movimentação:', error);
-      toast({
-        title: 'Erro',
-        description: error.message || 'Erro ao estornar movimentação',
-        variant: 'destructive',
-      });
+    onError: (error: unknown) => {
+      notifyBankingError(error, 'Erro ao estornar movimentação', 'Erro ao estornar movimentação');
     },
   });
 
