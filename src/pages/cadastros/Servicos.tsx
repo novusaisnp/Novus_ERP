@@ -77,8 +77,8 @@ const Servicos: React.FC = () => {
       const [pc, cc, nr] = await Promise.all([
         supabase
           .from('plano_contas')
-          .select('id, codigo, nome, natureza, aceita_lancamento, ativo')
-          .eq('natureza', 'RECEITA')
+          .select('id, codigo, nome, tipo, aceita_lancamento, ativo')
+          .eq('tipo', 'RECEITA')
           .eq('aceita_lancamento', true)
           .eq('ativo', true)
           .order('codigo', { ascending: true }),
