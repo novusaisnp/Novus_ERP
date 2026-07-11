@@ -47,6 +47,7 @@ import MovimentacoesBancarias from './pages/gestao-bancaria/movimentacoes-bancar
 // Fiscal Pages
 import NotasFiscais from './pages/fiscal/NotasFiscais';
 import SPED from './pages/fiscal/SPED';
+import Tributos from './pages/fiscal/Tributos';
 
 
 // RH Pages
@@ -153,7 +154,7 @@ function App() {
                   <Route path="fiscal">
                     <Route path="notas-fiscais" element={<NotasFiscais />} />
                     <Route path="sped" element={<SPED />} />
-                    <Route path="tributos" element={<EmBreve titulo="Tributos" icon={FileText} descricao="O módulo Fiscal (Tributos, CFOP, NCM, Naturezas de Operação e Configurações Fiscais) será liberado em breve." />} />
+                    <Route path="tributos" element={<Tributos />} />
                   </Route>
                   
                   {/* RH Routes */}
