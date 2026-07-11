@@ -1,16 +1,47 @@
 import { supabase as _supabase } from '@/integrations/supabase/client';
 const supabase: any = _supabase;
-import { 
-  MovimentacaoBancaria, 
-  MovimentacaoBancariaInput, 
-  FiltrosMovimentacoes, 
+import {
+  MovimentacaoBancaria,
+  MovimentacaoBancariaInput,
+  FiltrosMovimentacoes,
   EstatisticasMovimentacoes,
   TransferenciaBancaria,
   EstornoMovimentacao,
   ConciliacaoMovimentacao,
   HistoricoMovimentacao,
-  DocumentoMovimentacao
+  DocumentoMovimentacao,
+  TipoMovimentacao,
 } from '@/types/movimentacoesBancarias';
+
+// [LOTE 3B] Hardening no service layer (sem migration).
+const TIPOS_SAIDA: TipoMovimentacao[] = ['SAQUE', 'TRANSFERENCIA_SAIDA', 'AJUSTE_NEGATIVO'];
+
+const validarValorPositivo = (valor: number): void => {
+  if (!Number.isFinite(valor) || valor <= 0) {
+    throw new Error('VALOR_INVALIDO: O valor da movimentação deve ser maior que zero');
+  }
+};
+
+const checarSaldoParaSaida = async (contaId: string, valor: number): Promise<void> => {
+  const { data: conta, error } = await supabase
+    .from('contas_bancarias')
+    .select('saldo_atual, status, configuracoes')
+    .eq('id', contaId)
+    .single();
+  if (error) {
+    throw new Error(`Erro ao validar conta: ${error.message}`);
+  }
+  if (conta?.status && conta.status !== 'ATIVA') {
+    throw new Error('CONTA_INATIVA: Conta bancária não está ativa');
+  }
+  const permitirNegativo = conta?.configuracoes?.permitir_saldo_negativo === true;
+  const saldo = Number(conta?.saldo_atual ?? 0);
+  if (!permitirNegativo && saldo < valor) {
+    throw new Error(
+      `SALDO_INSUFICIENTE: Saldo (${saldo.toFixed(2)}) insuficiente para operação de ${valor.toFixed(2)}`
+    );
+  }
+};
 
 
 // Função para listar movimentações com filtros
