@@ -97,13 +97,8 @@ export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
         description: 'Transferência realizada com sucesso!',
       });
     },
-    onError: (error: any) => {
-      console.error('[MovimentacoesBancarias] Erro ao realizar transferência:', error);
-      toast({
-        title: 'Erro',
-        description: error.message || 'Erro ao realizar transferência',
-        variant: 'destructive',
-      });
+    onError: (error: unknown) => {
+      notifyBankingError(error, 'Erro ao realizar transferência', 'Erro ao realizar transferência');
     },
   });
 
