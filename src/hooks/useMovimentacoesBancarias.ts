@@ -62,13 +62,13 @@ export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['movimentacoes-bancarias', filtros],
+    queryKey: qk.movimentacoesBancarias.list(filtros),
     queryFn: () => listarMovimentacoesBancarias(filtros),
   });
 
   // Query para estatísticas
   const { data: estatisticas } = useQuery({
-    queryKey: ['movimentacoes-bancarias-estatisticas', filtros],
+    queryKey: qk.movimentacoesBancarias.stats(filtros),
     queryFn: () => obterEstatisticasMovimentacoes(filtros),
   });
 
