@@ -206,6 +206,15 @@ const Orcamentos: React.FC = () => {
         toast.error('Quantidade deve ser maior que zero.');
         return;
       }
+      if (it.tipoItem === 'P' && it.produtoId) {
+        const info = estoquePorProduto.get(it.produtoId);
+        if (info?.controla && Number(it.quantidade) > info.estoque) {
+          toast.error(
+            `Estoque insuficiente para "${info.nome}". Disponível: ${info.estoque}, solicitado: ${it.quantidade}.`,
+          );
+          return;
+        }
+      }
     }
     if (form.tipo === 'H' && form.itens.length > 0) {
       const hasP = form.itens.some((i) => i.tipoItem === 'P');
