@@ -18,6 +18,94 @@ import { ProdutoFornecedorList } from './ProdutoFornecedorList';
 import { useCategorias } from '@/hooks/useCategorias';
 
 
+interface CategoriaSelectProps {
+  categorias: any[];
+  categoriaId: string | null;
+  categoriaTexto?: string | null;
+  onChange: (id: string | null, nome: string) => void;
+}
+
+const CategoriaSelect: React.FC<CategoriaSelectProps> = ({
+  categorias, categoriaId, categoriaTexto, onChange,
+}) => {
+  const selecionada = useMemo(
+    () => categorias.find((c) => c.id === categoriaId),
+    [categorias, categoriaId],
+  );
+  const classificacaoCompleta =
+    !!selecionada?.plano_conta_receita_id && !!selecionada?.plano_conta_despesa_id;
+  const orfaTexto = !categoriaId && !!categoriaTexto;
+
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="categoria_id">Categoria</Label>
+      <Select
+        value={categoriaId ?? '__none__'}
+        onValueChange={(v) => {
+          if (v === '__none__') {
+            onChange(null, '');
+          } else {
+            const cat = categorias.find((c) => c.id === v);
+            onChange(v, cat?.nome ?? '');
+          }
+        }}
+      >
+        <SelectTrigger id="categoria_id">
+          <SelectValue placeholder="Selecione uma categoria..." />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="__none__">Sem categoria</SelectItem>
+          {categorias.map((c) => {
+            const completa =
+              !!c.plano_conta_receita_id && !!c.plano_conta_despesa_id;
+            return (
+              <SelectItem key={c.id} value={c.id}>
+                {c.nome}
+                {!c.ativo && ' (rascunho)'}
+                {!completa && c.ativo && ' — sem classificação'}
+              </SelectItem>
+            );
+          })}
+        </SelectContent>
+      </Select>
+
+      {orfaTexto && (
+        <div className="flex items-start gap-2 rounded-md border border-amber-500/50 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-400">
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+          <span>
+            Categoria antiga: <strong>{categoriaTexto}</strong>. Reclassifique selecionando uma categoria da lista para herdar a classificação contábil.
+          </span>
+        </div>
+      )}
+
+      {!categoriaId && !orfaTexto && (
+        <div className="flex items-start gap-2 rounded-md border border-amber-500/50 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-400">
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+          <span>Produto sem categoria não terá classificação contábil automática.</span>
+        </div>
+      )}
+
+      {selecionada && (
+        <div className="rounded-md border p-3 space-y-1 text-xs bg-muted/30">
+          <div className="flex items-center justify-between">
+            <span className="font-medium">Classificação Contábil Herdada</span>
+            <Badge variant={classificacaoCompleta ? 'default' : 'outline'}>
+              {classificacaoCompleta ? 'Completa' : 'Pendente na categoria'}
+            </Badge>
+          </div>
+          <div className="text-muted-foreground">
+            Receita: {selecionada.plano_conta_receita_id ? '✓ vinculada' : '— não definida na categoria'}
+          </div>
+          <div className="text-muted-foreground">
+            Despesa: {selecionada.plano_conta_despesa_id ? '✓ vinculada' : '— não definida na categoria'}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+
 interface FormProdutoProps {
   produto?: Produto;
   isOpen: boolean;
