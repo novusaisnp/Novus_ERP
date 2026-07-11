@@ -42,13 +42,16 @@ interface MovimentacoesGestaoPopupProps {
   onClose: () => void;
   titulo: TituloFinanceiro;
   permissoes: PermissoesMovimentacao;
+  /** [LOTE 3B] Delegar liquidação exclusivamente ao LiquidacaoTituloModal. */
+  onLiquidar?: (titulo: TituloFinanceiro) => void;
 }
 
-export const MovimentacoesGestaoPopup = ({ 
-  isOpen, 
-  onClose, 
-  titulo, 
-  permissoes 
+export const MovimentacoesGestaoPopup = ({
+  isOpen,
+  onClose,
+  titulo,
+  permissoes,
+  onLiquidar,
 }: MovimentacoesGestaoPopupProps) => {
   console.log('[MovimentacoesGestaoPopup] Renderizando popup para título:', titulo.id);
 
@@ -111,11 +114,17 @@ export const MovimentacoesGestaoPopup = ({
     
     switch (operacao) {
       case 'liquidar':
-        toast({
-          title: "Baixar Título",
-          description: "Modal de baixa será implementado em breve",
-        });
-        break;
+        // [LOTE 3B] Único caminho de liquidação: LiquidacaoTituloModal (via parent).
+        if (onLiquidar) {
+          onLiquidar(titulo);
+        } else {
+          toast({
+            title: 'Baixar Título',
+            description: 'Fluxo de liquidação indisponível neste contexto',
+            variant: 'destructive',
+          });
+        }
+        return;
       case 'editar':
         // Fechar o modal e navegar para a página de edição
         onClose();

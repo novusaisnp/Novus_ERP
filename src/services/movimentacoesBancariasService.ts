@@ -1,16 +1,47 @@
 import { supabase as _supabase } from '@/integrations/supabase/client';
 const supabase: any = _supabase;
-import { 
-  MovimentacaoBancaria, 
-  MovimentacaoBancariaInput, 
-  FiltrosMovimentacoes, 
+import {
+  MovimentacaoBancaria,
+  MovimentacaoBancariaInput,
+  FiltrosMovimentacoes,
   EstatisticasMovimentacoes,
   TransferenciaBancaria,
   EstornoMovimentacao,
   ConciliacaoMovimentacao,
   HistoricoMovimentacao,
-  DocumentoMovimentacao
+  DocumentoMovimentacao,
+  TipoMovimentacao,
 } from '@/types/movimentacoesBancarias';
+
+// [LOTE 3B] Hardening no service layer (sem migration).
+const TIPOS_SAIDA: TipoMovimentacao[] = ['SAQUE', 'TRANSFERENCIA_SAIDA', 'AJUSTE_NEGATIVO'];
+
+const validarValorPositivo = (valor: number): void => {
+  if (!Number.isFinite(valor) || valor <= 0) {
+    throw new Error('VALOR_INVALIDO: O valor da movimentação deve ser maior que zero');
+  }
+};
+
+const checarSaldoParaSaida = async (contaId: string, valor: number): Promise<void> => {
+  const { data: conta, error } = await supabase
+    .from('contas_bancarias')
+    .select('saldo_atual, status, configuracoes')
+    .eq('id', contaId)
+    .single();
+  if (error) {
+    throw new Error(`Erro ao validar conta: ${error.message}`);
+  }
+  if (conta?.status && conta.status !== 'ATIVA') {
+    throw new Error('CONTA_INATIVA: Conta bancária não está ativa');
+  }
+  const permitirNegativo = conta?.configuracoes?.permitir_saldo_negativo === true;
+  const saldo = Number(conta?.saldo_atual ?? 0);
+  if (!permitirNegativo && saldo < valor) {
+    throw new Error(
+      `SALDO_INSUFICIENTE: Saldo (${saldo.toFixed(2)}) insuficiente para operação de ${valor.toFixed(2)}`
+    );
+  }
+};
 
 
 // Função para listar movimentações com filtros
@@ -175,6 +206,11 @@ export const obterMovimentacaoBancaria = async (id: string): Promise<Movimentaca
 export const criarMovimentacaoBancaria = async (
   input: MovimentacaoBancariaInput
 ): Promise<MovimentacaoBancaria> => {
+  // [LOTE 3B] Guards
+  validarValorPositivo(input.valor);
+  if (TIPOS_SAIDA.includes(input.tipo_movimentacao)) {
+    await checarSaldoParaSaida(input.conta_bancaria_id, input.valor);
+  }
 
   const { data, error } = await supabase
     .from('movimentacoes_bancarias')
@@ -223,6 +259,32 @@ export const criarMovimentacaoBancaria = async (
 export const realizarTransferenciaBancaria = async (
   transferencia: TransferenciaBancaria
 ): Promise<{ lote_id: string }> => {
+  // [LOTE 3B] Guards pré-RPC
+  validarValorPositivo(transferencia.valor);
+  if (transferencia.conta_origem_id === transferencia.conta_destino_id) {
+    throw new Error('TRANSFERENCIA_INVALIDA: Conta origem e destino não podem ser iguais');
+  }
+  const { data: contas, error: contasErr } = await supabase
+    .from('contas_bancarias')
+    .select('id, status, saldo_atual, configuracoes')
+    .in('id', [transferencia.conta_origem_id, transferencia.conta_destino_id]);
+  if (contasErr) {
+    throw new Error(`TRANSFERENCIA_INVALIDA: ${contasErr.message}`);
+  }
+  if (!contas || contas.length !== 2) {
+    throw new Error('TRANSFERENCIA_INVALIDA: Contas de origem/destino não localizadas');
+  }
+  for (const c of contas) {
+    if (c.status && c.status !== 'ATIVA') {
+      throw new Error('TRANSFERENCIA_INVALIDA: Ambas as contas devem estar ativas');
+    }
+  }
+  const origem = contas.find((c: any) => c.id === transferencia.conta_origem_id);
+  const permitirNegativo = origem?.configuracoes?.permitir_saldo_negativo === true;
+  if (!permitirNegativo && Number(origem?.saldo_atual ?? 0) < transferencia.valor) {
+    throw new Error('SALDO_INSUFICIENTE: Saldo insuficiente para transferência');
+  }
+
   // Obter empresa do usuário atual
   const { data: empresaId, error: empresaErr } = await supabase.rpc('get_user_empresa_id');
   if (empresaErr || !empresaId) {
@@ -255,6 +317,22 @@ export const estornarMovimentacao = async (
   estorno: EstornoMovimentacao
 ): Promise<MovimentacaoBancaria> => {
 
+  // [LOTE 3B] Idempotência: bloquear estorno duplicado explicitamente
+  const { data: existing, error: exErr } = await supabase
+    .from('movimentacoes_bancarias')
+    .select('id, estornado, ativo')
+    .eq('id', estorno.movimentacao_id)
+    .maybeSingle();
+  if (exErr) {
+    throw new Error(`Erro ao localizar movimentação: ${exErr.message}`);
+  }
+  if (!existing) {
+    throw new Error('ESTORNO_INVALIDO: Movimentação não encontrada');
+  }
+  if (existing.estornado) {
+    throw new Error('ESTORNO_DUPLICADO: Movimentação já estornada');
+  }
+
   const userId = (await supabase.auth.getUser()).data.user?.id;
 
   const { data, error } = await supabase
@@ -267,7 +345,7 @@ export const estornarMovimentacao = async (
       observacoes: estorno.observacoes,
     })
     .eq('id', estorno.movimentacao_id)
-    .eq('estornado', false) // Só estorna se não estiver já estornado
+    .eq('estornado', false) // Guard-race adicional
     .select()
     .single();
 

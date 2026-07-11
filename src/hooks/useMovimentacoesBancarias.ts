@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
 import {
   listarMovimentacoesBancarias,
@@ -19,7 +19,24 @@ import {
   TransferenciaBancaria,
   EstornoMovimentacao,
   ConciliacaoMovimentacao,
+  MovimentacaoBancaria,
 } from '@/types/movimentacoesBancarias';
+import { qk } from '@/lib/queryKeys';
+
+// [LOTE 3B] Invalidação refinada: apenas o escopo bancário + detail das contas
+// afetadas. Não invalida chaves de contas a pagar/receber nem de movimentações
+// financeiras (não são impactadas por movimentações bancárias diretas).
+const invalidarMovBancarias = (queryClient: QueryClient, contaIds: Array<string | undefined | null>) => {
+  queryClient.invalidateQueries({ queryKey: qk.movimentacoesBancarias.all });
+  queryClient.invalidateQueries({ queryKey: ['movimentacoes-bancarias-estatisticas'] });
+  const unique = Array.from(new Set(contaIds.filter((v): v is string => !!v)));
+  unique.forEach((id) => {
+    queryClient.invalidateQueries({ queryKey: qk.contasBancarias.detail(id) });
+  });
+  // Lista de contas (saldo_atual) e stats globais — chave legada mantida
+  queryClient.invalidateQueries({ queryKey: qk.contasBancarias.all });
+  queryClient.invalidateQueries({ queryKey: qk.contasBancarias.stats() });
+};
 
 
 export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
@@ -45,10 +62,8 @@ export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
   // Mutation para criar movimentação
   const criarMutation = useMutation({
     mutationFn: criarMovimentacaoBancaria,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes-bancarias'] });
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes-bancarias-estatisticas'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-bancarias'] }); // Atualizar saldos
+    onSuccess: (data: MovimentacaoBancaria, variables: MovimentacaoBancariaInput) => {
+      invalidarMovBancarias(queryClient, [data?.conta_bancaria_id, variables?.conta_bancaria_id, variables?.conta_destino_id]);
       toast({
         title: 'Sucesso',
         description: 'Movimentação criada com sucesso!',
@@ -67,10 +82,8 @@ export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
   // Mutation para transferência
   const transferenciaMutation = useMutation({
     mutationFn: realizarTransferenciaBancaria,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes-bancarias'] });
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes-bancarias-estatisticas'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-bancarias'] }); // Atualizar saldos
+    onSuccess: (_data, variables) => {
+      invalidarMovBancarias(queryClient, [variables?.conta_origem_id, variables?.conta_destino_id]);
       toast({
         title: 'Sucesso',
         description: 'Transferência realizada com sucesso!',
@@ -89,10 +102,8 @@ export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
   // Mutation para estorno
   const estornoMutation = useMutation({
     mutationFn: estornarMovimentacao,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes-bancarias'] });
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes-bancarias-estatisticas'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-bancarias'] }); // Atualizar saldos
+    onSuccess: (data: MovimentacaoBancaria) => {
+      invalidarMovBancarias(queryClient, [data?.conta_bancaria_id, data?.conta_destino_id]);
       toast({
         title: 'Sucesso',
         description: 'Movimentação estornada com sucesso!',
@@ -112,7 +123,7 @@ export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
   const conciliacaoMutation = useMutation({
     mutationFn: conciliarMovimentacao,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes-bancarias'] });
+      queryClient.invalidateQueries({ queryKey: qk.movimentacoesBancarias.all });
       queryClient.invalidateQueries({ queryKey: ['movimentacoes-bancarias-estatisticas'] });
       toast({
         title: 'Sucesso',
@@ -133,10 +144,8 @@ export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
   const atualizarMutation = useMutation({
     mutationFn: ({ id, input }: { id: string; input: Partial<MovimentacaoBancariaInput> }) =>
       atualizarMovimentacaoBancaria(id, input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes-bancarias'] });
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes-bancarias-estatisticas'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-bancarias'] }); // Atualizar saldos
+    onSuccess: (data: MovimentacaoBancaria, variables) => {
+      invalidarMovBancarias(queryClient, [data?.conta_bancaria_id, variables?.input?.conta_bancaria_id]);
       toast({
         title: 'Sucesso',
         description: 'Movimentação atualizada com sucesso!',
@@ -156,9 +165,8 @@ export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
   const excluirMutation = useMutation({
     mutationFn: excluirMovimentacaoBancaria,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes-bancarias'] });
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes-bancarias-estatisticas'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-bancarias'] }); // Atualizar saldos
+      // Sem contaId disponível — invalida escopo bancário sem broad em pagar/receber
+      invalidarMovBancarias(queryClient, []);
       toast({
         title: 'Sucesso',
         description: 'Movimentação excluída com sucesso!',

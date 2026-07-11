@@ -1,13 +1,34 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { movimentacoesService } from '@/services/movimentacoesService';
-import type { 
-  TituloFinanceiro, 
+import { qk } from '@/lib/queryKeys';
+import type {
+  TituloFinanceiro,
   LiquidacaoTitulo,
   EdicaoTitulo,
   CancelamentoTitulo,
   HistoricoMovimentacao
 } from '@/types/movimentacoesFinanceiras';
+
+// [LOTE 3B] Invalidação refinada por tipo do título; evita refetch amplo.
+const invalidarPorTipo = (queryClient: ReturnType<typeof useQueryClient>, tipo?: string, contaId?: string) => {
+  queryClient.invalidateQueries({ queryKey: qk.movimentacoesFinanceiras.all });
+  if (tipo === 'CONTAS_PAGAR') {
+    queryClient.invalidateQueries({ queryKey: qk.contasPagar.all });
+    queryClient.invalidateQueries({ queryKey: qk.contasPagar.stats() });
+  } else if (tipo === 'CONTAS_RECEBER') {
+    queryClient.invalidateQueries({ queryKey: qk.contasReceber.all });
+    queryClient.invalidateQueries({ queryKey: qk.contasReceber.stats() });
+  } else {
+    // Fallback: sem tipo, invalida ambos (mantém compat)
+    queryClient.invalidateQueries({ queryKey: qk.contasPagar.all });
+    queryClient.invalidateQueries({ queryKey: qk.contasReceber.all });
+  }
+  if (contaId) {
+    queryClient.invalidateQueries({ queryKey: qk.contasBancarias.detail(contaId) });
+    queryClient.invalidateQueries({ queryKey: qk.contasBancarias.stats() });
+  }
+};
 
 export const useMovimentacoesCompletas = () => {
   const { toast } = useToast();
@@ -16,10 +37,8 @@ export const useMovimentacoesCompletas = () => {
   // Hook para liquidação/baixa de títulos
   const liquidacaoMutation = useMutation({
     mutationFn: movimentacoesService.liquidarTitulo,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes-financeiras'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-receber'] });
+    onSuccess: (_data, variables: LiquidacaoTitulo) => {
+      invalidarPorTipo(queryClient, variables?.tipo_titulo, variables?.conta_bancaria_id);
       toast({
         title: 'Sucesso',
         description: 'Título liquidado com sucesso!',
@@ -38,10 +57,8 @@ export const useMovimentacoesCompletas = () => {
   // Hook para estorno de títulos
   const estornoMutation = useMutation({
     mutationFn: movimentacoesService.estornarTitulo,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes-financeiras'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-receber'] });
+    onSuccess: (_data, variables: any) => {
+      invalidarPorTipo(queryClient, variables?.tipo_titulo);
       toast({
         title: 'Sucesso',
         description: 'Título estornado com sucesso!',
@@ -60,10 +77,8 @@ export const useMovimentacoesCompletas = () => {
   // Hook para edição de títulos
   const edicaoMutation = useMutation({
     mutationFn: movimentacoesService.editarTitulo,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes-financeiras'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-receber'] });
+    onSuccess: (_data, variables: EdicaoTitulo) => {
+      invalidarPorTipo(queryClient, variables?.tipo_titulo);
       toast({
         title: 'Sucesso',
         description: 'Título editado com sucesso!',
@@ -82,10 +97,8 @@ export const useMovimentacoesCompletas = () => {
   // Hook para cancelamento de títulos
   const cancelamentoMutation = useMutation({
     mutationFn: movimentacoesService.cancelarTitulo,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes-financeiras'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-receber'] });
+    onSuccess: (_data, variables: CancelamentoTitulo) => {
+      invalidarPorTipo(queryClient, variables?.tipo_titulo);
       toast({
         title: 'Sucesso',
         description: 'Título cancelado com sucesso!',

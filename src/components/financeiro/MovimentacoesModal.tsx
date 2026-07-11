@@ -83,8 +83,11 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
 
   const handlePopupClose = () => {
     setIsGestaoPopupOpen(false);
-    setTituloSelecionado(null);
-    refetch(); // Recarregar dados após operações
+    // [LOTE 3B] Mantém tituloSelecionado se liquidação foi aberta em cadeia.
+    if (!isLiquidacaoModalOpen) {
+      setTituloSelecionado(null);
+    }
+    refetch();
   };
 
   const handleLiquidacaoClose = () => {
@@ -94,6 +97,13 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
 
   const handleLiquidacaoSuccess = () => {
     refetch(); // Recarregar dados após liquidação
+  };
+
+  // [LOTE 3B] Popup delega liquidação para o modal único.
+  const handleLiquidarFromPopup = (t: TituloFinanceiro) => {
+    setTituloSelecionado(t);
+    setIsGestaoPopupOpen(false);
+    setIsLiquidacaoModalOpen(true);
   };
 
   const getStatusBadge = (situacao: StatusTitulo) => {
@@ -421,6 +431,7 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
           onClose={handlePopupClose}
           titulo={tituloSelecionado}
           permissoes={permissoes}
+          onLiquidar={handleLiquidarFromPopup}
         />
       )}
 

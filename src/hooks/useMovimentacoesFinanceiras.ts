@@ -2,19 +2,20 @@ import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase as _supabase } from '@/integrations/supabase/client';
 const supabase: any = _supabase;
-import { 
-  TituloFinanceiro, 
-  FiltrosMovimentacao, 
+import {
+  TituloFinanceiro,
+  FiltrosMovimentacao,
   EstatisticasMovimentacao,
   PermissoesMovimentacao,
   TipoTitulo
 } from '@/types/movimentacoesFinanceiras';
+import { qk } from '@/lib/queryKeys';
 
 export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
 
   // Buscar títulos das duas tabelas
   const { data: titulos = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['movimentacoes-financeiras', filtros],
+    queryKey: qk.movimentacoesFinanceiras.list(filtros),
     queryFn: async () => {
       
       const titulosUnificados: TituloFinanceiro[] = [];
