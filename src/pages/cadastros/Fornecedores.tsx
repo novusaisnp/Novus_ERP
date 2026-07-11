@@ -10,6 +10,7 @@ import { Building2, Plus, Search, Edit, Trash2, Loader2 } from 'lucide-react';
 import { Fornecedor } from '@/types/fornecedor';
 import { useFornecedores } from '@/hooks/useFornecedores';
 import { FormFornecedor } from '@/components/modules/FormFornecedor';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 const Fornecedores: React.FC = () => {
   console.log('[Fornecedores] Componente inicializado');
@@ -19,6 +20,7 @@ const Fornecedores: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFornecedor, setEditingFornecedor] = useState<Fornecedor | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const handleEdit = (fornecedor: Fornecedor) => {
     console.log('[Fornecedores] Editando fornecedor:', fornecedor.id);
@@ -26,17 +28,20 @@ const Fornecedores: React.FC = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
+  const requestDelete = (id: string) => {
     if (!id) return;
-    
-    console.log('[Fornecedores] Solicitando exclusão do fornecedor:', id);
-    if (window.confirm('Tem certeza que deseja excluir este fornecedor? Esta ação não pode ser desfeita.')) {
-      setDeleteLoading(id);
-      try {
-        await deleteFornecedor(id);
-      } finally {
-        setDeleteLoading(null);
-      }
+    setConfirmDeleteId(id);
+  };
+
+  const confirmDelete = async () => {
+    const id = confirmDeleteId;
+    if (!id) return;
+    setConfirmDeleteId(null);
+    setDeleteLoading(id);
+    try {
+      await deleteFornecedor(id);
+    } finally {
+      setDeleteLoading(null);
     }
   };
 
@@ -226,7 +231,7 @@ const Fornecedores: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDelete(fornecedor.id!)}
+                          onClick={() => requestDelete(fornecedor.id!)}
                           disabled={loading || deleteLoading === fornecedor.id}
                         >
                           {deleteLoading === fornecedor.id ? (
@@ -244,6 +249,15 @@ const Fornecedores: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={confirmDeleteId !== null}
+        onOpenChange={(open) => { if (!open) setConfirmDeleteId(null); }}
+        title="Excluir fornecedor"
+        description="Tem certeza que deseja excluir este fornecedor? Esta ação não pode ser desfeita."
+        confirmLabel="Excluir"
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 };

@@ -10,22 +10,30 @@ import { Users, Plus, Search, Edit, Trash2 } from 'lucide-react';
 import { Cliente } from '@/types/cliente';
 import { useClientes } from '@/hooks/useClientes';
 import { FormCliente } from '@/components/modules/FormCliente';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 const Clientes: React.FC = () => {
   const { clientes, loading, saveCliente, deleteCliente } = useClientes();
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCliente, setEditingCliente] = useState<Cliente | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const handleEdit = (cliente: Cliente) => {
     setEditingCliente(cliente);
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir este cliente?')) {
-      await deleteCliente(id);
-    }
+  const requestDelete = (id: string) => {
+    if (!id) return;
+    setConfirmDeleteId(id);
+  };
+
+  const confirmDelete = async () => {
+    const id = confirmDeleteId;
+    if (!id) return;
+    setConfirmDeleteId(null);
+    await deleteCliente(id);
   };
 
   const handleCloseDialog = () => {
@@ -178,7 +186,7 @@ const Clientes: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDelete(cliente.id!)}
+                          onClick={() => requestDelete(cliente.id!)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -191,6 +199,15 @@ const Clientes: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={confirmDeleteId !== null}
+        onOpenChange={(open) => { if (!open) setConfirmDeleteId(null); }}
+        title="Excluir cliente"
+        description="Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita."
+        confirmLabel="Excluir"
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 };
