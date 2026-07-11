@@ -1,56 +1,38 @@
-
 import { supabase as _supabase } from '@/integrations/supabase/client';
 const supabase: any = _supabase;
 import type { ContaReceberFilters } from '@/types/contasReceber';
+import { normalizarStatus } from './contasReceberTransforms';
 
-export const buildContasReceberQuery = (filtros: ContaReceberFilters = {}) => {
-  
-  let query = supabase
-    .from('contas_receber')
-    .select(`
-      *,
-      cliente:clientes(id, nome, cpf_cnpj),
-      venda:vendas(id, numero_venda),
-      contrato:contratos(id, numero_contrato)
-    `)
-    .order('data_vencimento', { ascending: false });
+const aplicarFiltrosComuns = (query: any, filtros: ContaReceberFilters) => {
+  // Soft delete: nunca retornar removidos
+  query = query.is('deleted_at', null);
 
-  // Filtro por busca (número documento, cliente)
   if (filtros.busca) {
-    query = query.or(`numero_documento.ilike.%${filtros.busca}%,clientes.nome.ilike.%${filtros.busca}%`);
+    // Escapar caracteres perigosos para .or()
+    const termo = filtros.busca.replace(/[,()]/g, '');
+    query = query.or(
+      `numero_documento.ilike.%${termo}%,descricao.ilike.%${termo}%`,
+    );
   }
 
-  // Filtro por situação
   if (filtros.situacao) {
-    query = query.eq('situacao', filtros.situacao);
+    query = query.eq('status', normalizarStatus(filtros.situacao));
   }
 
-  // Filtro por cliente
   if (filtros.cliente_id) {
     query = query.eq('cliente_id', filtros.cliente_id);
   }
 
-  // Filtro por forma de pagamento
-  if (filtros.forma_pagamento) {
-    query = query.eq('forma_pagamento', filtros.forma_pagamento);
-  }
-
-  // Filtro por data de vencimento (início)
   if (filtros.data_vencimento_inicio) {
     query = query.gte('data_vencimento', filtros.data_vencimento_inicio);
   }
-
-  // Filtro por data de vencimento (fim)
   if (filtros.data_vencimento_fim) {
     query = query.lte('data_vencimento', filtros.data_vencimento_fim);
   }
 
-  // Filtro por valor mínimo
   if (filtros.valor_min) {
     query = query.gte('valor_original', filtros.valor_min);
   }
-
-  // Filtro por valor máximo
   if (filtros.valor_max) {
     query = query.lte('valor_original', filtros.valor_max);
   }
@@ -58,54 +40,37 @@ export const buildContasReceberQuery = (filtros: ContaReceberFilters = {}) => {
   return query;
 };
 
+export const buildContasReceberQuery = (filtros: ContaReceberFilters = {}) => {
+  let query = supabase
+    .from('contas_receber')
+    .select(
+      `
+      *,
+      cliente:clientes(id, nome, cpf_cnpj)
+    `,
+    )
+    .order('data_vencimento', { ascending: false });
+
+  return aplicarFiltrosComuns(query, filtros);
+};
+
 export const getContaReceberByIdQuery = (id: string) => {
-  
   return supabase
     .from('contas_receber')
-    .select(`
+    .select(
+      `
       *,
-      cliente:clientes(id, nome, cpf_cnpj),
-      venda:vendas(id, numero_venda),
-      contrato:contratos(id, numero_contrato)
-    `)
+      cliente:clientes(id, nome, cpf_cnpj)
+    `,
+    )
     .eq('id', id)
+    .is('deleted_at', null)
     .single();
 };
 
 export const getEstatisticasQuery = (filtros: ContaReceberFilters = {}) => {
-  
   let query = supabase
     .from('contas_receber')
-    .select('situacao, valor_original, valor_pago');
-
-  // Aplicar os mesmos filtros das consultas principais
-  if (filtros.situacao) {
-    query = query.eq('situacao', filtros.situacao);
-  }
-
-  if (filtros.cliente_id) {
-    query = query.eq('cliente_id', filtros.cliente_id);
-  }
-
-  if (filtros.forma_pagamento) {
-    query = query.eq('forma_pagamento', filtros.forma_pagamento);
-  }
-
-  if (filtros.data_vencimento_inicio) {
-    query = query.gte('data_vencimento', filtros.data_vencimento_inicio);
-  }
-
-  if (filtros.data_vencimento_fim) {
-    query = query.lte('data_vencimento', filtros.data_vencimento_fim);
-  }
-
-  if (filtros.valor_min) {
-    query = query.gte('valor_original', filtros.valor_min);
-  }
-
-  if (filtros.valor_max) {
-    query = query.lte('valor_original', filtros.valor_max);
-  }
-
-  return query;
+    .select('status, valor_original, valor_recebido, data_vencimento');
+  return aplicarFiltrosComuns(query, filtros);
 };
