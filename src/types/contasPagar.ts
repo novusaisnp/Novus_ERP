@@ -54,6 +54,7 @@ export interface RateioContaPagar {
     id: string;
     codigo: string;
     nome: string;
+    tipo?: 'RECEITA' | 'DESPESA';
   };
   centro_custo?: {
     id: string;
