@@ -146,6 +146,8 @@ function App() {
                     <Route path="config-basicas" element={<ConfigBasicas />} />
                     <Route path="relatorios" element={<div>Relatórios Financeiros - Em desenvolvimento</div>} />
                   </Route>
+                  <Route path="configuracoes/centros-custo" element={<Navigate to="/financeiro/centros-custo" replace />} />
+                  <Route path="centros-custo" element={<Navigate to="/financeiro/centros-custo" replace />} />
                   
                   {/* Fiscal Routes */}
                   <Route path="fiscal">
