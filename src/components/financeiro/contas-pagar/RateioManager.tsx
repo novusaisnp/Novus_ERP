@@ -101,11 +101,26 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
       if (prev > index) return prev - 1;
       return prev;
     });
+    // Reindexa pré-registrados removendo o índice e deslocando os posteriores
+    setPreRegistrados((prev) => {
+      const next = new Set<number>();
+      prev.forEach((i) => {
+        if (i === index) return;
+        next.add(i > index ? i - 1 : i);
+      });
+      return next;
+    });
+    // Propaga somente os já pré-registrados
+    const preservados = novosRateios.filter((_, i) => {
+      const origIdx = i < index ? i : i + 1;
+      return preRegistrados.has(origIdx) && origIdx !== index;
+    });
+    propagate(preservados);
   };
 
   const atualizarRateio = (index: number, campo: keyof RateioContaPagar, valor: any) => {
     console.log('[RateioContas] Atualizando rateio', index, campo, valor);
-    
+
     const novosRateios = [...rateiosLocal];
     novosRateios[index] = { ...novosRateios[index], [campo]: valor };
 
@@ -122,7 +137,6 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
       }
       novosRateios[index].valor = valorNumerico;
       if (valorTotal > 0) {
-        // Calcular percentual automaticamente com 2 casas decimais
         const percentualCalculado = (valorNumerico / valorTotal) * 100;
         novosRateios[index].percentual = roundToTwoDecimals(percentualCalculado);
       }
@@ -132,28 +146,72 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
       const percentualNumerico = parseFloat(valor) || 0;
       if (percentualNumerico < 0 || percentualNumerico > 100) {
         toast({
-          title: "Percentual inválido", 
+          title: "Percentual inválido",
           description: "O percentual deve estar entre 0% e 100%",
           variant: "destructive",
         });
         return;
       }
-      // Arredondar para 2 casas decimais
       const percentualArredondado = roundToTwoDecimals(percentualNumerico);
       novosRateios[index].percentual = percentualArredondado;
       if (valorTotal > 0) {
-        // Calcular valor automaticamente com base no percentual arredondado
         const valorCalculado = (valorTotal * percentualArredondado) / 100;
         novosRateios[index].valor = roundToTwoDecimals(valorCalculado);
       }
     }
 
     setRateiosLocal(novosRateios);
+    // Alteração torna o rateio "sujo": remove flag de pré-registrado
+    if (preRegistrados.has(index)) {
+      setPreRegistrados((prev) => {
+        const next = new Set(prev);
+        next.delete(index);
+        return next;
+      });
+    }
+    // Não propaga durante edição — só ao pré-registrar
+  };
+
+  const preRegistrarRateio = (index: number) => {
+    console.log('[RateioContas] Pré-registrando rateio no índice:', index);
+    const rateio = rateiosLocal[index];
+    if (!rateio) return;
+
+    if (!rateio.plano_conta_id) {
+      toast({
+        title: 'Plano de contas obrigatório',
+        description: 'Selecione a conta contábil antes de pré-registrar.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (!rateio.valor || rateio.valor <= 0) {
+      toast({
+        title: 'Valor inválido',
+        description: 'Informe um valor maior que zero antes de pré-registrar.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const novosPre = new Set(preRegistrados);
+    novosPre.add(index);
+    setPreRegistrados(novosPre);
+    setExpandedIndex(null);
+
+    // Propaga somente os rateios pré-registrados
+    const preservados = rateiosLocal.filter((_, i) => novosPre.has(i));
+    propagate(preservados);
+
+    toast({
+      title: 'Rateio pré-registrado',
+      description: 'Clique em Atualizar/Criar para salvar definitivamente.',
+    });
   };
 
   const distribuirIgualmente = () => {
     console.log('[RateioContas] Distribuindo valores igualmente');
-    
+
     if (rateiosLocal.length === 0 || valorTotal === 0) {
       toast({
         title: "Não é possível distribuir",
@@ -167,7 +225,6 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
     const percentualPorRateio = roundToTwoDecimals(100 / rateiosLocal.length);
 
     const novosRateios = rateiosLocal.map((rateio, index) => {
-      // Para o último rateio, ajustar para garantir que a soma seja exata
       if (index === rateiosLocal.length - 1) {
         const valorRestante = valorTotal - (valorPorRateio * (rateiosLocal.length - 1));
         const percentualRestante = 100 - (percentualPorRateio * (rateiosLocal.length - 1));
@@ -185,6 +242,12 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
     });
 
     setRateiosLocal(novosRateios);
+    // "Distribuir Igualmente" só recalcula valores dos já existentes; mantém
+    // o status de pré-registro como estava. Não propaga automaticamente —
+    // o usuário deve confirmar via Pré-registrar em cada card ou já é pré.
+    // Para consistência, propagamos os que continuam pré-registrados.
+    const preservados = novosRateios.filter((_, i) => preRegistrados.has(i));
+    propagate(preservados);
   };
 
   const valorTotalRateios = rateiosLocal.reduce((total, rateio) => total + (rateio.valor || 0), 0);
