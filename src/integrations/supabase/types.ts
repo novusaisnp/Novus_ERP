@@ -998,6 +998,7 @@ export type Database = {
         Row: {
           centro_custo_id: string | null
           created_at: string
+          data_competencia: string | null
           data_emissao: string | null
           data_pagamento: string | null
           data_vencimento: string
@@ -1010,8 +1011,10 @@ export type Database = {
           numero_documento: string | null
           numero_parcela: number | null
           observacoes: string | null
+          periodicidade: string | null
           plano_conta_id: string | null
           plano_pagamento_id: string | null
+          recorrente: boolean
           status: string | null
           total_parcelas: number | null
           updated_at: string
@@ -1024,6 +1027,7 @@ export type Database = {
         Insert: {
           centro_custo_id?: string | null
           created_at?: string
+          data_competencia?: string | null
           data_emissao?: string | null
           data_pagamento?: string | null
           data_vencimento: string
@@ -1036,8 +1040,10 @@ export type Database = {
           numero_documento?: string | null
           numero_parcela?: number | null
           observacoes?: string | null
+          periodicidade?: string | null
           plano_conta_id?: string | null
           plano_pagamento_id?: string | null
+          recorrente?: boolean
           status?: string | null
           total_parcelas?: number | null
           updated_at?: string
@@ -1050,6 +1056,7 @@ export type Database = {
         Update: {
           centro_custo_id?: string | null
           created_at?: string
+          data_competencia?: string | null
           data_emissao?: string | null
           data_pagamento?: string | null
           data_vencimento?: string
@@ -1062,8 +1069,10 @@ export type Database = {
           numero_documento?: string | null
           numero_parcela?: number | null
           observacoes?: string | null
+          periodicidade?: string | null
           plano_conta_id?: string | null
           plano_pagamento_id?: string | null
+          recorrente?: boolean
           status?: string | null
           total_parcelas?: number | null
           updated_at?: string
@@ -1124,6 +1133,7 @@ export type Database = {
           cliente_id: string | null
           created_at: string
           created_by: string | null
+          data_competencia: string | null
           data_emissao: string | null
           data_recebimento: string | null
           data_vencimento: string
@@ -1141,8 +1151,10 @@ export type Database = {
           observacoes: string | null
           origem_canal: string | null
           origem_sistema: string | null
+          periodicidade: string | null
           plano_conta_id: string | null
           plano_pagamento_id: string | null
+          recorrente: boolean
           status: string | null
           total_parcelas: number | null
           updated_at: string
@@ -1160,6 +1172,7 @@ export type Database = {
           cliente_id?: string | null
           created_at?: string
           created_by?: string | null
+          data_competencia?: string | null
           data_emissao?: string | null
           data_recebimento?: string | null
           data_vencimento: string
@@ -1177,8 +1190,10 @@ export type Database = {
           observacoes?: string | null
           origem_canal?: string | null
           origem_sistema?: string | null
+          periodicidade?: string | null
           plano_conta_id?: string | null
           plano_pagamento_id?: string | null
+          recorrente?: boolean
           status?: string | null
           total_parcelas?: number | null
           updated_at?: string
@@ -1196,6 +1211,7 @@ export type Database = {
           cliente_id?: string | null
           created_at?: string
           created_by?: string | null
+          data_competencia?: string | null
           data_emissao?: string | null
           data_recebimento?: string | null
           data_vencimento?: string
@@ -1213,8 +1229,10 @@ export type Database = {
           observacoes?: string | null
           origem_canal?: string | null
           origem_sistema?: string | null
+          periodicidade?: string | null
           plano_conta_id?: string | null
           plano_pagamento_id?: string | null
+          recorrente?: boolean
           status?: string | null
           total_parcelas?: number | null
           updated_at?: string

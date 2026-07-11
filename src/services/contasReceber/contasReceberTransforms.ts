@@ -102,6 +102,9 @@ export const transformToSupabase = (input: ContaReceberInput & Record<string, an
       : null;
   const dataRecebimento = input.data_recebimento ?? input.data_pagamento ?? null;
 
+  const rawPeriod = (input.periodicidade ?? null) as string | null;
+  const periodicidade = rawPeriod && rawPeriod !== 'UNICA' ? rawPeriod : null;
+
   return {
     empresa_representada_id: input.empresa_representada_id,
     descricao: input.descricao,
@@ -112,6 +115,7 @@ export const transformToSupabase = (input: ContaReceberInput & Record<string, an
     valor_desconto: input.valor_desconto != null ? Number(input.valor_desconto) : null,
     data_emissao: input.data_emissao || null,
     data_vencimento: input.data_vencimento,
+    data_competencia: input.data_competencia || null,
     data_recebimento: dataRecebimento,
     status,
     plano_conta_id: input.plano_conta_id || null,
@@ -119,6 +123,8 @@ export const transformToSupabase = (input: ContaReceberInput & Record<string, an
     natureza_id: input.natureza_id || null,
     numero_parcela: input.numero_parcela ?? null,
     total_parcelas: input.total_parcelas ?? null,
+    recorrente: Boolean(input.recorrente),
+    periodicidade,
     observacoes: input.observacoes || null,
   };
 };
