@@ -263,37 +263,67 @@ export type Database = {
       categorias_produtos: {
         Row: {
           ativo: boolean
+          centro_custo_id: string | null
           created_at: string
           descricao: string | null
           empresa_representada_id: string
           id: string
+          natureza_receita_id: string | null
           nome: string
+          plano_conta_receita_id: string | null
           updated_at: string
         }
         Insert: {
           ativo?: boolean
+          centro_custo_id?: string | null
           created_at?: string
           descricao?: string | null
           empresa_representada_id: string
           id?: string
+          natureza_receita_id?: string | null
           nome: string
+          plano_conta_receita_id?: string | null
           updated_at?: string
         }
         Update: {
           ativo?: boolean
+          centro_custo_id?: string | null
           created_at?: string
           descricao?: string | null
           empresa_representada_id?: string
           id?: string
+          natureza_receita_id?: string | null
           nome?: string
+          plano_conta_receita_id?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "categorias_produtos_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "categorias_produtos_empresa_representada_id_fkey"
             columns: ["empresa_representada_id"]
             isOneToOne: false
             referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categorias_produtos_natureza_receita_id_fkey"
+            columns: ["natureza_receita_id"]
+            isOneToOne: false
+            referencedRelation: "naturezas_receita"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categorias_produtos_plano_conta_receita_id_fkey"
+            columns: ["plano_conta_receita_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
             referencedColumns: ["id"]
           },
         ]
@@ -1233,6 +1263,7 @@ export type Database = {
       contratos: {
         Row: {
           arquivo_url: string | null
+          centro_custo_id: string | null
           cliente_id: string | null
           created_at: string
           data_fim: string | null
@@ -1243,8 +1274,10 @@ export type Database = {
           empresa_representada_id: string
           gera_financeiro: boolean | null
           id: string
+          natureza_receita_id: string | null
           numero_contrato: string | null
           observacoes: string | null
+          plano_conta_receita_id: string | null
           plano_pagamento_id: string | null
           renovacao_automatica: boolean | null
           status: string | null
@@ -1256,6 +1289,7 @@ export type Database = {
         }
         Insert: {
           arquivo_url?: string | null
+          centro_custo_id?: string | null
           cliente_id?: string | null
           created_at?: string
           data_fim?: string | null
@@ -1266,8 +1300,10 @@ export type Database = {
           empresa_representada_id: string
           gera_financeiro?: boolean | null
           id?: string
+          natureza_receita_id?: string | null
           numero_contrato?: string | null
           observacoes?: string | null
+          plano_conta_receita_id?: string | null
           plano_pagamento_id?: string | null
           renovacao_automatica?: boolean | null
           status?: string | null
@@ -1279,6 +1315,7 @@ export type Database = {
         }
         Update: {
           arquivo_url?: string | null
+          centro_custo_id?: string | null
           cliente_id?: string | null
           created_at?: string
           data_fim?: string | null
@@ -1289,8 +1326,10 @@ export type Database = {
           empresa_representada_id?: string
           gera_financeiro?: boolean | null
           id?: string
+          natureza_receita_id?: string | null
           numero_contrato?: string | null
           observacoes?: string | null
+          plano_conta_receita_id?: string | null
           plano_pagamento_id?: string | null
           renovacao_automatica?: boolean | null
           status?: string | null
@@ -1301,6 +1340,13 @@ export type Database = {
           valor_total?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "contratos_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "contratos_cliente_id_fkey"
             columns: ["cliente_id"]
@@ -1313,6 +1359,20 @@ export type Database = {
             columns: ["empresa_representada_id"]
             isOneToOne: false
             referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_natureza_receita_id_fkey"
+            columns: ["natureza_receita_id"]
+            isOneToOne: false
+            referencedRelation: "naturezas_receita"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_plano_conta_receita_id_fkey"
+            columns: ["plano_conta_receita_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
             referencedColumns: ["id"]
           },
           {
@@ -1582,6 +1642,7 @@ export type Database = {
       empresas_representadas: {
         Row: {
           ativo: boolean
+          centro_custo_default_id: string | null
           cep: string | null
           cidade: string | null
           cnpj: string | null
@@ -1591,12 +1652,15 @@ export type Database = {
           endereco: string | null
           estado: string | null
           id: string
+          natureza_receita_default_id: string | null
           nome: string
+          plano_conta_receita_default_id: string | null
           telefone: string | null
           updated_at: string
         }
         Insert: {
           ativo?: boolean
+          centro_custo_default_id?: string | null
           cep?: string | null
           cidade?: string | null
           cnpj?: string | null
@@ -1606,12 +1670,15 @@ export type Database = {
           endereco?: string | null
           estado?: string | null
           id?: string
+          natureza_receita_default_id?: string | null
           nome: string
+          plano_conta_receita_default_id?: string | null
           telefone?: string | null
           updated_at?: string
         }
         Update: {
           ativo?: boolean
+          centro_custo_default_id?: string | null
           cep?: string | null
           cidade?: string | null
           cnpj?: string | null
@@ -1621,11 +1688,35 @@ export type Database = {
           endereco?: string | null
           estado?: string | null
           id?: string
+          natureza_receita_default_id?: string | null
           nome?: string
+          plano_conta_receita_default_id?: string | null
           telefone?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "empresas_representadas_centro_custo_default_id_fkey"
+            columns: ["centro_custo_default_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empresas_representadas_natureza_receita_default_id_fkey"
+            columns: ["natureza_receita_default_id"]
+            isOneToOne: false
+            referencedRelation: "naturezas_receita"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empresas_representadas_plano_conta_receita_default_id_fkey"
+            columns: ["plano_conta_receita_default_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       folha_pagamento: {
         Row: {
@@ -1976,16 +2067,22 @@ export type Database = {
       itens_venda: {
         Row: {
           acrescimo_item: number | null
+          centro_custo_id: string | null
           created_at: string
           desconto_item: number | null
           descricao: string
           empresa_representada_id: string
+          hash_classificacao: string | null
           id: string
+          natureza_receita_id: string | null
           observacoes: string | null
           ordem: number | null
+          plano_conta_id: string | null
           preco_unitario: number
           produto_id: string | null
           quantidade: number
+          regra_origem: string | null
+          regra_versao: number | null
           servico_id: string | null
           tipo_item: string
           unidade: string | null
@@ -1995,16 +2092,22 @@ export type Database = {
         }
         Insert: {
           acrescimo_item?: number | null
+          centro_custo_id?: string | null
           created_at?: string
           desconto_item?: number | null
           descricao: string
           empresa_representada_id: string
+          hash_classificacao?: string | null
           id?: string
+          natureza_receita_id?: string | null
           observacoes?: string | null
           ordem?: number | null
+          plano_conta_id?: string | null
           preco_unitario?: number
           produto_id?: string | null
           quantidade?: number
+          regra_origem?: string | null
+          regra_versao?: number | null
           servico_id?: string | null
           tipo_item: string
           unidade?: string | null
@@ -2014,16 +2117,22 @@ export type Database = {
         }
         Update: {
           acrescimo_item?: number | null
+          centro_custo_id?: string | null
           created_at?: string
           desconto_item?: number | null
           descricao?: string
           empresa_representada_id?: string
+          hash_classificacao?: string | null
           id?: string
+          natureza_receita_id?: string | null
           observacoes?: string | null
           ordem?: number | null
+          plano_conta_id?: string | null
           preco_unitario?: number
           produto_id?: string | null
           quantidade?: number
+          regra_origem?: string | null
+          regra_versao?: number | null
           servico_id?: string | null
           tipo_item?: string
           unidade?: string | null
@@ -2033,10 +2142,31 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "itens_venda_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "itens_venda_empresa_representada_id_fkey"
             columns: ["empresa_representada_id"]
             isOneToOne: false
             referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "itens_venda_natureza_receita_id_fkey"
+            columns: ["natureza_receita_id"]
+            isOneToOne: false
+            referencedRelation: "naturezas_receita"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "itens_venda_plano_conta_id_fkey"
+            columns: ["plano_conta_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
             referencedColumns: ["id"]
           },
           {
@@ -2776,6 +2906,53 @@ export type Database = {
         }
         Relationships: []
       }
+      naturezas_receita: {
+        Row: {
+          ativo: boolean
+          codigo: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          descricao: string | null
+          empresa_representada_id: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          codigo: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          descricao?: string | null
+          empresa_representada_id: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          codigo?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          descricao?: string | null
+          empresa_representada_id?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "naturezas_receita_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ncm: {
         Row: {
           aliquota_ipi: number
@@ -3252,6 +3429,7 @@ export type Database = {
           altura: number | null
           ativo: boolean
           categoria_id: string | null
+          centro_custo_id: string | null
           cest: string | null
           codigo: string | null
           comprimento: number | null
@@ -3267,10 +3445,12 @@ export type Database = {
           imagem_url: string | null
           largura: number | null
           margem_lucro: number | null
+          natureza_receita_id: string | null
           ncm: string | null
           nome: string
           origem_produto: string | null
           peso: number | null
+          plano_conta_receita_id: string | null
           preco_custo: number | null
           preco_venda: number | null
           unidade_medida_id: string | null
@@ -3280,6 +3460,7 @@ export type Database = {
           altura?: number | null
           ativo?: boolean
           categoria_id?: string | null
+          centro_custo_id?: string | null
           cest?: string | null
           codigo?: string | null
           comprimento?: number | null
@@ -3295,10 +3476,12 @@ export type Database = {
           imagem_url?: string | null
           largura?: number | null
           margem_lucro?: number | null
+          natureza_receita_id?: string | null
           ncm?: string | null
           nome: string
           origem_produto?: string | null
           peso?: number | null
+          plano_conta_receita_id?: string | null
           preco_custo?: number | null
           preco_venda?: number | null
           unidade_medida_id?: string | null
@@ -3308,6 +3491,7 @@ export type Database = {
           altura?: number | null
           ativo?: boolean
           categoria_id?: string | null
+          centro_custo_id?: string | null
           cest?: string | null
           codigo?: string | null
           comprimento?: number | null
@@ -3323,10 +3507,12 @@ export type Database = {
           imagem_url?: string | null
           largura?: number | null
           margem_lucro?: number | null
+          natureza_receita_id?: string | null
           ncm?: string | null
           nome?: string
           origem_produto?: string | null
           peso?: number | null
+          plano_conta_receita_id?: string | null
           preco_custo?: number | null
           preco_venda?: number | null
           unidade_medida_id?: string | null
@@ -3341,10 +3527,31 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "produtos_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "produtos_empresa_representada_id_fkey"
             columns: ["empresa_representada_id"]
             isOneToOne: false
             referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produtos_natureza_receita_id_fkey"
+            columns: ["natureza_receita_id"]
+            isOneToOne: false
+            referencedRelation: "naturezas_receita"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produtos_plano_conta_receita_id_fkey"
+            columns: ["plano_conta_receita_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
             referencedColumns: ["id"]
           },
           {
@@ -3499,52 +3706,181 @@ export type Database = {
           },
         ]
       }
+      regras_classificacao_receita: {
+        Row: {
+          alvo_id: string | null
+          alvo_tipo: string
+          ativo: boolean
+          categoria_id: string | null
+          centro_custo_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          empresa_representada_id: string
+          id: string
+          natureza_receita_id: string | null
+          plano_conta_id: string | null
+          prioridade: number
+          tipo_item: string | null
+          updated_at: string
+          versao: number
+          vigencia_fim: string | null
+          vigencia_ini: string | null
+        }
+        Insert: {
+          alvo_id?: string | null
+          alvo_tipo: string
+          ativo?: boolean
+          categoria_id?: string | null
+          centro_custo_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          empresa_representada_id: string
+          id?: string
+          natureza_receita_id?: string | null
+          plano_conta_id?: string | null
+          prioridade?: number
+          tipo_item?: string | null
+          updated_at?: string
+          versao?: number
+          vigencia_fim?: string | null
+          vigencia_ini?: string | null
+        }
+        Update: {
+          alvo_id?: string | null
+          alvo_tipo?: string
+          ativo?: boolean
+          categoria_id?: string | null
+          centro_custo_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          empresa_representada_id?: string
+          id?: string
+          natureza_receita_id?: string | null
+          plano_conta_id?: string | null
+          prioridade?: number
+          tipo_item?: string | null
+          updated_at?: string
+          versao?: number
+          vigencia_fim?: string | null
+          vigencia_ini?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regras_classificacao_receita_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regras_classificacao_receita_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regras_classificacao_receita_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regras_classificacao_receita_natureza_receita_id_fkey"
+            columns: ["natureza_receita_id"]
+            isOneToOne: false
+            referencedRelation: "naturezas_receita"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regras_classificacao_receita_plano_conta_id_fkey"
+            columns: ["plano_conta_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       servicos: {
         Row: {
           ativo: boolean
+          centro_custo_id: string | null
           codigo: string | null
           created_at: string
           deleted_at: string | null
           descricao: string | null
           empresa_representada_id: string
           id: string
+          natureza_receita_id: string | null
           nome: string
+          plano_conta_receita_id: string | null
           preco: number | null
           unidade_medida_id: string | null
           updated_at: string
         }
         Insert: {
           ativo?: boolean
+          centro_custo_id?: string | null
           codigo?: string | null
           created_at?: string
           deleted_at?: string | null
           descricao?: string | null
           empresa_representada_id: string
           id?: string
+          natureza_receita_id?: string | null
           nome: string
+          plano_conta_receita_id?: string | null
           preco?: number | null
           unidade_medida_id?: string | null
           updated_at?: string
         }
         Update: {
           ativo?: boolean
+          centro_custo_id?: string | null
           codigo?: string | null
           created_at?: string
           deleted_at?: string | null
           descricao?: string | null
           empresa_representada_id?: string
           id?: string
+          natureza_receita_id?: string | null
           nome?: string
+          plano_conta_receita_id?: string | null
           preco?: number | null
           unidade_medida_id?: string | null
           updated_at?: string
         }
         Relationships: [
           {
+            foreignKeyName: "servicos_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "servicos_empresa_representada_id_fkey"
             columns: ["empresa_representada_id"]
             isOneToOne: false
             referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "servicos_natureza_receita_id_fkey"
+            columns: ["natureza_receita_id"]
+            isOneToOne: false
+            referencedRelation: "naturezas_receita"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "servicos_plano_conta_receita_id_fkey"
+            columns: ["plano_conta_receita_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
             referencedColumns: ["id"]
           },
           {
@@ -4254,6 +4590,90 @@ export type Database = {
           },
         ]
       }
+      venda_parcela_classificacao_receita: {
+        Row: {
+          centro_custo_id: string | null
+          created_at: string
+          created_by: string | null
+          empresa_representada_id: string
+          hash_classificacao: string
+          id: string
+          natureza_receita_id: string | null
+          pct_rateado: number
+          plano_conta_id: string
+          regra_origem: string
+          regra_versao: number
+          valor_rateado: number
+          venda_pagamento_parcela_id: string
+        }
+        Insert: {
+          centro_custo_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          empresa_representada_id: string
+          hash_classificacao: string
+          id?: string
+          natureza_receita_id?: string | null
+          pct_rateado: number
+          plano_conta_id: string
+          regra_origem: string
+          regra_versao?: number
+          valor_rateado: number
+          venda_pagamento_parcela_id: string
+        }
+        Update: {
+          centro_custo_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          empresa_representada_id?: string
+          hash_classificacao?: string
+          id?: string
+          natureza_receita_id?: string | null
+          pct_rateado?: number
+          plano_conta_id?: string
+          regra_origem?: string
+          regra_versao?: number
+          valor_rateado?: number
+          venda_pagamento_parcela_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venda_parcela_classificacao_rec_venda_pagamento_parcela_id_fkey"
+            columns: ["venda_pagamento_parcela_id"]
+            isOneToOne: false
+            referencedRelation: "venda_pagamento_parcelas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venda_parcela_classificacao_receit_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venda_parcela_classificacao_receita_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venda_parcela_classificacao_receita_natureza_receita_id_fkey"
+            columns: ["natureza_receita_id"]
+            isOneToOne: false
+            referencedRelation: "naturezas_receita"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venda_parcela_classificacao_receita_plano_conta_id_fkey"
+            columns: ["plano_conta_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendas: {
         Row: {
           acrescimo: number | null
@@ -4455,6 +4875,17 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      resolver_classificacao_receita: {
+        Args: { p_item_id: string }
+        Returns: {
+          centro_custo_id: string
+          hash_classificacao: string
+          natureza_receita_id: string
+          plano_conta_id: string
+          regra_origem: string
+          regra_versao: number
+        }[]
       }
       transferencia_bancaria_atomica: {
         Args: {
