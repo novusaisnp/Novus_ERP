@@ -276,3 +276,32 @@ export const softDeleteOrcamento = async (id: string): Promise<void> => {
     .eq('id', id);
   if (error) throw error;
 };
+
+export const duplicarOrcamento = async (id: string): Promise<Orcamento> => {
+  const original = await fetchOrcamentoById(id);
+  if (!original) throw new Error('Orçamento original não encontrado.');
+  const d = new Date();
+  const rnd = Math.floor(Math.random() * 900 + 100);
+  const novoNumero = `ORC-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}-${rnd}`;
+  return createOrcamento({
+    empresaRepresentadaId: original.empresaRepresentadaId,
+    numero: novoNumero,
+    tipo: original.tipo,
+    clienteId: original.clienteId,
+    dataEmissao: new Date().toISOString().slice(0, 10),
+    dataValidade: null,
+    observacoes: original.observacoes,
+    status: 'rascunho',
+    itens: (original.itens ?? []).map((i) => ({
+      tipoItem: i.tipoItem,
+      produtoId: i.produtoId ?? null,
+      servicoId: i.servicoId ?? null,
+      descricao: i.descricao,
+      quantidade: i.quantidade,
+      precoUnitario: i.precoUnitario,
+      desconto: i.desconto ?? 0,
+      ordem: i.ordem,
+      observacoes: i.observacoes ?? null,
+    })),
+  });
+};
