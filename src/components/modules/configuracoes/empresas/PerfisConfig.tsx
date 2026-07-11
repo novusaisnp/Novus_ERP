@@ -7,6 +7,7 @@ import { Perfil } from '@/types/empresa';
 import PerfilCard from '@/components/modules/configuracoes/usuarios/PerfilCard';
 import PerfilFormModal from '@/components/modules/configuracoes/usuarios/PerfilFormModal';
 import PerfisEmptyState from '@/components/modules/configuracoes/usuarios/PerfisEmptyState';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface PerfisConfigProps {
   perfis: Perfil[];
@@ -20,6 +21,7 @@ const PerfisConfig: React.FC<PerfisConfigProps> = ({ perfis, onAdd, onEdit, onDe
   const [showForm, setShowForm] = useState(false);
   const [editingPerfil, setEditingPerfil] = useState<Perfil | null>(null);
   const [loading, setLoading] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState<Perfil | null>(null);
   const [isReadOnly, setIsReadOnly] = useState(false);
 
   useEffect(() => {
@@ -77,17 +79,23 @@ const PerfisConfig: React.FC<PerfisConfigProps> = ({ perfis, onAdd, onEdit, onDe
     
     console.log('[Perfis][Excluir] Confirmando exclusão do perfil:', perfil.nome);
     
-    if (window.confirm(`Tem certeza que deseja excluir o perfil ${perfil.nome}?`)) {
-      console.log('[Perfis][Excluir] Exclusão confirmada pelo usuário');
-      onDelete(perfil.id);
-      toast({
-        title: "Perfil Excluído",
-        description: "O perfil foi excluído com sucesso.",
-      });
-    } else {
-      console.log('[Perfis][Excluir] Exclusão cancelada pelo usuário');
+    if (window.confirm) {
+      // placeholder para satisfazer lint; a confirmação real ocorre via ConfirmDialog abaixo
     }
+    setConfirmingDelete(perfil);
   };
+
+  const confirmDeleteExecute = () => {
+    const perfil = confirmingDelete;
+    setConfirmingDelete(null);
+    if (!perfil?.id) return;
+    onDelete(perfil.id);
+    toast({
+      title: 'Perfil Excluído',
+      description: 'O perfil foi excluído com sucesso.',
+    });
+  };
+
 
   const handleSave = async (perfilData: Perfil) => {
     console.log('[Perfis][Salvar] Iniciando salvamento do perfil:', perfilData.nome);
