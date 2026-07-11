@@ -79,7 +79,14 @@ export const LiquidacaoTituloModal = ({
         title: "Sucesso",
         description: "Título liquidado com sucesso!",
       });
+      // Invalidação ampla: listagens, estatísticas e saldos afetados
       queryClient.invalidateQueries({ queryKey: ['movimentacoes-financeiras'] });
+      queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
+      queryClient.invalidateQueries({ queryKey: ['contas-pagar-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['contas-receber'] });
+      queryClient.invalidateQueries({ queryKey: ['contas-receber-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['contas-bancarias'] });
+      queryClient.invalidateQueries({ queryKey: ['contas-bancarias-estatisticas'] });
       onSuccess();
       onClose();
     },
