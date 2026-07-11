@@ -78,6 +78,8 @@ const fromConta = (c: ContaReceber): ContaReceberInput => ({
     valor: Number(r.valor),
     percentual: Number(r.percentual),
     observacoes: r.observacoes ?? null,
+    plano_conta: r.plano_conta,
+    centro_custo: r.centro_custo,
   })),
 });
 
@@ -131,6 +133,8 @@ export function ContaReceberFormModal({
         valor: r.valor,
         percentual: r.percentual,
         descricao: r.observacoes ?? '',
+        plano_conta: r.plano_conta,
+        centro_custo: r.centro_custo,
       })),
     [form.rateios],
   );
@@ -145,6 +149,8 @@ export function ContaReceberFormModal({
           valor: r.valor,
           percentual: r.percentual,
           observacoes: r.descricao || null,
+          plano_conta: r.plano_conta,
+          centro_custo: r.centro_custo,
         })),
       ),
     [handleRateiosChange],
