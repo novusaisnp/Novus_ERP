@@ -310,102 +310,146 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
       )}
 
       <div className="space-y-3">
-        {rateiosLocal.map((rateio, index) => (
-          <Card key={index}>
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between mb-4">
-                <h4 className="font-medium">Rateio {index + 1}</h4>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removerRateio(index)}
-                  className="text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+        {rateiosLocal.map((rateio, index) => {
+          const isExpanded = expandedIndex === index;
+          const preenchido = !!rateio.plano_conta_id && (rateio.valor || 0) > 0;
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <ContaContabilAutocomplete
-                    label="Conta Contábil"
-                    placeholder="Selecione uma conta analítica"
-                    value={rateio.plano_conta_id}
-                    onChange={(value) => atualizarRateio(index, 'plano_conta_id', value)}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label>Centro de Custo</Label>
-                  <Select
-                    value={rateio.centro_custo_id || 'sem-centro'}
-                    onValueChange={(value) => {
-                      if (value === 'sem-centro') {
-                        atualizarRateio(index, 'centro_custo_id', '');
-                      } else {
-                        atualizarRateio(index, 'centro_custo_id', value);
-                      }
-                    }}
+          return (
+            <Card key={index}>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedIndex(isExpanded ? null : index)}
+                    className="flex-1 text-left flex items-center gap-2 hover:opacity-80 transition-opacity"
+                    aria-expanded={isExpanded}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecionar centro de custo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="sem-centro">Nenhum</SelectItem>
-                      {centrosCusto.filter(c => c.ativo).map((centro) => (
-                        <SelectItem key={centro.id} value={centro.id}>
-                          {centro.codigo ? `${centro.codigo} - ` : ''}{centro.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <ChevronDown
+                      className={cn(
+                        'h-4 w-4 shrink-0 transition-transform',
+                        isExpanded ? 'rotate-0' : '-rotate-90',
+                      )}
+                    />
+                    <h4 className="font-medium">Rateio {index + 1}</h4>
+                    {!isExpanded && preenchido && (
+                      <span className="text-sm text-muted-foreground truncate">
+                        · R$ {(rateio.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ({(rateio.percentual || 0).toFixed(2)}%)
+                        {rateio.centro_custo_id && ` · ${getCentroCustoNome(rateio.centro_custo_id)}`}
+                      </span>
+                    )}
+                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {!isExpanded && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setExpandedIndex(index)}
+                        aria-label="Editar rateio"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removerRateio(index)}
+                      className="text-destructive hover:text-destructive"
+                      aria-label="Remover rateio"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
 
-                <div>
-                  <Label>Valor (R$)</Label>
-                  <CurrencyInput
-                    value={Number(rateio.valor) || 0}
-                    onValueChange={(v) => atualizarRateio(index, 'valor', String(v))}
-                    placeholder="R$ 0,00"
-                  />
-                </div>
+                {isExpanded && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <ContaContabilAutocomplete
+                          label="Conta Contábil"
+                          placeholder="Selecione uma conta analítica"
+                          value={rateio.plano_conta_id}
+                          onChange={(value) => atualizarRateio(index, 'plano_conta_id', value)}
+                          required
+                          tipo={tipo}
+                        />
+                      </div>
 
-                <div>
-                  <Label>Percentual (%)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="100"
-                    value={rateio.percentual || ''}
-                    onChange={(e) => atualizarRateio(index, 'percentual', e.target.value)}
-                    placeholder="0,00"
-                  />
-                </div>
+                      <div>
+                        <Label>Centro de Custo</Label>
+                        <Select
+                          value={rateio.centro_custo_id || 'sem-centro'}
+                          onValueChange={(value) => {
+                            if (value === 'sem-centro') {
+                              atualizarRateio(index, 'centro_custo_id', '');
+                            } else {
+                              atualizarRateio(index, 'centro_custo_id', value);
+                            }
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecionar centro de custo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="sem-centro">Nenhum</SelectItem>
+                            {centrosCusto.filter(c => c.ativo).map((centro) => (
+                              <SelectItem key={centro.id} value={centro.id}>
+                                {centro.codigo ? `${centro.codigo} - ` : ''}{centro.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                <div className="col-span-1 md:col-span-2">
-                  <Label>Descrição</Label>
-                  <Input
-                    value={rateio.descricao || ''}
-                    onChange={(e) => atualizarRateio(index, 'descricao', e.target.value)}
-                    placeholder="Descrição do rateio (opcional)"
-                  />
-                </div>
-              </div>
+                      <div>
+                        <Label>Valor (R$)</Label>
+                        <CurrencyInput
+                          value={Number(rateio.valor) || 0}
+                          onValueChange={(v) => atualizarRateio(index, 'valor', String(v))}
+                          placeholder="R$ 0,00"
+                        />
+                      </div>
 
-              {rateio.plano_conta_id && (
-                <div className="mt-3 p-2 bg-muted rounded text-sm">
-                  <strong>Resumo:</strong> Conta selecionada
-                  {rateio.centro_custo_id && ` | ${getCentroCustoNome(rateio.centro_custo_id)}`}
-                  {` | R$ ${(rateio.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (${(rateio.percentual || 0).toFixed(2)}%)`}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+                      <div>
+                        <Label>Percentual (%)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          value={rateio.percentual || ''}
+                          onChange={(e) => atualizarRateio(index, 'percentual', e.target.value)}
+                          placeholder="0,00"
+                        />
+                      </div>
+
+                      <div className="col-span-1 md:col-span-2">
+                        <Label>Descrição</Label>
+                        <Input
+                          value={rateio.descricao || ''}
+                          onChange={(e) => atualizarRateio(index, 'descricao', e.target.value)}
+                          placeholder="Descrição do rateio (opcional)"
+                        />
+                      </div>
+                    </div>
+
+                    {rateio.plano_conta_id && (
+                      <div className="mt-3 p-2 bg-muted rounded text-sm">
+                        <strong>Resumo:</strong> Conta selecionada
+                        {rateio.centro_custo_id && ` | ${getCentroCustoNome(rateio.centro_custo_id)}`}
+                        {` | R$ ${(rateio.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (${(rateio.percentual || 0).toFixed(2)}%)`}
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
+
 
       {rateiosLocal.length === 0 && (
         <Card>
