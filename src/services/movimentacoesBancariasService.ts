@@ -259,6 +259,32 @@ export const criarMovimentacaoBancaria = async (
 export const realizarTransferenciaBancaria = async (
   transferencia: TransferenciaBancaria
 ): Promise<{ lote_id: string }> => {
+  // [LOTE 3B] Guards pré-RPC
+  validarValorPositivo(transferencia.valor);
+  if (transferencia.conta_origem_id === transferencia.conta_destino_id) {
+    throw new Error('TRANSFERENCIA_INVALIDA: Conta origem e destino não podem ser iguais');
+  }
+  const { data: contas, error: contasErr } = await supabase
+    .from('contas_bancarias')
+    .select('id, status, saldo_atual, configuracoes')
+    .in('id', [transferencia.conta_origem_id, transferencia.conta_destino_id]);
+  if (contasErr) {
+    throw new Error(`TRANSFERENCIA_INVALIDA: ${contasErr.message}`);
+  }
+  if (!contas || contas.length !== 2) {
+    throw new Error('TRANSFERENCIA_INVALIDA: Contas de origem/destino não localizadas');
+  }
+  for (const c of contas) {
+    if (c.status && c.status !== 'ATIVA') {
+      throw new Error('TRANSFERENCIA_INVALIDA: Ambas as contas devem estar ativas');
+    }
+  }
+  const origem = contas.find((c: any) => c.id === transferencia.conta_origem_id);
+  const permitirNegativo = origem?.configuracoes?.permitir_saldo_negativo === true;
+  if (!permitirNegativo && Number(origem?.saldo_atual ?? 0) < transferencia.valor) {
+    throw new Error('SALDO_INSUFICIENTE: Saldo insuficiente para transferência');
+  }
+
   // Obter empresa do usuário atual
   const { data: empresaId, error: empresaErr } = await supabase.rpc('get_user_empresa_id');
   if (empresaErr || !empresaId) {
