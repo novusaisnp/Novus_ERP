@@ -114,30 +114,41 @@ export function ContaReceberFormModal({
     value: ContaReceberInput[K],
   ) => setForm((prev) => ({ ...prev, [field]: value }));
 
-  const handleRateiosChange = (rateios: RateioContaReceber[]) =>
-    setForm((prev) => ({ ...prev, rateios }));
+  const handleRateiosChange = useCallback(
+    (rateios: RateioContaReceber[]) =>
+      setForm((prev) => ({ ...prev, rateios })),
+    [],
+  );
 
-  // Adapta rateios entre os tipos de Contas a Pagar (usado pelo RateioManager) e Contas a Receber
-  const rateiosParaManager: RateioContaPagar[] = (form.rateios || []).map((r) => ({
-    id: r.id,
-    plano_conta_id: r.plano_conta_id,
-    centro_custo_id: r.centro_custo_id ?? '',
-    valor: r.valor,
-    percentual: r.percentual,
-    descricao: r.observacoes ?? '',
-  }));
-
-  const handleRateiosManagerChange = (rateios: RateioContaPagar[]) =>
-    handleRateiosChange(
-      rateios.map((r) => ({
+  // Adapta rateios entre os tipos de Contas a Pagar (usado pelo RateioManager)
+  // e Contas a Receber. Memoizado para manter referência estável entre renders.
+  const rateiosParaManager: RateioContaPagar[] = useMemo(
+    () =>
+      (form.rateios || []).map((r) => ({
         id: r.id,
         plano_conta_id: r.plano_conta_id,
-        centro_custo_id: r.centro_custo_id || null,
+        centro_custo_id: r.centro_custo_id ?? '',
         valor: r.valor,
         percentual: r.percentual,
-        observacoes: r.descricao || null,
+        descricao: r.observacoes ?? '',
       })),
-    );
+    [form.rateios],
+  );
+
+  const handleRateiosManagerChange = useCallback(
+    (rateios: RateioContaPagar[]) =>
+      handleRateiosChange(
+        rateios.map((r) => ({
+          id: r.id,
+          plano_conta_id: r.plano_conta_id,
+          centro_custo_id: r.centro_custo_id || null,
+          valor: r.valor,
+          percentual: r.percentual,
+          observacoes: r.descricao || null,
+        })),
+      ),
+    [handleRateiosChange],
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
