@@ -188,16 +188,11 @@ export const LiquidacaoTituloModal = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="valor_pago">Valor a Pagar/Receber *</Label>
-              <Input
+              <CurrencyInput
                 id="valor_pago"
-                type="number"
-                step="0.01"
-                min="0"
                 value={formData.valor_pago}
-                onChange={(e) => setFormData(prev => ({ 
-                  ...prev, 
-                  valor_pago: parseFloat(e.target.value) || 0 
-                }))}
+                onValueChange={(v) => setFormData(prev => ({ ...prev, valor_pago: v }))}
+                placeholder="R$ 0,00"
                 required
               />
             </div>
