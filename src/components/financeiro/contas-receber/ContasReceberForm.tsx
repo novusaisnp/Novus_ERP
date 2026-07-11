@@ -261,6 +261,7 @@ export const ContasReceberForm: React.FC<ContasReceberFormProps> = ({
                 placeholder="Selecione uma conta analítica"
                 label="Conta Contábil"
                 required={!useRateio}
+                tipo="RECEITA"
               />
 
               <div className="space-y-2">
@@ -296,6 +297,7 @@ export const ContasReceberForm: React.FC<ContasReceberFormProps> = ({
               valorTotal={Number(formData.valor_original) || 0}
               rateios={rateiosParaManager}
               onRateiosChange={handleRateiosChangeInterno}
+              tipo="RECEITA"
             />
           )}
         </CardContent>
