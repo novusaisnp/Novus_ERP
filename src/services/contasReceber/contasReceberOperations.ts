@@ -11,7 +11,7 @@ export const createContaReceber = async (input: ContaReceberInput) => {
     .select(
       `
       *,
-      cliente:clientes(id, nome, cpf_cnpj)
+      cliente:clientes(id, nome, cpf, cnpj)
     `,
     )
     .single();
@@ -32,7 +32,7 @@ export const updateContaReceber = async (id: string, input: ContaReceberInput) =
     .select(
       `
       *,
-      cliente:clientes(id, nome, cpf_cnpj)
+      cliente:clientes(id, nome, cpf, cnpj)
     `,
     )
     .single();

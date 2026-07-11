@@ -125,7 +125,7 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
           .from('contas_receber')
           .select(`
             *,
-            cliente:clientes(id, nome, cpf_cnpj)
+            cliente:clientes(id, nome, cpf, cnpj)
           `);
 
         // Aplicar filtros
