@@ -46,13 +46,33 @@ export function TransferenciaModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.conta_origem_id || !formData.conta_destino_id || !formData.descricao || formData.valor <= 0) {
+
+    // SM1-A: validações com toast semântico. Sem alert() nativo, sem return silencioso.
+    if (!formData.conta_origem_id) {
+      toast.error('Selecione a conta de origem.');
       return;
     }
-
+    if (!formData.conta_destino_id) {
+      toast.error('Selecione a conta de destino.');
+      return;
+    }
     if (formData.conta_origem_id === formData.conta_destino_id) {
-      alert('A conta de origem não pode ser igual à conta de destino!');
+      toast.error('A conta de origem não pode ser igual à conta de destino.');
+      return;
+    }
+    if (!formData.descricao?.trim()) {
+      toast.error('Informe a descrição da transferência.');
+      return;
+    }
+    if (!(formData.valor > 0)) {
+      toast.error('O valor deve ser maior que zero.');
+      return;
+    }
+    // Bloqueio de saldo insuficiente quando a conta origem não permite negativo
+    const origem = contasOptions.find((c) => c.value === formData.conta_origem_id);
+    const permitirNegativo = origem?.conta?.configuracoes?.permitir_saldo_negativo === true;
+    if (origem && !permitirNegativo && formData.valor > Number(origem.conta.saldo_atual ?? 0)) {
+      toast.error('Saldo insuficiente na conta de origem para esta transferência.');
       return;
     }
 
@@ -61,8 +81,10 @@ export function TransferenciaModal({
         onSuccess();
         handleClose();
       },
+      // erro: hook dispara toast; modal permanece aberto para correção
     });
   };
+
 
   const handleClose = () => {
     setFormData({
