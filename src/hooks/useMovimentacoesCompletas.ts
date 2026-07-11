@@ -34,25 +34,11 @@ export const useMovimentacoesCompletas = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Hook para liquidação/baixa de títulos
-  const liquidacaoMutation = useMutation({
-    mutationFn: movimentacoesService.liquidarTitulo,
-    onSuccess: (_data, variables: LiquidacaoTitulo) => {
-      invalidarPorTipo(queryClient, variables?.tipo_titulo, variables?.conta_bancaria_id);
-      toast({
-        title: 'Sucesso',
-        description: 'Título liquidado com sucesso!',
-      });
-    },
-    onError: (error) => {
-      console.error('[MovimentacoesCompletas] Erro ao liquidar:', error);
-      toast({
-        title: 'Erro',
-        description: error.message || 'Erro ao liquidar título',
-        variant: 'destructive',
-      });
-    },
-  });
+  // [LOTE 3B.1] Liquidação removida deste hook — caminho único e canônico é
+  // `LiquidacaoTituloModal`, que dispara `movimentacoesService.liquidarTitulo`
+  // com sua própria mutation e invalidação refinada. Manter apenas um caminho
+  // evita mutations duplicadas e divergência de cache.
+
 
   // Hook para estorno de títulos
   const estornoMutation = useMutation({
