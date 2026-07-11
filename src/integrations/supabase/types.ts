@@ -1131,6 +1131,7 @@ export type Database = {
           descricao: string
           empresa_representada_id: string
           externo_id: string | null
+          hash_classificacao: string | null
           hash_payload: string | null
           id: string
           idempotency_key: string | null
@@ -1166,6 +1167,7 @@ export type Database = {
           descricao: string
           empresa_representada_id: string
           externo_id?: string | null
+          hash_classificacao?: string | null
           hash_payload?: string | null
           id?: string
           idempotency_key?: string | null
@@ -1201,6 +1203,7 @@ export type Database = {
           descricao?: string
           empresa_representada_id?: string
           externo_id?: string | null
+          hash_classificacao?: string | null
           hash_payload?: string | null
           id?: string
           idempotency_key?: string | null

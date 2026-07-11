@@ -7,6 +7,9 @@ export interface TituloGerado {
   parcela_id: string;
   conta_receber_id: string;
   replay: boolean;
+  hash_classificacao?: string | null;
+  plano_conta_id?: string | null;
+  centro_custo_id?: string | null;
 }
 
 export interface GerarContasReceberResult {
