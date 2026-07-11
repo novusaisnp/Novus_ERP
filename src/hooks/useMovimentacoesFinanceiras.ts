@@ -175,11 +175,16 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
               tipo: 'CONTAS_RECEBER',
               numero_documento: conta.numero_documento,
               valor_original: Number(conta.valor_original),
-              valor_pago: conta.valor_pago ? Number(conta.valor_pago) : undefined,
+              valor_pago: conta.valor_recebido != null
+                ? Number(conta.valor_recebido)
+                : conta.valor_pago != null
+                ? Number(conta.valor_pago)
+                : undefined,
               data_emissao: conta.data_emissao,
               data_vencimento: conta.data_vencimento,
-              data_pagamento: conta.data_pagamento,
-              situacao: conta.situacao as any,
+              data_pagamento: conta.data_recebimento ?? conta.data_pagamento,
+              situacao: dbStatusReceberToUi(conta.status ?? conta.situacao) as any,
+
               observacoes: conta.observacoes,
               created_at: conta.created_at,
               updated_at: conta.updated_at,
