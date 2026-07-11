@@ -1,5 +1,6 @@
 
 import { supabase as _supabase } from '@/integrations/supabase/client';
+import { uiStatusPagarToDb } from '@/lib/statusMappers';
 const supabase: any = _supabase;
 
 interface PagamentoContaPagar {
@@ -26,7 +27,7 @@ export const registrarPagamento = async (pagamento: PagamentoContaPagar) => {
       )
     `)
     .eq('id', pagamento.conta_pagar_id)
-    .eq('ativo', true)
+    .is('deleted_at', null)
     .single();
 
   if (contaError) {
@@ -38,25 +39,26 @@ export const registrarPagamento = async (pagamento: PagamentoContaPagar) => {
     throw new Error('Conta a pagar não encontrada');
   }
 
-  // Verificar se o valor pago não excede o valor atual da conta
-  if (pagamento.valor_pago > conta.valor_atual) {
-    throw new Error('Valor pago não pode ser maior que o valor atual da conta');
+  const valorOriginal = Number(conta.valor_original) || 0;
+  const jaPago = Number(conta.valor_pago) || 0;
+  const valorRestante = Math.max(valorOriginal - jaPago, 0);
+
+  if (pagamento.valor_pago > valorRestante) {
+    throw new Error('Valor pago não pode ser maior que o valor restante da conta');
   }
 
-  // Calcular novo valor atual
-  const novoValorAtual = conta.valor_atual - pagamento.valor_pago;
-  const novaSituacao = novoValorAtual === 0 ? 'PAGA' : 'ABERTA';
-
-
-
+  const novoValorPago = jaPago + pagamento.valor_pago;
+  const novoRestante = Math.max(valorOriginal - novoValorPago, 0);
+  const novaSituacaoUi = novoRestante === 0 ? 'PAGA' : 'ABERTA';
+  const novoStatusDb = uiStatusPagarToDb(novaSituacaoUi);
 
   // Atualizar a conta principal
   const { error: updateError } = await supabase
     .from('contas_pagar')
     .update({
-      valor_atual: novoValorAtual,
-      situacao: novaSituacao,
-      updated_at: new Date().toISOString()
+      valor_pago: novoValorPago,
+      status: novoStatusDb,
+      data_pagamento: novoRestante === 0 ? pagamento.data_pagamento : null,
     })
     .eq('id', pagamento.conta_pagar_id);
 
@@ -65,27 +67,17 @@ export const registrarPagamento = async (pagamento: PagamentoContaPagar) => {
     throw new Error(`Erro ao atualizar conta: ${updateError.message}`);
   }
 
-  // IMPORTANTE: Comportamento dos Rateios no Pagamento
-  // Os rateios NÃO são alterados durante o pagamento
-  // Eles permanecem como registro histórico da distribuição contábil original
-  // Isso é fundamental para:
-  // 1. Auditoria contábil
-  // 2. Relatórios de análise de custos
-  // 3. Histórico de como os recursos foram alocados
-
-  // Rateios são preservados no pagamento como registro histórico
-  // (auditoria contábil, análise de custos)
-
-
+  // Rateios preservados como registro histórico
 
   return {
     conta_id: pagamento.conta_pagar_id,
     valor_pago: pagamento.valor_pago,
-    valor_restante: novoValorAtual,
-    situacao_final: novaSituacao,
+    valor_restante: novoRestante,
+    situacao_final: novaSituacaoUi,
     rateios_preservados: conta.rateios_contas_pagar?.length || 0
   };
 };
+
 
 export const consultarRateiosOrigiais = async (contaId: string) => {
 
