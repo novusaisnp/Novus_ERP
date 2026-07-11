@@ -24,9 +24,11 @@ function buildPayload(input: EmpresaRepresentada & Record<string, any>) {
 
   const configuracoes = { ...incomingConfig, ...extras };
 
+  const cnpjLimpo = input.cnpj ? String(input.cnpj).replace(/\D/g, '') : '';
+
   return {
     nome: input.nome,
-    cnpj: input.cnpj || null,
+    cnpj: cnpjLimpo || null,
     email: input.email || null,
     telefone: input.telefone || null,
     endereco: input.endereco || null,
