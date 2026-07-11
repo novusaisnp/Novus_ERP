@@ -189,13 +189,47 @@ export function ContaReceberFormModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <ContasReceberForm
-            formData={form}
-            onInputChange={handleChange}
-            useRateio={useRateio}
-            onUseRateioChange={setUseRateio}
-            onRateiosChange={handleRateiosChange}
-          />
+          <Tabs defaultValue="basico" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="basico">Dados da Conta</TabsTrigger>
+              <TabsTrigger value="rateio">Rateio</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="basico" className="space-y-4">
+              <ContasReceberForm
+                formData={form}
+                onInputChange={handleChange}
+                useRateio={useRateio}
+                onUseRateioChange={setUseRateio}
+                onRateiosChange={handleRateiosChange}
+              />
+            </TabsContent>
+
+            <TabsContent value="rateio" className="space-y-4">
+              {useRateio ? (
+                <RateioManager
+                  valorTotal={Number(form.valor_original) || 0}
+                  rateios={rateiosParaManager}
+                  onRateiosChange={handleRateiosManagerChange}
+                  tipo="RECEITA"
+                />
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground mb-4">
+                    Para usar o rateio, marque a opção "Usar rateio entre contas contábeis" na aba "Dados da Conta".
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setUseRateio(true)}
+                    disabled={saving}
+                  >
+                    Ativar Rateio
+                  </Button>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
 
           {erro && (
             <div className="text-sm text-destructive border border-destructive/40 bg-destructive/10 rounded p-2">
