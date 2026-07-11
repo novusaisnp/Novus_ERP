@@ -1011,6 +1011,7 @@ export type Database = {
           numero_documento: string | null
           numero_parcela: number | null
           observacoes: string | null
+          origem_recorrencia_id: string | null
           periodicidade: string | null
           plano_conta_id: string | null
           plano_pagamento_id: string | null
@@ -1040,6 +1041,7 @@ export type Database = {
           numero_documento?: string | null
           numero_parcela?: number | null
           observacoes?: string | null
+          origem_recorrencia_id?: string | null
           periodicidade?: string | null
           plano_conta_id?: string | null
           plano_pagamento_id?: string | null
@@ -1069,6 +1071,7 @@ export type Database = {
           numero_documento?: string | null
           numero_parcela?: number | null
           observacoes?: string | null
+          origem_recorrencia_id?: string | null
           periodicidade?: string | null
           plano_conta_id?: string | null
           plano_pagamento_id?: string | null
@@ -1112,6 +1115,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "contas_pagar_origem_recorrencia_id_fkey"
+            columns: ["origem_recorrencia_id"]
+            isOneToOne: false
+            referencedRelation: "contas_pagar"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "contas_pagar_plano_conta_id_fkey"
             columns: ["plano_conta_id"]
             isOneToOne: false
@@ -1150,6 +1160,7 @@ export type Database = {
           numero_parcela: number | null
           observacoes: string | null
           origem_canal: string | null
+          origem_recorrencia_id: string | null
           origem_sistema: string | null
           periodicidade: string | null
           plano_conta_id: string | null
@@ -1189,6 +1200,7 @@ export type Database = {
           numero_parcela?: number | null
           observacoes?: string | null
           origem_canal?: string | null
+          origem_recorrencia_id?: string | null
           origem_sistema?: string | null
           periodicidade?: string | null
           plano_conta_id?: string | null
@@ -1228,6 +1240,7 @@ export type Database = {
           numero_parcela?: number | null
           observacoes?: string | null
           origem_canal?: string | null
+          origem_recorrencia_id?: string | null
           origem_sistema?: string | null
           periodicidade?: string | null
           plano_conta_id?: string | null
@@ -1272,6 +1285,13 @@ export type Database = {
             columns: ["natureza_id"]
             isOneToOne: false
             referencedRelation: "natureza_caixas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_receber_origem_recorrencia_id_fkey"
+            columns: ["origem_recorrencia_id"]
+            isOneToOne: false
+            referencedRelation: "contas_receber"
             referencedColumns: ["id"]
           },
           {
@@ -4994,7 +5014,19 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      mv_fluxo_competencia: {
+        Row: {
+          ano_mes: string | null
+          centro_custo_id: string | null
+          empresa_representada_id: string | null
+          plano_conta_id: string | null
+          qtd_titulos: number | null
+          tipo: string | null
+          valor_previsto: number | null
+          valor_realizado: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       converter_orcamento_em_venda: { Args: { p_payload: Json }; Returns: Json }
@@ -5024,6 +5056,26 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      materializar_recorrencias: {
+        Args: { p_dias_antecedencia?: number }
+        Returns: Json
+      }
+      periodicidade_meses: {
+        Args: { p_periodicidade: string }
+        Returns: number
+      }
+      refresh_mv_fluxo_competencia: { Args: never; Returns: undefined }
+      relatorio_fluxo_competencia: {
+        Args: { p_data_fim: string; p_data_ini: string; p_empresa_id?: string }
+        Returns: {
+          ano_mes: string
+          despesa_prevista: number
+          despesa_realizada: number
+          receita_prevista: number
+          receita_realizada: number
+          saldo_competencia: number
+        }[]
       }
       resolver_classificacao_receita: {
         Args: { p_item_id: string }
