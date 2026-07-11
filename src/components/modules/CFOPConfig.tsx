@@ -232,6 +232,7 @@ export const CFOPConfig: React.FC = () => {
           </Table>
         </div>
       </CardContent>
+      <CFOPFormModal open={modalOpen} onOpenChange={setModalOpen} cfop={selected} mode={modalMode} />
     </Card>
   );
 };
