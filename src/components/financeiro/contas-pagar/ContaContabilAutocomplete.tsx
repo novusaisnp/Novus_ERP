@@ -124,6 +124,7 @@ export const ContaContabilAutocomplete: React.FC<ContaContabilAutocompleteProps>
               id: conta.id,
               codigo: conta.codigo,
               nome: conta.nome,
+              tipo: conta.tipo,
             });
                     }}
                     className="cursor-pointer"
