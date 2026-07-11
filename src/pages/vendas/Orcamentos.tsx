@@ -43,6 +43,8 @@ import type {
 import { calcItemTotal, calcTotal } from '@/services/orcamentosService';
 import { useClientes } from '@/hooks/useClientes';
 import { useEmpresasRepresentadas } from '@/hooks/useEmpresasRepresentadas';
+import { useCatalogoProdutos } from '@/hooks/useCatalogoOrcamento';
+import { CatalogoItemPicker } from '@/components/vendas/CatalogoItemPicker';
 import { toast } from 'sonner';
 
 const STATUS_OPTIONS: OrcamentoStatus[] = [
