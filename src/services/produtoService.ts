@@ -44,7 +44,9 @@ export const produtoService = {
         descricao: produto.descricao || null,
         codigo_barras: produto.codigo_barras || null,
         categoria: produto.categoria || null,
+        categoria_id: produto.categoria_id || null,
         unidade_medida: produto.unidade_medida || 'UN',
+
         peso: produto.peso || null,
         altura: produto.altura || null,
         largura: produto.largura || null,
@@ -86,6 +88,8 @@ export const produtoService = {
         descricao: produto.descricao || null,
         codigo_barras: produto.codigo_barras || null,
         categoria: produto.categoria || null,
+        categoria_id: produto.categoria_id || null,
+
         unidade_medida: produto.unidade_medida || 'UN',
         peso: produto.peso || null,
         altura: produto.altura || null,

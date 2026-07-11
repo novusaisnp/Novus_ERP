@@ -5,6 +5,8 @@ export interface Produto {
   descricao?: string;
   codigo_barras?: string;
   categoria?: string;
+  categoria_id?: string | null;
+
   unidade_medida?: string;
   peso?: number;
   altura?: number;
@@ -67,6 +69,8 @@ export interface SupabaseProduto {
   descricao?: string | null;
   codigo_barras?: string | null;
   categoria?: string | null;
+  categoria_id?: string | null;
+
   unidade_medida?: string | null;
   peso?: number | null;
   altura?: number | null;
