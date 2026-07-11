@@ -699,6 +699,7 @@ const Orcamentos: React.FC = () => {
                       cidade: e.cidade,
                       estado: e.estado,
                       cep: e.cep,
+                      logoUrl: logoOf(viewOrc.empresaRepresentadaId),
                     }
                   : null;
               })()
