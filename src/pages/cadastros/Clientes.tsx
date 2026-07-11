@@ -17,16 +17,23 @@ const Clientes: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCliente, setEditingCliente] = useState<Cliente | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const handleEdit = (cliente: Cliente) => {
     setEditingCliente(cliente);
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir este cliente?')) {
-      await deleteCliente(id);
-    }
+  const requestDelete = (id: string) => {
+    if (!id) return;
+    setConfirmDeleteId(id);
+  };
+
+  const confirmDelete = async () => {
+    const id = confirmDeleteId;
+    if (!id) return;
+    setConfirmDeleteId(null);
+    await deleteCliente(id);
   };
 
   const handleCloseDialog = () => {
