@@ -1,5 +1,6 @@
 import { supabase as _supabase } from '@/integrations/supabase/client';
 const supabase: any = _supabase;
+import { BankingError } from '@/lib/bankingErrors';
 import {
   MovimentacaoBancaria,
   MovimentacaoBancariaInput,
@@ -12,6 +13,19 @@ import {
   DocumentoMovimentacao,
   TipoMovimentacao,
 } from '@/types/movimentacoesBancarias';
+
+/**
+ * [LOTE 3D] Estratégia futura de atomicidade de saldo (NÃO implementada neste lote):
+ *   - Envolver INSERT em `movimentacoes_bancarias` + recálculo de `saldo_atual`
+ *     em uma RPC PostgreSQL única, com `SELECT ... FOR UPDATE` na linha de
+ *     `contas_bancarias` correspondente para evitar race conditions em
+ *     concorrência (dois clientes lançando saída simultânea na mesma conta).
+ *   - Reutilizar o padrão já adotado em `transferencia_bancaria_atomica`.
+ *   - Alternativa intermediária: `pg_advisory_xact_lock(hashtext(conta_id))`
+ *     dentro de uma RPC sem alteração de schema.
+ *   - Ação: abrir lote separado com migration dedicada; guards atuais em JS
+ *     são best-effort e não substituem lock transacional.
+ */
 
 // [LOTE 3B] Hardening no service layer (sem migration).
 const TIPOS_SAIDA: TipoMovimentacao[] = ['SAQUE', 'TRANSFERENCIA_SAIDA', 'AJUSTE_NEGATIVO'];
@@ -32,13 +46,15 @@ const checarSaldoParaSaida = async (contaId: string, valor: number): Promise<voi
     throw new Error(`Erro ao validar conta: ${error.message}`);
   }
   if (conta?.status && conta.status !== 'ATIVA') {
-    throw new Error('CONTA_INATIVA: Conta bancária não está ativa');
+    throw new BankingError('CONTA_INATIVA', 'Conta bancária não está ativa', { contaId });
   }
   const permitirNegativo = conta?.configuracoes?.permitir_saldo_negativo === true;
   const saldo = Number(conta?.saldo_atual ?? 0);
   if (!permitirNegativo && saldo < valor) {
-    throw new Error(
-      `SALDO_INSUFICIENTE: Saldo (${saldo.toFixed(2)}) insuficiente para operação de ${valor.toFixed(2)}`
+    throw new BankingError(
+      'SALDO_INSUFICIENTE',
+      `Saldo (${saldo.toFixed(2)}) insuficiente para operação de ${valor.toFixed(2)}`,
+      { contaId, saldo, valor }
     );
   }
 };
@@ -262,27 +278,35 @@ export const realizarTransferenciaBancaria = async (
   // [LOTE 3B] Guards pré-RPC
   validarValorPositivo(transferencia.valor);
   if (transferencia.conta_origem_id === transferencia.conta_destino_id) {
-    throw new Error('TRANSFERENCIA_INVALIDA: Conta origem e destino não podem ser iguais');
+    throw new BankingError(
+      'TRANSFERENCIA_INVALIDA',
+      'Conta origem e destino não podem ser iguais',
+      { origem: transferencia.conta_origem_id, destino: transferencia.conta_destino_id }
+    );
   }
   const { data: contas, error: contasErr } = await supabase
     .from('contas_bancarias')
     .select('id, status, saldo_atual, configuracoes')
     .in('id', [transferencia.conta_origem_id, transferencia.conta_destino_id]);
   if (contasErr) {
-    throw new Error(`TRANSFERENCIA_INVALIDA: ${contasErr.message}`);
+    throw new BankingError('TRANSFERENCIA_INVALIDA', contasErr.message);
   }
   if (!contas || contas.length !== 2) {
-    throw new Error('TRANSFERENCIA_INVALIDA: Contas de origem/destino não localizadas');
+    throw new BankingError('TRANSFERENCIA_INVALIDA', 'Contas de origem/destino não localizadas');
   }
   for (const c of contas) {
     if (c.status && c.status !== 'ATIVA') {
-      throw new Error('TRANSFERENCIA_INVALIDA: Ambas as contas devem estar ativas');
+      throw new BankingError('TRANSFERENCIA_INVALIDA', 'Ambas as contas devem estar ativas', { contaId: c.id });
     }
   }
   const origem = contas.find((c: any) => c.id === transferencia.conta_origem_id);
   const permitirNegativo = origem?.configuracoes?.permitir_saldo_negativo === true;
   if (!permitirNegativo && Number(origem?.saldo_atual ?? 0) < transferencia.valor) {
-    throw new Error('SALDO_INSUFICIENTE: Saldo insuficiente para transferência');
+    throw new BankingError('SALDO_INSUFICIENTE', 'Saldo insuficiente para transferência', {
+      contaId: transferencia.conta_origem_id,
+      saldo: Number(origem?.saldo_atual ?? 0),
+      valor: transferencia.valor,
+    });
   }
 
   // Obter empresa do usuário atual
@@ -330,7 +354,9 @@ export const estornarMovimentacao = async (
     throw new Error('ESTORNO_INVALIDO: Movimentação não encontrada');
   }
   if (existing.estornado) {
-    throw new Error('ESTORNO_DUPLICADO: Movimentação já estornada');
+    throw new BankingError('ESTORNO_DUPLICADO', 'Movimentação já estornada', {
+      movimentacaoId: estorno.movimentacao_id,
+    });
   }
 
   const userId = (await supabase.auth.getUser()).data.user?.id;
