@@ -1,5 +1,7 @@
 
 import type { ContaPagar, RateioContaPagar, SupabaseContaPagar } from '@/types/contasPagar';
+import { dbStatusPagarToUi, uiStatusPagarToDb } from '@/lib/statusMappers';
+
 
 export const transformFromSupabase = (item: any): ContaPagar => {
   
