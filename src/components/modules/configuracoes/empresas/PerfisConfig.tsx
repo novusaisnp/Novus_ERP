@@ -78,10 +78,6 @@ const PerfisConfig: React.FC<PerfisConfigProps> = ({ perfis, onAdd, onEdit, onDe
     }
     
     console.log('[Perfis][Excluir] Confirmando exclusão do perfil:', perfil.nome);
-    
-    if (window.confirm) {
-      // placeholder para satisfazer lint; a confirmação real ocorre via ConfirmDialog abaixo
-    }
     setConfirmingDelete(perfil);
   };
 
