@@ -317,6 +317,22 @@ export const estornarMovimentacao = async (
   estorno: EstornoMovimentacao
 ): Promise<MovimentacaoBancaria> => {
 
+  // [LOTE 3B] Idempotência: bloquear estorno duplicado explicitamente
+  const { data: existing, error: exErr } = await supabase
+    .from('movimentacoes_bancarias')
+    .select('id, estornado, ativo')
+    .eq('id', estorno.movimentacao_id)
+    .maybeSingle();
+  if (exErr) {
+    throw new Error(`Erro ao localizar movimentação: ${exErr.message}`);
+  }
+  if (!existing) {
+    throw new Error('ESTORNO_INVALIDO: Movimentação não encontrada');
+  }
+  if (existing.estornado) {
+    throw new Error('ESTORNO_DUPLICADO: Movimentação já estornada');
+  }
+
   const userId = (await supabase.auth.getUser()).data.user?.id;
 
   const { data, error } = await supabase
@@ -329,7 +345,7 @@ export const estornarMovimentacao = async (
       observacoes: estorno.observacoes,
     })
     .eq('id', estorno.movimentacao_id)
-    .eq('estornado', false) // Só estorna se não estiver já estornado
+    .eq('estornado', false) // Guard-race adicional
     .select()
     .single();
 
