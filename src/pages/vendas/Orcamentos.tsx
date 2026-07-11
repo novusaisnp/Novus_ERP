@@ -123,6 +123,14 @@ const Orcamentos: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | OrcamentoStatus>('all');
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyForm());
+  const produtosCatalogo = useCatalogoProdutos(form.empresaRepresentadaId || undefined);
+  const estoquePorProduto = useMemo(() => {
+    const m = new Map<string, { estoque: number; controla: boolean; nome: string }>();
+    (produtosCatalogo.data ?? []).forEach((p) =>
+      m.set(p.id, { estoque: p.estoque, controla: p.controlaEstoque, nome: p.nome }),
+    );
+    return m;
+  }, [produtosCatalogo.data]);
 
   const filtered = useMemo(() => {
     return (orcamentos ?? []).filter((o) => {
