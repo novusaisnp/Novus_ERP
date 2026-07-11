@@ -130,7 +130,8 @@ export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
     mutationFn: conciliarMovimentacao,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: qk.movimentacoesBancarias.all });
-      queryClient.invalidateQueries({ queryKey: qk.movimentacoesBancarias.stats() });
+      queryClient.invalidateQueries({ queryKey: ['movimentacoes-bancarias-estatisticas'] });
+
 
       toast({
         title: 'Sucesso',
