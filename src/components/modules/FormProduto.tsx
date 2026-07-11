@@ -225,14 +225,16 @@ export const FormProduto: React.FC<FormProdutoProps> = ({
                         />
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="categoria">Categoria</Label>
-                      <Input
-                        id="categoria"
-                        value={formData.categoria}
-                        onChange={(e) => handleInputChange('categoria', e.target.value)}
-                      />
-                    </div>
+                    <CategoriaSelect
+                      categorias={categorias as any[]}
+                      categoriaId={formData.categoria_id ?? null}
+                      categoriaTexto={formData.categoria}
+                      onChange={(id, nome) => {
+                        handleInputChange('categoria_id', id);
+                        handleInputChange('categoria', nome);
+                      }}
+                    />
+
                     <div className="space-y-2">
                       <Label htmlFor="descricao">Descrição</Label>
                       <Textarea
