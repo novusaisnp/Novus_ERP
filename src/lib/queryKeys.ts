@@ -31,9 +31,9 @@ export const qk = {
   },
   movimentacoesBancarias: {
     all: ['movimentacoes-bancarias'] as const,
-    list: (filtros?: unknown) => ['movimentacoes-bancarias', filtros ?? null] as const,
-    stats: (filtros?: unknown) => ['movimentacoes-bancarias-estatisticas', filtros ?? null] as const,
-    detail: (id: string) => ['movimentacao-bancaria', id] as const,
+    list: (filtros?: unknown) => ['movimentacoes-bancarias', 'list', filtros ?? null] as const,
+    stats: (filtros?: unknown) => ['movimentacoes-bancarias', 'stats', filtros ?? null] as const,
+    detail: (id: string) => ['movimentacoes-bancarias', 'detail', id] as const,
   },
 } as const;
 

@@ -22,25 +22,32 @@ import {
   MovimentacaoBancaria,
 } from '@/types/movimentacoesBancarias';
 import { qk } from '@/lib/queryKeys';
+import { mapBankingError } from '@/lib/bankingErrors';
 
-// [LOTE 3B.1] Invalidação refinada: prioriza detail(id) das contas afetadas.
-// Só invalida a chave raiz `contasBancarias.all` quando NÃO temos contaId
-// conhecido — evita refetch amplo em cada mutação bancária.
+// [LOTE 3C] Invalidação refinada:
+// - Com contaId conhecido: apenas detail(id) + stats() (+ raiz movimentacoes)
+// - Sem contaId: fallback para contasBancarias.all
+// stats() agora descende de movimentacoesBancarias.all, então invalidar
+// a raiz cobre stats por prefix match.
 const invalidarMovBancarias = (queryClient: QueryClient, contaIds: Array<string | undefined | null>) => {
   queryClient.invalidateQueries({ queryKey: qk.movimentacoesBancarias.all });
-  // Prefixo cobre todas as variações de filtros de stats — invalidateQueries
-  // faz match por prefixo, então usamos a raiz sem filtros aqui.
-  queryClient.invalidateQueries({ queryKey: ['movimentacoes-bancarias-estatisticas'] });
 
   const unique = Array.from(new Set(contaIds.filter((v): v is string => !!v)));
-  unique.forEach((id) => {
-    queryClient.invalidateQueries({ queryKey: qk.contasBancarias.detail(id) });
-  });
-  queryClient.invalidateQueries({ queryKey: qk.contasBancarias.stats() });
-  if (unique.length === 0) {
+  if (unique.length > 0) {
+    unique.forEach((id) => {
+      queryClient.invalidateQueries({ queryKey: qk.contasBancarias.detail(id) });
+    });
+    queryClient.invalidateQueries({ queryKey: qk.contasBancarias.stats() });
+  } else {
     // Fallback: sem id conhecido, invalida a raiz para manter listas coerentes.
     queryClient.invalidateQueries({ queryKey: qk.contasBancarias.all });
   }
+};
+
+const notifyBankingError = (err: unknown, fallbackTitle: string, logTag: string) => {
+  console.error(`[MovimentacoesBancarias] ${logTag}:`, err);
+  const { title, description } = mapBankingError(err, fallbackTitle);
+  toast({ title, description, variant: 'destructive' });
 };
 
 
@@ -55,13 +62,13 @@ export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['movimentacoes-bancarias', filtros],
+    queryKey: qk.movimentacoesBancarias.list(filtros),
     queryFn: () => listarMovimentacoesBancarias(filtros),
   });
 
   // Query para estatísticas
   const { data: estatisticas } = useQuery({
-    queryKey: ['movimentacoes-bancarias-estatisticas', filtros],
+    queryKey: qk.movimentacoesBancarias.stats(filtros),
     queryFn: () => obterEstatisticasMovimentacoes(filtros),
   });
 
@@ -75,13 +82,8 @@ export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
         description: 'Movimentação criada com sucesso!',
       });
     },
-    onError: (error: any) => {
-      console.error('[MovimentacoesBancarias] Erro ao criar movimentação:', error);
-      toast({
-        title: 'Erro',
-        description: error.message || 'Erro ao criar movimentação',
-        variant: 'destructive',
-      });
+    onError: (error: unknown) => {
+      notifyBankingError(error, 'Erro ao criar movimentação', 'Erro ao criar movimentação');
     },
   });
 
@@ -95,13 +97,8 @@ export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
         description: 'Transferência realizada com sucesso!',
       });
     },
-    onError: (error: any) => {
-      console.error('[MovimentacoesBancarias] Erro ao realizar transferência:', error);
-      toast({
-        title: 'Erro',
-        description: error.message || 'Erro ao realizar transferência',
-        variant: 'destructive',
-      });
+    onError: (error: unknown) => {
+      notifyBankingError(error, 'Erro ao realizar transferência', 'Erro ao realizar transferência');
     },
   });
 
@@ -115,13 +112,8 @@ export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
         description: 'Movimentação estornada com sucesso!',
       });
     },
-    onError: (error: any) => {
-      console.error('[MovimentacoesBancarias] Erro ao estornar movimentação:', error);
-      toast({
-        title: 'Erro',
-        description: error.message || 'Erro ao estornar movimentação',
-        variant: 'destructive',
-      });
+    onError: (error: unknown) => {
+      notifyBankingError(error, 'Erro ao estornar movimentação', 'Erro ao estornar movimentação');
     },
   });
 
@@ -129,22 +121,15 @@ export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
   const conciliacaoMutation = useMutation({
     mutationFn: conciliarMovimentacao,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: qk.movimentacoesBancarias.all });
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes-bancarias-estatisticas'] });
-
-
+      // Sem contaId — invalida raiz de movimentações (cobre stats por prefix match)
+      invalidarMovBancarias(queryClient, []);
       toast({
         title: 'Sucesso',
         description: 'Movimentação conciliada com sucesso!',
       });
     },
-    onError: (error: any) => {
-      console.error('[MovimentacoesBancarias] Erro ao conciliar movimentação:', error);
-      toast({
-        title: 'Erro',
-        description: error.message || 'Erro ao conciliar movimentação',
-        variant: 'destructive',
-      });
+    onError: (error: unknown) => {
+      notifyBankingError(error, 'Erro ao conciliar movimentação', 'Erro ao conciliar movimentação');
     },
   });
 
@@ -159,13 +144,8 @@ export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
         description: 'Movimentação atualizada com sucesso!',
       });
     },
-    onError: (error: any) => {
-      console.error('[MovimentacoesBancarias] Erro ao atualizar movimentação:', error);
-      toast({
-        title: 'Erro',
-        description: error.message || 'Erro ao atualizar movimentação',
-        variant: 'destructive',
-      });
+    onError: (error: unknown) => {
+      notifyBankingError(error, 'Erro ao atualizar movimentação', 'Erro ao atualizar movimentação');
     },
   });
 
@@ -180,13 +160,8 @@ export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
         description: 'Movimentação excluída com sucesso!',
       });
     },
-    onError: (error: any) => {
-      console.error('[MovimentacoesBancarias] Erro ao excluir movimentação:', error);
-      toast({
-        title: 'Erro',
-        description: error.message || 'Erro ao excluir movimentação',
-        variant: 'destructive',
-      });
+    onError: (error: unknown) => {
+      notifyBankingError(error, 'Erro ao excluir movimentação', 'Erro ao excluir movimentação');
     },
   });
 
@@ -214,7 +189,7 @@ export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
 // Hook para obter uma movimentação específica
 export const useMovimentacaoBancaria = (id: string) => {
   return useQuery({
-    queryKey: ['movimentacao-bancaria', id],
+    queryKey: qk.movimentacoesBancarias.detail(id),
     queryFn: () => obterMovimentacaoBancaria(id),
     enabled: !!id,
   });
