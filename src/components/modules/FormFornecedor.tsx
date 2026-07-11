@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -325,12 +326,10 @@ export const FormFornecedor: React.FC<FormFornecedorProps> = ({
 
                 <div className="space-y-2">
                   <Label>Capital Social</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.capital_social || ''}
-                    onChange={(e) => handleFieldChange('capital_social', parseFloat(e.target.value) || undefined)}
-                    placeholder="0,00"
+                  <CurrencyInput
+                    value={formData.capital_social ?? 0}
+                    onValueChange={(v) => handleFieldChange('capital_social', v || undefined)}
+                    placeholder="R$ 0,00"
                   />
                 </div>
               </div>

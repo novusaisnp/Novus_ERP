@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -145,13 +146,11 @@ export const CreditoPagamentoSection: React.FC<Props> = ({
 
           <div className="space-y-2">
             <Label>Limite de crediário (R$)</Label>
-            <Input
-              type="number"
-              min={0}
-              step="0.01"
-              value={limite}
-              onChange={(e) => setLimite(e.target.value)}
+            <CurrencyInput
+              value={Number(limite) || 0}
+              onValueChange={(v) => setLimite(String(v))}
               disabled={!canEdit || !permiteCrediario}
+              placeholder="R$ 0,00"
             />
             <p className="text-xs text-muted-foreground">
               Utilizado: R$ {Number(politica?.limite_utilizado ?? 0).toFixed(2)} · Disponível:{' '}

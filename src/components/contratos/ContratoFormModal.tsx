@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
@@ -91,10 +92,10 @@ export const ContratoFormModal: React.FC<Props> = ({ open, onOpenChange, contrat
             </div>
             <div>
               <Label>Valor Mensal</Label>
-              <Input
-                type="number" step="0.01"
-                value={form.valor_mensal ?? ''}
-                onChange={(e) => setField('valor_mensal', parseFloat(e.target.value) || 0)}
+              <CurrencyInput
+                value={form.valor_mensal ?? 0}
+                onValueChange={(v) => setField('valor_mensal', v)}
+                placeholder="R$ 0,00"
               />
             </div>
             <div>

@@ -3,6 +3,7 @@ import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -129,7 +130,11 @@ export const VendaPagamentoSection: React.FC<Props> = ({
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Valor (R$)</Label>
-              <Input type="number" step="0.01" min={0} value={valorBruto} onChange={(e) => setValorBruto(e.target.value)} />
+              <CurrencyInput
+                value={Number(valorBruto) || 0}
+                onValueChange={(v) => setValorBruto(v ? String(v) : '')}
+                placeholder="R$ 0,00"
+              />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Parcelas</Label>

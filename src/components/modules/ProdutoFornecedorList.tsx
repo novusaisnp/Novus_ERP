@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -230,11 +231,10 @@ export const ProdutoFornecedorList: React.FC<ProdutoFornecedorListProps> = ({
               </div>
               <div className="space-y-2">
                 <Label>Preço de Compra</Label>
-                <Input
-                  type="number"
-                  step="0.01"
+                <CurrencyInput
                   value={formData.preco_compra}
-                  onChange={(e) => handleInputChange('preco_compra', parseFloat(e.target.value) || 0)}
+                  onValueChange={(v) => handleInputChange('preco_compra', v)}
+                  placeholder="R$ 0,00"
                 />
               </div>
             </div>

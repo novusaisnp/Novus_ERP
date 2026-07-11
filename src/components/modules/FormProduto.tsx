@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -326,24 +327,22 @@ export const FormProduto: React.FC<FormProdutoProps> = ({
                     <div className="grid grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="preco_custo">Preço de Custo</Label>
-                        <Input
+                        <CurrencyInput
                           id="preco_custo"
-                          type="number"
-                          step="0.01"
-                          value={formData.preco_custo ?? ''}
-                          onChange={(e) => handleInputChange('preco_custo', e.target.value ? parseFloat(e.target.value) : undefined)}
+                          value={formData.preco_custo ?? 0}
+                          onValueChange={(v) => handleInputChange('preco_custo', v || undefined)}
                           onBlur={calcularMargem}
+                          placeholder="R$ 0,00"
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="preco_venda">Preço de Venda *</Label>
-                        <Input
+                        <CurrencyInput
                           id="preco_venda"
-                          type="number"
-                          step="0.01"
                           value={formData.preco_venda}
-                          onChange={(e) => handleInputChange('preco_venda', parseFloat(e.target.value) || 0)}
+                          onValueChange={(v) => handleInputChange('preco_venda', v)}
                           onBlur={calcularMargem}
+                          placeholder="R$ 0,00"
                           required
                         />
                       </div>

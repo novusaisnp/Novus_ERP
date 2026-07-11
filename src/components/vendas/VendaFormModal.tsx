@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -176,20 +177,16 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
                     </div>
                     <div className="col-span-4 md:col-span-2">
                       <Label className="text-xs">Preço Unit.</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
+                      <CurrencyInput
                         value={it.preco_unitario}
-                        onChange={(e) => updateItem(idx, { preco_unitario: parseFloat(e.target.value) || 0 })}
+                        onValueChange={(v) => updateItem(idx, { preco_unitario: v })}
                       />
                     </div>
                     <div className="col-span-4 md:col-span-2">
                       <Label className="text-xs">Desc.</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
+                      <CurrencyInput
                         value={it.desconto_item || 0}
-                        onChange={(e) => updateItem(idx, { desconto_item: parseFloat(e.target.value) || 0 })}
+                        onValueChange={(v) => updateItem(idx, { desconto_item: v })}
                       />
                     </div>
                     <div className="col-span-10 md:col-span-1 text-sm">
@@ -219,26 +216,23 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
             </div>
             <div>
               <Label>Desconto</Label>
-              <Input
-                type="number" step="0.01"
+              <CurrencyInput
                 value={form.desconto || 0}
-                onChange={(e) => setField('desconto', parseFloat(e.target.value) || 0)}
+                onValueChange={(v) => setField('desconto', v)}
               />
             </div>
             <div>
               <Label>Acréscimo</Label>
-              <Input
-                type="number" step="0.01"
+              <CurrencyInput
                 value={form.acrescimo || 0}
-                onChange={(e) => setField('acrescimo', parseFloat(e.target.value) || 0)}
+                onValueChange={(v) => setField('acrescimo', v)}
               />
             </div>
             <div>
               <Label>Frete</Label>
-              <Input
-                type="number" step="0.01"
+              <CurrencyInput
                 value={form.valor_frete || 0}
-                onChange={(e) => setField('valor_frete', parseFloat(e.target.value) || 0)}
+                onValueChange={(v) => setField('valor_frete', v)}
               />
             </div>
             <div className="col-span-2 md:col-span-4">

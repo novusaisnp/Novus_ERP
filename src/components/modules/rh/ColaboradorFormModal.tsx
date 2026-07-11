@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -381,13 +382,11 @@ export const ColaboradorFormModal: React.FC<ColaboradorFormModalProps> = ({
                 </div>
                 <div>
                   <Label htmlFor="salarioBase">Salário Base</Label>
-                  <Input
+                  <CurrencyInput
                     id="salarioBase"
-                    type="number"
-                    step="0.01"
-                    value={formData.salarioBase || ''}
-                    onChange={(e) => handleInputChange('salarioBase', parseFloat(e.target.value) || 0)}
-                    placeholder="0,00"
+                    value={formData.salarioBase ?? 0}
+                    onValueChange={(v) => handleInputChange('salarioBase', v)}
+                    placeholder="R$ 0,00"
                   />
                 </div>
                 <div>

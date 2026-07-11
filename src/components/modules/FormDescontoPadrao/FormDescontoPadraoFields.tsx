@@ -2,6 +2,7 @@
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
@@ -108,11 +109,13 @@ export const FormDescontoPadraoFields: React.FC<FormDescontoPadraoFieldsProps> =
             <FormItem>
               <FormLabel>Valor Fixo (R$) *</FormLabel>
               <FormControl>
-                <Input
-                  type="number"
-                  step="0.01"
-                  placeholder="0,00"
-                  {...field}
+                <CurrencyInput
+                  placeholder="R$ 0,00"
+                  value={Number(field.value) || 0}
+                  onValueChange={(v) => field.onChange(v)}
+                  onBlur={field.onBlur}
+                  name={field.name}
+                  ref={field.ref}
                   disabled={loading}
                 />
               </FormControl>
