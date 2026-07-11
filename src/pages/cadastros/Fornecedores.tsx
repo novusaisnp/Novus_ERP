@@ -10,6 +10,7 @@ import { Building2, Plus, Search, Edit, Trash2, Loader2 } from 'lucide-react';
 import { Fornecedor } from '@/types/fornecedor';
 import { useFornecedores } from '@/hooks/useFornecedores';
 import { FormFornecedor } from '@/components/modules/FormFornecedor';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 const Fornecedores: React.FC = () => {
   console.log('[Fornecedores] Componente inicializado');
