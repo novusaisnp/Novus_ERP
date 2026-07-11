@@ -2254,6 +2254,51 @@ export type Database = {
           },
         ]
       }
+      modalidades_pagamento: {
+        Row: {
+          ativo: boolean
+          codigo: string
+          created_at: string
+          deleted_at: string | null
+          descricao: string | null
+          exige_adquirente: boolean
+          id: string
+          liquidacao_imediata: boolean
+          nome: string
+          ordem: number
+          permite_parcelamento: boolean
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          codigo: string
+          created_at?: string
+          deleted_at?: string | null
+          descricao?: string | null
+          exige_adquirente?: boolean
+          id?: string
+          liquidacao_imediata?: boolean
+          nome: string
+          ordem?: number
+          permite_parcelamento?: boolean
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          codigo?: string
+          created_at?: string
+          deleted_at?: string | null
+          descricao?: string | null
+          exige_adquirente?: boolean
+          id?: string
+          liquidacao_imediata?: boolean
+          nome?: string
+          ordem?: number
+          permite_parcelamento?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       movimentacoes_bancarias: {
         Row: {
           beneficiario_pagador: string | null
@@ -2545,6 +2590,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      naturezas_pagamento: {
+        Row: {
+          ativo: boolean
+          codigo: string
+          created_at: string
+          deleted_at: string | null
+          descricao: string | null
+          id: string
+          nome: string
+          ordem: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          codigo: string
+          created_at?: string
+          deleted_at?: string | null
+          descricao?: string | null
+          id?: string
+          nome: string
+          ordem?: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          codigo?: string
+          created_at?: string
+          deleted_at?: string | null
+          descricao?: string | null
+          id?: string
+          nome?: string
+          ordem?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       ncm: {
         Row: {
@@ -2857,35 +2938,74 @@ export type Database = {
         Row: {
           ativo: boolean
           created_at: string
+          deleted_at: string | null
+          desconto_avista_perc: number
           descricao: string | null
+          dias_primeira_parcela: number
           empresa_representada_id: string
           id: string
           intervalo_dias: number
+          juros_am: number
+          modalidade_default_id: string | null
+          multa_perc: number
+          natureza_id: string | null
           nome: string
           numero_parcelas: number
+          percentual_entrada: number
+          qtd_parcelas: number
+          tolerancia_arredondamento: number
           updated_at: string
+          versao: number
+          vigencia_fim: string | null
+          vigencia_inicio: string
         }
         Insert: {
           ativo?: boolean
           created_at?: string
+          deleted_at?: string | null
+          desconto_avista_perc?: number
           descricao?: string | null
+          dias_primeira_parcela?: number
           empresa_representada_id: string
           id?: string
           intervalo_dias?: number
+          juros_am?: number
+          modalidade_default_id?: string | null
+          multa_perc?: number
+          natureza_id?: string | null
           nome: string
           numero_parcelas?: number
+          percentual_entrada?: number
+          qtd_parcelas?: number
+          tolerancia_arredondamento?: number
           updated_at?: string
+          versao?: number
+          vigencia_fim?: string | null
+          vigencia_inicio?: string
         }
         Update: {
           ativo?: boolean
           created_at?: string
+          deleted_at?: string | null
+          desconto_avista_perc?: number
           descricao?: string | null
+          dias_primeira_parcela?: number
           empresa_representada_id?: string
           id?: string
           intervalo_dias?: number
+          juros_am?: number
+          modalidade_default_id?: string | null
+          multa_perc?: number
+          natureza_id?: string | null
           nome?: string
           numero_parcelas?: number
+          percentual_entrada?: number
+          qtd_parcelas?: number
+          tolerancia_arredondamento?: number
           updated_at?: string
+          versao?: number
+          vigencia_fim?: string | null
+          vigencia_inicio?: string
         }
         Relationships: [
           {
@@ -2893,6 +3013,20 @@ export type Database = {
             columns: ["empresa_representada_id"]
             isOneToOne: false
             referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planos_pagamento_modalidade_default_id_fkey"
+            columns: ["modalidade_default_id"]
+            isOneToOne: false
+            referencedRelation: "modalidades_pagamento"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planos_pagamento_natureza_id_fkey"
+            columns: ["natureza_id"]
+            isOneToOne: false
+            referencedRelation: "naturezas_pagamento"
             referencedColumns: ["id"]
           },
         ]
