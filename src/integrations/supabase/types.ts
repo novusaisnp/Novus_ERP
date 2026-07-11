@@ -3694,6 +3694,74 @@ export type Database = {
           },
         ]
       }
+      rateios_contas_receber: {
+        Row: {
+          centro_custo_id: string | null
+          conta_receber_id: string
+          created_at: string
+          empresa_representada_id: string
+          id: string
+          observacoes: string | null
+          percentual: number | null
+          plano_conta_id: string | null
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          centro_custo_id?: string | null
+          conta_receber_id: string
+          created_at?: string
+          empresa_representada_id: string
+          id?: string
+          observacoes?: string | null
+          percentual?: number | null
+          plano_conta_id?: string | null
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          centro_custo_id?: string | null
+          conta_receber_id?: string
+          created_at?: string
+          empresa_representada_id?: string
+          id?: string
+          observacoes?: string | null
+          percentual?: number | null
+          plano_conta_id?: string | null
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rateios_contas_receber_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rateios_contas_receber_conta_receber_id_fkey"
+            columns: ["conta_receber_id"]
+            isOneToOne: false
+            referencedRelation: "contas_receber"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rateios_contas_receber_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rateios_contas_receber_plano_conta_id_fkey"
+            columns: ["plano_conta_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       registros_ponto: {
         Row: {
           colaborador_id: string

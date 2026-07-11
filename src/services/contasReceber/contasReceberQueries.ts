@@ -44,15 +44,25 @@ const aplicarFiltrosComuns = (query: any, filtros: ContaReceberFilters) => {
   return query;
 };
 
+const selectComRelacionamentos = `
+  *,
+  cliente:clientes(id, nome, cpf, cnpj),
+  rateios:rateios_contas_receber (
+    id,
+    plano_conta_id,
+    centro_custo_id,
+    valor,
+    percentual,
+    observacoes,
+    plano_conta:plano_contas (id, codigo, nome),
+    centro_custo:centros_custo (id, nome, codigo)
+  )
+`;
+
 export const buildContasReceberQuery = (filtros: ContaReceberFilters = {}) => {
   let query = supabase
     .from('contas_receber')
-    .select(
-      `
-      *,
-      cliente:clientes(id, nome, cpf, cnpj)
-    `,
-    )
+    .select(selectComRelacionamentos)
     .order('data_vencimento', { ascending: false });
 
   return aplicarFiltrosComuns(query, filtros);
@@ -61,12 +71,7 @@ export const buildContasReceberQuery = (filtros: ContaReceberFilters = {}) => {
 export const getContaReceberByIdQuery = (id: string) => {
   return supabase
     .from('contas_receber')
-    .select(
-      `
-      *,
-      cliente:clientes(id, nome, cpf, cnpj)
-    `,
-    )
+    .select(selectComRelacionamentos)
     .eq('id', id)
     .is('deleted_at', null)
     .single();

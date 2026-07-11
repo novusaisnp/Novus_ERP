@@ -75,6 +75,19 @@ export const transformFromSupabase = (data: any): ContaReceber => {
           cpf_cnpj: data.cliente.cnpj ?? data.cliente.cpf ?? null,
         }
       : null,
+
+    rateios: Array.isArray(data.rateios)
+      ? data.rateios.map((r: any) => ({
+          id: r.id,
+          plano_conta_id: r.plano_conta_id ?? null,
+          centro_custo_id: r.centro_custo_id ?? null,
+          valor: Number(r.valor) || 0,
+          percentual: Number(r.percentual) || 0,
+          observacoes: r.observacoes ?? null,
+          plano_conta: r.plano_conta ?? undefined,
+          centro_custo: r.centro_custo ?? undefined,
+        }))
+      : [],
   };
 };
 
@@ -104,6 +117,8 @@ export const transformToSupabase = (input: ContaReceberInput & Record<string, an
     plano_conta_id: input.plano_conta_id || null,
     centro_custo_id: input.centro_custo_id || null,
     natureza_id: input.natureza_id || null,
+    numero_parcela: input.numero_parcela ?? null,
+    total_parcelas: input.total_parcelas ?? null,
     observacoes: input.observacoes || null,
   };
 };
