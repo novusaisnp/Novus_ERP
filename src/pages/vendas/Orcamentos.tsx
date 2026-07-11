@@ -676,6 +676,61 @@ const Orcamentos: React.FC = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      <OrcamentoViewDialog
+        orcamento={viewOrc}
+        empresa={
+          viewOrc
+            ? (() => {
+                const e = empresaById.get(viewOrc.empresaRepresentadaId);
+                return e
+                  ? {
+                      nome: e.nome,
+                      cnpj: e.cnpj,
+                      email: e.email,
+                      telefone: e.telefone,
+                      endereco: e.endereco,
+                      cidade: e.cidade,
+                      estado: e.estado,
+                      cep: e.cep,
+                    }
+                  : null;
+              })()
+            : null
+        }
+        cliente={
+          viewOrc && viewOrc.clienteId
+            ? (() => {
+                const c = clienteById.get(viewOrc.clienteId);
+                if (!c) return { nome: viewOrc.clienteNome };
+                return {
+                  nome: c.nome,
+                  cnpj: c.tipo === 'J' ? c.cpfCnpj : null,
+                  cpf: c.tipo === 'F' ? c.cpfCnpj : null,
+                  email: c.emails?.[0] ?? null,
+                  telefone: c.telefones?.[0] ?? null,
+                  cidade: c.endereco?.cidade ?? null,
+                  estado: c.endereco?.uf ?? null,
+                };
+              })()
+            : { nome: viewOrc?.clienteNome ?? null }
+        }
+        open={!!viewOrc}
+        onOpenChange={(v) => !v && setViewOrc(null)}
+      />
+
+      <ConfirmDialog
+        open={!!deleteOrc}
+        onOpenChange={(v) => !v && setDeleteOrc(null)}
+        title="Excluir orçamento"
+        description={`Deseja excluir o orçamento ${deleteOrc?.numero ?? ''}? Esta ação pode ser revertida pelo administrador.`}
+        confirmLabel="Excluir"
+        destructive
+        onConfirm={() => {
+          if (deleteOrc) deleteMut.mutate(deleteOrc.id);
+          setDeleteOrc(null);
+        }}
+      />
     </div>
   );
 };
