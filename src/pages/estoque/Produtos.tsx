@@ -22,7 +22,7 @@ const Produtos: React.FC = () => {
 
   const filteredProdutos = produtos.filter(produto =>
     produto.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (produto.codigo_barras && produto.codigo_barras.includes(searchTerm)) ||
+    (produto.codigo && produto.codigo.includes(searchTerm)) ||
     (produto.categoria && produto.categoria.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (produto.ncm && produto.ncm.includes(searchTerm))
   );
