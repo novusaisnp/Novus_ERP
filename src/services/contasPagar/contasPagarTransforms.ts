@@ -15,7 +15,7 @@ export const transformFromSupabase = (item: any): ContaPagar => {
       centro_custo_id: rateio.centro_custo_id,
       valor: parseFloat(rateio.valor) || 0,
       percentual: parseFloat(rateio.percentual) || 0,
-      descricao: rateio.descricao,
+      descricao: rateio.descricao ?? null,
       plano_conta: rateio.plano_contas ? {
         id: rateio.plano_contas.id,
         codigo: rateio.plano_contas.codigo,
