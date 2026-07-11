@@ -66,7 +66,11 @@ export const ContaContabilAutocomplete: React.FC<ContaContabilAutocompleteProps>
       // Se há apenas uma conta na lista, selecionar automaticamente
       if (contas.length === 1) {
         console.log('[ContaContabilAutocomplete] Enter pressionado - selecionando única conta disponível');
-        handleSelect(contas[0].id);
+        handleSelect(contas[0].id, {
+          id: contas[0].id,
+          codigo: contas[0].codigo,
+          nome: contas[0].nome,
+        });
       }
     }
   };
