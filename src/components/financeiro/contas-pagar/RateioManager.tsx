@@ -30,6 +30,12 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
   
   const [rateiosLocal, setRateiosLocal] = useState<RateioContaPagar[]>(rateios);
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  // Índices já pré-registrados (commitados no estado local do manager)
+  const [preRegistrados, setPreRegistrados] = useState<Set<number>>(
+    () => new Set(rateios.map((_, i) => i)),
+  );
+  // Serialização do último payload emitido/recebido para evitar loops de sync
+  const lastSyncedRef = useRef<string>(JSON.stringify(rateios));
 
   console.log('[RateioContas] Centros de custo disponíveis:', centrosCusto.length);
 
@@ -38,32 +44,23 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
     return Math.round(value * 100) / 100;
   };
 
-  // Memoizar callback para evitar loops infinitos
-  const handleRateiosChange = useCallback((novosRateios: RateioContaPagar[]) => {
-    console.log('[RateioContas] Atualizando rateios:', novosRateios);
-    onRateiosChange(novosRateios);
-  }, [onRateiosChange]);
-
+  // Sincroniza com props somente quando o pai realmente enviou algo diferente
+  // do que este componente propagou (evita reset ao clicar em outro card).
   useEffect(() => {
-    console.log('[RateioContas] Sincronizando rateios locais com props');
-    setRateiosLocal(rateios);
+    const incoming = JSON.stringify(rateios);
+    if (incoming !== lastSyncedRef.current) {
+      console.log('[RateioContas] Sync externo detectado, atualizando local');
+      setRateiosLocal(rateios);
+      setPreRegistrados(new Set(rateios.map((_, i) => i)));
+      lastSyncedRef.current = incoming;
+    }
   }, [rateios]);
 
-  useEffect(() => {
-    console.log('[RateioContas] Propagando mudanças dos rateios locais');
-    handleRateiosChange(rateiosLocal);
-  }, [rateiosLocal, handleRateiosChange]);
-
-  // Auto-recolher o rateio expandido assim que estiver preenchido (conta + valor)
-  useEffect(() => {
-    if (expandedIndex === null) return;
-    const rateioAtual = rateiosLocal[expandedIndex];
-    if (!rateioAtual) return;
-    if (rateioAtual.plano_conta_id && (rateioAtual.valor || 0) > 0) {
-      const timer = setTimeout(() => setExpandedIndex(null), 250);
-      return () => clearTimeout(timer);
-    }
-  }, [expandedIndex, rateiosLocal]);
+  // Propaga alterações para o pai de forma explícita (sem useEffect encadeado)
+  const propagate = (novos: RateioContaPagar[]) => {
+    lastSyncedRef.current = JSON.stringify(novos);
+    onRateiosChange(novos);
+  };
 
   // Tratar erros de carregamento
   useEffect(() => {
@@ -79,7 +76,7 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
 
   const adicionarRateio = () => {
     console.log('[RateioContas] Adicionando novo rateio');
-    
+
     const novoRateio: RateioContaPagar = {
       plano_conta_id: '',
       centro_custo_id: '',
@@ -87,8 +84,11 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
       percentual: 0,
       descricao: '',
     };
-    setRateiosLocal([...rateiosLocal, novoRateio]);
-    setExpandedIndex(rateiosLocal.length);
+    const novos = [...rateiosLocal, novoRateio];
+    setRateiosLocal(novos);
+    setExpandedIndex(novos.length - 1);
+    // Novo rateio ainda NÃO está pré-registrado: só ao clicar "Pré-registrar".
+    // Não propaga ao pai ainda para manter a lista consistente.
   };
 
   const removerRateio = (index: number) => {
