@@ -147,6 +147,10 @@ export const sidebarItems: MenuItem[] = [
         url: "/financeiro/fluxo-caixa",
       },
       {
+        title: "Fluxo por Competência",
+        url: "/financeiro/fluxo-competencia",
+      },
+      {
         title: "Centro de Custos",
         url: "/financeiro/centros-custo",
       },

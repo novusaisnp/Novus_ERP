@@ -68,6 +68,8 @@ import RegistrosPonto from './pages/rh/RegistrosPonto';
 
 import Vendas from './pages/vendas/Vendas';
 import Orcamentos from './pages/vendas/Orcamentos';
+import RelatoriosVendas from './pages/vendas/Relatorios';
+import RelatoriosFinanceiro from './pages/financeiro/Relatorios';
 
 // Contratos Pages
 import Contratos from './pages/contratos/Contratos';
@@ -126,7 +128,7 @@ function App() {
                     <Route path="pedidos" element={<Vendas />} />
                     <Route path="orcamentos" element={<Orcamentos />} />
                     <Route path="contratos" element={<Contratos />} />
-                    <Route path="relatorios" element={<div className="p-8"><h1 className="text-3xl font-bold text-primary mb-2">Relatórios de Vendas</h1><p className="text-muted-foreground">Em breve</p></div>} />
+                    <Route path="relatorios" element={<RelatoriosVendas />} />
                   </Route>
 
                   {/* Contratos redirect (legacy) */}
@@ -150,7 +152,7 @@ function App() {
                     <Route path="centros-custo" element={<CentrosCusto />} />
                     <Route path="plano-contas" element={<PlanoContas />} />
                     <Route path="config-basicas" element={<ConfigBasicas />} />
-                    <Route path="relatorios" element={<div>Relatórios Financeiros - Em desenvolvimento</div>} />
+                    <Route path="relatorios" element={<RelatoriosFinanceiro />} />
                   </Route>
                   <Route path="configuracoes/centros-custo" element={<Navigate to="/financeiro/centros-custo" replace />} />
                   <Route path="centros-custo" element={<Navigate to="/financeiro/centros-custo" replace />} />
