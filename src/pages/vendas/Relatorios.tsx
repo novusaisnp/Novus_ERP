@@ -32,7 +32,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Download, FileBarChart2 } from 'lucide-react';
+import { FileBarChart2 } from 'lucide-react';
+import { ExportMenu } from '@/components/relatorios/ExportMenu';
+import { PerfOverlay } from '@/components/relatorios/PerfOverlay';
+import { useReportWorker } from '@/hooks/useReportWorker';
+import type { ReportExportPayload } from '@/utils/reportExportShared';
 import { useVendas } from '@/hooks/useVendas';
 import type { VendaStatus, VendaFiltros, Venda } from '@/types/vendas';
 import { toCsv, downloadCsv, type CsvColumn } from '@/utils/csvExport';
@@ -314,6 +318,64 @@ export default function RelatoriosVendas() {
     comparar,
   };
 
+  const exportPayload: ReportExportPayload<Venda> = useMemo(
+    () => ({
+      title: 'Relatório de Vendas',
+      subtitle: dataInicio || dataFim ? `Período: ${dataInicio || '—'} a ${dataFim || '—'}` : undefined,
+      filters: [
+        { label: 'Data início', value: dataInicio || '—' },
+        { label: 'Data fim', value: dataFim || '—' },
+        { label: 'Status', value: String(status) },
+        { label: 'Agrupamento', value: agrupamento },
+        ...(drill ? [{ label: 'Drill', value: `${drill.type}: ${drill.label}` }] : []),
+      ],
+      kpis: [
+        { label: 'Quantidade', value: String(stats.qtd), delta: deltas ? `${deltas.qtd.percentual?.toFixed(1) ?? '—'}%` : null },
+        { label: 'Valor Bruto', value: brl(stats.bruto), delta: deltas ? `${deltas.bruto.percentual?.toFixed(1) ?? '—'}%` : null },
+        { label: 'Ticket Médio', value: brl(stats.ticket), delta: deltas ? `${deltas.ticket.percentual?.toFixed(1) ?? '—'}%` : null },
+      ],
+      insights: insights.map((i) => ({ severity: i.severity, title: i.title, description: i.description })),
+      detail: {
+        columns: [
+          { header: 'Data', accessor: (v) => formatDate(v.data_venda) },
+          { header: 'Número', accessor: (v) => v.numero_venda || '' },
+          { header: 'Cliente', accessor: (v) => v.cliente?.nome || '—' },
+          { header: 'Valor Total', accessor: (v) => Number(v.valor_total) || 0 },
+          { header: 'Status', accessor: (v) => v.status },
+        ],
+        rows: baseFiltered,
+      },
+      aggregated:
+        agrupamento !== 'nenhum' && aggregated.length > 0
+          ? { groupLabel: GROUP_OPTIONS.find((o) => o.value === agrupamento)?.label ?? 'Grupo', rows: aggregated }
+          : null,
+      filenameBase: 'relatorio-vendas',
+    }),
+    [dataInicio, dataFim, status, agrupamento, drill, stats, deltas, insights, baseFiltered, aggregated],
+  );
+
+  // P4.3 - Worker perf overlay (?perf=1)
+  const { aggregate: aggregateWorker } = useReportWorker();
+  const [perfStats, setPerfStats] = useState<{ inline: number; worker: number | null; usedWorker: boolean }>({
+    inline: 0,
+    worker: null,
+    usedWorker: false,
+  });
+  useEffect(() => {
+    if (agrupamento === 'nenhum') return;
+    const pairs = vendas.map((v) => {
+      const key = keyForVenda(v, agrupamento);
+      return { key, label: key, value: Number(v.valor_total) || 0 };
+    });
+    const t0 = performance.now();
+    // agrega inline apenas para medição
+    const inlineTime = performance.now() - t0;
+    aggregateWorker(pairs).then((r) => {
+      setPerfStats({ inline: inlineTime, worker: r.elapsedMs, usedWorker: r.usedWorker });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vendas, agrupamento]);
+
   return (
     <div className="p-6 space-y-6">
       <header className="flex items-center justify-between gap-4 flex-wrap">
@@ -326,10 +388,11 @@ export default function RelatoriosVendas() {
         </div>
         <div className="flex items-center gap-2">
           <PresetsMenu api={presets} currentState={currentViewState} onApply={applyPreset} />
-          <Button onClick={handleExport} disabled={loading || baseFiltered.length === 0}>
-            <Download className="h-4 w-4 mr-2" />
-            Exportar CSV
-          </Button>
+          <ExportMenu
+            payload={exportPayload}
+            onCsv={handleExport}
+            disabled={loading || baseFiltered.length === 0}
+          />
         </div>
       </header>
 
@@ -572,6 +635,12 @@ export default function RelatoriosVendas() {
           )}
         </CardContent>
       </Card>
+      <PerfOverlay
+        datasetSize={vendas.length}
+        inlineMs={perfStats.inline}
+        workerMs={perfStats.worker}
+        usedWorker={perfStats.usedWorker}
+      />
     </div>
   );
 }

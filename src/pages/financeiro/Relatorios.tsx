@@ -29,7 +29,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Download, FileBarChart2 } from 'lucide-react';
+import { FileBarChart2 } from 'lucide-react';
+import { ExportMenu } from '@/components/relatorios/ExportMenu';
+import { PerfOverlay } from '@/components/relatorios/PerfOverlay';
+import { useReportWorker } from '@/hooks/useReportWorker';
+import type { ReportExportPayload } from '@/utils/reportExportShared';
 import { useContasPagar } from '@/hooks/useContasPagar';
 import { useContasReceber } from '@/hooks/useContasReceber';
 import { toCsv, downloadCsv, type CsvColumn } from '@/utils/csvExport';
@@ -358,6 +362,64 @@ export default function RelatoriosFinanceiro() {
     comparar,
   };
 
+  const exportPayload: ReportExportPayload<LinhaConsolidada> = useMemo(
+    () => ({
+      title: 'Relatório Financeiro',
+      subtitle: dataInicio || dataFim ? `Vencimento: ${dataInicio || '—'} a ${dataFim || '—'}` : undefined,
+      filters: [
+        { label: 'Vencimento início', value: dataInicio || '—' },
+        { label: 'Vencimento fim', value: dataFim || '—' },
+        { label: 'Tipo', value: String(tipoFiltro) },
+        { label: 'Agrupamento', value: agrupamento },
+        ...(drill ? [{ label: 'Drill', value: `${drill.type}: ${drill.label}` }] : []),
+      ],
+      kpis: [
+        { label: 'Total a Receber', value: brl(totalReceber), delta: deltas ? `${deltas.receber.percentual?.toFixed(1) ?? '—'}%` : null },
+        { label: 'Total a Pagar', value: brl(totalPagar), delta: deltas ? `${deltas.pagar.percentual?.toFixed(1) ?? '—'}%` : null },
+        { label: 'Saldo Projetado', value: brl(saldo), delta: deltas ? `${deltas.saldo.percentual?.toFixed(1) ?? '—'}%` : null },
+      ],
+      insights: insights.map((i) => ({ severity: i.severity, title: i.title, description: i.description })),
+      detail: {
+        columns: [
+          { header: 'Vencimento', accessor: (r) => formatDate(r.data_vencimento) },
+          { header: 'Tipo', accessor: (r) => r.tipo },
+          { header: 'Descrição', accessor: (r) => r.descricao },
+          { header: 'Contraparte', accessor: (r) => r.contraparte },
+          { header: 'Valor Original', accessor: (r) => r.valor_original },
+          { header: 'Situação', accessor: (r) => r.situacao },
+          { header: 'Faixa', accessor: (r) => FAIXA_LABEL[r.faixa] },
+        ],
+        rows: baseFiltered,
+      },
+      aggregated:
+        agrupamento !== 'nenhum' && aggregated.length > 0
+          ? { groupLabel: GROUP_OPTIONS.find((o) => o.value === agrupamento)?.label ?? 'Grupo', rows: aggregated }
+          : null,
+      filenameBase: 'relatorio-financeiro',
+    }),
+    [dataInicio, dataFim, tipoFiltro, agrupamento, drill, totalReceber, totalPagar, saldo, deltas, insights, baseFiltered, aggregated],
+  );
+
+  const { aggregate: aggregateWorker } = useReportWorker();
+  const [perfStats, setPerfStats] = useState<{ inline: number; worker: number | null; usedWorker: boolean }>({
+    inline: 0,
+    worker: null,
+    usedWorker: false,
+  });
+  useEffect(() => {
+    if (agrupamento === 'nenhum') return;
+    const pairs = todasLinhas.map((l) => {
+      const key = keyForLinha(l, agrupamento);
+      const label =
+        agrupamento === 'faixa_vencimento' ? FAIXA_LABEL[key as FaixaVencimento] ?? key : key;
+      return { key, label, value: l.valor_original };
+    });
+    aggregateWorker(pairs).then((r) => {
+      setPerfStats({ inline: 0, worker: r.elapsedMs, usedWorker: r.usedWorker });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [todasLinhas, agrupamento]);
+
   return (
     <div className="p-6 space-y-6">
       <header className="flex items-center justify-between gap-4 flex-wrap">
@@ -372,10 +434,11 @@ export default function RelatoriosFinanceiro() {
         </div>
         <div className="flex items-center gap-2">
           <PresetsMenu api={presets} currentState={currentViewState} onApply={applyPreset} />
-          <Button onClick={handleExport} disabled={loading || baseFiltered.length === 0}>
-            <Download className="h-4 w-4 mr-2" />
-            Exportar CSV
-          </Button>
+          <ExportMenu
+            payload={exportPayload}
+            onCsv={handleExport}
+            disabled={loading || baseFiltered.length === 0}
+          />
         </div>
       </header>
 
@@ -629,6 +692,12 @@ export default function RelatoriosFinanceiro() {
           )}
         </CardContent>
       </Card>
+      <PerfOverlay
+        datasetSize={todasLinhas.length}
+        inlineMs={perfStats.inline}
+        workerMs={perfStats.worker}
+        usedWorker={perfStats.usedWorker}
+      />
     </div>
   );
 }
