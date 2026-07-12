@@ -105,7 +105,8 @@ serve(async (req) => {
   );
 
   // ---- Read headers ----
-  const signature = req.headers.get('x-webhook-signature');
+  const signatureV1 = req.headers.get('x-webhook-signature');
+  const signatureV2 = req.headers.get('x-webhook-signature-v2');
   const sourceSystem = req.headers.get('x-source-system');
   const empresaId = req.headers.get('x-empresa-id');
   const tsHeader = req.headers.get('x-webhook-timestamp');
@@ -140,11 +141,12 @@ serve(async (req) => {
   };
 
   // ---- Basic header validation ----
-  if (!signature || !sourceSystem || !empresaId) {
+  if ((!signatureV1 && !signatureV2) || !sourceSystem || !empresaId) {
     return finish(
       {
         success: false,
-        error: 'x-source-system, x-empresa-id e x-webhook-signature são obrigatórios',
+        error:
+          'x-source-system, x-empresa-id e uma assinatura (x-webhook-signature ou x-webhook-signature-v2) são obrigatórios',
       },
       400,
       'bad_request',
@@ -158,10 +160,12 @@ serve(async (req) => {
     return finish({ success: false, error: 'empty_body' }, 400, 'bad_request');
   }
 
-  // ---- Resolve config + strict_mode ----
+  // ---- Resolve config (strict_mode + signature governance) ----
   const { data: config, error: cfgError } = await supabase
     .from('webhook_configs')
-    .select('secret_token, ativo, empresa_representada_id, strict_mode')
+    .select(
+      'secret_token, ativo, empresa_representada_id, strict_mode, signature_version, v2_only',
+    )
     .eq('nome', sourceSystem)
     .eq('empresa_representada_id', empresaId)
     .eq('ativo', true)
@@ -177,19 +181,77 @@ serve(async (req) => {
   }
 
   const strictMode: boolean = Boolean(config.strict_mode);
+  const cfgSigVersion: string = String(config.signature_version ?? 'v1');
+  const v2Only: boolean = Boolean(config.v2_only);
   logCtx.strict_mode = strictMode;
 
-  // ---- Signature validation on RAW BODY ----
-  const expected = await hmacSha256Hex(rawBody, config.secret_token);
-  const provided = signature.replace(/^sha256=/i, '');
-  if (!timingSafeEqual(expected, provided)) {
-    return finish(
-      { success: false, error: 'unauthorized' },
-      401,
-      'unauthorized',
-      { reason: 'invalid_signature' },
-    );
+  // ---- Signature validation (dual: V2 preferred, V1 fallback if allowed) ----
+  const bodyHashHex = await sha256Hex(rawBody);
+  let signatureVersionUsed: 'v1' | 'v2' | null = null;
+
+  if (signatureV2) {
+    const tsEpochSec = timestampToEpochSecondsString(tsHeader);
+    if (!tsEpochSec || !deliveryHeader) {
+      return finish(
+        { success: false, error: 'v2_requires_timestamp_and_delivery' },
+        400,
+        'bad_request',
+        {
+          reason: 'v2_missing_headers',
+          signature_version: 'v2',
+          signature_outcome: 'missing_v2',
+        },
+      );
+    }
+    const canonical = buildCanonicalV2(tsEpochSec, deliveryHeader, bodyHashHex);
+    const expectedV2 = await hmacHexOverString(canonical, config.secret_token);
+    const providedV2 = signatureV2.replace(/^sha256=/i, '');
+    if (!timingSafeEqual(expectedV2, providedV2)) {
+      return finish(
+        { success: false, error: 'invalid_signature_v2' },
+        401,
+        'unauthorized',
+        {
+          reason: 'invalid_signature_v2',
+          signature_version: 'v2',
+          signature_outcome: 'invalid_v2',
+        },
+      );
+    }
+    signatureVersionUsed = 'v2';
+  } else {
+    // No V2 header
+    if (v2Only || cfgSigVersion === 'v2') {
+      return finish(
+        { success: false, error: 'signature_version_required' },
+        400,
+        'bad_request',
+        {
+          reason: 'v2_required',
+          signature_version: null,
+          signature_outcome: 'missing_v2',
+        },
+      );
+    }
+    // Validate V1 legacy on RAW BODY
+    const expectedV1 = await hmacSha256Hex(rawBody, config.secret_token);
+    const providedV1 = (signatureV1 ?? '').replace(/^sha256=/i, '');
+    if (!timingSafeEqual(expectedV1, providedV1)) {
+      return finish(
+        { success: false, error: 'unauthorized' },
+        401,
+        'unauthorized',
+        {
+          reason: 'invalid_signature_v1',
+          signature_version: 'v1',
+          signature_outcome: 'invalid_v1',
+        },
+      );
+    }
+    signatureVersionUsed = 'v1';
   }
+  logCtx.signature_version = signatureVersionUsed;
+  logCtx.signature_outcome = 'ok';
 
   // ---- Timestamp / anti-replay ----
   const nowMs = Date.now();
