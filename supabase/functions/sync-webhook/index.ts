@@ -308,6 +308,7 @@ serve(async (req) => {
       ts_skew_ms: tsSkewMs,
       request_id: requestId,
       outcome: 'accepted',
+      signature_version: signatureVersionUsed,
     });
 
   if (dedupError) {
