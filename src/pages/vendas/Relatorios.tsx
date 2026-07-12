@@ -1,4 +1,17 @@
 import { useMemo, useState } from 'react';
+import {
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  Legend,
+} from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,8 +34,17 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Download, FileBarChart2 } from 'lucide-react';
 import { useVendas } from '@/hooks/useVendas';
-import type { VendaStatus, VendaFiltros } from '@/types/vendas';
-import { toCsv, downloadCsv } from '@/utils/csvExport';
+import type { VendaStatus, VendaFiltros, Venda } from '@/types/vendas';
+import { toCsv, downloadCsv, type CsvColumn } from '@/utils/csvExport';
+import {
+  bucketPeriodo,
+  groupBy,
+  normalizeStatus,
+  type AggregatedRow,
+} from '@/utils/relatoriosAgg';
+import { GroupBySelect, type GroupByOption } from '@/components/relatorios/GroupBySelect';
+import { AggregatedTable } from '@/components/relatorios/AggregatedTable';
+import { DrillFilterBadge } from '@/components/relatorios/DrillFilterBadge';
 
 const STATUS_OPTIONS: Array<{ value: VendaStatus | 'TODOS'; label: string }> = [
   { value: 'TODOS', label: 'Todos' },
@@ -32,6 +54,26 @@ const STATUS_OPTIONS: Array<{ value: VendaStatus | 'TODOS'; label: string }> = [
   { value: 'FATURADO', label: 'Faturado' },
   { value: 'ENTREGUE', label: 'Entregue' },
   { value: 'CANCELADO', label: 'Cancelado' },
+];
+
+type VendasGroupBy = 'nenhum' | 'dia' | 'semana' | 'mes' | 'status' | 'cliente';
+
+const GROUP_OPTIONS: ReadonlyArray<GroupByOption<VendasGroupBy>> = [
+  { value: 'nenhum', label: 'Nenhum (detalhado)' },
+  { value: 'dia', label: 'Período — Dia' },
+  { value: 'semana', label: 'Período — Semana' },
+  { value: 'mes', label: 'Período — Mês' },
+  { value: 'status', label: 'Status' },
+  { value: 'cliente', label: 'Cliente' },
+];
+
+const CHART_COLORS = [
+  'hsl(var(--primary))',
+  'hsl(var(--accent))',
+  'hsl(var(--secondary))',
+  'hsl(var(--muted-foreground))',
+  'hsl(var(--destructive))',
+  'hsl(var(--ring))',
 ];
 
 const brl = (v: number) =>
@@ -44,10 +86,18 @@ const formatDate = (iso?: string | null) => {
   return d.toLocaleDateString('pt-BR');
 };
 
+interface DrillFilter {
+  type: VendasGroupBy;
+  key: string;
+  label: string;
+}
+
 export default function RelatoriosVendas() {
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
   const [status, setStatus] = useState<VendaStatus | 'TODOS'>('TODOS');
+  const [agrupamento, setAgrupamento] = useState<VendasGroupBy>('nenhum');
+  const [drill, setDrill] = useState<DrillFilter | null>(null);
 
   const filtros: VendaFiltros = useMemo(
     () => ({
@@ -60,15 +110,81 @@ export default function RelatoriosVendas() {
 
   const { vendas, loading } = useVendas(filtros);
 
+  const keyForVenda = (v: Venda, tipo: VendasGroupBy): string => {
+    if (tipo === 'dia' || tipo === 'semana' || tipo === 'mes') {
+      return bucketPeriodo(v.data_venda, tipo);
+    }
+    if (tipo === 'status') return normalizeStatus(v.status);
+    if (tipo === 'cliente') return v.cliente?.nome || 'Sem cliente';
+    return '';
+  };
+
+  const baseFiltered: Venda[] = useMemo(() => {
+    if (!drill) return vendas;
+    return vendas.filter((v) => keyForVenda(v, drill.type) === drill.key);
+  }, [vendas, drill]);
+
   const stats = useMemo(() => {
-    const qtd = vendas.length;
-    const bruto = vendas.reduce((acc, v) => acc + (Number(v.valor_total) || 0), 0);
+    const qtd = baseFiltered.length;
+    const bruto = baseFiltered.reduce((acc, v) => acc + (Number(v.valor_total) || 0), 0);
     const ticket = qtd > 0 ? bruto / qtd : 0;
     return { qtd, bruto, ticket };
+  }, [baseFiltered]);
+
+  const aggregated: AggregatedRow[] = useMemo(() => {
+    if (agrupamento === 'nenhum') return [];
+    return groupBy(
+      vendas,
+      (v) => keyForVenda(v, agrupamento),
+      (v) => Number(v.valor_total) || 0,
+    );
+  }, [vendas, agrupamento]);
+
+  const timeSeries = useMemo(() => {
+    const g: VendasGroupBy =
+      agrupamento === 'dia' || agrupamento === 'semana' || agrupamento === 'mes'
+        ? agrupamento
+        : 'mes';
+    const rows = groupBy(
+      vendas,
+      (v) => bucketPeriodo(v.data_venda, g),
+      (v) => Number(v.valor_total) || 0,
+    );
+    return rows
+      .slice()
+      .sort((a, b) => (a.key < b.key ? -1 : 1))
+      .map((r) => ({ periodo: r.key, valor: r.valor_total }));
+  }, [vendas, agrupamento]);
+
+  const statusDistribution = useMemo(() => {
+    return groupBy(
+      vendas,
+      (v) => normalizeStatus(v.status),
+      (v) => Number(v.valor_total) || 0,
+    );
   }, [vendas]);
 
+  const handleAggregatedClick = (row: AggregatedRow) => {
+    if (agrupamento === 'nenhum') return;
+    setDrill({ type: agrupamento, key: row.key, label: row.label });
+  };
+
   const handleExport = () => {
-    const csv = toCsv(vendas, [
+    if (agrupamento !== 'nenhum' && aggregated.length > 0) {
+      const cols: CsvColumn<AggregatedRow>[] = [
+        { header: 'Grupo', accessor: (r) => r.label },
+        { header: 'Quantidade', accessor: (r) => r.quantidade },
+        { header: 'Valor Total', accessor: (r) => r.valor_total.toFixed(2) },
+        { header: 'Percentual', accessor: (r) => r.percentual.toFixed(2) },
+      ];
+      const csv = toCsv(aggregated, cols);
+      downloadCsv(
+        `relatorio-vendas-agrupado-${agrupamento}-${new Date().toISOString().slice(0, 10)}.csv`,
+        csv,
+      );
+      return;
+    }
+    const csv = toCsv(baseFiltered, [
       { header: 'Data', accessor: (v) => formatDate(v.data_venda) },
       { header: 'Número', accessor: (v) => v.numero_venda || '' },
       { header: 'Cliente', accessor: (v) => v.cliente?.nome || '—' },
@@ -88,7 +204,7 @@ export default function RelatoriosVendas() {
           </h1>
           <p className="text-muted-foreground">Análise consolidada de pedidos de venda.</p>
         </div>
-        <Button onClick={handleExport} disabled={loading || vendas.length === 0}>
+        <Button onClick={handleExport} disabled={loading || baseFiltered.length === 0}>
           <Download className="h-4 w-4 mr-2" />
           Exportar CSV
         </Button>
@@ -98,7 +214,7 @@ export default function RelatoriosVendas() {
         <CardHeader>
           <CardTitle className="text-base">Filtros</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="space-y-2">
             <Label htmlFor="data_inicio">Data início</Label>
             <Input
@@ -132,8 +248,24 @@ export default function RelatoriosVendas() {
               </SelectContent>
             </Select>
           </div>
+          <GroupBySelect
+            value={agrupamento}
+            onChange={(v) => {
+              setAgrupamento(v);
+              setDrill(null);
+            }}
+            options={GROUP_OPTIONS}
+          />
         </CardContent>
       </Card>
+
+      {drill && (
+        <DrillFilterBadge
+          label="Grupo"
+          value={drill.label}
+          onClear={() => setDrill(null)}
+        />
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
@@ -162,14 +294,113 @@ export default function RelatoriosVendas() {
         </Card>
       </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Faturamento por período</CardTitle>
+          </CardHeader>
+          <CardContent className="h-72">
+            {loading ? (
+              <div className="h-full flex items-center justify-center text-muted-foreground">
+                Carregando...
+              </div>
+            ) : timeSeries.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-muted-foreground">
+                Sem dados no período.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={timeSeries}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis dataKey="periodo" className="text-xs" />
+                  <YAxis className="text-xs" tickFormatter={(v) => brl(Number(v))} />
+                  <Tooltip
+                    formatter={(v: number) => brl(Number(v))}
+                    contentStyle={{
+                      background: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      color: 'hsl(var(--foreground))',
+                    }}
+                  />
+                  <Bar dataKey="valor" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Distribuição por status</CardTitle>
+          </CardHeader>
+          <CardContent className="h-72">
+            {loading ? (
+              <div className="h-full flex items-center justify-center text-muted-foreground">
+                Carregando...
+              </div>
+            ) : statusDistribution.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-muted-foreground">
+                Sem dados.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={statusDistribution}
+                    dataKey="valor_total"
+                    nameKey="label"
+                    innerRadius={50}
+                    outerRadius={90}
+                    onClick={(entry: AggregatedRow) =>
+                      setDrill({ type: 'status', key: entry.key, label: entry.label })
+                    }
+                  >
+                    {statusDistribution.map((_, i) => (
+                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(v: number) => brl(Number(v))}
+                    contentStyle={{
+                      background: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      color: 'hsl(var(--foreground))',
+                    }}
+                  />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {agrupamento !== 'nenhum' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Visão agregada</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AggregatedTable
+              rows={aggregated}
+              keyHeader={GROUP_OPTIONS.find((o) => o.value === agrupamento)?.label ?? 'Grupo'}
+              onRowClick={handleAggregatedClick}
+              activeKey={drill?.key ?? null}
+            />
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Vendas</CardTitle>
+          <CardTitle className="text-base">
+            {agrupamento !== 'nenhum' ? 'Detalhamento' : 'Vendas'}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
             <p className="text-muted-foreground py-8 text-center">Carregando...</p>
-          ) : vendas.length === 0 ? (
+          ) : baseFiltered.length === 0 ? (
             <p className="text-muted-foreground py-8 text-center">
               Nenhum registro encontrado para os filtros aplicados.
             </p>
@@ -186,7 +417,7 @@ export default function RelatoriosVendas() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {vendas.map((v) => (
+                  {baseFiltered.map((v) => (
                     <TableRow key={v.id}>
                       <TableCell>{formatDate(v.data_venda)}</TableCell>
                       <TableCell>{v.numero_venda || '—'}</TableCell>
