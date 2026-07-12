@@ -152,7 +152,7 @@ function App() {
                     <Route path="centros-custo" element={<CentrosCusto />} />
                     <Route path="plano-contas" element={<PlanoContas />} />
                     <Route path="config-basicas" element={<ConfigBasicas />} />
-                    <Route path="relatorios" element={<div>Relatórios Financeiros - Em desenvolvimento</div>} />
+                    <Route path="relatorios" element={<RelatoriosFinanceiro />} />
                   </Route>
                   <Route path="configuracoes/centros-custo" element={<Navigate to="/financeiro/centros-custo" replace />} />
                   <Route path="centros-custo" element={<Navigate to="/financeiro/centros-custo" replace />} />
