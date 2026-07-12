@@ -635,6 +635,12 @@ export default function RelatoriosVendas() {
           )}
         </CardContent>
       </Card>
+      <PerfOverlay
+        datasetSize={vendas.length}
+        inlineMs={perfStats.inline}
+        workerMs={perfStats.worker}
+        usedWorker={perfStats.usedWorker}
+      />
     </div>
   );
 }
