@@ -39,12 +39,21 @@ serve(async (req) => {
     // Validar assinatura do webhook
     const signature = req.headers.get('x-webhook-signature');
     const sourceSystem = req.headers.get('x-source-system') || payload.source_system;
-    
-    if (!await validateWebhookSignature(supabase, signature, sourceSystem, payload)) {
-      console.error('Assinatura inválida');
-      return new Response('Invalid signature', { 
-        status: 401, 
-        headers: corsHeaders 
+    const empresaId = req.headers.get('x-empresa-id') || (payload as any).empresa_representada_id;
+
+    if (!sourceSystem || !empresaId) {
+      console.error(JSON.stringify({ outcome: 'bad_request', sourceSystem, empresaId }));
+      return new Response(JSON.stringify({ success: false, error: 'x-source-system e x-empresa-id são obrigatórios' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!await validateWebhookSignature(supabase, signature, sourceSystem, empresaId, payload)) {
+      console.error(JSON.stringify({ outcome: 'unauthorized', sourceSystem, empresaId }));
+      return new Response(JSON.stringify({ success: false, error: 'Invalid signature or inactive config' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -127,35 +136,47 @@ serve(async (req) => {
   }
 });
 
-async function validateWebhookSignature(supabase: any, signature: string | null, sourceSystem: string, payload: any): Promise<boolean> {
-  if (!signature || !sourceSystem) {
-    console.error('Assinatura ou sistema de origem ausente');
+async function validateWebhookSignature(
+  supabase: any,
+  signature: string | null,
+  sourceSystem: string,
+  empresaId: string,
+  payload: any,
+): Promise<boolean> {
+  if (!signature || !sourceSystem || !empresaId) {
+    console.error(JSON.stringify({ stage: 'validateWebhookSignature', reason: 'missing_input' }));
     return false;
   }
 
-  // Buscar configuração do webhook
-  const { data: config } = await supabase
+  // Schema real: webhook_configs(nome, secret_token, ativo, empresa_representada_id)
+  const { data: config, error } = await supabase
     .from('webhook_configs')
-    .select('webhook_secret, active')
-    .eq('target_system', sourceSystem)
-    .eq('active', true)
-    .single();
+    .select('secret_token, ativo, empresa_representada_id')
+    .eq('nome', sourceSystem)
+    .eq('empresa_representada_id', empresaId)
+    .eq('ativo', true)
+    .maybeSingle();
 
-  if (!config) {
-    console.error('Configuração de webhook não encontrada para:', sourceSystem);
+  if (error || !config || !config.secret_token) {
+    console.error(JSON.stringify({ stage: 'validateWebhookSignature', reason: 'config_not_found', sourceSystem, empresaId }));
     return false;
   }
 
   try {
-    // Gerar assinatura esperada
-    const expectedSignature = await generateSignature(JSON.stringify(payload), config.webhook_secret);
+    const expectedSignature = await generateSignature(JSON.stringify(payload), config.secret_token);
     const providedSignature = signature.replace('sha256=', '');
-    
-    return expectedSignature === providedSignature;
+    return timingSafeEqual(expectedSignature, providedSignature);
   } catch (error) {
-    console.error('Erro na validação de assinatura:', error);
+    console.error(JSON.stringify({ stage: 'validateWebhookSignature', reason: 'hmac_error', error: (error as Error).message }));
     return false;
   }
+}
+
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
 }
 
 async function generateSignature(data: string, secret: string): Promise<string> {
