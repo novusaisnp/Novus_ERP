@@ -59,7 +59,7 @@ export const reportSchedulesService = {
         day_of_week: payload.day_of_week,
         day_of_month: payload.day_of_month,
         recipients: payload.recipients,
-        view_state: payload.view_state as unknown as Record<string, unknown>,
+        view_state: payload.view_state as unknown as never,
         enabled: payload.enabled,
         next_run_at: nextRunAt,
       })
@@ -70,7 +70,7 @@ export const reportSchedulesService = {
   },
 
   async updateSchedule(id: string, patch: Partial<ReportScheduleInput>): Promise<ReportSchedule> {
-    // deno-lint-ignore no-explicit-any
+    // Update tipado permissivamente para permitir campos opcionais e next_run_at recalculado.
     const update: Record<string, unknown> = {};
     if (patch.name !== undefined) update.name = patch.name.trim();
     if (patch.format !== undefined) update.format = patch.format;
@@ -79,7 +79,7 @@ export const reportSchedulesService = {
     if (patch.day_of_week !== undefined) update.day_of_week = patch.day_of_week;
     if (patch.day_of_month !== undefined) update.day_of_month = patch.day_of_month;
     if (patch.recipients !== undefined) update.recipients = patch.recipients;
-    if (patch.view_state !== undefined) update.view_state = patch.view_state as unknown as Record<string, unknown>;
+    if (patch.view_state !== undefined) update.view_state = patch.view_state;
     if (patch.enabled !== undefined) update.enabled = patch.enabled;
 
     // Recalcula next_run_at se schedule/hora mudaram
@@ -106,7 +106,7 @@ export const reportSchedulesService = {
 
     const { data, error } = await supabase
       .from("report_schedules")
-      .update(update)
+      .update(update as never)
       .eq("id", id)
       .select("*")
       .single();
