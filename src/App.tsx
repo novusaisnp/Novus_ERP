@@ -194,6 +194,7 @@ function App() {
                     <Route path="usuarios" element={<Usuarios />} />
                     <Route path="sistema" element={<Sistema />} />
                     <Route path="perfil" element={<Perfil />} />
+                    <Route path="webhooks" element={<Webhooks />} />
                   </Route>
                   
                   {/* 404 Route */}
