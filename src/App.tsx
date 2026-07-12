@@ -68,6 +68,8 @@ import RegistrosPonto from './pages/rh/RegistrosPonto';
 
 import Vendas from './pages/vendas/Vendas';
 import Orcamentos from './pages/vendas/Orcamentos';
+import RelatoriosVendas from './pages/vendas/Relatorios';
+import RelatoriosFinanceiro from './pages/financeiro/Relatorios';
 
 // Contratos Pages
 import Contratos from './pages/contratos/Contratos';
