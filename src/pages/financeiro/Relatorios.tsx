@@ -443,8 +443,17 @@ export default function RelatoriosFinanceiro() {
             onCsv={handleExport}
             disabled={loading || baseFiltered.length === 0}
           />
+          <Button variant="outline" size="sm" onClick={() => setScheduleOpen(true)}>
+            <CalendarClock className="h-4 w-4 mr-1" /> Agendar…
+          </Button>
         </div>
       </header>
+      <ScheduleList
+        open={scheduleOpen}
+        onOpenChange={setScheduleOpen}
+        scope="financeiro"
+        viewState={normalizeViewState('financeiro', currentViewState as unknown as Record<string, unknown>)}
+      />
 
       <Card>
         <CardHeader>
