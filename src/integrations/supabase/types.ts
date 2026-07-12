@@ -3974,6 +3974,128 @@ export type Database = {
           },
         ]
       }
+      report_schedule_runs: {
+        Row: {
+          artifact_path: string | null
+          attempt: number
+          created_at: string
+          delivery_message_id: string | null
+          delivery_reason: string | null
+          delivery_status: string | null
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          idempotency_key: string
+          schedule_id: string
+          signed_url: string | null
+          signed_url_expires_at: string | null
+          started_at: string
+          status: Database["public"]["Enums"]["report_run_status"]
+          user_id: string
+        }
+        Insert: {
+          artifact_path?: string | null
+          attempt?: number
+          created_at?: string
+          delivery_message_id?: string | null
+          delivery_reason?: string | null
+          delivery_status?: string | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          idempotency_key: string
+          schedule_id: string
+          signed_url?: string | null
+          signed_url_expires_at?: string | null
+          started_at?: string
+          status?: Database["public"]["Enums"]["report_run_status"]
+          user_id: string
+        }
+        Update: {
+          artifact_path?: string | null
+          attempt?: number
+          created_at?: string
+          delivery_message_id?: string | null
+          delivery_reason?: string | null
+          delivery_status?: string | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          idempotency_key?: string
+          schedule_id?: string
+          signed_url?: string | null
+          signed_url_expires_at?: string | null
+          started_at?: string
+          status?: Database["public"]["Enums"]["report_run_status"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_schedule_runs_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "report_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_schedules: {
+        Row: {
+          created_at: string
+          day_of_month: number | null
+          day_of_week: number | null
+          enabled: boolean
+          format: Database["public"]["Enums"]["report_export_format"]
+          frequency: Database["public"]["Enums"]["report_schedule_frequency"]
+          hour_utc: number
+          id: string
+          last_run_at: string | null
+          name: string
+          next_run_at: string
+          recipients: string[]
+          scope: Database["public"]["Enums"]["report_schedule_scope"]
+          updated_at: string
+          user_id: string
+          view_state: Json
+        }
+        Insert: {
+          created_at?: string
+          day_of_month?: number | null
+          day_of_week?: number | null
+          enabled?: boolean
+          format: Database["public"]["Enums"]["report_export_format"]
+          frequency: Database["public"]["Enums"]["report_schedule_frequency"]
+          hour_utc: number
+          id?: string
+          last_run_at?: string | null
+          name: string
+          next_run_at: string
+          recipients?: string[]
+          scope: Database["public"]["Enums"]["report_schedule_scope"]
+          updated_at?: string
+          user_id: string
+          view_state?: Json
+        }
+        Update: {
+          created_at?: string
+          day_of_month?: number | null
+          day_of_week?: number | null
+          enabled?: boolean
+          format?: Database["public"]["Enums"]["report_export_format"]
+          frequency?: Database["public"]["Enums"]["report_schedule_frequency"]
+          hour_utc?: number
+          id?: string
+          last_run_at?: string | null
+          name?: string
+          next_run_at?: string
+          recipients?: string[]
+          scope?: Database["public"]["Enums"]["report_schedule_scope"]
+          updated_at?: string
+          user_id?: string
+          view_state?: Json
+        }
+        Relationships: []
+      }
       servicos: {
         Row: {
           ativo: boolean
@@ -5205,6 +5327,10 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "gerente" | "operador" | "visualizador"
+      report_export_format: "xlsx" | "pdf" | "csv"
+      report_run_status: "pending" | "running" | "succeeded" | "failed"
+      report_schedule_frequency: "daily" | "weekly" | "monthly"
+      report_schedule_scope: "vendas" | "financeiro"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -5333,6 +5459,10 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "gerente", "operador", "visualizador"],
+      report_export_format: ["xlsx", "pdf", "csv"],
+      report_run_status: ["pending", "running", "succeeded", "failed"],
+      report_schedule_frequency: ["daily", "weekly", "monthly"],
+      report_schedule_scope: ["vendas", "financeiro"],
     },
   },
 } as const
