@@ -81,8 +81,8 @@ serve(async (req) => {
     try {
       const { data: webhookConfigs, error } = await supabase
         .from('webhook_configs')
-        .select('target_system, active')
-        .eq('active', true);
+        .select('nome, ativo')
+        .eq('ativo', true);
 
       if (error) throw error;
 
@@ -90,7 +90,7 @@ serve(async (req) => {
         name: 'webhook_configurations',
         status: 'healthy',
         message: `${webhookConfigs?.length || 0} webhooks ativos`,
-        details: webhookConfigs?.map(w => w.target_system) || [],
+        details: webhookConfigs?.map((w: any) => w.nome) || [],
         response_time_ms: Date.now() - startTime
       });
     } catch (error) {
