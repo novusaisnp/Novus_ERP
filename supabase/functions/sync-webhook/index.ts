@@ -54,6 +54,32 @@ async function sha256Hex(bytes: Uint8Array): Promise<string> {
     .join('');
 }
 
+const CANONICAL_METHOD = 'POST';
+const CANONICAL_PATH = '/functions/v1/sync-webhook';
+
+async function hmacHexOverString(canonical: string, secret: string): Promise<string> {
+  return hmacSha256Hex(new TextEncoder().encode(canonical), secret);
+}
+
+function buildCanonicalV2(
+  timestampEpochSec: string,
+  deliveryId: string,
+  bodyHashHex: string,
+): string {
+  return [CANONICAL_METHOD, CANONICAL_PATH, timestampEpochSec, deliveryId, bodyHashHex].join('\n');
+}
+
+function timestampToEpochSecondsString(raw: string | null): string | null {
+  if (!raw) return null;
+  const asNum = Number(raw);
+  if (Number.isFinite(asNum) && asNum > 0) {
+    return asNum < 1e12 ? String(Math.trunc(asNum)) : String(Math.trunc(asNum / 1000));
+  }
+  const parsed = Date.parse(raw);
+  if (!Number.isFinite(parsed)) return null;
+  return String(Math.trunc(parsed / 1000));
+}
+
 function parseTimestampMs(raw: string | null): number | null {
   if (!raw) return null;
   const asNum = Number(raw);
