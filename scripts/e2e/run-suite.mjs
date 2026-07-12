@@ -93,8 +93,8 @@ const nowSec = () => Math.floor(Date.now() / 1000);
 // Fixed payload template — nonce distinguishes scenarios in logs
 const payloadFor = (scn) => JSON.stringify({
   event: "sync",
-  table: "clientes",
-  data: { id: `e2e-${scn}`, cpf_cnpj: `000.000.000-${scn.replace(/[^0-9]/g, "0").padStart(2,"0")}` },
+  table: "e2e_noop",
+  data: { id: `e2e-${scn}` },
   timestamp: new Date().toISOString(),
   source_system: `E2E-${scn}`,
 });
