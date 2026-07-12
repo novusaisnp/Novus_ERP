@@ -4171,6 +4171,7 @@ export type Database = {
       sync_logs: {
         Row: {
           created_at: string
+          delivery_id: string | null
           destino: string | null
           empresa_representada_id: string | null
           id: string
@@ -4186,6 +4187,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          delivery_id?: string | null
           destino?: string | null
           empresa_representada_id?: string | null
           id?: string
@@ -4201,6 +4203,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          delivery_id?: string | null
           destino?: string | null
           empresa_representada_id?: string | null
           id?: string
@@ -4966,6 +4969,7 @@ export type Database = {
           metodo: string | null
           nome: string
           secret_token: string | null
+          strict_mode: boolean
           timeout_segundos: number | null
           updated_at: string
           url_destino: string
@@ -4982,6 +4986,7 @@ export type Database = {
           metodo?: string | null
           nome: string
           secret_token?: string | null
+          strict_mode?: boolean
           timeout_segundos?: number | null
           updated_at?: string
           url_destino: string
@@ -4998,6 +5003,7 @@ export type Database = {
           metodo?: string | null
           nome?: string
           secret_token?: string | null
+          strict_mode?: boolean
           timeout_segundos?: number | null
           updated_at?: string
           url_destino?: string
@@ -5011,6 +5017,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      webhook_deliveries: {
+        Row: {
+          created_at: string
+          delivery_id: string
+          empresa_representada_id: string
+          execution_time_ms: number | null
+          id: string
+          outcome: string
+          request_id: string | null
+          source_system: string
+          sync_log_id: string | null
+          synthetic: boolean
+          ts_skew_ms: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_id: string
+          empresa_representada_id: string
+          execution_time_ms?: number | null
+          id?: string
+          outcome?: string
+          request_id?: string | null
+          source_system: string
+          sync_log_id?: string | null
+          synthetic?: boolean
+          ts_skew_ms?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          delivery_id?: string
+          empresa_representada_id?: string
+          execution_time_ms?: number | null
+          id?: string
+          outcome?: string
+          request_id?: string | null
+          source_system?: string
+          sync_log_id?: string | null
+          synthetic?: boolean
+          ts_skew_ms?: number | null
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {

@@ -3,8 +3,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-webhook-signature, x-source-system',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type, x-webhook-signature, x-source-system, x-empresa-id, x-webhook-timestamp, x-webhook-delivery, x-webhook-attempt',
 };
+
+const TS_SKEW_MS =
+  Number(Deno.env.get('WEBHOOK_TS_SKEW_SECONDS') ?? '300') * 1000;
 
 interface WebhookPayload {
   event: 'insert' | 'update' | 'delete' | 'sync';
@@ -15,69 +19,274 @@ interface WebhookPayload {
   source_system: string;
 }
 
+function jsonResponse(body: unknown, status: number) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+async function hmacSha256Hex(rawBody: Uint8Array, secret: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, rawBody);
+  return Array.from(new Uint8Array(sig))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+async function sha256Hex(bytes: Uint8Array): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function parseTimestampMs(raw: string | null): number | null {
+  if (!raw) return null;
+  const asNum = Number(raw);
+  if (Number.isFinite(asNum) && asNum > 0) {
+    // epoch seconds heuristic
+    return asNum < 1e12 ? asNum * 1000 : asNum;
+  }
+  const parsed = Date.parse(raw);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTime = Date.now();
+  const requestId = crypto.randomUUID();
+
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
   );
 
-  try {
-    const startTime = Date.now();
-    const payload: WebhookPayload = await req.json();
-    
-    console.log('Webhook recebido:', {
-      event: payload.event,
-      table: payload.table,
-      source: payload.source_system,
-      timestamp: payload.timestamp
+  // ---- Read headers ----
+  const signature = req.headers.get('x-webhook-signature');
+  const sourceSystem = req.headers.get('x-source-system');
+  const empresaId = req.headers.get('x-empresa-id');
+  const tsHeader = req.headers.get('x-webhook-timestamp');
+  const deliveryHeader = req.headers.get('x-webhook-delivery');
+  const attempt = Number(req.headers.get('x-webhook-attempt') ?? '1') || 1;
+
+  const logCtx: Record<string, unknown> = {
+    request_id: requestId,
+    tenant: empresaId,
+    source: sourceSystem,
+    delivery_id: deliveryHeader,
+    attempt,
+  };
+
+  const finish = (
+    body: Record<string, unknown>,
+    status: number,
+    outcome: string,
+    extras: Record<string, unknown> = {},
+  ) => {
+    const latency = Date.now() - startTime;
+    console.log(
+      JSON.stringify({
+        ...logCtx,
+        ...extras,
+        outcome,
+        status_code: status,
+        latency_ms: latency,
+      }),
+    );
+    return jsonResponse({ ...body, request_id: requestId }, status);
+  };
+
+  // ---- Basic header validation ----
+  if (!signature || !sourceSystem || !empresaId) {
+    return finish(
+      {
+        success: false,
+        error: 'x-source-system, x-empresa-id e x-webhook-signature são obrigatórios',
+      },
+      400,
+      'bad_request',
+      { reason: 'missing_headers' },
+    );
+  }
+
+  // ---- Raw body (bytes) — needed for HMAC + synthetic delivery id ----
+  const rawBody = new Uint8Array(await req.arrayBuffer());
+  if (rawBody.byteLength === 0) {
+    return finish({ success: false, error: 'empty_body' }, 400, 'bad_request');
+  }
+
+  // ---- Resolve config + strict_mode ----
+  const { data: config, error: cfgError } = await supabase
+    .from('webhook_configs')
+    .select('secret_token, ativo, empresa_representada_id, strict_mode')
+    .eq('nome', sourceSystem)
+    .eq('empresa_representada_id', empresaId)
+    .eq('ativo', true)
+    .maybeSingle();
+
+  if (cfgError || !config || !config.secret_token) {
+    return finish(
+      { success: false, error: 'unauthorized' },
+      401,
+      'unauthorized',
+      { reason: 'config_not_found' },
+    );
+  }
+
+  const strictMode: boolean = Boolean(config.strict_mode);
+  logCtx.strict_mode = strictMode;
+
+  // ---- Signature validation on RAW BODY ----
+  const expected = await hmacSha256Hex(rawBody, config.secret_token);
+  const provided = signature.replace(/^sha256=/i, '');
+  if (!timingSafeEqual(expected, provided)) {
+    return finish(
+      { success: false, error: 'unauthorized' },
+      401,
+      'unauthorized',
+      { reason: 'invalid_signature' },
+    );
+  }
+
+  // ---- Timestamp / anti-replay ----
+  const nowMs = Date.now();
+  const tsMs = parseTimestampMs(tsHeader);
+  let tsSkewMs: number | null = null;
+
+  if (tsMs !== null) {
+    tsSkewMs = nowMs - tsMs;
+    logCtx.ts_skew_ms = tsSkewMs;
+    if (Math.abs(tsSkewMs) > TS_SKEW_MS) {
+      if (strictMode) {
+        return finish(
+          { success: false, error: 'timestamp_out_of_window', ts_skew_ms: tsSkewMs },
+          400,
+          'bad_request',
+          { reason: 'timestamp_out_of_window' },
+        );
+      }
+    }
+  } else if (strictMode) {
+    return finish(
+      { success: false, error: 'missing_timestamp' },
+      400,
+      'bad_request',
+      { reason: 'missing_timestamp' },
+    );
+  }
+
+  // ---- Delivery ID / idempotency key ----
+  let deliveryId = deliveryHeader;
+  let synthetic = false;
+  if (!deliveryId) {
+    if (strictMode) {
+      return finish(
+        { success: false, error: 'missing_delivery_id' },
+        400,
+        'bad_request',
+        { reason: 'missing_delivery_id' },
+      );
+    }
+    deliveryId = await sha256Hex(rawBody);
+    synthetic = true;
+  }
+  logCtx.delivery_id = deliveryId;
+
+  // ---- INSERT FIRST into webhook_deliveries ----
+  const { error: dedupError } = await supabase
+    .from('webhook_deliveries')
+    .insert({
+      empresa_representada_id: empresaId,
+      source_system: sourceSystem,
+      delivery_id: deliveryId,
+      synthetic,
+      ts_skew_ms: tsSkewMs,
+      request_id: requestId,
+      outcome: 'accepted',
     });
 
-    // Validar assinatura do webhook
-    const signature = req.headers.get('x-webhook-signature');
-    const sourceSystem = req.headers.get('x-source-system') || payload.source_system;
-    const empresaId = req.headers.get('x-empresa-id') || (payload as any).empresa_representada_id;
-
-    if (!sourceSystem || !empresaId) {
-      console.error(JSON.stringify({ outcome: 'bad_request', sourceSystem, empresaId }));
-      return new Response(JSON.stringify({ success: false, error: 'x-source-system e x-empresa-id são obrigatórios' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+  if (dedupError) {
+    if ((dedupError as any).code === '23505') {
+      return finish(
+        {
+          success: true,
+          duplicate: true,
+          error: 'duplicate_delivery_ignored',
+          delivery_id: deliveryId,
+        },
+        200,
+        'duplicate',
+      );
     }
+    return finish(
+      { success: false, error: 'dedup_error', details: (dedupError as any).message },
+      500,
+      'error',
+      { reason: 'dedup_insert_failed' },
+    );
+  }
 
-    if (!await validateWebhookSignature(supabase, signature, sourceSystem, empresaId, payload)) {
-      console.error(JSON.stringify({ outcome: 'unauthorized', sourceSystem, empresaId }));
-      return new Response(JSON.stringify({ success: false, error: 'Invalid signature or inactive config' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+  // ---- Parse body AFTER validations passed ----
+  let payload: WebhookPayload;
+  try {
+    payload = JSON.parse(new TextDecoder().decode(rawBody));
+  } catch {
+    await supabase
+      .from('webhook_deliveries')
+      .update({ outcome: 'error', execution_time_ms: Date.now() - startTime })
+      .eq('empresa_representada_id', empresaId)
+      .eq('source_system', sourceSystem)
+      .eq('delivery_id', deliveryId);
+    return finish(
+      { success: false, error: 'invalid_json' },
+      400,
+      'bad_request',
+      { reason: 'invalid_json' },
+    );
+  }
 
-    // Registrar tentativa de sincronização
+  try {
+    // ---- Register sync_log ----
     const { data: logEntry } = await supabase
       .from('sync_logs')
       .insert({
         operation_type: payload.event,
         table_name: payload.table,
-        record_id: payload.data?.id || payload.data?.numero_venda || payload.data?.numero_contrato || 'unknown',
+        record_id:
+          payload.data?.id ||
+          payload.data?.numero_venda ||
+          payload.data?.numero_contrato ||
+          'unknown',
         source_system: sourceSystem,
         status: 'pending',
         data_payload: payload,
         retry_count: 0,
+        delivery_id: deliveryId,
       })
       .select()
       .single();
 
-    if (!logEntry) {
-      throw new Error('Falha ao criar log de sincronização');
-    }
+    if (!logEntry) throw new Error('Falha ao criar log de sincronização');
 
-    // Processar dados baseado na tabela
-    let result;
+    // ---- Dispatch by table ----
+    let result: unknown;
     switch (payload.table.toLowerCase()) {
       case 'clientes':
         result = await syncCliente(supabase, payload);
@@ -98,155 +307,103 @@ serve(async (req) => {
 
     const executionTime = Date.now() - startTime;
 
-    // Atualizar log de sucesso
     await supabase
       .from('sync_logs')
       .update({
         status: 'success',
         processed_at: new Date().toISOString(),
-        execution_time_ms: executionTime
+        execution_time_ms: executionTime,
       })
       .eq('id', logEntry.id);
 
-    console.log('Sincronização bem-sucedida:', {
-      syncId: logEntry.id,
-      executionTime: `${executionTime}ms`,
-      result: result
-    });
+    await supabase
+      .from('webhook_deliveries')
+      .update({
+        outcome: 'processed',
+        sync_log_id: logEntry.id,
+        execution_time_ms: executionTime,
+      })
+      .eq('empresa_representada_id', empresaId)
+      .eq('source_system', sourceSystem)
+      .eq('delivery_id', deliveryId);
 
-    return new Response(JSON.stringify({ 
-      success: true, 
-      message: 'Sincronização realizada com sucesso',
-      sync_id: logEntry.id,
-      execution_time_ms: executionTime
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-
+    return finish(
+      {
+        success: true,
+        message: 'Sincronização realizada com sucesso',
+        sync_id: logEntry.id,
+        delivery_id: deliveryId,
+        execution_time_ms: executionTime,
+        result,
+      },
+      200,
+      'processed',
+    );
   } catch (error) {
-    console.error('Erro na sincronização:', error);
-    
-    return new Response(JSON.stringify({ 
-      success: false, 
-      error: error.message 
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    const execMs = Date.now() - startTime;
+    await supabase
+      .from('webhook_deliveries')
+      .update({ outcome: 'error', execution_time_ms: execMs })
+      .eq('empresa_representada_id', empresaId)
+      .eq('source_system', sourceSystem)
+      .eq('delivery_id', deliveryId);
+
+    return finish(
+      { success: false, error: (error as Error).message },
+      500,
+      'error',
+      { reason: 'processing_error' },
+    );
   }
 });
 
-async function validateWebhookSignature(
-  supabase: any,
-  signature: string | null,
-  sourceSystem: string,
-  empresaId: string,
-  payload: any,
-): Promise<boolean> {
-  if (!signature || !sourceSystem || !empresaId) {
-    console.error(JSON.stringify({ stage: 'validateWebhookSignature', reason: 'missing_input' }));
-    return false;
-  }
-
-  // Schema real: webhook_configs(nome, secret_token, ativo, empresa_representada_id)
-  const { data: config, error } = await supabase
-    .from('webhook_configs')
-    .select('secret_token, ativo, empresa_representada_id')
-    .eq('nome', sourceSystem)
-    .eq('empresa_representada_id', empresaId)
-    .eq('ativo', true)
-    .maybeSingle();
-
-  if (error || !config || !config.secret_token) {
-    console.error(JSON.stringify({ stage: 'validateWebhookSignature', reason: 'config_not_found', sourceSystem, empresaId }));
-    return false;
-  }
-
-  try {
-    const expectedSignature = await generateSignature(JSON.stringify(payload), config.secret_token);
-    const providedSignature = signature.replace('sha256=', '');
-    return timingSafeEqual(expectedSignature, providedSignature);
-  } catch (error) {
-    console.error(JSON.stringify({ stage: 'validateWebhookSignature', reason: 'hmac_error', error: (error as Error).message }));
-    return false;
-  }
-}
-
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
-}
-
-async function generateSignature(data: string, secret: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-
-  const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(data));
-  return Array.from(new Uint8Array(signature))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-}
+// ============================================================
+// Domain sync helpers (unchanged behaviour from previous version)
+// ============================================================
 
 async function syncCliente(supabase: any, payload: WebhookPayload) {
   const { event, data } = payload;
-  
-  console.log(`Sincronizando cliente - Evento: ${event}`, data);
-  
   switch (event) {
     case 'insert':
-    case 'sync':
-      // Verificar se cliente já existe
+    case 'sync': {
       const { data: existingCliente } = await supabase
         .from('clientes')
         .select('id')
         .or(`cpf_cnpj.eq.${data.cpf_cnpj},external_id.eq.${data.id}`)
         .single();
-      
+
       if (existingCliente) {
-        console.log('Cliente já existe, fazendo update');
         return await supabase
           .from('clientes')
           .update({
             ...mapClienteData(data, payload.source_system),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           })
           .eq('id', existingCliente.id)
           .select()
           .single();
       }
-      
+
       return await supabase
         .from('clientes')
         .insert(mapClienteData(data, payload.source_system))
         .select()
         .single();
-        
+    }
     case 'update':
       return await supabase
         .from('clientes')
         .update({
           ...mapClienteData(data, payload.source_system),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('external_id', data.id)
         .select()
         .single();
-        
     case 'delete':
       return await supabase
         .from('clientes')
-        .update({
-          ativo: false,
-          updated_at: new Date().toISOString()
-        })
+        .update({ ativo: false, updated_at: new Date().toISOString() })
         .eq('external_id', data.id)
         .select()
         .single();
@@ -255,10 +412,6 @@ async function syncCliente(supabase: any, payload: WebhookPayload) {
 
 async function syncVenda(supabase: any, payload: WebhookPayload) {
   const { event, data } = payload;
-  
-  console.log(`Sincronizando venda - Evento: ${event}`, data);
-  
-  // Buscar cliente pelo ID externo ou CPF/CNPJ
   let clienteId = null;
   if (data.cliente_id) {
     const { data: cliente } = await supabase
@@ -266,10 +419,8 @@ async function syncVenda(supabase: any, payload: WebhookPayload) {
       .select('id')
       .or(`external_id.eq.${data.cliente_id},cpf_cnpj.eq.${data.cliente_cpf_cnpj}`)
       .single();
-    
     clienteId = cliente?.id;
   }
-  
   const vendaData = {
     numero_venda: data.numero_venda || data.id,
     cliente_id: clienteId,
@@ -285,26 +436,17 @@ async function syncVenda(supabase: any, payload: WebhookPayload) {
     sync_metadata: {
       external_id: data.id,
       synchronized_at: new Date().toISOString(),
-      source_data: data
-    }
+      source_data: data,
+    },
   };
-  
   switch (event) {
     case 'insert':
     case 'sync':
-      return await supabase
-        .from('vendas')
-        .insert(vendaData)
-        .select()
-        .single();
-        
+      return await supabase.from('vendas').insert(vendaData).select().single();
     case 'update':
       return await supabase
         .from('vendas')
-        .update({
-          ...vendaData,
-          updated_at: new Date().toISOString()
-        })
+        .update({ ...vendaData, updated_at: new Date().toISOString() })
         .eq('numero_venda', data.numero_venda || data.id)
         .select()
         .single();
@@ -313,10 +455,6 @@ async function syncVenda(supabase: any, payload: WebhookPayload) {
 
 async function syncContrato(supabase: any, payload: WebhookPayload) {
   const { event, data } = payload;
-  
-  console.log(`Sincronizando contrato - Evento: ${event}`, data);
-  
-  // Buscar cliente
   let clienteId = null;
   if (data.cliente_id) {
     const { data: cliente } = await supabase
@@ -324,10 +462,8 @@ async function syncContrato(supabase: any, payload: WebhookPayload) {
       .select('id')
       .or(`external_id.eq.${data.cliente_id},cpf_cnpj.eq.${data.cliente_cpf_cnpj}`)
       .single();
-    
     clienteId = cliente?.id;
   }
-  
   const contratoData = {
     numero_contrato: data.numero_contrato || data.id,
     cliente_id: clienteId,
@@ -343,26 +479,17 @@ async function syncContrato(supabase: any, payload: WebhookPayload) {
     sync_metadata: {
       external_id: data.id,
       synchronized_at: new Date().toISOString(),
-      source_data: data
-    }
+      source_data: data,
+    },
   };
-  
   switch (event) {
     case 'insert':
     case 'sync':
-      return await supabase
-        .from('contratos')
-        .insert(contratoData)
-        .select()
-        .single();
-        
+      return await supabase.from('contratos').insert(contratoData).select().single();
     case 'update':
       return await supabase
         .from('contratos')
-        .update({
-          ...contratoData,
-          updated_at: new Date().toISOString()
-        })
+        .update({ ...contratoData, updated_at: new Date().toISOString() })
         .eq('numero_contrato', data.numero_contrato || data.id)
         .select()
         .single();
@@ -371,12 +498,9 @@ async function syncContrato(supabase: any, payload: WebhookPayload) {
 
 async function syncFinanceiro(supabase: any, payload: WebhookPayload) {
   const { event, data } = payload;
-  
-  console.log(`Sincronizando financeiro - Evento: ${event}`, data);
-  
-  // Buscar cliente, venda e contrato relacionados
-  let clienteId = null, vendaId = null, contratoId = null;
-  
+  let clienteId = null,
+    vendaId = null,
+    contratoId = null;
   if (data.cliente_id) {
     const { data: cliente } = await supabase
       .from('clientes')
@@ -385,7 +509,6 @@ async function syncFinanceiro(supabase: any, payload: WebhookPayload) {
       .single();
     clienteId = cliente?.id;
   }
-  
   if (data.venda_id) {
     const { data: venda } = await supabase
       .from('vendas')
@@ -394,7 +517,6 @@ async function syncFinanceiro(supabase: any, payload: WebhookPayload) {
       .single();
     vendaId = venda?.id;
   }
-  
   if (data.contrato_id) {
     const { data: contrato } = await supabase
       .from('contratos')
@@ -403,7 +525,6 @@ async function syncFinanceiro(supabase: any, payload: WebhookPayload) {
       .single();
     contratoId = contrato?.id;
   }
-  
   const financeiroData = {
     numero_documento: data.numero_documento || data.id,
     cliente_id: clienteId,
@@ -422,10 +543,9 @@ async function syncFinanceiro(supabase: any, payload: WebhookPayload) {
     sync_metadata: {
       external_id: data.id,
       synchronized_at: new Date().toISOString(),
-      source_data: data
-    }
+      source_data: data,
+    },
   };
-  
   switch (event) {
     case 'insert':
     case 'sync':
@@ -434,14 +554,10 @@ async function syncFinanceiro(supabase: any, payload: WebhookPayload) {
         .insert(financeiroData)
         .select()
         .single();
-        
     case 'update':
       return await supabase
         .from('contas_receber')
-        .update({
-          ...financeiroData,
-          updated_at: new Date().toISOString()
-        })
+        .update({ ...financeiroData, updated_at: new Date().toISOString() })
         .eq('numero_documento', data.numero_documento || data.id)
         .select()
         .single();
@@ -476,8 +592,8 @@ function mapClienteData(data: any, sourceSystem: string) {
     external_id: data.id,
     sync_metadata: {
       synchronized_at: new Date().toISOString(),
-      source_data: data
+      source_data: data,
     },
-    ativo: data.ativo !== false
+    ativo: data.ativo !== false,
   };
 }
