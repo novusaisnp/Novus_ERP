@@ -104,7 +104,7 @@ export const webhookConfigService = {
       .eq('empresa_representada_id', empresaId)
       .select()
       .single();
-    if (error) throw error;
+    if (error) throw mapWebhookError(error);
     return data as WebhookConfig;
   },
 
