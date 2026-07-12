@@ -5092,6 +5092,10 @@ export type Database = {
       }
     }
     Functions: {
+      check_v2_readiness: {
+        Args: { p_min_events?: number; p_nome: string; p_tenant: string }
+        Returns: Json
+      }
       converter_orcamento_em_venda: { Args: { p_payload: Json }; Returns: Json }
       gerar_contas_receber_da_venda: {
         Args: { p_idempotency_key?: string; p_venda_id: string }
@@ -5128,6 +5132,25 @@ export type Database = {
         Args: { p_periodicidade: string }
         Returns: number
       }
+      precheck_source_system_nome_consistency: {
+        Args: never
+        Returns: {
+          consistent: boolean
+          distinct_source_systems: string[]
+          empresa_representada_id: string
+          event_count: number
+          nome: string
+          signature_version: string
+        }[]
+      }
+      promote_to_dual: {
+        Args: { p_nome: string; p_tenant: string }
+        Returns: Json
+      }
+      promote_to_v2_only: {
+        Args: { p_min_events?: number; p_nome: string; p_tenant: string }
+        Returns: Json
+      }
       refresh_mv_fluxo_competencia: { Args: never; Returns: undefined }
       relatorio_fluxo_competencia: {
         Args: { p_data_fim: string; p_data_ini: string; p_empresa_id?: string }
@@ -5150,6 +5173,14 @@ export type Database = {
           regra_origem: string
           regra_versao: number
         }[]
+      }
+      rollback_to_dual: {
+        Args: { p_nome: string; p_tenant: string }
+        Returns: Json
+      }
+      rollback_to_v1: {
+        Args: { p_nome: string; p_tenant: string }
+        Returns: Json
       }
       transferencia_bancaria_atomica: {
         Args: {
