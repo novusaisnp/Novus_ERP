@@ -25,7 +25,7 @@ async function hmacSha256HexBytes(bytes: Uint8Array, secret: string): Promise<st
     false,
     ['sign'],
   );
-  const sig = await crypto.subtle.sign('HMAC', key, bytes);
+  const sig = await crypto.subtle.sign('HMAC', key, bytes as unknown as ArrayBuffer);
   return Array.from(new Uint8Array(sig))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
