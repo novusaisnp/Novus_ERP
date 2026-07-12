@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   BarChart,
   Bar,
@@ -45,6 +45,16 @@ import {
 import { GroupBySelect, type GroupByOption } from '@/components/relatorios/GroupBySelect';
 import { AggregatedTable } from '@/components/relatorios/AggregatedTable';
 import { DrillFilterBadge } from '@/components/relatorios/DrillFilterBadge';
+import { PresetsMenu } from '@/components/relatorios/PresetsMenu';
+import { ComparisonToggle } from '@/components/relatorios/ComparisonToggle';
+import { DeltaBadge } from '@/components/relatorios/DeltaBadge';
+import { InsightsBanner } from '@/components/relatorios/InsightsBanner';
+import { useReportPresets } from '@/hooks/useReportPresets';
+import { calcDelta, periodoAnteriorEquivalente } from '@/utils/reportComparison';
+import {
+  computeVendasInsights,
+  type InsightActionPayload,
+} from '@/utils/reportInsights';
 
 const STATUS_OPTIONS: Array<{ value: VendaStatus | 'TODOS'; label: string }> = [
   { value: 'TODOS', label: 'Todos' },
@@ -92,12 +102,40 @@ interface DrillFilter {
   label: string;
 }
 
+interface VendasViewState {
+  dataInicio: string;
+  dataFim: string;
+  status: VendaStatus | 'TODOS';
+  agrupamento: VendasGroupBy;
+  drill: DrillFilter | null;
+  comparar: boolean;
+}
+
 export default function RelatoriosVendas() {
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
   const [status, setStatus] = useState<VendaStatus | 'TODOS'>('TODOS');
   const [agrupamento, setAgrupamento] = useState<VendasGroupBy>('nenhum');
   const [drill, setDrill] = useState<DrillFilter | null>(null);
+  const [comparar, setComparar] = useState(false);
+
+  const presets = useReportPresets<VendasViewState>('vendas');
+
+  const applyPreset = (s: VendasViewState) => {
+    setDataInicio(s.dataInicio);
+    setDataFim(s.dataFim);
+    setStatus(s.status);
+    setAgrupamento(s.agrupamento);
+    setDrill(s.drill);
+    setComparar(s.comparar);
+  };
+
+  // Auto-carrega preset padrão uma vez
+  useEffect(() => {
+    const def = presets.getDefault();
+    if (def) applyPreset(def.state);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filtros: VendaFiltros = useMemo(
     () => ({
@@ -109,6 +147,26 @@ export default function RelatoriosVendas() {
   );
 
   const { vendas, loading } = useVendas(filtros);
+
+  const periodoComp = useMemo(
+    () => (dataInicio && dataFim ? periodoAnteriorEquivalente(dataInicio, dataFim) : null),
+    [dataInicio, dataFim],
+  );
+
+  const filtrosAnterior: VendaFiltros = useMemo(
+    () =>
+      periodoComp && comparar
+        ? {
+            data_inicio: periodoComp.anterior.inicio,
+            data_fim: periodoComp.anterior.fim,
+            status: status === 'TODOS' ? undefined : status,
+          }
+        : {},
+    [periodoComp, comparar, status],
+  );
+
+  const { vendas: vendasAnterior } = useVendas(comparar && periodoComp ? filtrosAnterior : {});
+  const vendasAnteriorEfetivo = comparar && periodoComp ? vendasAnterior : [];
 
   const keyForVenda = (v: Venda, tipo: VendasGroupBy): string => {
     if (tipo === 'dia' || tipo === 'semana' || tipo === 'mes') {
@@ -130,6 +188,28 @@ export default function RelatoriosVendas() {
     const ticket = qtd > 0 ? bruto / qtd : 0;
     return { qtd, bruto, ticket };
   }, [baseFiltered]);
+
+  const statsAnterior = useMemo(() => {
+    const qtd = vendasAnteriorEfetivo.length;
+    const bruto = vendasAnteriorEfetivo.reduce(
+      (acc, v) => acc + (Number(v.valor_total) || 0),
+      0,
+    );
+    const ticket = qtd > 0 ? bruto / qtd : 0;
+    return { qtd, bruto, ticket };
+  }, [vendasAnteriorEfetivo]);
+
+  const deltas = useMemo(
+    () =>
+      comparar && periodoComp
+        ? {
+            qtd: calcDelta(stats.qtd, statsAnterior.qtd),
+            bruto: calcDelta(stats.bruto, statsAnterior.bruto),
+            ticket: calcDelta(stats.ticket, statsAnterior.ticket),
+          }
+        : null,
+    [comparar, periodoComp, stats, statsAnterior],
+  );
 
   const aggregated: AggregatedRow[] = useMemo(() => {
     if (agrupamento === 'nenhum') return [];
@@ -164,6 +244,37 @@ export default function RelatoriosVendas() {
     );
   }, [vendas]);
 
+  const clientesAgrupados = useMemo(() => {
+    return groupBy(
+      baseFiltered,
+      (v) => v.cliente?.nome || 'Sem cliente',
+      (v) => Number(v.valor_total) || 0,
+    );
+  }, [baseFiltered]);
+
+  const insights = useMemo(
+    () =>
+      computeVendasInsights({
+        faturamentoAtual: stats.bruto,
+        faturamentoDelta: deltas?.bruto ?? null,
+        clientesAgrupados,
+      }),
+    [stats.bruto, deltas, clientesAgrupados],
+  );
+
+  const handleInsightAction = (payload: InsightActionPayload) => {
+    if (payload.kind !== 'drill') return;
+    if (
+      payload.type === 'cliente' ||
+      payload.type === 'status' ||
+      payload.type === 'dia' ||
+      payload.type === 'semana' ||
+      payload.type === 'mes'
+    ) {
+      setDrill({ type: payload.type, key: payload.key, label: payload.label });
+    }
+  };
+
   const handleAggregatedClick = (row: AggregatedRow) => {
     if (agrupamento === 'nenhum') return;
     setDrill({ type: agrupamento, key: row.key, label: row.label });
@@ -194,6 +305,15 @@ export default function RelatoriosVendas() {
     downloadCsv(`relatorio-vendas-${new Date().toISOString().slice(0, 10)}.csv`, csv);
   };
 
+  const currentViewState: VendasViewState = {
+    dataInicio,
+    dataFim,
+    status,
+    agrupamento,
+    drill,
+    comparar,
+  };
+
   return (
     <div className="p-6 space-y-6">
       <header className="flex items-center justify-between gap-4 flex-wrap">
@@ -204,10 +324,13 @@ export default function RelatoriosVendas() {
           </h1>
           <p className="text-muted-foreground">Análise consolidada de pedidos de venda.</p>
         </div>
-        <Button onClick={handleExport} disabled={loading || baseFiltered.length === 0}>
-          <Download className="h-4 w-4 mr-2" />
-          Exportar CSV
-        </Button>
+        <div className="flex items-center gap-2">
+          <PresetsMenu api={presets} currentState={currentViewState} onApply={applyPreset} />
+          <Button onClick={handleExport} disabled={loading || baseFiltered.length === 0}>
+            <Download className="h-4 w-4 mr-2" />
+            Exportar CSV
+          </Button>
+        </div>
       </header>
 
       <Card>
@@ -256,8 +379,18 @@ export default function RelatoriosVendas() {
             }}
             options={GROUP_OPTIONS}
           />
+          <div className="md:col-span-4">
+            <ComparisonToggle
+              enabled={comparar}
+              onChange={setComparar}
+              periodo={periodoComp}
+              disabledReason="Informe início e fim válidos para habilitar a comparação."
+            />
+          </div>
         </CardContent>
       </Card>
+
+      <InsightsBanner insights={insights} onAction={handleInsightAction} />
 
       {drill && (
         <DrillFilterBadge
@@ -272,24 +405,27 @@ export default function RelatoriosVendas() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground">Quantidade</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-1">
             <p className="text-2xl font-bold">{stats.qtd}</p>
+            {deltas && <DeltaBadge delta={deltas.qtd} formatValue={(v) => String(Math.round(v))} />}
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground">Valor Bruto</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-1">
             <p className="text-2xl font-bold">{brl(stats.bruto)}</p>
+            {deltas && <DeltaBadge delta={deltas.bruto} formatValue={brl} />}
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground">Ticket Médio</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-1">
             <p className="text-2xl font-bold">{brl(stats.ticket)}</p>
+            {deltas && <DeltaBadge delta={deltas.ticket} formatValue={brl} />}
           </CardContent>
         </Card>
       </div>
