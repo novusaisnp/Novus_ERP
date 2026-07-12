@@ -6,7 +6,7 @@
 import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
-import { NoopProvider } from "../_shared/delivery/NoopProvider.ts";
+import { resolveDeliveryProvider } from "../_shared/delivery/resolveProvider.ts";
 import type { DeliveryProvider } from "../_shared/delivery/DeliveryProvider.ts";
 import {
   backoffDelayMs,
@@ -17,13 +17,18 @@ import {
 import { exportCsvServer } from "../_shared/report-export/exportCsvServer.ts";
 import { exportXlsxServer } from "../_shared/report-export/exportXlsxServer.ts";
 import { exportPdfServer } from "../_shared/report-export/exportPdfServer.ts";
+import { resolveBrandingForUser, type Branding } from "../_shared/report-export/branding.ts";
 
 const BUCKET = "report-exports";
 const SIGNED_URL_TTL_SECONDS = 7 * 24 * 60 * 60;
 const MAX_ATTEMPTS = 3;
 const BATCH_LIMIT = 10;
 
-const activeProvider: DeliveryProvider = new NoopProvider();
+const activeProvider: DeliveryProvider = resolveDeliveryProvider({
+  DELIVERY_PROVIDER: Deno.env.get("DELIVERY_PROVIDER") ?? "noop",
+  SENDER_DOMAIN: Deno.env.get("SENDER_DOMAIN"),
+  FROM_DOMAIN: Deno.env.get("FROM_DOMAIN"),
+});
 
 interface ScheduleRow {
   id: string;
@@ -99,6 +104,7 @@ async function generateArtifact(
   title: string,
   columns: string[],
   rows: Array<Record<string, unknown>>,
+  branding: Branding | null,
 ): Promise<{ bytes: Uint8Array; contentType: string; ext: string }> {
   if (format === "csv") {
     return {
@@ -109,13 +115,13 @@ async function generateArtifact(
   }
   if (format === "xlsx") {
     return {
-      bytes: await exportXlsxServer({ sheetName: title, columns, rows }),
+      bytes: await exportXlsxServer({ sheetName: title, columns, rows, branding }),
       contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       ext: "xlsx",
     };
   }
   return {
-    bytes: await exportPdfServer({ title, columns, rows }),
+    bytes: await exportPdfServer({ title, columns, rows, branding }),
     contentType: "application/pdf",
     ext: "pdf",
   };
@@ -175,7 +181,8 @@ async function processSchedule(client: SupabaseClient, sch: ScheduleRow): Promis
     if (!vs.ok || !vs.data) throw new Error(`invalid_view_state:${vs.error}`);
 
     const scoped = await loadScopeData(client, sch.scope, vs.data);
-    const artifact = await generateArtifact(sch.format, sch.name, scoped.columns, scoped.rows);
+    const branding = await resolveBrandingForUser(client, sch.user_id);
+    const artifact = await generateArtifact(sch.format, sch.name, scoped.columns, scoped.rows, branding);
 
     const path = `${sch.user_id}/${sch.id}/${runId}.${artifact.ext}`;
     const { error: upErr } = await client.storage
