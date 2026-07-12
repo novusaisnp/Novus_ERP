@@ -4969,10 +4969,13 @@ export type Database = {
           metodo: string | null
           nome: string
           secret_token: string | null
+          signature_version: string
           strict_mode: boolean
           timeout_segundos: number | null
           updated_at: string
           url_destino: string
+          v2_enforced_at: string | null
+          v2_only: boolean
         }
         Insert: {
           ativo?: boolean | null
@@ -4986,10 +4989,13 @@ export type Database = {
           metodo?: string | null
           nome: string
           secret_token?: string | null
+          signature_version?: string
           strict_mode?: boolean
           timeout_segundos?: number | null
           updated_at?: string
           url_destino: string
+          v2_enforced_at?: string | null
+          v2_only?: boolean
         }
         Update: {
           ativo?: boolean | null
@@ -5003,10 +5009,13 @@ export type Database = {
           metodo?: string | null
           nome?: string
           secret_token?: string | null
+          signature_version?: string
           strict_mode?: boolean
           timeout_segundos?: number | null
           updated_at?: string
           url_destino?: string
+          v2_enforced_at?: string | null
+          v2_only?: boolean
         }
         Relationships: [
           {
@@ -5027,6 +5036,7 @@ export type Database = {
           id: string
           outcome: string
           request_id: string | null
+          signature_version: string | null
           source_system: string
           sync_log_id: string | null
           synthetic: boolean
@@ -5041,6 +5051,7 @@ export type Database = {
           id?: string
           outcome?: string
           request_id?: string | null
+          signature_version?: string | null
           source_system: string
           sync_log_id?: string | null
           synthetic?: boolean
@@ -5055,6 +5066,7 @@ export type Database = {
           id?: string
           outcome?: string
           request_id?: string | null
+          signature_version?: string | null
           source_system?: string
           sync_log_id?: string | null
           synthetic?: boolean
