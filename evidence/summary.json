@@ -1,0 +1,102 @@
+{
+  "total": 6,
+  "passed": 6,
+  "failed": [],
+  "results": [
+    {
+      "scenario": "A_v2_valid",
+      "tenant": "E2E_V2",
+      "http_status": 200,
+      "expected_status": 200,
+      "expected_contains": null,
+      "body": {
+        "success": true,
+        "message": "Sincronização realizada com sucesso",
+        "sync_id": "d39623bc-e430-415b-9981-f5f342ce5627",
+        "delivery_id": "e2e-A-1783855566",
+        "execution_time_ms": 793,
+        "result": {
+          "e2e": true,
+          "noop": true
+        },
+        "request_id": "a78d9723-107c-4ab3-84c9-2958be60143c"
+      },
+      "pass": true
+    },
+    {
+      "scenario": "B_v1_dual",
+      "tenant": "E2E_DUAL",
+      "http_status": 200,
+      "expected_status": 200,
+      "expected_contains": null,
+      "body": {
+        "success": true,
+        "message": "Sincronização realizada com sucesso",
+        "sync_id": "51e81874-2c83-4e74-a92a-4297a12b2f24",
+        "delivery_id": "0688e41a8f372fe4f4e5b68941f34c682fcc12dddecb0774f27f0275101daa60",
+        "execution_time_ms": 727,
+        "result": {
+          "e2e": true,
+          "noop": true
+        },
+        "request_id": "64d2157b-3c00-4c8d-8c5b-d7d0c46db3ea"
+      },
+      "pass": true
+    },
+    {
+      "scenario": "C_v2only_rejects_v1",
+      "tenant": "E2E_V2",
+      "http_status": 400,
+      "expected_status": 400,
+      "expected_contains": "signature_version_required",
+      "body": {
+        "success": false,
+        "error": "signature_version_required",
+        "request_id": "3cd0a988-4e36-44f6-b119-40da28d6ebb6"
+      },
+      "pass": true
+    },
+    {
+      "scenario": "D_v2_invalid",
+      "tenant": "E2E_V2",
+      "http_status": 401,
+      "expected_status": 401,
+      "expected_contains": "invalid_signature_v2",
+      "body": {
+        "success": false,
+        "error": "invalid_signature_v2",
+        "request_id": "6dcddb57-334a-4d2b-94be-e930770732cb"
+      },
+      "pass": true
+    },
+    {
+      "scenario": "E_duplicate_delivery",
+      "tenant": "E2E_V2",
+      "http_status": 200,
+      "expected_status": 200,
+      "expected_contains": "duplicate_delivery_ignored",
+      "body": {
+        "success": true,
+        "duplicate": true,
+        "error": "duplicate_delivery_ignored",
+        "delivery_id": "e2e-A-1783855566",
+        "request_id": "76854d8f-56e2-4b73-872a-a0e54a9481c0"
+      },
+      "pass": true
+    },
+    {
+      "scenario": "F_replay_out_of_window",
+      "tenant": "E2E_V2",
+      "http_status": 400,
+      "expected_status": 400,
+      "expected_contains": "timestamp_out_of_window",
+      "body": {
+        "success": false,
+        "error": "timestamp_out_of_window",
+        "ts_skew_ms": 601368,
+        "request_id": "7a98c019-eb21-4057-9b78-6ac3ea5cc297"
+      },
+      "pass": true
+    }
+  ]
+}

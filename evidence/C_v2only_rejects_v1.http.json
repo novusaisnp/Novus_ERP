@@ -1,0 +1,13 @@
+{
+  "scenario": "C_v2only_rejects_v1",
+  "tenant": "E2E_V2",
+  "http_status": 400,
+  "expected_status": 400,
+  "expected_contains": "signature_version_required",
+  "body": {
+    "success": false,
+    "error": "signature_version_required",
+    "request_id": "3cd0a988-4e36-44f6-b119-40da28d6ebb6"
+  },
+  "pass": true
+}

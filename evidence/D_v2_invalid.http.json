@@ -1,0 +1,13 @@
+{
+  "scenario": "D_v2_invalid",
+  "tenant": "E2E_V2",
+  "http_status": 401,
+  "expected_status": 401,
+  "expected_contains": "invalid_signature_v2",
+  "body": {
+    "success": false,
+    "error": "invalid_signature_v2",
+    "request_id": "6dcddb57-334a-4d2b-94be-e930770732cb"
+  },
+  "pass": true
+}

@@ -352,27 +352,27 @@ serve(async (req) => {
   }
 
   try {
-    // ---- Register sync_log ----
-    const { data: logEntry } = await supabase
+    // ---- Register sync_log (schema real: tipo/origem/payload_entrada/...) ----
+    const { data: logEntry, error: logInsertError } = await supabase
       .from('sync_logs')
       .insert({
-        operation_type: payload.event,
-        table_name: payload.table,
-        record_id:
-          payload.data?.id ||
-          payload.data?.numero_venda ||
-          payload.data?.numero_contrato ||
-          'unknown',
-        source_system: sourceSystem,
-        status: 'pending',
-        data_payload: payload,
-        retry_count: 0,
+        empresa_representada_id: empresaId,
+        tipo: `${payload.event}:${payload.table}`,
+        status: 'PENDENTE',
+        origem: sourceSystem,
+        destino: 'sync-webhook',
+        payload_entrada: payload,
+        tentativas: 0,
         delivery_id: deliveryId,
       })
       .select()
       .single();
 
-    if (!logEntry) throw new Error('Falha ao criar log de sincronização');
+    if (logInsertError || !logEntry) {
+      throw new Error(
+        `Falha ao criar log de sincronização: ${logInsertError?.message ?? 'no row'}`,
+      );
+    }
 
     // ---- Dispatch by table ----
     let result: unknown;
@@ -390,6 +390,11 @@ serve(async (req) => {
       case 'financeiro':
         result = await syncFinanceiro(supabase, payload);
         break;
+      case 'e2e_noop':
+        // Reserved for E2E validation: bypass domain sync so signature/idempotency
+        // contract can be validated end-to-end without depending on domain tables.
+        result = { e2e: true, noop: true };
+        break;
       default:
         throw new Error(`Tabela não suportada: ${payload.table}`);
     }
@@ -399,9 +404,9 @@ serve(async (req) => {
     await supabase
       .from('sync_logs')
       .update({
-        status: 'success',
-        processed_at: new Date().toISOString(),
-        execution_time_ms: executionTime,
+        status: 'SUCESSO',
+        processado_em: new Date().toISOString(),
+        payload_saida: { result },
       })
       .eq('id', logEntry.id);
 
