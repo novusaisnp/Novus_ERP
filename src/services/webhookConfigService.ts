@@ -10,6 +10,21 @@ import {
 const supabase: any = _supabase;
 
 const TABLE = 'webhook_configs';
+const UNIQUE_NOME_CONSTRAINT = 'webhook_configs_empresa_nome_key';
+
+function mapWebhookError(error: any): Error {
+  if (error?.code === '23505') {
+    const msg = String(error?.message ?? '');
+    if (
+      error?.constraint === UNIQUE_NOME_CONSTRAINT ||
+      msg.includes(UNIQUE_NOME_CONSTRAINT)
+    ) {
+      return new Error('Já existe um webhook com este nome para esta empresa.');
+    }
+  }
+  return error instanceof Error ? error : new Error(String(error?.message ?? error));
+}
+
 
 export const webhookConfigService = {
   async list(empresaId: string): Promise<WebhookConfig[]> {
@@ -69,7 +84,7 @@ export const webhookConfigService = {
       .insert(payload)
       .select()
       .single();
-    if (error) throw error;
+    if (error) throw mapWebhookError(error);
     return data as WebhookConfig;
   },
 
@@ -89,7 +104,7 @@ export const webhookConfigService = {
       .eq('empresa_representada_id', empresaId)
       .select()
       .single();
-    if (error) throw error;
+    if (error) throw mapWebhookError(error);
     return data as WebhookConfig;
   },
 
