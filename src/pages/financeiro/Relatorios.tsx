@@ -29,7 +29,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Download, FileBarChart2 } from 'lucide-react';
+import { FileBarChart2 } from 'lucide-react';
+import { ExportMenu } from '@/components/relatorios/ExportMenu';
+import { PerfOverlay } from '@/components/relatorios/PerfOverlay';
+import { useReportWorker } from '@/hooks/useReportWorker';
+import type { ReportExportPayload } from '@/utils/reportExportShared';
 import { useContasPagar } from '@/hooks/useContasPagar';
 import { useContasReceber } from '@/hooks/useContasReceber';
 import { toCsv, downloadCsv, type CsvColumn } from '@/utils/csvExport';
