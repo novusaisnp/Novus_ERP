@@ -39,12 +39,21 @@ serve(async (req) => {
     // Validar assinatura do webhook
     const signature = req.headers.get('x-webhook-signature');
     const sourceSystem = req.headers.get('x-source-system') || payload.source_system;
-    
-    if (!await validateWebhookSignature(supabase, signature, sourceSystem, payload)) {
-      console.error('Assinatura inválida');
-      return new Response('Invalid signature', { 
-        status: 401, 
-        headers: corsHeaders 
+    const empresaId = req.headers.get('x-empresa-id') || (payload as any).empresa_representada_id;
+
+    if (!sourceSystem || !empresaId) {
+      console.error(JSON.stringify({ outcome: 'bad_request', sourceSystem, empresaId }));
+      return new Response(JSON.stringify({ success: false, error: 'x-source-system e x-empresa-id são obrigatórios' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!await validateWebhookSignature(supabase, signature, sourceSystem, empresaId, payload)) {
+      console.error(JSON.stringify({ outcome: 'unauthorized', sourceSystem, empresaId }));
+      return new Response(JSON.stringify({ success: false, error: 'Invalid signature or inactive config' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
