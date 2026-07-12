@@ -125,6 +125,7 @@ export default function RelatoriosVendas() {
   const [agrupamento, setAgrupamento] = useState<VendasGroupBy>('nenhum');
   const [drill, setDrill] = useState<DrillFilter | null>(null);
   const [comparar, setComparar] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
 
   const presets = useReportPresets<VendasViewState>('vendas');
 
