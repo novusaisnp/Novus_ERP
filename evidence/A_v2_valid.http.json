@@ -1,0 +1,13 @@
+{
+  "scenario": "A_v2_valid",
+  "tenant": "E2E_V2",
+  "http_status": 500,
+  "expected_status": 200,
+  "expected_contains": null,
+  "body": {
+    "success": false,
+    "error": "Falha ao criar log de sincronização",
+    "request_id": "c9b5f18d-76fb-42ef-9694-1ea5128dbd4a"
+  },
+  "pass": false
+}

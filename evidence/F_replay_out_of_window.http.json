@@ -1,0 +1,14 @@
+{
+  "scenario": "F_replay_out_of_window",
+  "tenant": "E2E_V2",
+  "http_status": 400,
+  "expected_status": 400,
+  "expected_contains": "timestamp_out_of_window",
+  "body": {
+    "success": false,
+    "error": "timestamp_out_of_window",
+    "ts_skew_ms": 601022,
+    "request_id": "96faf13f-a81b-4a93-acc6-c521bf1b1da7"
+  },
+  "pass": true
+}

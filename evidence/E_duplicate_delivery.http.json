@@ -1,0 +1,15 @@
+{
+  "scenario": "E_duplicate_delivery",
+  "tenant": "E2E_V2",
+  "http_status": 200,
+  "expected_status": 200,
+  "expected_contains": "duplicate_delivery_ignored",
+  "body": {
+    "success": true,
+    "duplicate": true,
+    "error": "duplicate_delivery_ignored",
+    "delivery_id": "e2e-A-1783855501",
+    "request_id": "bc05af05-6658-4ae5-81c5-edc7357542f0"
+  },
+  "pass": true
+}

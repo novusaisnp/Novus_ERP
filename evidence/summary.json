@@ -1,0 +1,91 @@
+{
+  "total": 6,
+  "passed": 4,
+  "failed": [
+    "A_v2_valid",
+    "B_v1_dual"
+  ],
+  "results": [
+    {
+      "scenario": "A_v2_valid",
+      "tenant": "E2E_V2",
+      "http_status": 500,
+      "expected_status": 200,
+      "expected_contains": null,
+      "body": {
+        "success": false,
+        "error": "Falha ao criar log de sincronização",
+        "request_id": "c9b5f18d-76fb-42ef-9694-1ea5128dbd4a"
+      },
+      "pass": false
+    },
+    {
+      "scenario": "B_v1_dual",
+      "tenant": "E2E_DUAL",
+      "http_status": 500,
+      "expected_status": 200,
+      "expected_contains": null,
+      "body": {
+        "success": false,
+        "error": "Falha ao criar log de sincronização",
+        "request_id": "3ab6d435-7757-4339-b119-a7e0d1fa0bbf"
+      },
+      "pass": false
+    },
+    {
+      "scenario": "C_v2only_rejects_v1",
+      "tenant": "E2E_V2",
+      "http_status": 400,
+      "expected_status": 400,
+      "expected_contains": "signature_version_required",
+      "body": {
+        "success": false,
+        "error": "signature_version_required",
+        "request_id": "6ba5f826-fdc3-41b6-9884-9e648c4a0b5c"
+      },
+      "pass": true
+    },
+    {
+      "scenario": "D_v2_invalid",
+      "tenant": "E2E_V2",
+      "http_status": 401,
+      "expected_status": 401,
+      "expected_contains": "invalid_signature_v2",
+      "body": {
+        "success": false,
+        "error": "invalid_signature_v2",
+        "request_id": "ec2bf0de-42e3-4528-a828-f36762680396"
+      },
+      "pass": true
+    },
+    {
+      "scenario": "E_duplicate_delivery",
+      "tenant": "E2E_V2",
+      "http_status": 200,
+      "expected_status": 200,
+      "expected_contains": "duplicate_delivery_ignored",
+      "body": {
+        "success": true,
+        "duplicate": true,
+        "error": "duplicate_delivery_ignored",
+        "delivery_id": "e2e-A-1783855501",
+        "request_id": "bc05af05-6658-4ae5-81c5-edc7357542f0"
+      },
+      "pass": true
+    },
+    {
+      "scenario": "F_replay_out_of_window",
+      "tenant": "E2E_V2",
+      "http_status": 400,
+      "expected_status": 400,
+      "expected_contains": "timestamp_out_of_window",
+      "body": {
+        "success": false,
+        "error": "timestamp_out_of_window",
+        "ts_skew_ms": 601022,
+        "request_id": "96faf13f-a81b-4a93-acc6-c521bf1b1da7"
+      },
+      "pass": true
+    }
+  ]
+}
