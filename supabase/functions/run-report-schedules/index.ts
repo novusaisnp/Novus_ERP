@@ -104,6 +104,7 @@ async function generateArtifact(
   title: string,
   columns: string[],
   rows: Array<Record<string, unknown>>,
+  branding: Branding | null,
 ): Promise<{ bytes: Uint8Array; contentType: string; ext: string }> {
   if (format === "csv") {
     return {
@@ -114,13 +115,13 @@ async function generateArtifact(
   }
   if (format === "xlsx") {
     return {
-      bytes: await exportXlsxServer({ sheetName: title, columns, rows }),
+      bytes: await exportXlsxServer({ sheetName: title, columns, rows, branding }),
       contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       ext: "xlsx",
     };
   }
   return {
-    bytes: await exportPdfServer({ title, columns, rows }),
+    bytes: await exportPdfServer({ title, columns, rows, branding }),
     contentType: "application/pdf",
     ext: "pdf",
   };
