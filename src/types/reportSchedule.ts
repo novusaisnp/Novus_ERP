@@ -109,7 +109,7 @@ export function parseSchedule(row: Record<string, unknown>): ReportSchedule {
   const scope = (row.scope as ReportScheduleScope) ?? "vendas";
   const parsedVs: ReportScheduleViewStateV1 =
     vs && typeof vs === "object" && (vs as { schema_version?: unknown }).schema_version === 1
-      ? (vs as ReportScheduleViewStateV1)
+      ? ((vs as unknown) as ReportScheduleViewStateV1)
       : { schema_version: 1, scope, filters: {} };
 
   return {
