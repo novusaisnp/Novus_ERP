@@ -84,7 +84,7 @@ Deno.test("exportCsvServer — inclui BOM e escapa aspas/vírgulas", () => {
     columns: ["a", "b"],
     rows: [{ a: 'contém "aspas"', b: "linha,com,virgula" }],
   });
-  const text = new TextDecoder().decode(bytes);
+  const text = new TextDecoder("utf-8", { ignoreBOM: true }).decode(bytes);
   assert(text.startsWith("\uFEFF"));
   assert(text.includes('"contém ""aspas"""'));
   assert(text.includes('"linha,com,virgula"'));
