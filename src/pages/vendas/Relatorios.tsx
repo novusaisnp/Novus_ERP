@@ -34,6 +34,9 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { FileBarChart2 } from 'lucide-react';
 import { ExportMenu } from '@/components/relatorios/ExportMenu';
+import { ScheduleList } from '@/components/relatorios/ScheduleList';
+import { normalizeViewState } from '@/types/reportSchedule';
+import { CalendarClock } from 'lucide-react';
 import { PerfOverlay } from '@/components/relatorios/PerfOverlay';
 import { useReportWorker } from '@/hooks/useReportWorker';
 import type { ReportExportPayload } from '@/utils/reportExportShared';
@@ -393,8 +396,17 @@ export default function RelatoriosVendas() {
             onCsv={handleExport}
             disabled={loading || baseFiltered.length === 0}
           />
+          <Button variant="outline" size="sm" onClick={() => setScheduleOpen(true)}>
+            <CalendarClock className="h-4 w-4 mr-1" /> Agendar…
+          </Button>
         </div>
       </header>
+      <ScheduleList
+        open={scheduleOpen}
+        onOpenChange={setScheduleOpen}
+        scope="vendas"
+        viewState={normalizeViewState('vendas', currentViewState as unknown as Record<string, unknown>)}
+      />
 
       <Card>
         <CardHeader>
