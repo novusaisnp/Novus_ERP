@@ -1,13 +1,20 @@
 {
   "scenario": "B_v1_dual",
   "tenant": "E2E_DUAL",
-  "http_status": 500,
+  "http_status": 200,
   "expected_status": 200,
   "expected_contains": null,
   "body": {
-    "success": false,
-    "error": "Falha ao criar log de sincronização",
-    "request_id": "3ab6d435-7757-4339-b119-a7e0d1fa0bbf"
+    "success": true,
+    "message": "Sincronização realizada com sucesso",
+    "sync_id": "51e81874-2c83-4e74-a92a-4297a12b2f24",
+    "delivery_id": "0688e41a8f372fe4f4e5b68941f34c682fcc12dddecb0774f27f0275101daa60",
+    "execution_time_ms": 727,
+    "result": {
+      "e2e": true,
+      "noop": true
+    },
+    "request_id": "64d2157b-3c00-4c8d-8c5b-d7d0c46db3ea"
   },
-  "pass": false
+  "pass": true
 }
