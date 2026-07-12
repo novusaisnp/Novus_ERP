@@ -84,7 +84,7 @@ export const webhookConfigService = {
       .insert(payload)
       .select()
       .single();
-    if (error) throw error;
+    if (error) throw mapWebhookError(error);
     return data as WebhookConfig;
   },
 
