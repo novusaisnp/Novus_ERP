@@ -181,7 +181,8 @@ async function processSchedule(client: SupabaseClient, sch: ScheduleRow): Promis
     if (!vs.ok || !vs.data) throw new Error(`invalid_view_state:${vs.error}`);
 
     const scoped = await loadScopeData(client, sch.scope, vs.data);
-    const artifact = await generateArtifact(sch.format, sch.name, scoped.columns, scoped.rows);
+    const branding = await resolveBrandingForUser(client, sch.user_id);
+    const artifact = await generateArtifact(sch.format, sch.name, scoped.columns, scoped.rows, branding);
 
     const path = `${sch.user_id}/${sch.id}/${runId}.${artifact.ext}`;
     const { error: upErr } = await client.storage
