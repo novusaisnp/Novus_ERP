@@ -1,0 +1,42 @@
+-- =========================================================================
+-- Rollout V2 — Referência de funções operacionais por tenant
+-- Arquivo de documentação. Fonte oficial: migration
+--   20260712_rollout_v2_tenant_ops (aplicada).
+-- =========================================================================
+-- Todas as funções abaixo são SECURITY DEFINER, restritas a admin via
+-- has_role(auth.uid(), 'admin'), com EXECUTE revogado de PUBLIC/anon.
+-- Retorno sempre em JSONB estruturado:
+--   { status, current_state, ready?, reason, changed_rows, executed_at }
+--
+-- A) public.check_v2_readiness(tenant uuid, nome text, min_events int = 20)
+--    → jsonb com métricas dos últimos 7 dias e ready boolean.
+--
+--    Gate ready=true quando:
+--      v1_7d = 0
+--      v2_err_7d = 0
+--      v2_ok_7d >= min_events
+--
+-- B) public.promote_to_dual(tenant uuid, nome text) → jsonb
+--    Idempotente. v1 → dual. Bloqueia se estado atual não for v1/dual.
+--
+-- C) public.promote_to_v2_only(tenant uuid, nome text, min_events int = 20)
+--    → jsonb. Somente executa se check_v2_readiness.ready = true e estado atual = 'dual'.
+--    Grava v2_enforced_at = now().
+--
+-- D) public.rollback_to_dual(tenant uuid, nome text) → jsonb
+--    Rollback rápido em incidente: retorna a aceitar V1.
+--
+-- E) public.rollback_to_v1(tenant uuid, nome text) → jsonb
+--    Rollback profundo: remove aceitação de V2.
+--
+-- F) public.precheck_source_system_nome_consistency() → TABLE
+--    Aponta configs onde o source_system observado nas entregas diverge do nome.
+-- =========================================================================
+
+-- Exemplos de invocação (via SQL editor ou supabase.rpc no client admin):
+-- SELECT public.check_v2_readiness('11111111-...', 'PDV_LEGADO');
+-- SELECT public.promote_to_dual('11111111-...', 'PDV_LEGADO');
+-- SELECT public.promote_to_v2_only('11111111-...', 'PDV_LEGADO', 20);
+-- SELECT public.rollback_to_dual('11111111-...', 'PDV_LEGADO');
+-- SELECT public.rollback_to_v1('11111111-...', 'PDV_LEGADO');
+-- SELECT * FROM public.precheck_source_system_nome_consistency();
