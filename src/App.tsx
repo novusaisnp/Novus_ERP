@@ -15,6 +15,7 @@ import Empresas from './pages/configuracoes/Empresas';
 import Sistema from './pages/configuracoes/Sistema';
 import CentrosCusto from './pages/configuracoes/CentrosCusto';
 import Perfil from './pages/configuracoes/Perfil';
+import Webhooks from './pages/configuracoes/Webhooks';
 
 // Cadastros Pages
 import Servicos from './pages/cadastros/Servicos';
@@ -193,6 +194,7 @@ function App() {
                     <Route path="usuarios" element={<Usuarios />} />
                     <Route path="sistema" element={<Sistema />} />
                     <Route path="perfil" element={<Perfil />} />
+                    <Route path="webhooks" element={<Webhooks />} />
                   </Route>
                   
                   {/* 404 Route */}

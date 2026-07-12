@@ -254,6 +254,10 @@ export const sidebarItems: MenuItem[] = [
         title: "Sistema",
         url: "/configuracoes/sistema",
       },
+      {
+        title: "Webhooks",
+        url: "/configuracoes/webhooks",
+      },
     ],
   },
 ];
