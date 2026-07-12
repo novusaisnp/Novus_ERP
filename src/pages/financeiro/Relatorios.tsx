@@ -31,6 +31,9 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { FileBarChart2 } from 'lucide-react';
 import { ExportMenu } from '@/components/relatorios/ExportMenu';
+import { ScheduleList } from '@/components/relatorios/ScheduleList';
+import { normalizeViewState } from '@/types/reportSchedule';
+import { CalendarClock } from 'lucide-react';
 import { PerfOverlay } from '@/components/relatorios/PerfOverlay';
 import { useReportWorker } from '@/hooks/useReportWorker';
 import type { ReportExportPayload } from '@/utils/reportExportShared';
@@ -113,6 +116,7 @@ export default function RelatoriosFinanceiro() {
   const [agrupamento, setAgrupamento] = useState<FinGroupBy>('nenhum');
   const [drill, setDrill] = useState<DrillFilter | null>(null);
   const [comparar, setComparar] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
 
   const presets = useReportPresets<FinanceiroViewState>('financeiro');
 
