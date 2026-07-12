@@ -376,10 +376,11 @@ export default function RelatoriosFinanceiro() {
         </div>
         <div className="flex items-center gap-2">
           <PresetsMenu api={presets} currentState={currentViewState} onApply={applyPreset} />
-          <Button onClick={handleExport} disabled={loading || baseFiltered.length === 0}>
-            <Download className="h-4 w-4 mr-2" />
-            Exportar CSV
-          </Button>
+          <ExportMenu
+            payload={exportPayload}
+            onCsv={handleExport}
+            disabled={loading || baseFiltered.length === 0}
+          />
         </div>
       </header>
 
