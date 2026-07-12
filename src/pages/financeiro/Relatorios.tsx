@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   BarChart,
   Bar,
@@ -45,6 +45,16 @@ import {
 import { GroupBySelect, type GroupByOption } from '@/components/relatorios/GroupBySelect';
 import { AggregatedTable } from '@/components/relatorios/AggregatedTable';
 import { DrillFilterBadge } from '@/components/relatorios/DrillFilterBadge';
+import { PresetsMenu } from '@/components/relatorios/PresetsMenu';
+import { ComparisonToggle } from '@/components/relatorios/ComparisonToggle';
+import { DeltaBadge } from '@/components/relatorios/DeltaBadge';
+import { InsightsBanner } from '@/components/relatorios/InsightsBanner';
+import { useReportPresets } from '@/hooks/useReportPresets';
+import { calcDelta, periodoAnteriorEquivalente } from '@/utils/reportComparison';
+import {
+  computeFinanceiroInsights,
+  type InsightActionPayload,
+} from '@/utils/reportInsights';
 
 type Tipo = 'TODOS' | 'RECEBER' | 'PAGAR';
 type FinGroupBy = 'nenhum' | 'tipo' | 'situacao' | 'faixa_vencimento';
@@ -83,12 +93,39 @@ interface DrillFilter {
   label: string;
 }
 
+interface FinanceiroViewState {
+  dataInicio: string;
+  dataFim: string;
+  tipoFiltro: Tipo;
+  agrupamento: FinGroupBy;
+  drill: DrillFilter | null;
+  comparar: boolean;
+}
+
 export default function RelatoriosFinanceiro() {
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
   const [tipoFiltro, setTipoFiltro] = useState<Tipo>('TODOS');
   const [agrupamento, setAgrupamento] = useState<FinGroupBy>('nenhum');
   const [drill, setDrill] = useState<DrillFilter | null>(null);
+  const [comparar, setComparar] = useState(false);
+
+  const presets = useReportPresets<FinanceiroViewState>('financeiro');
+
+  const applyPreset = (s: FinanceiroViewState) => {
+    setDataInicio(s.dataInicio);
+    setDataFim(s.dataFim);
+    setTipoFiltro(s.tipoFiltro);
+    setAgrupamento(s.agrupamento);
+    setDrill(s.drill);
+    setComparar(s.comparar);
+  };
+
+  useEffect(() => {
+    const def = presets.getDefault();
+    if (def) applyPreset(def.state);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filtros = useMemo(
     () => ({
@@ -111,9 +148,50 @@ export default function RelatoriosFinanceiro() {
     error: errReceber,
   } = useContasReceber(filtros);
 
+  const periodoComp = useMemo(
+    () => (dataInicio && dataFim ? periodoAnteriorEquivalente(dataInicio, dataFim) : null),
+    [dataInicio, dataFim],
+  );
+
+  const filtrosAnterior = useMemo(
+    () =>
+      periodoComp && comparar
+        ? {
+            data_vencimento_inicio: periodoComp.anterior.inicio,
+            data_vencimento_fim: periodoComp.anterior.fim,
+          }
+        : {},
+    [periodoComp, comparar],
+  );
+
+  const { estatisticas: statsPagarAnt } = useContasPagar(
+    comparar && periodoComp ? filtrosAnterior : {},
+  );
+  const { estatisticas: statsReceberAnt } = useContasReceber(
+    comparar && periodoComp ? filtrosAnterior : {},
+  );
+
   const totalReceber = statsReceber?.valor_total_aberto ?? 0;
   const totalPagar = statsPagar?.valor_total_aberto ?? 0;
   const saldo = totalReceber - totalPagar;
+
+  const vencidoAtual =
+    (statsReceber?.valor_total_vencido ?? 0) + (statsPagar?.valor_total_vencido ?? 0);
+  const vencidoAnterior =
+    (statsReceberAnt?.valor_total_vencido ?? 0) + (statsPagarAnt?.valor_total_vencido ?? 0);
+
+  const deltas = useMemo(() => {
+    if (!comparar || !periodoComp) return null;
+    return {
+      receber: calcDelta(totalReceber, statsReceberAnt?.valor_total_aberto ?? 0),
+      pagar: calcDelta(totalPagar, statsPagarAnt?.valor_total_aberto ?? 0),
+      saldo: calcDelta(
+        saldo,
+        (statsReceberAnt?.valor_total_aberto ?? 0) - (statsPagarAnt?.valor_total_aberto ?? 0),
+      ),
+      vencido: calcDelta(vencidoAtual, vencidoAnterior),
+    };
+  }, [comparar, periodoComp, totalReceber, totalPagar, saldo, vencidoAtual, vencidoAnterior, statsReceberAnt, statsPagarAnt]);
 
   const todasLinhas: LinhaConsolidada[] = useMemo(() => {
     const rows: LinhaConsolidada[] = [];
@@ -174,6 +252,38 @@ export default function RelatoriosFinanceiro() {
       },
     );
   }, [todasLinhas, agrupamento]);
+
+  const faixasAgrupadas = useMemo(() => {
+    return groupBy(
+      todasLinhas,
+      (l) => l.faixa,
+      (l) => l.valor_original,
+      (key) => FAIXA_LABEL[key as FaixaVencimento] ?? key,
+    );
+  }, [todasLinhas]);
+
+  const insights = useMemo(
+    () =>
+      computeFinanceiroInsights({
+        vencidosAtual: vencidoAtual,
+        vencidosDelta: deltas?.vencido ?? null,
+        totalAberto: totalReceber + totalPagar,
+        faixasAgrupadas,
+      }),
+    [vencidoAtual, deltas, totalReceber, totalPagar, faixasAgrupadas],
+  );
+
+  const handleInsightAction = (payload: InsightActionPayload) => {
+    if (payload.kind !== 'drill') return;
+    if (
+      payload.type === 'tipo' ||
+      payload.type === 'situacao' ||
+      payload.type === 'faixa_vencimento'
+    ) {
+      setAgrupamento(payload.type);
+      setDrill({ type: payload.type, key: payload.key, label: payload.label });
+    }
+  };
 
   const seriePorMes = useMemo(() => {
     const map = new Map<string, { periodo: string; receber: number; pagar: number }>();
@@ -239,6 +349,15 @@ export default function RelatoriosFinanceiro() {
     downloadCsv(`relatorio-financeiro-${new Date().toISOString().slice(0, 10)}.csv`, csv);
   };
 
+  const currentViewState: FinanceiroViewState = {
+    dataInicio,
+    dataFim,
+    tipoFiltro,
+    agrupamento,
+    drill,
+    comparar,
+  };
+
   return (
     <div className="p-6 space-y-6">
       <header className="flex items-center justify-between gap-4 flex-wrap">
@@ -251,10 +370,13 @@ export default function RelatoriosFinanceiro() {
             Consolidação de contas a pagar e a receber por período.
           </p>
         </div>
-        <Button onClick={handleExport} disabled={loading || baseFiltered.length === 0}>
-          <Download className="h-4 w-4 mr-2" />
-          Exportar CSV
-        </Button>
+        <div className="flex items-center gap-2">
+          <PresetsMenu api={presets} currentState={currentViewState} onApply={applyPreset} />
+          <Button onClick={handleExport} disabled={loading || baseFiltered.length === 0}>
+            <Download className="h-4 w-4 mr-2" />
+            Exportar CSV
+          </Button>
+        </div>
       </header>
 
       <Card>
@@ -301,8 +423,18 @@ export default function RelatoriosFinanceiro() {
             }}
             options={GROUP_OPTIONS}
           />
+          <div className="md:col-span-4">
+            <ComparisonToggle
+              enabled={comparar}
+              onChange={setComparar}
+              periodo={periodoComp}
+              disabledReason="Informe início e fim válidos para habilitar a comparação."
+            />
+          </div>
         </CardContent>
       </Card>
+
+      <InsightsBanner insights={insights} onAction={handleInsightAction} />
 
       {drill && (
         <DrillFilterBadge
@@ -317,27 +449,29 @@ export default function RelatoriosFinanceiro() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground">Total a Receber</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-1">
             <p className="text-2xl font-bold text-green-600 dark:text-green-500">
               {brl(totalReceber)}
             </p>
+            {deltas && <DeltaBadge delta={deltas.receber} formatValue={brl} />}
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground">Total a Pagar</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-1">
             <p className="text-2xl font-bold text-red-600 dark:text-red-500">
               {brl(totalPagar)}
             </p>
+            {deltas && <DeltaBadge delta={deltas.pagar} formatValue={brl} />}
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground">Saldo Projetado</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-1">
             <p
               className={`text-2xl font-bold ${
                 saldo >= 0
@@ -347,6 +481,7 @@ export default function RelatoriosFinanceiro() {
             >
               {brl(saldo)}
             </p>
+            {deltas && <DeltaBadge delta={deltas.saldo} formatValue={brl} />}
           </CardContent>
         </Card>
       </div>
