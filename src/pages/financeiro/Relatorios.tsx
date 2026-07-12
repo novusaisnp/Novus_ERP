@@ -692,6 +692,12 @@ export default function RelatoriosFinanceiro() {
           )}
         </CardContent>
       </Card>
+      <PerfOverlay
+        datasetSize={todasLinhas.length}
+        inlineMs={perfStats.inline}
+        workerMs={perfStats.worker}
+        usedWorker={perfStats.usedWorker}
+      />
     </div>
   );
 }
