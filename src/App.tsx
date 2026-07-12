@@ -128,7 +128,7 @@ function App() {
                     <Route path="pedidos" element={<Vendas />} />
                     <Route path="orcamentos" element={<Orcamentos />} />
                     <Route path="contratos" element={<Contratos />} />
-                    <Route path="relatorios" element={<div className="p-8"><h1 className="text-3xl font-bold text-primary mb-2">Relatórios de Vendas</h1><p className="text-muted-foreground">Em breve</p></div>} />
+                    <Route path="relatorios" element={<RelatoriosVendas />} />
                   </Route>
 
                   {/* Contratos redirect (legacy) */}
