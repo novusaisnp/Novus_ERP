@@ -30,7 +30,10 @@ import {
   useUpdateLocalizacao,
   useDeleteLocalizacao,
 } from '@/hooks/useLocalizacoes';
+import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
+import { toast } from 'sonner';
 import type { Localizacao } from '@/services/localizacaoService';
+
 
 const Localizacoes: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
