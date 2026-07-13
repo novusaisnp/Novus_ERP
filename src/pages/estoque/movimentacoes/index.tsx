@@ -134,14 +134,14 @@ const MovimentacoesEstoque: React.FC = () => {
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                     Carregando...
                   </TableCell>
                 </TableRow>
               )}
               {!isLoading && filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                     Nenhuma movimentação encontrada
                   </TableCell>
                 </TableRow>
@@ -163,6 +163,13 @@ const MovimentacoesEstoque: React.FC = () => {
                     {m.localizacao_destino_id ? locsMap[m.localizacao_destino_id] ?? '—' : '—'}
                   </TableCell>
                   <TableCell className="text-muted-foreground">{m.documento_ref ?? '—'}</TableCell>
+                  <TableCell className="text-right">
+                    <Button asChild variant="ghost" size="sm" title="Ver Kardex">
+                      <Link to={`/estoque/kardex/${m.produto_id}`}>
+                        <ScrollText className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
