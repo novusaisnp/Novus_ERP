@@ -4,7 +4,7 @@ import { STORAGE_STATE_PATH } from '../fixtures/auth.fixture';
 import { dbReset } from '../fixtures/db-reset';
 import {
   readProdutoByNome,
-  readMovimentacoesByProduto,
+  readMovimentacoesRecentes,
   readSaldosByProduto,
 } from '../fixtures/db-read';
 import { makeProduto } from '../fixtures/test-data';
@@ -80,8 +80,9 @@ test.describe('F4 - Produto & Movimentação de Estoque', () => {
     await expect
       .poll(
         async () => {
-          const alvoId = (await readProdutoByNome(page, nome))?.id ?? produtoId;
-          const movs = await readMovimentacoesByProduto(page, alvoId);
+          // dbReset limpa estoque_movimentacoes no beforeEach, então quaisquer
+          // movs recentes pertencem a este teste (independente do produto do combo).
+          const movs = await readMovimentacoesRecentes(page, 10);
           return movs;
         },
         { timeout: 15_000, message: 'movimentações não persistidas' },
