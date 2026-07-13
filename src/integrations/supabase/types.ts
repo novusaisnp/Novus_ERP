@@ -6642,25 +6642,27 @@ export type Database = {
       }
       conciliar_inventario: { Args: { p_inventario_id: string }; Returns: Json }
       confirmar_match: {
-        Args: {
-          p_movimentacao_bancaria_id: string
-          p_movimentacao_extrato_id: string
-        }
-        Returns: undefined
+        Args: { p_extrato_linha_id: string; p_movimentacao_id: string }
+        Returns: Json
       }
       converter_orcamento_em_venda: { Args: { p_payload: Json }; Returns: Json }
-      criar_lancamento_do_extrato: {
-        Args: {
-          p_centro_custo_id: string
-          p_movimentacao_extrato_id: string
-          p_natureza_id: string
-          p_plano_conta_id: string
-        }
-        Returns: string
-      }
+      criar_lancamento_do_extrato:
+        | {
+            Args: { p_extrato_linha_id: string; p_payload?: Json }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_centro_custo_id: string
+              p_movimentacao_extrato_id: string
+              p_natureza_id: string
+              p_plano_conta_id: string
+            }
+            Returns: string
+          }
       desfazer_conciliacao: {
-        Args: { p_movimentacao_extrato_id: string }
-        Returns: undefined
+        Args: { p_extrato_linha_id: string }
+        Returns: Json
       }
       estornar_estoque_venda: { Args: { p_venda_id: string }; Returns: Json }
       fn_curva_abc: {
@@ -6825,7 +6827,7 @@ export type Database = {
           regra_versao: number
         }[]
       }
-      reverter_extrato: { Args: { p_extrato_id: string }; Returns: undefined }
+      reverter_extrato: { Args: { p_extrato_id: string }; Returns: Json }
       rollback_to_dual: {
         Args: { p_nome: string; p_tenant: string }
         Returns: Json
@@ -6834,14 +6836,7 @@ export type Database = {
         Args: { p_nome: string; p_tenant: string }
         Returns: Json
       }
-      sugerir_matches_extrato: {
-        Args: { p_extrato_id: string }
-        Returns: {
-          candidato_id: string
-          movimentacao_extrato_id: string
-          score: number
-        }[]
-      }
+      sugerir_matches_extrato: { Args: { p_extrato_id: string }; Returns: Json }
       transferencia_bancaria_atomica: {
         Args: {
           p_centro_custo_id: string
