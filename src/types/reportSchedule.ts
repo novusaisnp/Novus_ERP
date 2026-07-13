@@ -160,6 +160,8 @@ export function parseRun(row: Record<string, unknown>): ReportScheduleRun {
     resigned_at: (row.resigned_at as string | null) ?? null,
     resigned_by: (row.resigned_by as string | null) ?? null,
     resign_count: Number(row.resign_count ?? 0),
+    artifact_pruned_at: (row.artifact_pruned_at as string | null) ?? null,
+    artifact_prune_reason: (row.artifact_prune_reason as string | null) ?? null,
   };
 }
 
