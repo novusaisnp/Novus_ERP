@@ -178,7 +178,7 @@ export const MovimentacoesGestaoPopup = ({
             </div>
             <div className="flex gap-2">
               {podeRealizar('liquidar') && (
-                <Button onClick={() => handleOperacao('liquidar')}>
+                <Button onClick={() => handleOperacao('liquidar')} data-testid="titulo-liquidar-btn">
                   <CreditCard className="w-4 h-4 mr-2" />
                   Baixar
                 </Button>

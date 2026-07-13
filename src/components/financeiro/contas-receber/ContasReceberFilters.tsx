@@ -75,6 +75,7 @@ export const ContasReceberFilters = ({ onFilter }: ContasReceberFiltersProps) =>
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="busca"
+                    data-testid="contas-receber-busca-input"
                     placeholder="Documento, cliente..."
                     value={filtros.busca || ''}
                     onChange={(e) => handleInputChange('busca', e.target.value)}

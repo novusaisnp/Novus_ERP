@@ -111,7 +111,7 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
                 value={form.cliente_id || ''}
                 onValueChange={(v) => setField('cliente_id', v)}
               >
-                <SelectTrigger><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
+                <SelectTrigger data-testid="venda-cliente-select"><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
                 <SelectContent>
                   {(clientes as any[])
                     .filter((c) => c.id && (c.ativo ?? true))
@@ -166,7 +166,7 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
           <div className="border rounded-md p-3 space-y-2">
             <div className="flex justify-between items-center">
               <h4 className="font-medium">Itens da Venda</h4>
-              <Button type="button" size="sm" variant="outline" onClick={addItem}>
+              <Button type="button" size="sm" variant="outline" onClick={addItem} data-testid="venda-adicionar-item-btn">
                 <Plus className="h-4 w-4 mr-1" /> Adicionar Item
               </Button>
             </div>
@@ -182,6 +182,7 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
                         value={it.descricao}
                         onChange={(e) => updateItem(idx, { descricao: e.target.value })}
                         required
+                        data-testid={`venda-item-descricao-input-${idx}`}
                       />
                     </div>
                     <div className="col-span-4 md:col-span-2">
@@ -191,6 +192,7 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
                         step="0.001"
                         value={it.quantidade}
                         onChange={(e) => updateItem(idx, { quantidade: parseFloat(e.target.value) || 0 })}
+                        data-testid={`venda-item-qtd-input-${idx}`}
                       />
                     </div>
                     <div className="col-span-4 md:col-span-2">
@@ -274,7 +276,7 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
+            <Button type="submit" disabled={saving} data-testid="venda-salvar-btn">{saving ? 'Salvando...' : 'Salvar'}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
