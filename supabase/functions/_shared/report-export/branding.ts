@@ -148,6 +148,43 @@ export async function resolveBrandingForUser(
   }
 }
 
+export async function resolveBrandingForEmpresa(
+  client: SupabaseClient,
+  empresaId: string | null | undefined,
+): Promise<Branding> {
+  const empty: Branding = { companyName: null, primaryColor: null, logo: null };
+  if (!empresaId) return empty;
+  try {
+    const { data: emp } = await client
+      .from("empresas_representadas")
+      .select("nome,configuracoes")
+      .eq("id", empresaId)
+      .maybeSingle();
+
+    if (!emp) return empty;
+    const row = emp as { nome: string | null; configuracoes: Record<string, unknown> | null };
+    const cfg = row.configuracoes ?? {};
+    const logoPath = typeof cfg.logo_path === "string" ? (cfg.logo_path as string) : null;
+    const logoUrl = typeof cfg.logo_url === "string" ? (cfg.logo_url as string) : null;
+    const primaryColor = typeof cfg.primary_color === "string" ? (cfg.primary_color as string) : null;
+
+    let logo: BrandingLogo | null = null;
+    if (logoPath) {
+      try {
+        const { data: signed } = await client.storage.from("empresa-logos").createSignedUrl(logoPath, 60);
+        if (signed?.signedUrl) logo = await fetchLogoBytes(signed.signedUrl);
+      } catch {
+        logo = null;
+      }
+    }
+    if (!logo && logoUrl) logo = await fetchLogoBytes(logoUrl);
+
+    return { companyName: row.nome ?? null, primaryColor, logo };
+  } catch {
+    return empty;
+  }
+}
+
 // Helper para testes: limpa cache.
 export function _resetBrandingCacheForTests(): void {
   logoCache.clear();

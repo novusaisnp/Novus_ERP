@@ -57,6 +57,8 @@ import { ComparisonToggle } from '@/components/relatorios/ComparisonToggle';
 import { DeltaBadge } from '@/components/relatorios/DeltaBadge';
 import { InsightsBanner } from '@/components/relatorios/InsightsBanner';
 import { useReportPresets } from '@/hooks/useReportPresets';
+import { useEmpresasRepresentadas } from '@/hooks/useEmpresasRepresentadas';
+import { useEmpresasLogosMap } from '@/hooks/useEmpresasLogosMap';
 import { calcDelta, periodoAnteriorEquivalente } from '@/utils/reportComparison';
 import {
   computeFinanceiroInsights,
@@ -68,6 +70,7 @@ type FinGroupBy = 'nenhum' | 'tipo' | 'situacao' | 'faixa_vencimento';
 
 interface LinhaConsolidada {
   id: string;
+  empresa_representada_id?: string | null;
   data_vencimento: string;
   tipo: 'Receber' | 'Pagar';
   descricao: string;
@@ -119,6 +122,8 @@ export default function RelatoriosFinanceiro() {
   const [scheduleOpen, setScheduleOpen] = useState(false);
 
   const presets = useReportPresets<FinanceiroViewState>('financeiro');
+  const { empresas } = useEmpresasRepresentadas();
+  const { data: logosMap } = useEmpresasLogosMap(empresas);
 
   const applyPreset = (s: FinanceiroViewState) => {
     setDataInicio(s.dataInicio);
@@ -207,6 +212,7 @@ export default function RelatoriosFinanceiro() {
       contasReceber.forEach((c) => {
         rows.push({
           id: `r-${c.id}`,
+          empresa_representada_id: c.empresa_representada_id,
           data_vencimento: c.data_vencimento,
           tipo: 'Receber',
           descricao: c.descricao,
@@ -221,6 +227,7 @@ export default function RelatoriosFinanceiro() {
       contasPagar.forEach((c) => {
         rows.push({
           id: `p-${c.id}`,
+          empresa_representada_id: c.empresa_representada_id,
           data_vencimento: c.data_vencimento,
           tipo: 'Pagar',
           descricao: c.descricao,
@@ -330,6 +337,21 @@ export default function RelatoriosFinanceiro() {
   const loading = loadingPagar || loadingReceber;
   const error = errPagar || errReceber;
 
+  const reportBranding = useMemo(() => {
+    const empresaId = baseFiltered.find((linha) => linha.empresa_representada_id)?.empresa_representada_id
+      ?? todasLinhas.find((linha) => linha.empresa_representada_id)?.empresa_representada_id
+      ?? empresas.find((empresa) => empresa.ativo !== false)?.id
+      ?? empresas[0]?.id;
+    const empresa = empresas.find((item) => item.id === empresaId) ?? empresas.find((item) => item.ativo !== false) ?? empresas[0];
+    if (!empresa?.id) return null;
+    const cfg = (empresa.configuracoes as Record<string, unknown> | null | undefined) ?? {};
+    return {
+      companyName: empresa.nome,
+      logoUrl: logosMap?.get(empresa.id) ?? null,
+      primaryColor: typeof cfg.primary_color === 'string' ? cfg.primary_color : null,
+    };
+  }, [baseFiltered, todasLinhas, empresas, logosMap]);
+
   const handleExport = () => {
     if (agrupamento !== 'nenhum' && aggregated.length > 0) {
       const cols: CsvColumn<AggregatedRow>[] = [
@@ -370,6 +392,7 @@ export default function RelatoriosFinanceiro() {
     () => ({
       title: 'Relatório Financeiro',
       subtitle: dataInicio || dataFim ? `Vencimento: ${dataInicio || '—'} a ${dataFim || '—'}` : undefined,
+      branding: reportBranding,
       filters: [
         { label: 'Vencimento início', value: dataInicio || '—' },
         { label: 'Vencimento fim', value: dataFim || '—' },
@@ -401,7 +424,7 @@ export default function RelatoriosFinanceiro() {
           : null,
       filenameBase: 'relatorio-financeiro',
     }),
-    [dataInicio, dataFim, tipoFiltro, agrupamento, drill, totalReceber, totalPagar, saldo, deltas, insights, baseFiltered, aggregated],
+    [dataInicio, dataFim, tipoFiltro, agrupamento, drill, reportBranding, totalReceber, totalPagar, saldo, deltas, insights, baseFiltered, aggregated],
   );
 
   const { aggregate: aggregateWorker } = useReportWorker();

@@ -1,5 +1,6 @@
 export interface ContaPagar {
   id: string;
+  empresa_representada_id?: string | null;
   numero_documento: string;
   descricao: string;
   fornecedor_id?: string;
@@ -109,6 +110,7 @@ export interface ContaPagarEstatisticas {
 
 export interface SupabaseContaPagar {
   id: string;
+  empresa_representada_id?: string | null;
   numero_documento: string;
   descricao: string;
   fornecedor_id: string | null;
