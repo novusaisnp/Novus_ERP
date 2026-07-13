@@ -6152,6 +6152,32 @@ export type Database = {
       conciliar_inventario: { Args: { p_inventario_id: string }; Returns: Json }
       converter_orcamento_em_venda: { Args: { p_payload: Json }; Returns: Json }
       estornar_estoque_venda: { Args: { p_venda_id: string }; Returns: Json }
+      fn_kardex_produto: {
+        Args: {
+          p_data_fim?: string
+          p_data_inicio?: string
+          p_empresa_id: string
+          p_limit?: number
+          p_localizacao_id?: string
+          p_offset?: number
+          p_produto_id: string
+        }
+        Returns: {
+          custo_total: number
+          custo_unitario: number
+          data_movimento: string
+          documento_ref: string
+          id: string
+          localizacao_destino_id: string
+          localizacao_origem_id: string
+          observacoes: string
+          qtd_entrada: number
+          qtd_saida: number
+          saldo_acumulado: number
+          tipo: string
+          total_count: number
+        }[]
+      }
       gerar_contas_receber_da_venda: {
         Args: { p_idempotency_key?: string; p_venda_id: string }
         Returns: Json

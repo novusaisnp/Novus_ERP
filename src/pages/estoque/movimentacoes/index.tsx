@@ -1,5 +1,6 @@
 // P12: Página de Movimentações de Estoque
 import React, { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import { ArrowLeftRight, Plus, Search } from 'lucide-react';
+import { ArrowLeftRight, Plus, Search, ScrollText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useMovimentacoes } from '@/hooks/estoque/useEstoque';
 import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
@@ -127,19 +128,20 @@ const MovimentacoesEstoque: React.FC = () => {
                 <TableHead>Origem</TableHead>
                 <TableHead>Destino</TableHead>
                 <TableHead>Documento</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                     Carregando...
                   </TableCell>
                 </TableRow>
               )}
               {!isLoading && filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                     Nenhuma movimentação encontrada
                   </TableCell>
                 </TableRow>
@@ -161,6 +163,13 @@ const MovimentacoesEstoque: React.FC = () => {
                     {m.localizacao_destino_id ? locsMap[m.localizacao_destino_id] ?? '—' : '—'}
                   </TableCell>
                   <TableCell className="text-muted-foreground">{m.documento_ref ?? '—'}</TableCell>
+                  <TableCell className="text-right">
+                    <Button asChild variant="ghost" size="sm" title="Ver Kardex">
+                      <Link to={`/estoque/kardex/${m.produto_id}`}>
+                        <ScrollText className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

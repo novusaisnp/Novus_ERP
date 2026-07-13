@@ -33,6 +33,7 @@ import Tamanhos from './pages/estoque/Tamanhos';
 import EmBreve from './pages/estoque/EmBreve';
 import MovimentacoesEstoque from './pages/estoque/movimentacoes/index';
 import InventarioEstoque from './pages/estoque/inventario/index';
+import KardexPage from './pages/estoque/kardex/index';
 import { ArrowLeftRight, ClipboardList, BarChart3, FileText } from 'lucide-react';
 
 // Financeiro Pages
@@ -123,6 +124,7 @@ function App() {
                     <Route path="tamanhos" element={<Tamanhos />} />
                     <Route path="movimentacoes" element={<MovimentacoesEstoque />} />
                     <Route path="inventario" element={<InventarioEstoque />} />
+                    <Route path="kardex/:produtoId" element={<KardexPage />} />
 
                     <Route path="relatorios" element={<EmBreve titulo="Relatórios de Estoque" icon={BarChart3} descricao="Relatórios analíticos de estoque estarão disponíveis em breve." />} />
                   </Route>
