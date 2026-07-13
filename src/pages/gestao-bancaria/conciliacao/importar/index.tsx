@@ -88,7 +88,7 @@ export default function ImportarExtratoPage() {
             </AlertDescription>
           </Alert>
 
-          <Button onClick={handleSubmit} disabled={!canSubmit} className="w-full">
+          <Button onClick={handleSubmit} disabled={!canSubmit} className="w-full" data-testid="extrato-importar-btn">
             <FileUp className="h-4 w-4 mr-2" />
             {importar.isPending ? "Importando..." : "Importar e conciliar"}
           </Button>
