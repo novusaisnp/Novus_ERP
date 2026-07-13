@@ -319,3 +319,33 @@ Falha é de contexto (sandbox ≠ produção com usuários reais), não de execu
 ## Snapshot #6 — RETRY (13/07/2026 16:47 UTC): **também não coletado**
 
 Nova tentativa 5 minutos após P10. `pg_postmaster_start_time` e contagens das 4 tabelas críticas **inalterados** → delta = 0, janela de tráfego real inexistente. **FAIL_P10-RETRY** pelo mesmo motivo (bloqueio operacional). Evidência anexada em `evidence/p8/snapshot6_t0.txt` (bloco RETRY).
+
+---
+
+## Cleanup P11 (13/07/2026 16:54 UTC) — dataset `[SEED-P8]` removido
+
+**Status:** **PASS_P11**.
+
+Migration de limpeza aplicada com sucesso após correção de FK (script original `supabase/sql/seed_99_down.sql` não cobria `vendas`/`itens_venda`).
+
+**Contagens residuais por marcador (esperado 0 em todos):**
+
+| Tabela | Antes | Depois |
+|---|---|---|
+| clientes `[SEED-P8]` | 300 | 0 |
+| fornecedores `[SEED-P8]` | 80 | 0 |
+| contas_pagar `[SEED-P8]` | 2000 | 0 |
+| contas_receber `[SEED-P8]` | 2000 | 0 |
+| vendas `V-SEED-*` | 300 | 0 |
+| itens_venda (filhos) | 746 | 0 |
+| report_schedules `[SEED-P8]` | 10 | 0 |
+| report_schedule_runs `SEED-P8-*` | 2000 | 0 |
+| report_ops_alerts `[SEED-P8]%` | 500 | 0 |
+| report_ops_audit `seed=P8` | 1500 | 0 |
+| `_seed_registry` | (ausente) | NULL |
+
+**Totais pós-limpeza (dados reais preservados):** clientes=3, fornecedores=3, contas_pagar=0, contas_receber=1, vendas=0, itens_venda=0, tabelas P5–P7 zeradas.
+
+**Observações:**
+- Script `supabase/sql/seed_99_down.sql` está **incompleto** — não remove `vendas`/`itens_venda`. Correção aplicada apenas via migration desta sprint; atualizar o script fica como P11-followup opcional (não bloqueia backlog).
+- Baseline agora reflete tabelas verdadeiramente vazias (P5–P7). Próximo Snapshot #6 dependerá de tráfego real (backlog P10-retry).
