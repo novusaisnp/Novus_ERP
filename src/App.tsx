@@ -163,6 +163,13 @@ function App() {
                     <Route path="agencias" element={<Agencias />} />
                     <Route path="contas-bancarias" element={<ContasBancarias />} />
                     <Route path="movimentacoes-bancarias" element={<MovimentacoesBancarias />} />
+                    <Route path="conciliacao">
+                      <Route index element={<ConciliacaoIndex />} />
+                      <Route path="importar" element={<ConciliacaoImportar />} />
+                      <Route path="regras" element={<ConciliacaoRegras />} />
+                      <Route path="relatorios" element={<ConciliacaoRelatorios />} />
+                      <Route path=":extratoId" element={<ConciliacaoExtrato />} />
+                    </Route>
                   </Route>
                   
                   {/* Financeiro Routes */}
