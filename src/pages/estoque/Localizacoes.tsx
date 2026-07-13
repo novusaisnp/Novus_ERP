@@ -211,23 +211,15 @@ const Localizacoes: React.FC = () => {
         isLoading={createMutation.isPending || updateMutation.isPending}
       />
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja remover a localização "{localizacaoToDelete?.nome}"?
-              Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>
-              Confirmar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDeleteWithDeps
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        entidade="localizacoes_estoque"
+        id={localizacaoToDelete?.id ?? null}
+        nomeRegistro={localizacaoToDelete?.nome}
+        onConfirm={confirmDelete}
+        loading={deleteMutation.isPending}
+      />
     </div>
   );
 };
