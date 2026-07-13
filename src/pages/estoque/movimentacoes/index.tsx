@@ -95,7 +95,7 @@ const MovimentacoesEstoque: React.FC = () => {
           </h1>
           <p className="text-muted-foreground">Entradas, saídas, transferências e ajustes</p>
         </div>
-        <Button onClick={() => setIsDialogOpen(true)} disabled={!empresaId}>
+        <Button onClick={() => setIsDialogOpen(true)} disabled={!empresaId} data-testid="estoque-nova-mov-btn">
           <Plus className="h-4 w-4 mr-2" /> Nova Movimentação
         </Button>
       </div>
@@ -147,7 +147,7 @@ const MovimentacoesEstoque: React.FC = () => {
                 </TableRow>
               )}
               {filtered.map((m) => (
-                <TableRow key={m.id}>
+                <TableRow key={m.id} data-testid={`estoque-mov-row-${m.id}`}>
                   <TableCell>{new Date(m.data_movimento).toLocaleString('pt-BR')}</TableCell>
                   <TableCell>
                     <Badge className={tipoBadge[m.tipo]} variant="outline">

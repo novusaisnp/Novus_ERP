@@ -117,10 +117,10 @@ export const NovaMovimentacaoDialog: React.FC<Props> = ({ empresaId, open, onClo
         </DialogHeader>
 
         <Tabs value={aba} onValueChange={(v) => setAba(v as Aba)}>
-          <TabsList className="grid grid-cols-3 w-full">
-            <TabsTrigger value="ENTRADA">Entrada</TabsTrigger>
-            <TabsTrigger value="SAIDA">Saída</TabsTrigger>
-            <TabsTrigger value="TRANSFERENCIA">Transferência</TabsTrigger>
+          <TabsList className="grid grid-cols-3 w-full" data-testid="estoque-mov-tipo-tabs">
+            <TabsTrigger value="ENTRADA" data-testid="estoque-mov-tipo-ENTRADA">Entrada</TabsTrigger>
+            <TabsTrigger value="SAIDA" data-testid="estoque-mov-tipo-SAIDA">Saída</TabsTrigger>
+            <TabsTrigger value="TRANSFERENCIA" data-testid="estoque-mov-tipo-TRANSFERENCIA">Transferência</TabsTrigger>
           </TabsList>
 
           {(['ENTRADA', 'SAIDA', 'TRANSFERENCIA'] as Aba[]).map((t) => (
@@ -142,7 +142,7 @@ export const NovaMovimentacaoDialog: React.FC<Props> = ({ empresaId, open, onClo
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Quantidade *</Label>
-                  <Input type="number" step="0.001" min="0" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} />
+                  <Input data-testid="estoque-mov-quantidade-input" type="number" step="0.001" min="0" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Custo unitário</Label>
@@ -189,7 +189,7 @@ export const NovaMovimentacaoDialog: React.FC<Props> = ({ empresaId, open, onClo
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={criar.isPending}>Cancelar</Button>
-          <Button onClick={handleSubmit} disabled={criar.isPending}>
+          <Button onClick={handleSubmit} disabled={criar.isPending} data-testid="estoque-mov-confirmar-btn">
             {criar.isPending ? 'Registrando...' : 'Registrar'}
           </Button>
         </DialogFooter>

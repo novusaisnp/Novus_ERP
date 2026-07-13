@@ -136,7 +136,7 @@ const Produtos: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {filteredProdutos.map((produto) => (
-                  <TableRow key={produto.id} className="hover:bg-muted/50">
+                  <TableRow key={produto.id} data-testid={`produto-row-${produto.id}`} className="hover:bg-muted/50">
                     <TableCell>
                       {produto.imagem_url ? (
                         <img 
@@ -191,7 +191,9 @@ const Produtos: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <div>
-                        <div className={`font-medium ${
+                        <div
+                          data-testid={`produto-saldo-final-${produto.id}`}
+                          className={`font-medium ${
                           produto.estoque_atual! <= produto.estoque_minimo! 
                             ? 'text-destructive' 
                             : 'text-foreground'

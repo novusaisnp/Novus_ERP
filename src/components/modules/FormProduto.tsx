@@ -207,6 +207,7 @@ export const FormProduto: React.FC<FormProdutoProps> = ({
                         <Label htmlFor="nome">Nome do Produto *</Label>
                         <Input
                           id="nome"
+                          data-testid="produto-nome-input"
                           value={formData.nome}
                           onChange={(e) => handleInputChange('nome', e.target.value)}
                           required
@@ -339,6 +340,7 @@ export const FormProduto: React.FC<FormProdutoProps> = ({
                         <Label htmlFor="preco_venda">Preço de Venda *</Label>
                         <CurrencyInput
                           id="preco_venda"
+                          data-testid="produto-preco-venda-input"
                           value={formData.preco_venda}
                           onValueChange={(v) => handleInputChange('preco_venda', v)}
                           onBlur={calcularMargem}
@@ -468,7 +470,7 @@ export const FormProduto: React.FC<FormProdutoProps> = ({
             <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" data-testid="produto-salvar-btn" disabled={loading}>
               {loading ? 'Salvando...' : produto ? 'Atualizar' : 'Criar'}
             </Button>
           </div>

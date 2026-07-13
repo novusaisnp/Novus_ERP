@@ -65,7 +65,7 @@ export const KardexTable: React.FC<KardexTableProps> = ({ rows, isLoading }) => 
           </TableRow>
         )}
         {rows.map((r) => (
-          <TableRow key={r.id}>
+          <TableRow key={r.id} data-testid={`kardex-row-${r.id}`}>
             <TableCell className="whitespace-nowrap">
               {new Date(r.data_movimento).toLocaleString('pt-BR')}
             </TableCell>
@@ -77,7 +77,7 @@ export const KardexTable: React.FC<KardexTableProps> = ({ rows, isLoading }) => 
             <TableCell className="text-muted-foreground">{r.documento_ref ?? '—'}</TableCell>
             <TableCell className="text-right font-mono">{fmtQtd(Number(r.qtd_entrada))}</TableCell>
             <TableCell className="text-right font-mono">{fmtQtd(Number(r.qtd_saida))}</TableCell>
-            <TableCell className="text-right font-mono font-semibold">
+            <TableCell data-testid={`kardex-saldo-${r.id}`} className="text-right font-mono font-semibold">
               {fmtSaldo(Number(r.saldo_acumulado))}
             </TableCell>
             <TableCell className="text-right font-mono text-muted-foreground">
