@@ -30,7 +30,10 @@ import {
   useUpdateLocalizacao,
   useDeleteLocalizacao,
 } from '@/hooks/useLocalizacoes';
+import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
+import { toast } from 'sonner';
 import type { Localizacao } from '@/services/localizacaoService';
+
 
 const Localizacoes: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -40,9 +43,11 @@ const Localizacoes: React.FC = () => {
   const [localizacaoToDelete, setLocalizacaoToDelete] = useState<Localizacao | null>(null);
 
   const { data: localizacoes = [], isLoading } = useLocalizacoes();
+  const { data: empresaId } = useEmpresaAtual();
   const createMutation = useCreateLocalizacao();
   const updateMutation = useUpdateLocalizacao();
   const deleteMutation = useDeleteLocalizacao();
+
 
   const filteredLocalizacoes = localizacoes.filter((localizacao) =>
     localizacao.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -84,12 +89,17 @@ const Localizacoes: React.FC = () => {
         localizacao: data,
       });
     } else {
-      console.log('[Localizacoes] Criando nova localização');
-      createMutation.mutate(data);
+      if (!empresaId) {
+        toast.error('Empresa atual não identificada. Não é possível cadastrar a localização.');
+        return;
+      }
+      console.log('[Localizacoes] Criando nova localização para empresa:', empresaId);
+      createMutation.mutate({ ...data, empresa_representada_id: empresaId });
     }
     setIsFormOpen(false);
     setSelectedLocalizacao(null);
   };
+
 
   if (isLoading) {
     return (
@@ -111,10 +121,11 @@ const Localizacoes: React.FC = () => {
             Gerencie os setores e locais de armazenamento
           </p>
         </div>
-        <Button onClick={handleCreate}>
+        <Button onClick={handleCreate} disabled={!empresaId}>
           <Plus className="mr-2 h-4 w-4" />
           Nova Localização
         </Button>
+
       </div>
 
       <Card>
