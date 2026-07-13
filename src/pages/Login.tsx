@@ -204,7 +204,7 @@ const Login: React.FC = () => {
       {/* Background Image - Right side */}
       <div
         className="hidden lg:block lg:w-3/5 bg-cover bg-center bg-no-repeat relative"
-        style={{ backgroundImage: `url('/lovable-uploads/a18945ec-c5b9-4d49-b438-0ce66ff55b7d.png')` }}
+        style={{ backgroundImage: `url('${loginHero.url}')` }}
       >
         {/* Overlay with logo and text */}
         <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
