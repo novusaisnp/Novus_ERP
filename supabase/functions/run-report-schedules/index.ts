@@ -3,7 +3,7 @@
 // carrega dados -> gera artefato -> upload -> signed URL -> NoopProvider (skipped) ->
 // atualiza schedule.next_run_at. Retry/backoff em falhas (5m/15m/60m, max 3 tentativas).
 
-import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2.45.0";
+import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2.110.2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 import { resolveDeliveryProvider } from "../_shared/delivery/resolveProvider.ts";
@@ -17,7 +17,7 @@ import {
 import { exportCsvServer } from "../_shared/report-export/exportCsvServer.ts";
 import { exportXlsxServer } from "../_shared/report-export/exportXlsxServer.ts";
 import { exportPdfServer } from "../_shared/report-export/exportPdfServer.ts";
-import { resolveBrandingForUser, type Branding } from "../_shared/report-export/branding.ts";
+import { resolveBrandingForEmpresa, resolveBrandingForUser, type Branding } from "../_shared/report-export/branding.ts";
 
 const BUCKET = "report-exports";
 const SIGNED_URL_TTL_SECONDS = 7 * 24 * 60 * 60;
@@ -61,7 +61,7 @@ async function loadScopeData(client: SupabaseClient, scope: "vendas" | "financei
   if (scope === "vendas") {
     let q = client
       .from("vendas")
-      .select("id,numero_venda,cliente_id,data_venda,valor_total,status,tipo")
+      .select("id,empresa_representada_id,numero_venda,cliente_id,data_venda,valor_total,status,tipo")
       .is("deleted_at", null)
       .order("data_venda", { ascending: false })
       .limit(10000);
@@ -81,7 +81,7 @@ async function loadScopeData(client: SupabaseClient, scope: "vendas" | "financei
   // financeiro — visão consolidada de contas a receber (P4.2A: dataset representativo).
   let q = client
     .from("contas_receber")
-    .select("id,descricao,cliente_id,valor_original,data_vencimento,status")
+    .select("id,empresa_representada_id,descricao,cliente_id,valor_original,data_vencimento,status")
     .is("deleted_at", null)
     .order("data_vencimento", { ascending: false })
     .limit(10000);
@@ -97,6 +97,15 @@ async function loadScopeData(client: SupabaseClient, scope: "vendas" | "financei
     columns: ["descricao", "data_vencimento", "cliente_id", "valor_original", "status"],
     rows: (data ?? []) as Array<Record<string, unknown>>,
   };
+}
+
+function inferEmpresaId(
+  vs: { filters?: { empresa_representada_id?: string } },
+  rows: Array<Record<string, unknown>>,
+): string | null {
+  if (typeof vs.filters?.empresa_representada_id === "string") return vs.filters.empresa_representada_id;
+  const fromRows = rows.find((row) => typeof row.empresa_representada_id === "string")?.empresa_representada_id;
+  return typeof fromRows === "string" ? fromRows : null;
 }
 
 async function generateArtifact(
@@ -181,7 +190,11 @@ async function processSchedule(client: SupabaseClient, sch: ScheduleRow): Promis
     if (!vs.ok || !vs.data) throw new Error(`invalid_view_state:${vs.error}`);
 
     const scoped = await loadScopeData(client, sch.scope, vs.data);
-    const branding = await resolveBrandingForUser(client, sch.user_id);
+    const empresaId = inferEmpresaId(vs.data, scoped.rows);
+    const brandingByEmpresa = await resolveBrandingForEmpresa(client, empresaId);
+    const branding = brandingByEmpresa.logo || brandingByEmpresa.companyName
+      ? brandingByEmpresa
+      : await resolveBrandingForUser(client, sch.user_id);
     const artifact = await generateArtifact(sch.format, sch.name, scoped.columns, scoped.rows, branding);
 
     const path = `${sch.user_id}/${sch.id}/${runId}.${artifact.ext}`;

@@ -57,6 +57,8 @@ import { ComparisonToggle } from '@/components/relatorios/ComparisonToggle';
 import { DeltaBadge } from '@/components/relatorios/DeltaBadge';
 import { InsightsBanner } from '@/components/relatorios/InsightsBanner';
 import { useReportPresets } from '@/hooks/useReportPresets';
+import { useEmpresasRepresentadas } from '@/hooks/useEmpresasRepresentadas';
+import { useEmpresasLogosMap } from '@/hooks/useEmpresasLogosMap';
 import { calcDelta, periodoAnteriorEquivalente } from '@/utils/reportComparison';
 import {
   computeVendasInsights,
@@ -128,6 +130,8 @@ export default function RelatoriosVendas() {
   const [scheduleOpen, setScheduleOpen] = useState(false);
 
   const presets = useReportPresets<VendasViewState>('vendas');
+  const { empresas } = useEmpresasRepresentadas();
+  const { data: logosMap, isLoading: logosLoading } = useEmpresasLogosMap(empresas);
 
   const applyPreset = (s: VendasViewState) => {
     setDataInicio(s.dataInicio);
@@ -322,10 +326,26 @@ export default function RelatoriosVendas() {
     comparar,
   };
 
+  const reportBranding = useMemo(() => {
+    const empresaId = baseFiltered.find((venda) => venda.empresa_representada_id)?.empresa_representada_id
+      ?? vendas.find((venda) => venda.empresa_representada_id)?.empresa_representada_id
+      ?? empresas.find((empresa) => empresa.ativo !== false)?.id
+      ?? empresas[0]?.id;
+    const empresa = empresas.find((item) => item.id === empresaId) ?? empresas.find((item) => item.ativo !== false) ?? empresas[0];
+    if (!empresa?.id) return null;
+    const cfg = (empresa.configuracoes as Record<string, unknown> | null | undefined) ?? {};
+    return {
+      companyName: empresa.nome,
+      logoUrl: logosMap?.get(empresa.id) ?? null,
+      primaryColor: typeof cfg.primary_color === 'string' ? cfg.primary_color : null,
+    };
+  }, [baseFiltered, vendas, empresas, logosMap]);
+
   const exportPayload: ReportExportPayload<Venda> = useMemo(
     () => ({
       title: 'Relatório de Vendas',
       subtitle: dataInicio || dataFim ? `Período: ${dataInicio || '—'} a ${dataFim || '—'}` : undefined,
+      branding: reportBranding,
       filters: [
         { label: 'Data início', value: dataInicio || '—' },
         { label: 'Data fim', value: dataFim || '—' },
@@ -355,7 +375,7 @@ export default function RelatoriosVendas() {
           : null,
       filenameBase: 'relatorio-vendas',
     }),
-    [dataInicio, dataFim, status, agrupamento, drill, stats, deltas, insights, baseFiltered, aggregated],
+    [dataInicio, dataFim, status, agrupamento, drill, reportBranding, stats, deltas, insights, baseFiltered, aggregated],
   );
 
   // P4.3 - Worker perf overlay (?perf=1)
@@ -395,7 +415,7 @@ export default function RelatoriosVendas() {
           <ExportMenu
             payload={exportPayload}
             onCsv={handleExport}
-            disabled={loading || baseFiltered.length === 0}
+            disabled={loading || logosLoading || baseFiltered.length === 0}
           />
           <Button variant="outline" size="sm" onClick={() => setScheduleOpen(true)}>
             <CalendarClock className="h-4 w-4 mr-1" /> Agendar…

@@ -1,6 +1,7 @@
 // Exportação Excel multi-aba (P4.1). Dynamic import de exceljs no clique.
 import type { ReportExportPayload } from './reportExportShared';
 import { brlPt, percentPt, timestampSuffix } from './reportExportShared';
+import { resolveReportLogo } from './reportBranding';
 
 /**
  * Dispara download de arquivo Excel com abas Resumo / Detalhado / Agrupado.
@@ -11,6 +12,7 @@ export async function exportReportToExcel<T>(payload: ReportExportPayload<T>): P
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'NOVUS ERP';
   workbook.created = new Date();
+  const logo = await resolveReportLogo(payload.branding);
 
   // ---------- Aba Resumo ----------
   const resumo = workbook.addWorksheet('Resumo');
@@ -19,6 +21,26 @@ export async function exportReportToExcel<T>(payload: ReportExportPayload<T>): P
     { header: '', key: 'b', width: 30 },
     { header: '', key: 'c', width: 30 },
   ];
+
+  if (logo) {
+    try {
+      const imageId = workbook.addImage({
+        base64: logo.dataUrl,
+        extension: logo.extension,
+      });
+      resumo.addImage(imageId, { tl: { col: 0, row: 0 }, ext: { width: 140, height: 50 } });
+      resumo.getRow(1).height = 38;
+      resumo.addRow([]);
+      resumo.addRow([]);
+    } catch {
+      // Branding é best-effort: falha no logo não bloqueia exportação.
+    }
+  }
+
+  if (payload.branding?.companyName) {
+    const companyRow = resumo.addRow([payload.branding.companyName]);
+    companyRow.font = { bold: true, size: 12 };
+  }
 
   const titleRow = resumo.addRow([payload.title]);
   titleRow.font = { bold: true, size: 16 };

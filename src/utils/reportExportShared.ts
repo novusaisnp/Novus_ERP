@@ -23,9 +23,16 @@ export interface ReportInsightLine {
   description?: string;
 }
 
+export interface ReportBranding {
+  companyName?: string | null;
+  logoUrl?: string | null;
+  primaryColor?: string | null;
+}
+
 export interface ReportExportPayload<TDetail> {
   title: string;
   subtitle?: string;
+  branding?: ReportBranding | null;
   filters: ReportFilterInfo[];
   kpis: ReportKpi[];
   insights: ReportInsightLine[];

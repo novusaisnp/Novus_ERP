@@ -30,7 +30,7 @@ export const FluxoCaixaExportButtons = ({
   const [isExporting, setIsExporting] = useState(false);
   const [exportingType, setExportingType] = useState<string | null>(null);
   
-  const { exportToPDF, exportToExcel, exportToCSV } = useFluxoCaixaExport();
+  const { exportToPDF, exportToExcel, exportToCSV, brandingLoading } = useFluxoCaixaExport();
 
   const handleExport = async (type: 'pdf' | 'excel' | 'csv') => {
     console.log('[FluxoCaixa] Iniciando exportação:', type);
@@ -94,7 +94,7 @@ export const FluxoCaixaExportButtons = ({
         variant="outline"
         size="sm"
         onClick={() => handleExport('pdf')}
-        disabled={disabled || isExporting || movimentacoes.length === 0}
+        disabled={disabled || brandingLoading || isExporting || movimentacoes.length === 0}
         className="flex items-center gap-2"
       >
         {isTypeExporting('pdf') ? (
@@ -111,7 +111,7 @@ export const FluxoCaixaExportButtons = ({
           <Button
             variant="outline"
             size="sm"
-            disabled={disabled || isExporting || movimentacoes.length === 0}
+            disabled={disabled || brandingLoading || isExporting || movimentacoes.length === 0}
             className="flex items-center gap-2"
           >
             <Download className="h-4 w-4" />

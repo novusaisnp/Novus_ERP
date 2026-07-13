@@ -39,6 +39,7 @@ export const transformFromSupabase = (item: any): ContaPagar => {
 
   return {
     id: item.id,
+    empresa_representada_id: item.empresa_representada_id ?? null,
     numero_documento: item.numero_documento,
     descricao: item.descricao,
     fornecedor_id: item.fornecedor_id,
@@ -87,6 +88,7 @@ export const transformToSupabase = (input: any): SupabaseContaPagar => {
   
   return {
     id: input.id,
+    empresa_representada_id: input.empresa_representada_id ?? null,
     numero_documento: input.numero_documento,
     descricao: input.descricao,
     fornecedor_id: input.fornecedor_id || null,
