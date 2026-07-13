@@ -141,6 +141,25 @@ Deno.serve(async (req: Request) => {
     has_signed_url: true,
   });
 
+  // P6.3 — Auditoria operacional (whitelist explícita; sem signed_url/tokens).
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  const ipRaw = forwardedFor ? forwardedFor.split(",")[0].trim() : null;
+  const { error: auditErr } = await adminClient.from("report_ops_audit").insert({
+    action: "resign",
+    actor_user_id: userId,
+    target_id: runId,
+    metadata: {
+      ttl_seconds: decision.ttlSeconds,
+      resign_count: decision.newResignCount,
+      is_admin: isAdmin,
+      status: "success",
+    },
+    ip: ipRaw && ipRaw.length > 0 ? ipRaw : null,
+  });
+  if (auditErr) {
+    log("audit_insert_failed", { run_id: runId, err: auditErr.message });
+  }
+
   return json(
     {
       ok: true,
