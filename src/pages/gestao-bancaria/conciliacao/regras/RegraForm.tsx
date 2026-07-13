@@ -178,7 +178,7 @@ export function RegraForm({ open, onOpenChange, regra }: Props) {
                 value={form.watch("tipo")}
                 onValueChange={(v) => form.setValue("tipo", v as TipoRegra)}
               >
-                <SelectTrigger>
+                <SelectTrigger data-testid="regra-select-tipo">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
