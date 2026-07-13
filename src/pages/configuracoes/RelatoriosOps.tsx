@@ -102,9 +102,12 @@ const RelatoriosOps: React.FC = () => {
             KPIs e diagnóstico em janela de 24h. Dados restritos a administradores.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => { kpis.refetch(); failures.refetch(); runs.refetch(); }}>
-          Atualizar
-        </Button>
+        <div className="flex items-center gap-2">
+          <AlertsDrawer />
+          <Button variant="outline" size="sm" onClick={() => { kpis.refetch(); failures.refetch(); runs.refetch(); }}>
+            Atualizar
+          </Button>
+        </div>
       </header>
 
       <KpiCards data={kpis.data} isLoading={kpis.isLoading} />
