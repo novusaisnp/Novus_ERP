@@ -1,9 +1,9 @@
 /**
- * Factories de dados de teste — P16.2 (placeholder).
- * Implementação completa em P16.3.
+ * Factories dinâmicas para dados de teste E2E.
+ * Timestamps garantem unicidade entre execuções paralelas.
  */
 
-const stamp = () => Date.now().toString(36);
+const stamp = (): string => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
 export interface ClienteFactory {
   nome: string;
