@@ -116,6 +116,7 @@ export default function ConciliacaoExtratoPage() {
                   <button
                     key={l.id}
                     onClick={() => setSelected(l)}
+                    data-testid={`extrato-linha-${l.id}`}
                     className={`w-full text-left px-4 py-3 hover:bg-accent transition-colors ${
                       selected?.id === l.id ? "bg-accent" : ""
                     }`}
@@ -135,7 +136,11 @@ export default function ConciliacaoExtratoPage() {
                         >
                           {fmtMoney(l.valor)}
                         </div>
-                        <Badge variant={statusVariant[l.status_conciliacao]} className="text-[10px]">
+                        <Badge
+                          variant={statusVariant[l.status_conciliacao]}
+                          className="text-[10px]"
+                          data-testid={`extrato-linha-status-${l.id}`}
+                        >
                           {l.status_conciliacao}
                           {l.score_match != null && ` · ${(l.score_match * 100).toFixed(0)}%`}
                         </Badge>
@@ -174,6 +179,7 @@ export default function ConciliacaoExtratoPage() {
                     size="sm"
                     onClick={() => desfazer.mutate(selected.id)}
                     disabled={desfazer.isPending}
+                    data-testid="extrato-desfazer-btn"
                   >
                     <Undo2 className="h-4 w-4 mr-2" /> Desfazer conciliação
                   </Button>
@@ -214,6 +220,7 @@ export default function ConciliacaoExtratoPage() {
                                   confirmar.mutate({ linhaId: selected.id, movimentacaoId: cand.id })
                                 }
                                 disabled={confirmar.isPending}
+                                data-testid={`extrato-confirmar-match-btn-${cand.id}`}
                               >
                                 <CheckCircle2 className="h-4 w-4 mr-1" /> Conciliar
                               </Button>
@@ -227,6 +234,7 @@ export default function ConciliacaoExtratoPage() {
                       size="sm"
                       onClick={() => handleCriarLancamento(selected)}
                       className="w-full"
+                      data-testid="extrato-criar-lancamento-btn"
                     >
                       <Plus className="h-4 w-4 mr-2" /> Criar nova movimentação e conciliar
                     </Button>

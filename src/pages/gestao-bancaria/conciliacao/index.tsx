@@ -82,6 +82,7 @@ export default function ConciliacaoIndex() {
                         if (confirm("Reverter (excluir) esse extrato?")) reverter.mutate(e.id);
                       }}
                       disabled={reverter.isPending}
+                      data-testid={`extrato-reverter-btn-${e.id}`}
                     >
                       <Undo2 className="h-4 w-4" />
                     </Button>
