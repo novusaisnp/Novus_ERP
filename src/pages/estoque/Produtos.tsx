@@ -11,7 +11,7 @@ import { useProdutos } from '@/hooks/useProdutos';
 import { FormProduto } from '@/components/modules/FormProduto';
 import { Produto } from '@/types/produto';
 import { produtoUtils } from '@/utils/produtoUtils';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
 
 const Produtos: React.FC = () => {
   const { produtos, loading, criarProduto, atualizarProduto, excluirProduto } = useProdutos();
