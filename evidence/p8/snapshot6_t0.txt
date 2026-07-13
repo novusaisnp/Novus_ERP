@@ -1,0 +1,30 @@
+=== SNAPSHOT #6 — T0 (tentativa em sandbox) ===
+Timestamp coleta: 2026-07-13T16:42:49Z
+              t0               |             boot              
+-------------------------------+-------------------------------
+ 2026-07-13 16:42:50.200748+00 | 2026-07-10 10:31:40.816421+00
+(1 row)
+
+
+=== Contagens críticas T0 ===
+          t           | count 
+----------------------+-------
+ report_schedules     |    10
+ report_schedule_runs |  2000
+ report_ops_alerts    |   500
+ report_ops_audit     |  1500
+(4 rows)
+
+
+=== Tentativa de reset pg_stat_statements ===
+   pg_stat_statements_reset    
+-------------------------------
+ 2026-07-13 16:42:51.441159+00
+(1 row)
+
+
+=== BLOQUEIO OPERACIONAL ===
+Sandbox não permite janela de 48h+ com tráfego humano real.
+Dataset [SEED-P8] permanece residente (cleanup exige migration destrutiva).
+Prosseguir com T1 sintético repetiria exatamente Snapshot #5 (janela sintética).
+→ Coleta abortada. Ver docs/P8_BASELINE.md seção Snapshot #6.
