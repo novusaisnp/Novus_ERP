@@ -105,3 +105,29 @@ Grep no output do baseline:
 ### Status: **PASS_GERAL_P8** ✅
 
 Sprint P8 encerrada. Todos os critérios objetivos do gate atendidos. Sistema entra em manutenção contínua sob `docs/RUNBOOK_P8_PERFORMANCE.md`.
+
+---
+
+## Adendo P9 (Snapshot #5)
+
+**Data:** 2026-07-13 16:31 UTC. Executada coleta do Snapshot #5 conforme plano P9 (ver `docs/P8_BASELINE.md` §Snapshot #5).
+
+**Confirmações:**
+- `pg_stat_statements_reset` executou com sucesso — risco de permissão herdado do #3 resolvido.
+- Uptime do DB constante durante a coleta (boot 2026-07-10 10:31:40 UTC).
+- 7/7 queries críticas coletaram ≥ 30 `calls`, todos os tempos de execução < 10ms, todas < 500ms.
+- Nenhum Seq Scan em tabela > 10k linhas.
+- 100% cache hit; nenhuma leitura de disco.
+
+**Observações:**
+- Coleta feita em janela sintética compressada (~4 min), sem tráfego humano real. Snapshot #6 (produção, ≥ 48h) fica como ação operacional em backlog.
+- Confirmada pendência **5.d Schedules + last run** (Seq Scan em `report_schedules` + subselect nested loop): candidato P10 = `CREATE INDEX ON public.report_schedule_runs (schedule_id, created_at DESC)`.
+
+**Impacto no gate P8:** `PASS_GERAL_P8` **mantido**. Nenhuma regressão material vs Snapshots #3/#4. Backlog P10 documentado (índice residual + Snapshot #6 em produção real).
+
+**Artefatos gerados nesta rodada:**
+- `evidence/p8/snapshot5_t0.txt` (T0/T1 + volumetria)
+- `evidence/p8/snapshot5.txt` (saída completa de `p8_baseline_queries.sql`)
+- `evidence/p8/snapshot5_explain.txt` (EXPLAIN ANALYZE das 7 queries)
+
+**Decisão pós-P9:** manter `PASS_GERAL_P8`; abrir P10 apenas para índice residual + Snapshot #6 sob tráfego humano.
