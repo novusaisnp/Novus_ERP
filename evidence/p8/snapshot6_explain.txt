@@ -1,0 +1,9 @@
+=== SNAPSHOT #6 — EXPLAIN ANALYZE NÃO COLETADO ===
+
+EXPLAIN ANALYZE das queries 5.a–5.g não foi capturado nesta sessão porque
+Snapshot #6 depende de tráfego humano real por ≥48h para ser estatisticamente
+distinto do Snapshot #5 (janela sintética). Rodar EXPLAIN sobre o mesmo
+dataset [SEED-P8] com aquecimento sintético reproduziria o resultado #5 sem
+agregar informação de baseline.
+
+Referência de planos disponíveis: evidence/p8/snapshot5_explain.txt.
