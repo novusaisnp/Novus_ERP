@@ -47,3 +47,34 @@ Delta vs T0 P10 (16:42:50 UTC): 0 linhas em todas as tabelas críticas.
 Uptime constante — sem restart, sem tráfego real na janela intermediária.
 Pré-requisito 'janela ≥48h agendada com ops' NÃO atendido.
 → RETRY abortado pelo mesmo bloqueio operacional documentado em P10.
+
+=== SNAPSHOT #6 T0 (P10-RETRY-2, pós-P11) — 2026-07-13T16:57:06Z ===
+              t0               |             boot              
+-------------------------------+-------------------------------
+ 2026-07-13 16:57:07.205321+00 | 2026-07-10 10:31:40.816421+00
+(1 row)
+
+
+--- Contagens T0 pós-cleanup ---
+          t           | count 
+----------------------+-------
+ report_schedules     |     0
+ report_schedule_runs |     0
+ report_ops_alerts    |     0
+ report_ops_audit     |     0
+(4 rows)
+
+
+--- Reset pg_stat_statements ---
+   pg_stat_statements_reset    
+-------------------------------
+ 2026-07-13 16:57:08.482795+00
+(1 row)
+
+
+=== BLOQUEIO OPERACIONAL PERSISTENTE ===
+Base agora está limpa (ganho real do P11). Entretanto:
+- Nenhuma janela ≥48h com tráfego humano real foi agendada com ops.
+- Sandbox de sessão única não gera delta de volumetria real.
+- Aguardar T1 seria estatisticamente idêntico a Snapshot #5 (janela sintética).
+→ RETRY-2 abortado. FAIL_P10-RETRY-2 por mesmo bloqueio ambiental.
