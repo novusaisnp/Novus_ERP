@@ -59,7 +59,7 @@ export default function ImportarExtratoPage() {
               <SelectContent>
                 {(contas ?? []).map((c) => (
                   <SelectItem key={c.id} value={c.id}>
-                    {c.apelido ?? c.numero_conta ?? c.id.slice(0, 8)}
+                    {c.descricao ?? c.nome_titular ?? c.numero_conta ?? c.id.slice(0, 8)}
                   </SelectItem>
                 ))}
               </SelectContent>
