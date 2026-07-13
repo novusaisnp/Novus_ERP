@@ -124,7 +124,7 @@ export function RegraForm({ open, onOpenChange, regra }: Props) {
   const contraparteTipo = form.watch("contraparte_tipo");
 
   const onSubmit = form.handleSubmit(async (values) => {
-    const payload: RegraConciliacaoInput = { ...values };
+    const payload = values as unknown as RegraConciliacaoInput;
     try {
       if (regra) {
         await atualizar.mutateAsync({ id: regra.id, input: payload });
