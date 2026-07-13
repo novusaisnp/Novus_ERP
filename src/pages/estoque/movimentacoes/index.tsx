@@ -95,7 +95,7 @@ const MovimentacoesEstoque: React.FC = () => {
           </h1>
           <p className="text-muted-foreground">Entradas, saídas, transferências e ajustes</p>
         </div>
-        <Button onClick={() => setIsDialogOpen(true)} disabled={!empresaId}>
+        <Button onClick={() => setIsDialogOpen(true)} disabled={!empresaId} data-testid="estoque-nova-mov-btn">
           <Plus className="h-4 w-4 mr-2" /> Nova Movimentação
         </Button>
       </div>
