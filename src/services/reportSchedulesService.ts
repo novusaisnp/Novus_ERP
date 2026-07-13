@@ -133,4 +133,69 @@ export const reportSchedulesService = {
     if (error) throw friendlyError(error, "Falha ao listar execuções.");
     return (data ?? []).map((r) => parseRun(r as Record<string, unknown>));
   },
+
+  // P5.2 — regenera signed URL de um run já concluído (não reprocessa export).
+  async resignRun(runId: string, ttlSeconds?: number): Promise<{
+    run_id: string;
+    signed_url: string;
+    signed_url_expires_at: string;
+    resign_count: number;
+    resigned_at: string;
+  }> {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+    if (!accessToken) throw new Error("Sessão expirada. Entre novamente.");
+
+    const { data, error } = await supabase.functions.invoke("resign-report-run", {
+      body: { run_id: runId, ttl_seconds: ttlSeconds },
+    });
+
+    if (error) {
+      // supabase-js encapsula o body do erro; tenta extrair reason
+      const ctx = (error as unknown as { context?: { body?: unknown } }).context;
+      let reason: string | undefined;
+      try {
+        const raw = typeof ctx?.body === "string" ? ctx.body : "";
+        if (raw) reason = (JSON.parse(raw) as { reason?: string }).reason;
+      } catch {
+        reason = undefined;
+      }
+      throw new Error(resignFriendlyMessage(reason ?? error.message));
+    }
+    if (!data || (data as { ok?: boolean }).ok === false) {
+      const reason = (data as { reason?: string } | null)?.reason;
+      throw new Error(resignFriendlyMessage(reason));
+    }
+    return data as {
+      run_id: string;
+      signed_url: string;
+      signed_url_expires_at: string;
+      resign_count: number;
+      resigned_at: string;
+    };
+  },
 };
+
+function resignFriendlyMessage(reason: string | undefined): string {
+  switch (reason) {
+    case "not_owner":
+    case "not_admin":
+      return "Você não tem permissão para regenerar este link.";
+    case "run_missing":
+      return "Execução não encontrada.";
+    case "artifact_missing":
+      return "O arquivo desta execução não está disponível.";
+    case "run_not_succeeded":
+      return "Só é possível regenerar link de execuções concluídas.";
+    case "ttl_out_of_range":
+      return "Duração de expiração inválida.";
+    case "rate_limited":
+      return "Limite diário de regenerações atingido para esta execução.";
+    case "missing_auth":
+      return "Sessão expirada. Entre novamente.";
+    case "invalid_run_id":
+      return "Identificador de execução inválido.";
+    default:
+      return "Falha ao regenerar link.";
+  }
+}
