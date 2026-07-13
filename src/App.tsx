@@ -56,6 +56,11 @@ import Bancos from './pages/gestao-bancaria/bancos/index';
 import Agencias from './pages/gestao-bancaria/agencias/index';
 import ContasBancarias from './pages/gestao-bancaria/contas-bancarias/index';
 import MovimentacoesBancarias from './pages/gestao-bancaria/movimentacoes-bancarias/index';
+import ConciliacaoIndex from './pages/gestao-bancaria/conciliacao/index';
+import ConciliacaoImportar from './pages/gestao-bancaria/conciliacao/importar/index';
+import ConciliacaoExtrato from './pages/gestao-bancaria/conciliacao/[extratoId]/index';
+import ConciliacaoRegras from './pages/gestao-bancaria/conciliacao/regras/index';
+import ConciliacaoRelatorios from './pages/gestao-bancaria/conciliacao/relatorios/index';
 
 // Fiscal Pages
 import NotasFiscais from './pages/fiscal/NotasFiscais';
