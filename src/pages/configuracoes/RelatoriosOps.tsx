@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { KpiCards } from "@/components/relatorios/ops/KpiCards";
 import { RunsFailuresTable } from "@/components/relatorios/ops/RunsFailuresTable";
+import { AlertsDrawer } from "@/components/relatorios/ops/AlertsDrawer";
 import {
   useReportRunFailures24h,
   useReportRunKpis24h,
@@ -101,9 +102,12 @@ const RelatoriosOps: React.FC = () => {
             KPIs e diagnóstico em janela de 24h. Dados restritos a administradores.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => { kpis.refetch(); failures.refetch(); runs.refetch(); }}>
-          Atualizar
-        </Button>
+        <div className="flex items-center gap-2">
+          <AlertsDrawer />
+          <Button variant="outline" size="sm" onClick={() => { kpis.refetch(); failures.refetch(); runs.refetch(); }}>
+            Atualizar
+          </Button>
+        </div>
       </header>
 
       <KpiCards data={kpis.data} isLoading={kpis.isLoading} />

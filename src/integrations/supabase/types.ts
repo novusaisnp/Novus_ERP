@@ -3974,6 +3974,42 @@ export type Database = {
           },
         ]
       }
+      report_ops_alerts: {
+        Row: {
+          acknowledged_by: string | null
+          created_at: string
+          id: string
+          kind: string
+          payload: Json
+          reason: string
+          resolved_at: string | null
+          severity: string
+          updated_at: string
+        }
+        Insert: {
+          acknowledged_by?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          payload?: Json
+          reason: string
+          resolved_at?: string | null
+          severity: string
+          updated_at?: string
+        }
+        Update: {
+          acknowledged_by?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          payload?: Json
+          reason?: string
+          resolved_at?: string | null
+          severity?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       report_ops_audit: {
         Row: {
           action: string
