@@ -53,12 +53,12 @@ export default function ImportarExtratoPage() {
           <div className="space-y-2">
             <Label>Conta bancária</Label>
             <Select value={contaId} onValueChange={setContaId}>
-              <SelectTrigger>
+              <SelectTrigger data-testid="extrato-conta-select">
                 <SelectValue placeholder="Selecione a conta" />
               </SelectTrigger>
               <SelectContent>
                 {(contas ?? []).map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
+                  <SelectItem key={c.id} value={c.id} data-testid={`extrato-conta-option-${c.id}`}>
                     {c.descricao ?? c.nome_titular ?? c.numero_conta ?? c.id.slice(0, 8)}
                   </SelectItem>
                 ))}
@@ -72,6 +72,7 @@ export default function ImportarExtratoPage() {
               type="file"
               accept=".ofx,.csv,.txt,application/x-ofx,text/csv,text/plain"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              data-testid="extrato-file-input"
             />
             {file && (
               <p className="text-xs text-muted-foreground">
