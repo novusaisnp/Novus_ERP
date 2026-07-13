@@ -117,10 +117,10 @@ export const NovaMovimentacaoDialog: React.FC<Props> = ({ empresaId, open, onClo
         </DialogHeader>
 
         <Tabs value={aba} onValueChange={(v) => setAba(v as Aba)}>
-          <TabsList className="grid grid-cols-3 w-full">
-            <TabsTrigger value="ENTRADA">Entrada</TabsTrigger>
-            <TabsTrigger value="SAIDA">Saída</TabsTrigger>
-            <TabsTrigger value="TRANSFERENCIA">Transferência</TabsTrigger>
+          <TabsList className="grid grid-cols-3 w-full" data-testid="estoque-mov-tipo-tabs">
+            <TabsTrigger value="ENTRADA" data-testid="estoque-mov-tipo-ENTRADA">Entrada</TabsTrigger>
+            <TabsTrigger value="SAIDA" data-testid="estoque-mov-tipo-SAIDA">Saída</TabsTrigger>
+            <TabsTrigger value="TRANSFERENCIA" data-testid="estoque-mov-tipo-TRANSFERENCIA">Transferência</TabsTrigger>
           </TabsList>
 
           {(['ENTRADA', 'SAIDA', 'TRANSFERENCIA'] as Aba[]).map((t) => (
