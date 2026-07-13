@@ -6643,6 +6643,26 @@ export type Database = {
       }
     }
     Views: {
+      fiscal_metrics_daily: {
+        Row: {
+          dia: string | null
+          empresa_representada_id: string | null
+          latencia_media_s: number | null
+          provider: string | null
+          status: string | null
+          total: number | null
+          valor_total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_documentos_eletronicos_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mv_estoque_curva_abc: {
         Row: {
           classe: string | null
