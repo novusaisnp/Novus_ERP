@@ -136,7 +136,7 @@ const Produtos: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {filteredProdutos.map((produto) => (
-                  <TableRow key={produto.id} className="hover:bg-muted/50">
+                  <TableRow key={produto.id} data-testid={`produto-row-${produto.id}`} className="hover:bg-muted/50">
                     <TableCell>
                       {produto.imagem_url ? (
                         <img 
