@@ -125,13 +125,15 @@ const Contratos: React.FC = () => {
 
       <ContratoFormModal open={modalOpen} onOpenChange={setModalOpen} contrato={editing} />
 
-      <ConfirmDialog
+      <ConfirmDeleteWithDeps
         open={!!toDelete}
         onOpenChange={(o) => !o && setToDelete(null)}
-        title="Excluir contrato?"
-        description={`O contrato "${toDelete?.titulo || ''}" será removido.`}
+        entidade="contratos"
+        id={toDelete?.id ?? null}
+        nomeRegistro={toDelete?.titulo || undefined}
         onConfirm={async () => { if (toDelete?.id) await excluirContrato(toDelete.id); setToDelete(null); }}
       />
+
     </div>
   );
 };
