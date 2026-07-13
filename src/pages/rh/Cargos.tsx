@@ -98,14 +98,15 @@ const Cargos: React.FC = () => {
         onSuccess={handleModalSuccess}
       />
 
-      <ConfirmDialog
+      <ConfirmDeleteWithDeps
         open={!!cargoToDelete}
         onOpenChange={(open) => !open && setCargoToDelete(null)}
-        title="Excluir cargo"
-        description={`Tem certeza que deseja excluir o cargo "${cargoToDelete?.nome}"?`}
-        confirmLabel="Excluir"
+        entidade="cargos"
+        id={cargoToDelete?.id ?? null}
+        nomeRegistro={cargoToDelete?.nome}
         onConfirm={confirmDelete}
       />
+
     </div>
   );
 };
