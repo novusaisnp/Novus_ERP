@@ -179,6 +179,7 @@ export default function ConciliacaoExtratoPage() {
                     size="sm"
                     onClick={() => desfazer.mutate(selected.id)}
                     disabled={desfazer.isPending}
+                    data-testid="extrato-desfazer-btn"
                   >
                     <Undo2 className="h-4 w-4 mr-2" /> Desfazer conciliação
                   </Button>
@@ -219,6 +220,7 @@ export default function ConciliacaoExtratoPage() {
                                   confirmar.mutate({ linhaId: selected.id, movimentacaoId: cand.id })
                                 }
                                 disabled={confirmar.isPending}
+                                data-testid={`extrato-confirmar-match-btn-${cand.id}`}
                               >
                                 <CheckCircle2 className="h-4 w-4 mr-1" /> Conciliar
                               </Button>
@@ -232,6 +234,7 @@ export default function ConciliacaoExtratoPage() {
                       size="sm"
                       onClick={() => handleCriarLancamento(selected)}
                       className="w-full"
+                      data-testid="extrato-criar-lancamento-btn"
                     >
                       <Plus className="h-4 w-4 mr-2" /> Criar nova movimentação e conciliar
                     </Button>
