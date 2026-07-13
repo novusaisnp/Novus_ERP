@@ -57,48 +57,79 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
+// P5.3: leitura paginada (PAGE_SIZE) com ordenação estável (chave primária desc + id asc)
+// e parada imediata ao ultrapassar o cap do formato (row_limit_exceeded).
 // deno-lint-ignore no-explicit-any
-async function loadScopeData(client: SupabaseClient, scope: "vendas" | "financeiro", vs: any): Promise<{ columns: string[]; rows: Array<Record<string, unknown>> }> {
+async function loadScopeData(
+  client: SupabaseClient,
+  scope: "vendas" | "financeiro",
+  vs: any,
+  format: ExportFormat,
+  signal: AbortSignal,
+): Promise<{ columns: string[]; rows: Array<Record<string, unknown>> }> {
   const filters = vs.filters ?? {};
-  if (scope === "vendas") {
+  const cap = maxRowsForFormat(format);
+
+  const config = scope === "vendas"
+    ? {
+        table: "vendas",
+        select: "id,empresa_representada_id,numero_venda,cliente_id,data_venda,valor_total,status,tipo",
+        orderCol: "data_venda",
+        dateCol: "data_venda",
+        columns: ["numero_venda", "data_venda", "cliente_id", "valor_total", "status", "tipo"],
+      }
+    : {
+        table: "contas_receber",
+        select: "id,empresa_representada_id,descricao,cliente_id,valor_original,data_vencimento,status",
+        orderCol: "data_vencimento",
+        dateCol: "data_vencimento",
+        columns: ["descricao", "data_vencimento", "cliente_id", "valor_original", "status"],
+      };
+
+  const rows: Array<Record<string, unknown>> = [];
+  const seen = new Set<string>();
+  let from = 0;
+
+  // Buscamos até cap + 1 para detectar overflow determinístico.
+  while (rows.length <= cap) {
+    if (signal.aborted) throw new Error("run_timeout:scope_pagination");
+
+    const to = from + PAGE_SIZE - 1;
     let q = client
-      .from("vendas")
-      .select("id,empresa_representada_id,numero_venda,cliente_id,data_venda,valor_total,status,tipo")
+      .from(config.table)
+      .select(config.select)
       .is("deleted_at", null)
-      .order("data_venda", { ascending: false })
-      .limit(10000);
-    if (filters.date_from) q = q.gte("data_venda", String(filters.date_from).slice(0, 10));
-    if (filters.date_to) q = q.lte("data_venda", String(filters.date_to).slice(0, 10));
+      .order(config.orderCol, { ascending: false })
+      .order("id", { ascending: true })
+      .range(from, to)
+      .abortSignal(signal);
+
+    if (filters.date_from) q = q.gte(config.dateCol, String(filters.date_from).slice(0, 10));
+    if (filters.date_to) q = q.lte(config.dateCol, String(filters.date_to).slice(0, 10));
     if (filters.status && Array.isArray(filters.status) && filters.status.length > 0) {
       q = q.in("status", filters.status);
     }
     if (filters.empresa_representada_id) q = q.eq("empresa_representada_id", filters.empresa_representada_id);
+
     const { data, error } = await q;
     if (error) throw error;
-    return {
-      columns: ["numero_venda", "data_venda", "cliente_id", "valor_total", "status", "tipo"],
-      rows: (data ?? []) as Array<Record<string, unknown>>,
-    };
+    const page = (data ?? []) as Array<Record<string, unknown>>;
+    if (page.length === 0) break;
+
+    for (const row of page) {
+      const id = String(row.id ?? "");
+      if (id && seen.has(id)) continue; // proteção contra sobreposição
+      if (id) seen.add(id);
+      rows.push(row);
+      if (rows.length > cap) {
+        throw new Error(`row_limit_exceeded:${scope}:${cap}`);
+      }
+    }
+    if (page.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
   }
-  // financeiro — visão consolidada de contas a receber (P4.2A: dataset representativo).
-  let q = client
-    .from("contas_receber")
-    .select("id,empresa_representada_id,descricao,cliente_id,valor_original,data_vencimento,status")
-    .is("deleted_at", null)
-    .order("data_vencimento", { ascending: false })
-    .limit(10000);
-  if (filters.date_from) q = q.gte("data_vencimento", String(filters.date_from).slice(0, 10));
-  if (filters.date_to) q = q.lte("data_vencimento", String(filters.date_to).slice(0, 10));
-  if (filters.status && Array.isArray(filters.status) && filters.status.length > 0) {
-    q = q.in("status", filters.status);
-  }
-  if (filters.empresa_representada_id) q = q.eq("empresa_representada_id", filters.empresa_representada_id);
-  const { data, error } = await q;
-  if (error) throw error;
-  return {
-    columns: ["descricao", "data_vencimento", "cliente_id", "valor_original", "status"],
-    rows: (data ?? []) as Array<Record<string, unknown>>,
-  };
+
+  return { columns: config.columns, rows };
 }
 
 function inferEmpresaId(
