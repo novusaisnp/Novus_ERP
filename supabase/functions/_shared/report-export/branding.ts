@@ -116,9 +116,28 @@ export async function resolveBrandingForUser(
     const row = emp as { nome: string | null; configuracoes: Record<string, unknown> | null };
     const cfg = row.configuracoes ?? {};
     const logoUrl = typeof cfg.logo_url === "string" ? (cfg.logo_url as string) : null;
+    const logoPath = typeof cfg.logo_path === "string" ? (cfg.logo_path as string) : null;
     const primaryColor = typeof cfg.primary_color === "string" ? (cfg.primary_color as string) : null;
 
-    const logo = logoUrl ? await fetchLogoBytes(logoUrl) : null;
+    let logo: BrandingLogo | null = null;
+    if (logoPath) {
+      // Modal salva em Storage bucket privado 'empresa-logos' como logo_path.
+      try {
+        const { data: signed } = await client
+          .storage
+          .from("empresa-logos")
+          .createSignedUrl(logoPath, 60);
+        if (signed?.signedUrl) {
+          logo = await fetchLogoBytes(signed.signedUrl);
+        }
+      } catch {
+        logo = null;
+      }
+    }
+    if (!logo && logoUrl) {
+      logo = await fetchLogoBytes(logoUrl);
+    }
+
     return {
       companyName: row.nome ?? null,
       primaryColor,
