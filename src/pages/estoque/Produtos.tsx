@@ -249,14 +249,15 @@ const Produtos: React.FC = () => {
         loading={formLoading}
       />
 
-      <ConfirmDialog
+      <ConfirmDeleteWithDeps
         open={!!produtoToDelete}
         onOpenChange={(open) => !open && setProdutoToDelete(null)}
-        title="Excluir produto"
-        description={`Tem certeza que deseja excluir o produto "${produtoToDelete?.nome}"? Esta ação não pode ser desfeita.`}
-        confirmLabel="Excluir"
+        entidade="produtos"
+        id={produtoToDelete?.id ?? null}
+        nomeRegistro={produtoToDelete?.nome}
         onConfirm={confirmDelete}
       />
+
     </div>
   );
 };
