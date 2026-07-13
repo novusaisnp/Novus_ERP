@@ -3,6 +3,16 @@ import { supabase as _supabase } from '@/integrations/supabase/client';
 const supabase: any = _supabase;
 import { Produto, SupabaseProduto } from '@/types/produto';
 
+async function getEmpresaId(): Promise<string> {
+  const { data, error } = await supabase.rpc('get_user_empresa_id');
+  if (error) {
+    console.error('[Produtos] Erro ao obter empresa do usuário:', error);
+    throw new Error('Não foi possível identificar a empresa do usuário logado');
+  }
+  if (!data) throw new Error('Usuário sem empresa vinculada.');
+  return data as string;
+}
+
 export const produtoService = {
   async listar(): Promise<SupabaseProduto[]> {
     
