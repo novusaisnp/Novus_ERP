@@ -192,23 +192,15 @@ const UnidadesMedida: React.FC = () => {
         isLoading={createMutation.isPending || updateMutation.isPending}
       />
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja remover a unidade de medida "{unidadeMedidaToDelete?.nome} ({unidadeMedidaToDelete?.sigla})"?
-              Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>
-              Confirmar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDeleteWithDeps
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        entidade="unidades_medida"
+        id={unidadeMedidaToDelete?.id ?? null}
+        nomeRegistro={unidadeMedidaToDelete ? `${unidadeMedidaToDelete.nome} (${unidadeMedidaToDelete.sigla})` : undefined}
+        onConfirm={confirmDelete}
+        loading={deleteMutation.isPending}
+      />
     </div>
   );
 };
