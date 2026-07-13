@@ -3974,6 +3974,36 @@ export type Database = {
           },
         ]
       }
+      report_ops_audit: {
+        Row: {
+          action: string
+          actor_user_id: string
+          created_at: string
+          id: string
+          ip: unknown
+          metadata: Json
+          target_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_user_id: string
+          created_at?: string
+          id?: string
+          ip?: unknown
+          metadata?: Json
+          target_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string
+          created_at?: string
+          id?: string
+          ip?: unknown
+          metadata?: Json
+          target_id?: string | null
+        }
+        Relationships: []
+      }
       report_schedule_runs: {
         Row: {
           artifact_path: string | null
