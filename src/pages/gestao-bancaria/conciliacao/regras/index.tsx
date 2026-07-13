@@ -127,33 +127,20 @@ export default function RegrasConciliacaoPage() {
 
       <RegraForm open={formOpen} onOpenChange={setFormOpen} regra={editing} />
 
-      <AlertDialog
+      <ConfirmDeleteWithDeps
         open={!!toDelete}
         onOpenChange={(v) => !v && setToDelete(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir regra?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta ação exclui a regra "{toDelete?.nome}". Você pode recriá-la depois se
-              necessário.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={async () => {
-                if (toDelete) {
-                  await excluir.mutateAsync(toDelete.id);
-                  setToDelete(null);
-                }
-              }}
-            >
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        entidade="banco_regras_conciliacao"
+        id={toDelete?.id ?? null}
+        nomeRegistro={toDelete?.nome}
+        loading={excluir.isPending}
+        onConfirm={async () => {
+          if (toDelete) {
+            await excluir.mutateAsync(toDelete.id);
+            setToDelete(null);
+          }
+        }}
+      />
     </div>
   );
 }
