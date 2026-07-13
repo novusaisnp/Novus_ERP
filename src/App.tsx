@@ -16,6 +16,8 @@ import Sistema from './pages/configuracoes/Sistema';
 import CentrosCusto from './pages/configuracoes/CentrosCusto';
 import Perfil from './pages/configuracoes/Perfil';
 import Webhooks from './pages/configuracoes/Webhooks';
+// P6.1: lazy — página admin de operação do pipeline de relatórios (P5.1).
+const RelatoriosOps = React.lazy(() => import('./pages/configuracoes/RelatoriosOps'));
 
 // Cadastros Pages
 import Servicos from './pages/cadastros/Servicos';
