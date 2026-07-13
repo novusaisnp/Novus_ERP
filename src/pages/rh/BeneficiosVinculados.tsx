@@ -258,14 +258,15 @@ const BeneficiosVinculados: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      <ConfirmDialog
+      <ConfirmDeleteWithDeps
         open={!!toDelete}
         onOpenChange={(o) => !o && setToDelete(null)}
-        title="Excluir benefício"
-        description={`Confirmar exclusão do benefício "${toDelete?.nome}"?`}
-        confirmLabel="Excluir"
+        entidade="beneficios_vinculados"
+        id={toDelete?.id ?? null}
+        nomeRegistro={toDelete?.nome}
         onConfirm={() => toDelete && deleteMutation.mutate(toDelete.id)}
       />
+
     </div>
   );
 };
