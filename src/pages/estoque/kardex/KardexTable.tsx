@@ -65,7 +65,7 @@ export const KardexTable: React.FC<KardexTableProps> = ({ rows, isLoading }) => 
           </TableRow>
         )}
         {rows.map((r) => (
-          <TableRow key={r.id}>
+          <TableRow key={r.id} data-testid={`kardex-row-${r.id}`}>
             <TableCell className="whitespace-nowrap">
               {new Date(r.data_movimento).toLocaleString('pt-BR')}
             </TableCell>
