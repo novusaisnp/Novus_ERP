@@ -141,7 +141,7 @@ export function RegraForm({ open, onOpenChange, regra }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="dialog-regra">
         <DialogHeader>
           <DialogTitle>{regra ? "Editar regra" : "Nova regra"}</DialogTitle>
         </DialogHeader>
@@ -150,7 +150,7 @@ export function RegraForm({ open, onOpenChange, regra }: Props) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="md:col-span-2">
               <Label htmlFor="nome">Nome *</Label>
-              <Input id="nome" {...form.register("nome")} />
+              <Input id="nome" data-testid="regra-input-nome" {...form.register("nome")} />
               {form.formState.errors.nome && (
                 <p className="text-xs text-destructive mt-1">
                   {form.formState.errors.nome.message}
