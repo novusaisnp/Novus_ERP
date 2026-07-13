@@ -4043,6 +4043,8 @@ export type Database = {
       report_schedule_runs: {
         Row: {
           artifact_path: string | null
+          artifact_prune_reason: string | null
+          artifact_pruned_at: string | null
           attempt: number
           created_at: string
           delivery_message_id: string | null
@@ -4064,6 +4066,8 @@ export type Database = {
         }
         Insert: {
           artifact_path?: string | null
+          artifact_prune_reason?: string | null
+          artifact_pruned_at?: string | null
           attempt?: number
           created_at?: string
           delivery_message_id?: string | null
@@ -4085,6 +4089,8 @@ export type Database = {
         }
         Update: {
           artifact_path?: string | null
+          artifact_prune_reason?: string | null
+          artifact_pruned_at?: string | null
           attempt?: number
           created_at?: string
           delivery_message_id?: string | null
