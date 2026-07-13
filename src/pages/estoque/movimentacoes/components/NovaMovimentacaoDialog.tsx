@@ -189,7 +189,7 @@ export const NovaMovimentacaoDialog: React.FC<Props> = ({ empresaId, open, onClo
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={criar.isPending}>Cancelar</Button>
-          <Button onClick={handleSubmit} disabled={criar.isPending}>
+          <Button onClick={handleSubmit} disabled={criar.isPending} data-testid="estoque-mov-confirmar-btn">
             {criar.isPending ? 'Registrando...' : 'Registrar'}
           </Button>
         </DialogFooter>
