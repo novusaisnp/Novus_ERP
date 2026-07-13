@@ -89,6 +89,9 @@ export function downloadCsv(filename: string, csv: string): void {
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+}
+
+
 
 // =====================================================================
 // P14.2: Relatórios Analíticos
