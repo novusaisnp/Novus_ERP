@@ -197,6 +197,7 @@ export function RegraForm({ open, onOpenChange, regra }: Props) {
                 </Label>
                 <Input
                   id="padrao"
+                  data-testid="regra-input-padrao"
                   {...form.register("padrao")}
                   placeholder={tipo === "REGEX" ? "^PIX.*RECEBIDO" : "PIX RECEBIDO"}
                 />
