@@ -1,0 +1,118 @@
+=== 5.a KPIs 24h ===
+                                                                          QUERY PLAN                                                                           
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+ GroupAggregate  (cost=0.28..53.01 rows=3 width=12) (actual time=0.279..1.326 rows=3 loops=1)
+   Group Key: status
+   Buffers: shared hit=6
+   ->  Index Only Scan using idx_rsr_status_created on report_schedule_runs  (cost=0.28..42.98 rows=2000 width=4) (actual time=0.140..0.545 rows=2000 loops=1)
+         Index Cond: (created_at >= (now() - '24:00:00'::interval))
+         Heap Fetches: 0
+         Buffers: shared hit=6
+ Planning:
+   Buffers: shared hit=1
+ Planning Time: 0.378 ms
+ Execution Time: 1.398 ms
+(11 rows)
+
+=== 5.b Failures 24h ===
+                                                                       QUERY PLAN                                                                        
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=0.28..33.14 rows=200 width=53) (actual time=0.046..0.218 rows=200 loops=1)
+   Buffers: shared hit=27
+   ->  Index Scan using idx_rsr_status_created on report_schedule_runs  (cost=0.28..52.85 rows=320 width=53) (actual time=0.044..0.189 rows=200 loops=1)
+         Index Cond: ((status = 'failed'::report_run_status) AND (created_at >= (now() - '24:00:00'::interval)))
+         Buffers: shared hit=27
+ Planning:
+   Buffers: shared hit=1
+ Planning Time: 0.184 ms
+ Execution Time: 0.308 ms
+(9 rows)
+
+=== 5.c Runs filtrada ===
+                                                                      QUERY PLAN                                                                      
+------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=0.28..8.94 rows=200 width=52) (actual time=0.160..0.325 rows=200 loops=1)
+   Buffers: shared hit=6
+   ->  Index Scan using idx_rsr_created_at on report_schedule_runs  (cost=0.28..86.88 rows=2000 width=52) (actual time=0.158..0.270 rows=200 loops=1)
+         Index Cond: (created_at >= (now() - '24:00:00'::interval))
+         Buffers: shared hit=6
+ Planning:
+   Buffers: shared hit=1
+ Planning Time: 0.194 ms
+ Execution Time: 0.376 ms
+(9 rows)
+
+=== 5.d Schedules + last run ===
+                                                                             QUERY PLAN                                                                              
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=28.81..62.14 rows=100 width=61) (actual time=1.782..6.251 rows=10 loops=1)
+   Buffers: shared hit=400
+   ->  Result  (cost=28.81..158.79 rows=390 width=61) (actual time=1.780..6.245 rows=10 loops=1)
+         Buffers: shared hit=400
+         ->  Sort  (cost=28.81..29.78 rows=390 width=57) (actual time=0.324..0.329 rows=10 loops=1)
+               Sort Key: s.created_at DESC
+               Sort Method: quicksort  Memory: 25kB
+               Buffers: shared hit=1
+               ->  Seq Scan on report_schedules s  (cost=0.00..13.90 rows=390 width=57) (actual time=0.117..0.122 rows=10 loops=1)
+                     Buffers: shared hit=1
+         SubPlan 1
+           ->  Limit  (cost=0.28..0.32 rows=1 width=12) (actual time=0.588..0.588 rows=0 loops=10)
+                 Buffers: shared hit=399
+                 ->  Index Scan using idx_rsr_created_at on report_schedule_runs r  (cost=0.28..86.88 rows=2000 width=12) (actual time=0.587..0.587 rows=0 loops=10)
+                       Filter: (schedule_id = s.id)
+                       Rows Removed by Filter: 1800
+                       Buffers: shared hit=399
+ Planning:
+   Buffers: shared hit=1
+ Planning Time: 0.404 ms
+ Execution Time: 6.319 ms
+(21 rows)
+
+=== 5.e Alerts 24h ===
+                                                        QUERY PLAN                                                         
+---------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=22.79..23.02 rows=93 width=44) (actual time=0.865..0.887 rows=93 loops=1)
+   Buffers: shared hit=11
+   ->  Sort  (cost=22.79..23.02 rows=93 width=44) (actual time=0.863..0.873 rows=93 loops=1)
+         Sort Key: created_at DESC
+         Sort Method: quicksort  Memory: 32kB
+         Buffers: shared hit=11
+         ->  Seq Scan on report_ops_alerts  (cost=0.00..19.75 rows=93 width=44) (actual time=0.232..0.774 rows=93 loops=1)
+               Filter: (created_at >= (now() - '24:00:00'::interval))
+               Rows Removed by Filter: 407
+               Buffers: shared hit=11
+ Planning Time: 0.852 ms
+ Execution Time: 0.937 ms
+(12 rows)
+
+=== 5.f Audit 7d ===
+                                                                              QUERY PLAN                                                                               
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=83.00..83.50 rows=200 width=49) (actual time=1.219..1.260 rows=200 loops=1)
+   Buffers: shared hit=728
+   ->  Sort  (cost=83.00..84.86 rows=742 width=49) (actual time=1.218..1.235 rows=200 loops=1)
+         Sort Key: created_at DESC
+         Sort Method: top-N heapsort  Memory: 47kB
+         Buffers: shared hit=728
+         ->  Index Scan using idx_report_ops_audit_actor_created on report_ops_audit  (cost=0.28..50.93 rows=742 width=49) (actual time=0.110..0.876 rows=743 loops=1)
+               Index Cond: (created_at >= (now() - '7 days'::interval))
+               Buffers: shared hit=728
+ Planning Time: 0.186 ms
+ Execution Time: 1.312 ms
+(11 rows)
+
+=== 5.g Retention eligible ===
+                                                                       QUERY PLAN                                                                        
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=0.28..1.40 rows=1 width=40) (actual time=0.013..0.014 rows=0 loops=1)
+   Buffers: shared hit=3
+   ->  Index Scan Backward using idx_rsr_created_at on report_schedule_runs  (cost=0.28..1.40 rows=1 width=40) (actual time=0.012..0.013 rows=0 loops=1)
+         Index Cond: (created_at < (now() - '30 days'::interval))
+         Filter: ((artifact_path IS NOT NULL) AND (artifact_pruned_at IS NULL) AND (status = 'succeeded'::report_run_status))
+         Buffers: shared hit=3
+ Planning:
+   Buffers: shared hit=1
+ Planning Time: 0.234 ms
+ Execution Time: 0.045 ms
+(10 rows)
+
