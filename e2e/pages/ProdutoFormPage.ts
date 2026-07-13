@@ -32,6 +32,9 @@ export class ProdutoFormPage {
 
   async preencher(nome: string, precoVenda: number): Promise<void> {
     await this.nomeInput.fill(nome);
+    // Preço fica na aba "Preços" — alternar antes de preencher.
+    await this.page.getByRole('tab', { name: /pre[çc]os/i }).click();
+    await this.precoVendaInput.waitFor({ state: 'visible', timeout: 5_000 });
     await this.precoVendaInput.fill(String(precoVenda));
   }
 
