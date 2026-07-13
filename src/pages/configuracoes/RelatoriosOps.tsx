@@ -1,4 +1,4 @@
-// P5.1 — Página operacional (admin) para monitorar runs de report_schedules.
+// P5.1 + P6.2 + P6.4 — Página operacional (admin) para monitorar runs de report_schedules.
 // Gate: apenas usuários com role 'admin'. Não-admin veem aviso e nenhum dado.
 import React, { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -11,25 +11,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { KpiCards } from "@/components/relatorios/ops/KpiCards";
 import { RunsFailuresTable } from "@/components/relatorios/ops/RunsFailuresTable";
 import { AlertsDrawer } from "@/components/relatorios/ops/AlertsDrawer";
+import { OpsFilters } from "@/components/relatorios/ops/OpsFilters";
 import {
   useReportRunFailures24h,
   useReportRunKpis24h,
   useReportRuns,
 } from "@/hooks/useReportRunKpis";
 import type { RunsFilter } from "@/services/reportRunOpsService";
+import { useOpsFilters, windowToHours } from "@/hooks/useOpsFilters";
+import { downloadDiagnosticCsv } from "@/utils/exportOpsDiagnostic";
+import { listOpsAlerts } from "@/services/opsAlertsService";
+import { toast } from "@/components/ui/use-toast";
 
 const ALL = "__all__";
-const REASONS: string[] = [
-  "invalid_view_state",
-  "scope_query_failed",
-  "row_limit_exceeded",
-  "run_timeout",
-  "artifact_generation_failed",
-  "upload_failed",
-  "sign_failed",
-  "delivery_skipped",
-  "unknown",
-];
 
 const RelatoriosOps: React.FC = () => {
   const { user } = useAuth();
@@ -48,25 +42,52 @@ const RelatoriosOps: React.FC = () => {
     staleTime: 60_000,
   });
 
-  const [hours, setHours] = useState<number>(24);
+  const { filters, patch, reset } = useOpsFilters(user?.id ?? null);
+
   const [status, setStatus] = useState<RunsFilter["status"]>(null);
-  const [reason, setReason] = useState<string | null>(null);
   const [scheduleId, setScheduleId] = useState<string>("");
 
-  const filter = useMemo<RunsFilter>(
+  const runsFilter = useMemo<RunsFilter>(
     () => ({
-      hours,
+      hours: windowToHours(filters.window),
       status,
-      reason,
+      reason: filters.reason,
       scheduleId: scheduleId.trim() || null,
       limit: 200,
     }),
-    [hours, status, reason, scheduleId],
+    [filters.window, filters.reason, status, scheduleId],
   );
 
   const kpis = useReportRunKpis24h();
   const failures = useReportRunFailures24h();
-  const runs = useReportRuns(filter);
+  const runs = useReportRuns(runsFilter);
+
+  const failuresFiltered = useMemo(() => {
+    const list = failures.data ?? [];
+    if (!filters.reason) return list;
+    return list.filter((r) => r.reason === filters.reason);
+  }, [failures.data, filters.reason]);
+
+  const [exporting, setExporting] = useState(false);
+  const handleExport = async () => {
+    try {
+      setExporting(true);
+      const openAlerts = await listOpsAlerts({ onlyOpen: true, limit: 200 });
+      downloadDiagnosticCsv({
+        kpis: kpis.data ?? [],
+        failures: failuresFiltered,
+        openAlerts,
+      });
+    } catch (e) {
+      toast({
+        title: "Falha ao exportar diagnóstico",
+        description: (e as Error).message,
+        variant: "destructive",
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   if (loadingRole) {
     return (
@@ -99,16 +120,28 @@ const RelatoriosOps: React.FC = () => {
         <div>
           <h1 className="text-2xl font-semibold">Operações — Relatórios agendados</h1>
           <p className="text-sm text-muted-foreground">
-            KPIs e diagnóstico em janela de 24h. Dados restritos a administradores.
+            KPIs, alertas e diagnóstico. Dados restritos a administradores.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <AlertsDrawer />
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
+            {exporting ? "Exportando…" : "Exportar diagnóstico"}
+          </Button>
           <Button variant="outline" size="sm" onClick={() => { kpis.refetch(); failures.refetch(); runs.refetch(); }}>
             Atualizar
           </Button>
         </div>
       </header>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Filtros</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <OpsFilters value={filters} onChange={patch} onReset={reset} />
+        </CardContent>
+      </Card>
 
       <KpiCards data={kpis.data} isLoading={kpis.isLoading} />
 
@@ -119,8 +152,10 @@ const RelatoriosOps: React.FC = () => {
         <CardContent>
           {failures.isLoading ? (
             <div className="text-sm text-muted-foreground">Carregando…</div>
-          ) : (failures.data ?? []).length === 0 ? (
-            <div className="text-sm text-muted-foreground">Sem falhas nas últimas 24h.</div>
+          ) : failuresFiltered.length === 0 ? (
+            <div className="text-sm text-muted-foreground py-6 text-center border rounded-md">
+              Sem falhas para o filtro atual.
+            </div>
           ) : (
             <div className="border rounded-md overflow-x-auto">
               <table className="w-full text-sm">
@@ -134,7 +169,7 @@ const RelatoriosOps: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {(failures.data ?? []).map((r) => (
+                  {failuresFiltered.map((r) => (
                     <tr key={`${r.reason}-${r.scope}-${r.format}`} className="border-t">
                       <td className="px-3 py-2 font-mono text-xs">{r.reason}</td>
                       <td className="px-3 py-2">{r.scope}</td>
@@ -155,17 +190,7 @@ const RelatoriosOps: React.FC = () => {
           <CardTitle className="text-base">Runs</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <div>
-              <label className="text-xs text-muted-foreground">Janela (horas)</label>
-              <Input
-                type="number"
-                min={1}
-                max={168}
-                value={hours}
-                onChange={(e) => setHours(Math.max(1, Math.min(168, Number(e.target.value) || 24)))}
-              />
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-muted-foreground">Status</label>
               <Select
@@ -178,21 +203,6 @@ const RelatoriosOps: React.FC = () => {
                   <SelectItem value="succeeded">succeeded</SelectItem>
                   <SelectItem value="failed">failed</SelectItem>
                   <SelectItem value="running">running</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground">Reason</label>
-              <Select
-                value={reason ?? ALL}
-                onValueChange={(v) => setReason(v === ALL ? null : v)}
-              >
-                <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL}>Todos</SelectItem>
-                  {REASONS.map((r) => (
-                    <SelectItem key={r} value={r}>{r}</SelectItem>
-                  ))}
                 </SelectContent>
               </Select>
             </div>
