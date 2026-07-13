@@ -12,6 +12,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsgo --noEmit",
+    "e2e": "playwright test --config=e2e/playwright.config.ts",
+    "e2e:ui": "playwright test --config=e2e/playwright.config.ts --ui",
+    "e2e:report": "playwright show-report playwright-report",
     "ci:gate": "bun run typecheck && bun run test && bun run build"
   },
   "dependencies": {
@@ -71,7 +74,9 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@eslint/js": "^9.9.0",
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/typography": "^0.5.15",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
