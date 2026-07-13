@@ -142,7 +142,7 @@ export const NovaMovimentacaoDialog: React.FC<Props> = ({ empresaId, open, onClo
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Quantidade *</Label>
-                  <Input type="number" step="0.001" min="0" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} />
+                  <Input data-testid="estoque-mov-quantidade-input" type="number" step="0.001" min="0" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Custo unitário</Label>
