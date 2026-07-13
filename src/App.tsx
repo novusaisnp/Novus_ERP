@@ -34,6 +34,12 @@ import EmBreve from './pages/estoque/EmBreve';
 import MovimentacoesEstoque from './pages/estoque/movimentacoes/index';
 import InventarioEstoque from './pages/estoque/inventario/index';
 import KardexPage from './pages/estoque/kardex/index';
+import RelatoriosEstoqueHub from './pages/estoque/relatorios/index';
+import GiroPage from './pages/estoque/relatorios/giro/index';
+import CurvaAbcPage from './pages/estoque/relatorios/curva-abc/index';
+import PosicaoPage from './pages/estoque/relatorios/posicao/index';
+import ParadosPage from './pages/estoque/relatorios/parados/index';
+import RupturaPage from './pages/estoque/relatorios/ruptura/index';
 import { ArrowLeftRight, ClipboardList, BarChart3, FileText } from 'lucide-react';
 
 // Financeiro Pages
