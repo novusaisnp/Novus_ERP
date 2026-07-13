@@ -43,9 +43,11 @@ const Localizacoes: React.FC = () => {
   const [localizacaoToDelete, setLocalizacaoToDelete] = useState<Localizacao | null>(null);
 
   const { data: localizacoes = [], isLoading } = useLocalizacoes();
+  const { data: empresaId } = useEmpresaAtual();
   const createMutation = useCreateLocalizacao();
   const updateMutation = useUpdateLocalizacao();
   const deleteMutation = useDeleteLocalizacao();
+
 
   const filteredLocalizacoes = localizacoes.filter((localizacao) =>
     localizacao.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
