@@ -210,6 +210,11 @@ const Produtos: React.FC = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <Button asChild variant="ghost" size="sm" title="Ver Kardex">
+                          <Link to={`/estoque/kardex/${produto.id}`}>
+                            <ScrollText className="h-4 w-4" />
+                          </Link>
+                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"
