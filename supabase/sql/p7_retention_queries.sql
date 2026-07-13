@@ -20,27 +20,30 @@ WHERE status = 'succeeded'
   AND artifact_pruned_at IS NULL
   AND created_at < now() - interval '30 days';
 
-\echo '--- (c) Taxa de erro da função prune por janela (via cron.job_run_details, se disponível)'
+\echo '--- (c) Taxa de erro da função prune por janela (via cron.job_run_details)'
+\echo '    Requer privilégios sobre schema "cron" (postgres/service_role).'
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = 'cron') THEN
-    PERFORM 1;
-  ELSE
+  IF NOT EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = 'cron') THEN
     RAISE NOTICE 'schema cron ausente — extensão pg_cron não habilitada';
+    RETURN;
   END IF;
+  BEGIN
+    PERFORM 1 FROM cron.job LIMIT 1;
+  EXCEPTION WHEN insufficient_privilege THEN
+    RAISE NOTICE 'sem privilégio no schema cron — rode como postgres/service_role para obter (c)';
+    RETURN;
+  END;
+  RAISE NOTICE 'schema cron acessível — execute manualmente o SELECT abaixo:';
+  RAISE NOTICE '  SELECT date_trunc(''hour'', jr.start_time) AS bucket_hour,';
+  RAISE NOTICE '         count(*) FILTER (WHERE jr.status = ''succeeded'') AS ok,';
+  RAISE NOTICE '         count(*) FILTER (WHERE jr.status = ''failed'')    AS fail,';
+  RAISE NOTICE '         count(*) AS total';
+  RAISE NOTICE '    FROM cron.job_run_details jr JOIN cron.job j ON j.jobid = jr.jobid';
+  RAISE NOTICE '   WHERE j.jobname = ''prune-report-artifacts-daily''';
+  RAISE NOTICE '     AND jr.start_time >= now() - interval ''7 days''';
+  RAISE NOTICE '   GROUP BY 1 ORDER BY 1 DESC;';
 END $$;
-
-SELECT
-  date_trunc('hour', start_time) AS bucket_hour,
-  count(*) FILTER (WHERE status = 'succeeded') AS ok,
-  count(*) FILTER (WHERE status = 'failed')    AS fail,
-  count(*)                                     AS total
-FROM cron.job_run_details jr
-JOIN cron.job j ON j.jobid = jr.jobid
-WHERE j.jobname = 'prune-report-artifacts-daily'
-  AND jr.start_time >= now() - interval '7 days'
-GROUP BY 1
-ORDER BY 1 DESC;
 
 \echo '--- (d) Distribuição por reason (retention_expired vs outros)'
 SELECT
