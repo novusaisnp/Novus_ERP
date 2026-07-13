@@ -56,7 +56,7 @@ export default function RegrasConciliacaoPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-3">
           <CardTitle>Regras de conciliação</CardTitle>
-          <Button size="sm" onClick={openNew}>
+          <Button size="sm" onClick={openNew} data-testid="btn-nova-regra">
             <Plus className="h-4 w-4 mr-1" /> Nova regra
           </Button>
         </CardHeader>
