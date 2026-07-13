@@ -63,6 +63,9 @@ export interface ReportScheduleRun {
   resigned_at: string | null;
   resigned_by: string | null;
   resign_count: number;
+  // P7.2 — retenção
+  artifact_pruned_at?: string | null;
+  artifact_prune_reason?: "retention_expired" | string | null;
 }
 
 // Payload aceito por createSchedule / updateSchedule (o backend preenche id/user_id/next_run_at defaults).
@@ -157,6 +160,8 @@ export function parseRun(row: Record<string, unknown>): ReportScheduleRun {
     resigned_at: (row.resigned_at as string | null) ?? null,
     resigned_by: (row.resigned_by as string | null) ?? null,
     resign_count: Number(row.resign_count ?? 0),
+    artifact_pruned_at: (row.artifact_pruned_at as string | null) ?? null,
+    artifact_prune_reason: (row.artifact_prune_reason as string | null) ?? null,
   };
 }
 
