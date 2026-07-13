@@ -154,6 +154,9 @@ export function parseRun(row: Record<string, unknown>): ReportScheduleRun {
     delivery_reason: (row.delivery_reason as string | null) ?? null,
     error_message: (row.error_message as string | null) ?? null,
     created_at: String(row.created_at),
+    resigned_at: (row.resigned_at as string | null) ?? null,
+    resigned_by: (row.resigned_by as string | null) ?? null,
+    resign_count: Number(row.resign_count ?? 0),
   };
 }
 
