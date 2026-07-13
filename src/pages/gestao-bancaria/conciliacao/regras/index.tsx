@@ -56,7 +56,7 @@ export default function RegrasConciliacaoPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-3">
           <CardTitle>Regras de conciliação</CardTitle>
-          <Button size="sm" onClick={openNew}>
+          <Button size="sm" onClick={openNew} data-testid="btn-nova-regra">
             <Plus className="h-4 w-4 mr-1" /> Nova regra
           </Button>
         </CardHeader>
@@ -84,11 +84,11 @@ export default function RegrasConciliacaoPage() {
                     <TableHead className="text-right w-[120px]">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+              <TableBody data-testid="tabela-regras">
                   {regras.map((r) => (
-                    <TableRow key={r.id}>
+                    <TableRow key={r.id} data-testid={`regra-row-${r.id}`}>
                       <TableCell className="font-mono">{r.prioridade}</TableCell>
-                      <TableCell className="font-medium">{r.nome}</TableCell>
+                      <TableCell className="font-medium" data-testid={`regra-nome-${r.id}`}>{r.nome}</TableCell>
                       <TableCell>{TIPO_LABEL[r.tipo] ?? r.tipo}</TableCell>
                       <TableCell className="max-w-[280px] truncate text-muted-foreground">
                         {r.padrao ?? "—"}
@@ -104,6 +104,7 @@ export default function RegrasConciliacaoPage() {
                           variant="ghost"
                           onClick={() => openEdit(r)}
                           aria-label="Editar"
+                          data-testid={`btn-editar-regra-${r.id}`}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -112,6 +113,7 @@ export default function RegrasConciliacaoPage() {
                           variant="ghost"
                           onClick={() => setToDelete(r)}
                           aria-label="Excluir"
+                          data-testid={`btn-excluir-regra-${r.id}`}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
