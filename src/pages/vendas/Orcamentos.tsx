@@ -49,7 +49,7 @@ import { useCatalogoProdutos } from '@/hooks/useCatalogoOrcamento';
 import { CatalogoItemPicker } from '@/components/vendas/CatalogoItemPicker';
 import { OrcamentoViewDialog } from '@/components/vendas/OrcamentoViewDialog';
 import { OrcamentoAcoesMenu } from '@/components/vendas/OrcamentoAcoesMenu';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
 import { ConverterVendaDialog } from '@/components/vendas/ConverterVendaDialog';
 import { useEmpresasLogosMap } from '@/hooks/useEmpresasLogosMap';
 import { toast } from 'sonner';

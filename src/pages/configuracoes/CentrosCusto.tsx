@@ -8,7 +8,7 @@ import { useCentrosCusto } from '@/hooks/useCentrosCusto';
 import { CentroCustoModal } from '@/components/configuracoes/CentroCustoModal';
 import { CentroCustoCard } from '@/components/configuracoes/CentroCustoCard';
 import { CentroCustoEmptyState } from '@/components/configuracoes/CentroCustoEmptyState';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { CentroCusto } from '@/types/configuracoes';
 

@@ -5,7 +5,7 @@ import { ContasReceberStats } from '@/components/financeiro/contas-receber/Conta
 import { ContasReceberFilters } from '@/components/financeiro/contas-receber/ContasReceberFilters';
 import { ContasReceberContent } from '@/components/financeiro/contas-receber/ContasReceberContent';
 import { ContaReceberFormModal } from '@/components/financeiro/contas-receber/ContaReceberFormModal';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
 import type {
   ContaReceber,
   ContaReceberFilters as ContaReceberFiltersType,

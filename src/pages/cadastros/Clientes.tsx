@@ -10,7 +10,7 @@ import { Users, Plus, Search, Edit, Trash2 } from 'lucide-react';
 import { Cliente } from '@/types/cliente';
 import { useClientes } from '@/hooks/useClientes';
 import { FormCliente } from '@/components/modules/FormCliente';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
 
 const Clientes: React.FC = () => {
   const { clientes, loading, saveCliente, deleteCliente } = useClientes();

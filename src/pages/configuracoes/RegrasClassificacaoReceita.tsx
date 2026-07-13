@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Pencil, Trash2, Tags } from 'lucide-react';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
 import { useRegrasClassificacao } from '@/hooks/useRegrasClassificacao';
 import { RegraClassificacaoModal } from '@/components/configuracoes/RegraClassificacaoModal';
 import type { RegraClassificacaoReceita } from '@/types/classificacaoReceita';

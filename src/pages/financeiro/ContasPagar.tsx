@@ -6,7 +6,7 @@ import { ContasPagarStats } from '@/components/financeiro/contas-pagar/ContasPag
 import { ContasPagarFilters } from '@/components/financeiro/contas-pagar/ContasPagarFilters';
 import { ContasPagarContent } from '@/components/financeiro/contas-pagar/ContasPagarContent';
 import { ContasPagarModal } from '@/components/financeiro/contas-pagar/ContasPagarModal';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
 import { ContaPagar, ContaPagarInput, ContaPagarFilters } from '@/types/contasPagar';
 
 

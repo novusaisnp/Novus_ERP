@@ -6,7 +6,7 @@ import { PlanoContasModal } from '@/components/financeiro/PlanoContasModal';
 import { PlanoContasHeader } from '@/components/financeiro/PlanoContasHeader';
 import { PlanoContasStats } from '@/components/financeiro/PlanoContasStats';
 import { PlanoContasContent } from '@/components/financeiro/PlanoContasContent';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
 import { PlanoContas as PlanoContasType, PlanoContasInput } from '@/types/planoContas';
 
 const PlanoContas = () => {
