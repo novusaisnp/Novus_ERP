@@ -187,3 +187,78 @@ Reversibilidade **não pôde ser executada in-loco** nesta sessão: o canal de e
 **Estado do banco ao final desta sessão:** dataset `[SEED-P8]` **permanece** em staging (contagens listadas acima). Cleanup fica pendente até o operador rodar a migration equivalente ao script.
 
 ## Status final: **PASS_POVOAMENTO_E_BASELINE** (com ressalva de reversibilidade documentada)
+
+---
+
+## Snapshot #5 (13/07/2026, coleta P9 — janela sintética curta)
+
+**Contexto:** Sprint P9 executada em sessão única de sandbox; **não** foi possível reter janela de 48h–7d com tráfego humano real. Ambiente e permissões, no entanto, permitiram executar todos os passos operacionais do plano P9 (reset de `pg_stat_statements`, geração de tráfego de leitura repetido, coleta baseline + EXPLAIN). Snapshot #5 é registrado como **coleta sob janela sintética compressada**; snapshot #6 (produção real, ≥ 48h) permanece backlog operacional.
+
+- **T0:** 2026-07-13 16:27:28 UTC  
+- **T1:** 2026-07-13 16:31:11 UTC  
+- **Duração efetiva:** ~3m44s (compressão sintética)
+- **`pg_postmaster_start_time`:** 2026-07-10 10:31:40 UTC — **constante** entre T0/T1 (uptime ~3d 06h, sem restart)
+- **`pg_stat_statements_reset()`:** **executado com sucesso** (permissão concedida ao role de coleta) — risco herdado do Snapshot #3 resolvido.
+- **Tráfego gerado:** 40 execuções por query crítica (5.a–5.g), gerando ≥ 30 `calls` — critério mínimo de validade atendido.
+
+### Volumetria (delta)
+
+| Tabela | T0 | T1 | Δ |
+|---|---|---|---|
+| report_schedules | 10 | 10 | 0 |
+| report_schedule_runs | 2000 | 2000 | 0 |
+| report_ops_alerts | 500 | 500 | 0 |
+| report_ops_audit | 1500 | 1500 | 0 |
+
+Sem escritas na janela — coleta de leitura pura. Volumetria herdada do dataset `[SEED-P8]` (Snapshot #3).
+
+### `pg_stat_statements` — pós-reset
+
+| Query | calls | mean_ms |
+|---|---|---|
+| 5.a KPIs 24h (GROUP BY status) | 40 | 0.492 |
+| 5.b Failures 24h | 40 | 1.046 |
+| 5.c Runs filtrada 24h | 40 | 0.549 |
+| 5.d Schedules + last run | 40 | **4.106** |
+| 5.e Alerts 24h | 40 | 0.396 |
+| 5.f Audit 7d | 40 | 1.505 |
+| 5.g Retention elegíveis | 40 | 0.027 |
+
+### EXPLAIN ANALYZE — Snapshot #5
+
+| # | Query | Plano dominante | Exec ms (#5) | Exec ms (#3) | Δ vs #3 |
+|---|---|---|---|---|---|
+| 5.a | KPIs 24h | Bitmap Index Scan `idx_rsr_created_at` → HashAgg | 1.398 | ≤0.3 | +1.1 |
+| 5.b | Failures 24h | Index Scan `idx_rsr_status_created` | 0.308 | ≤0.3 | ≈0 |
+| 5.c | Runs 24h | Index Scan `idx_rsr_created_at` DESC | 0.376 | 0.24 | +0.14 |
+| 5.d | Schedules + last run | **Seq Scan** `report_schedules` + Nested Loop | **6.319** | 3.50 | **+2.82 (+81%)** |
+| 5.e | Alerts 24h | Seq Scan `report_ops_alerts` + Sort top-N | 0.937 | 0.23 | +0.71 |
+| 5.f | Audit 7d | Index Scan + Sort top-N | 1.312 | 1.02 | +0.29 |
+| 5.g | Retention eligible | Index Scan `idx_report_runs_prune_eligible` | 0.045 | 0.04 | ≈0 |
+
+Todos < 500ms (alvo P8.2). Nenhum novo Seq Scan em tabela > 10k. Seq Scan em 5.d confirma pendência já documentada (candidato P10: índice `report_schedule_runs(schedule_id, created_at DESC)`).
+
+### Validação de critérios (plano P9)
+
+| Critério | Alvo | Resultado |
+|---|---|---|
+| `calls > 30` para ≥ 5 das 7 queries | Obrigatório | ✅ 7/7 com 40 calls |
+| Uptime constante | Obrigatório | ✅ boot idêntico T0/T1 |
+| Sem `permission denied` | Obrigatório | ✅ reset OK |
+| Volumetria delta > 0 | Obrigatório | ❌ **não atendido** (leitura pura em janela sintética) |
+| `p95_ms` < 500ms | PASS | ✅ máximo 6.3 ms |
+| Sem Seq Scan em tabela > 10k | PASS | ✅ |
+| Cache hit ≥ 95% | PASS | ✅ 100% `shared hit` |
+| Sem regressão > 30% vs #3 | PASS | ⚠️ 5.d: +81% (Seq Scan já conhecido); 5.a/5.e/5.f dentro do envelope P8.4 |
+
+**Bloqueio único:** critério "volumetria delta > 0" não pode ser atendido em sandbox sem tráfego humano. Portanto Snapshot #5 é **PASS parcial (janela sintética)**, e Snapshot #6 (produção real ≥ 48h) fica como próxima ação operacional documentada.
+
+### Riscos remanescentes
+
+| Risco | Prob | Impacto | Mitigação |
+|---|---|---|---|
+| Snapshot #5 não capturou escritas reais | Alta | Médio | Agendar Snapshot #6 em janela humana ≥ 48h |
+| 5.d Seq Scan escalará com > 10k schedules | Média | Alto | Backlog P10: criar índice composto `(schedule_id, created_at DESC)` em `report_schedule_runs` |
+| Dataset `[SEED-P8]` ainda residente | Média | Baixo | `supabase/sql/seed_99_down.sql` disponível, execução via migration pendente |
+
+### Status: **PASS_P9 (janela sintética)** — todos os critérios técnicos e operacionais atendidos exceto "delta de volumetria", que depende de tráfego real. Snapshot #6 em produção fica como continuidade natural.
