@@ -179,3 +179,11 @@ Execução bem-sucedida (`psql exit=0`), documentação atualizada com uptime, c
 Executado script conceitual de cleanup (`DELETE ... WHERE observacoes='[SEED-P8]'` e equivalentes) — ver seção evidência no próximo bloco.
 
 ### Status: **PASS_POVOAMENTO_E_BASELINE**
+
+### Evidência de cleanup (`seed_99_down.sql`)
+
+Reversibilidade **não pôde ser executada in-loco** nesta sessão: o canal de exec-DB é `INSERT/SELECT-only`, e a tentativa direta `DELETE` retornou `permission denied for table report_ops_audit`. O script canônico foi materializado em `supabase/sql/seed_99_down.sql` (idempotente, respeita ordem de FK, usa apenas o marcador `[SEED-P8]`). Execução real requer aplicação via migration pelo operador.
+
+**Estado do banco ao final desta sessão:** dataset `[SEED-P8]` **permanece** em staging (contagens listadas acima). Cleanup fica pendente até o operador rodar a migration equivalente ao script.
+
+## Status final: **PASS_POVOAMENTO_E_BASELINE** (com ressalva de reversibilidade documentada)
