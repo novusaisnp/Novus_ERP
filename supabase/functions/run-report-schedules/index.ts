@@ -18,6 +18,8 @@ import { exportCsvServer } from "../_shared/report-export/exportCsvServer.ts";
 import { exportXlsxServer } from "../_shared/report-export/exportXlsxServer.ts";
 import { exportPdfServer } from "../_shared/report-export/exportPdfServer.ts";
 import { resolveBrandingForEmpresa, resolveBrandingForUser, type Branding } from "../_shared/report-export/branding.ts";
+import { maxRowsForFormat, PAGE_SIZE, RUN_TIMEOUT_MS, type ExportFormat } from "../_shared/report-export/limits.ts";
+import { classifyReason, isDefinitive } from "../_shared/report-export/errorCodes.ts";
 
 const BUCKET = "report-exports";
 const SIGNED_URL_TTL_SECONDS = 7 * 24 * 60 * 60;
@@ -55,48 +57,79 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
+// P5.3: leitura paginada (PAGE_SIZE) com ordenação estável (chave primária desc + id asc)
+// e parada imediata ao ultrapassar o cap do formato (row_limit_exceeded).
 // deno-lint-ignore no-explicit-any
-async function loadScopeData(client: SupabaseClient, scope: "vendas" | "financeiro", vs: any): Promise<{ columns: string[]; rows: Array<Record<string, unknown>> }> {
+async function loadScopeData(
+  client: SupabaseClient,
+  scope: "vendas" | "financeiro",
+  vs: any,
+  format: ExportFormat,
+  signal: AbortSignal,
+): Promise<{ columns: string[]; rows: Array<Record<string, unknown>> }> {
   const filters = vs.filters ?? {};
-  if (scope === "vendas") {
+  const cap = maxRowsForFormat(format);
+
+  const config = scope === "vendas"
+    ? {
+        table: "vendas",
+        select: "id,empresa_representada_id,numero_venda,cliente_id,data_venda,valor_total,status,tipo",
+        orderCol: "data_venda",
+        dateCol: "data_venda",
+        columns: ["numero_venda", "data_venda", "cliente_id", "valor_total", "status", "tipo"],
+      }
+    : {
+        table: "contas_receber",
+        select: "id,empresa_representada_id,descricao,cliente_id,valor_original,data_vencimento,status",
+        orderCol: "data_vencimento",
+        dateCol: "data_vencimento",
+        columns: ["descricao", "data_vencimento", "cliente_id", "valor_original", "status"],
+      };
+
+  const rows: Array<Record<string, unknown>> = [];
+  const seen = new Set<string>();
+  let from = 0;
+
+  // Buscamos até cap + 1 para detectar overflow determinístico.
+  while (rows.length <= cap) {
+    if (signal.aborted) throw new Error("run_timeout:scope_pagination");
+
+    const to = from + PAGE_SIZE - 1;
     let q = client
-      .from("vendas")
-      .select("id,empresa_representada_id,numero_venda,cliente_id,data_venda,valor_total,status,tipo")
+      .from(config.table)
+      .select(config.select)
       .is("deleted_at", null)
-      .order("data_venda", { ascending: false })
-      .limit(10000);
-    if (filters.date_from) q = q.gte("data_venda", String(filters.date_from).slice(0, 10));
-    if (filters.date_to) q = q.lte("data_venda", String(filters.date_to).slice(0, 10));
+      .order(config.orderCol, { ascending: false })
+      .order("id", { ascending: true })
+      .range(from, to)
+      .abortSignal(signal);
+
+    if (filters.date_from) q = q.gte(config.dateCol, String(filters.date_from).slice(0, 10));
+    if (filters.date_to) q = q.lte(config.dateCol, String(filters.date_to).slice(0, 10));
     if (filters.status && Array.isArray(filters.status) && filters.status.length > 0) {
       q = q.in("status", filters.status);
     }
     if (filters.empresa_representada_id) q = q.eq("empresa_representada_id", filters.empresa_representada_id);
+
     const { data, error } = await q;
     if (error) throw error;
-    return {
-      columns: ["numero_venda", "data_venda", "cliente_id", "valor_total", "status", "tipo"],
-      rows: (data ?? []) as Array<Record<string, unknown>>,
-    };
+    const page = (data ?? []) as Array<Record<string, unknown>>;
+    if (page.length === 0) break;
+
+    for (const row of page) {
+      const id = String(row.id ?? "");
+      if (id && seen.has(id)) continue; // proteção contra sobreposição
+      if (id) seen.add(id);
+      rows.push(row);
+      if (rows.length > cap) {
+        throw new Error(`row_limit_exceeded:${scope}:${cap}`);
+      }
+    }
+    if (page.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
   }
-  // financeiro — visão consolidada de contas a receber (P4.2A: dataset representativo).
-  let q = client
-    .from("contas_receber")
-    .select("id,empresa_representada_id,descricao,cliente_id,valor_original,data_vencimento,status")
-    .is("deleted_at", null)
-    .order("data_vencimento", { ascending: false })
-    .limit(10000);
-  if (filters.date_from) q = q.gte("data_vencimento", String(filters.date_from).slice(0, 10));
-  if (filters.date_to) q = q.lte("data_vencimento", String(filters.date_to).slice(0, 10));
-  if (filters.status && Array.isArray(filters.status) && filters.status.length > 0) {
-    q = q.in("status", filters.status);
-  }
-  if (filters.empresa_representada_id) q = q.eq("empresa_representada_id", filters.empresa_representada_id);
-  const { data, error } = await q;
-  if (error) throw error;
-  return {
-    columns: ["descricao", "data_vencimento", "cliente_id", "valor_original", "status"],
-    rows: (data ?? []) as Array<Record<string, unknown>>,
-  };
+
+  return { columns: config.columns, rows };
 }
 
 function inferEmpresaId(
@@ -185,15 +218,27 @@ async function processSchedule(client: SupabaseClient, sch: ScheduleRow): Promis
   }
   const runId = runRow.id as string;
 
-  try {
+  // P5.3: orçamento total (timeout budget) por run via AbortController.
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), RUN_TIMEOUT_MS);
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    controller.signal.addEventListener("abort", () => {
+      reject(new Error("run_timeout:budget_exceeded"));
+    });
+  });
+
+  const work = (async () => {
     const vs = validateViewState(sch.view_state);
     if (!vs.ok || !vs.data) throw new Error(`invalid_view_state:${vs.error}`);
 
     let scoped: { columns: string[]; rows: Array<Record<string, unknown>> };
     try {
-      scoped = await loadScopeData(client, sch.scope, vs.data);
+      scoped = await loadScopeData(client, sch.scope, vs.data, sch.format, controller.signal);
     } catch (e) {
-      throw new Error(`scope_query_failed:${e instanceof Error ? e.message : String(e)}`);
+      const em = e instanceof Error ? e.message : String(e);
+      // Preserva reasons canônicos vindos de loadScopeData (row_limit_exceeded / run_timeout).
+      if (em.startsWith("row_limit_exceeded:") || em.startsWith("run_timeout:")) throw e;
+      throw new Error(`scope_query_failed:${em}`);
     }
 
     const empresaId = inferEmpresaId(vs.data, scoped.rows);
@@ -262,23 +307,16 @@ async function processSchedule(client: SupabaseClient, sch: ScheduleRow): Promis
       .eq("id", sch.id);
 
     log("run_succeeded", { schedule_id: sch.id, run_id: runId, attempt, rows: scoped.rows.length });
+  })();
+
+  try {
+    await Promise.race([work, timeoutPromise]);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    const isFinal = attempt >= MAX_ATTEMPTS;
-    // P5.1: normaliza reason contra catálogo padronizado (prefixo antes de ':').
-    const KNOWN_REASONS = new Set([
-      "invalid_view_state",
-      "scope_query_failed",
-      "row_limit_exceeded",
-      "run_timeout",
-      "artifact_generation_failed",
-      "upload_failed",
-      "sign_failed",
-      "delivery_skipped",
-    ]);
-    const rawPrefix = msg.split(":")[0]?.trim() ?? "";
-    const reason = KNOWN_REASONS.has(rawPrefix) ? rawPrefix : "unknown";
-    const detail = msg.includes(":") ? msg.slice(msg.indexOf(":") + 1) : msg;
+    const { reason, detail } = classifyReason(msg);
+    // P5.3: row_limit_exceeded e invalid_view_state são definitivos (sem retry).
+    // run_timeout mantém política transitória (retry com backoff).
+    const isFinal = attempt >= MAX_ATTEMPTS || isDefinitive(reason);
     const normalized = `${reason}:${detail}`.slice(0, 500);
 
     await client
@@ -291,7 +329,6 @@ async function processSchedule(client: SupabaseClient, sch: ScheduleRow): Promis
       .eq("id", runId);
 
     if (isFinal) {
-      // Avança next_run_at para próximo slot regular.
       const nextAt = computeNextRunAt({
         frequency: sch.frequency,
         hour: sch.hour_utc,
@@ -302,11 +339,12 @@ async function processSchedule(client: SupabaseClient, sch: ScheduleRow): Promis
       });
       await client.from("report_schedules").update({ next_run_at: nextAt.toISOString() }).eq("id", sch.id);
     } else {
-      // Reagenda para retry com backoff.
       const retryAt = new Date(Date.now() + backoffDelayMs(attempt)).toISOString();
       await client.from("report_schedules").update({ next_run_at: retryAt }).eq("id", sch.id);
     }
-    log("run_failed", { schedule_id: sch.id, run_id: runId, attempt, final: isFinal });
+    log("run_failed", { schedule_id: sch.id, run_id: runId, attempt, final: isFinal, reason });
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
