@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { KpiCards } from "@/components/relatorios/ops/KpiCards";
 import { RunsFailuresTable } from "@/components/relatorios/ops/RunsFailuresTable";
+import { AlertsDrawer } from "@/components/relatorios/ops/AlertsDrawer";
 import {
   useReportRunFailures24h,
   useReportRunKpis24h,
