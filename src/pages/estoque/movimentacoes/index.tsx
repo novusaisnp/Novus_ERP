@@ -147,7 +147,7 @@ const MovimentacoesEstoque: React.FC = () => {
                 </TableRow>
               )}
               {filtered.map((m) => (
-                <TableRow key={m.id}>
+                <TableRow key={m.id} data-testid={`estoque-mov-row-${m.id}`}>
                   <TableCell>{new Date(m.data_movimento).toLocaleString('pt-BR')}</TableCell>
                   <TableCell>
                     <Badge className={tipoBadge[m.tipo]} variant="outline">
