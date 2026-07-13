@@ -49,7 +49,7 @@ import { useCatalogoProdutos } from '@/hooks/useCatalogoOrcamento';
 import { CatalogoItemPicker } from '@/components/vendas/CatalogoItemPicker';
 import { OrcamentoViewDialog } from '@/components/vendas/OrcamentoViewDialog';
 import { OrcamentoAcoesMenu } from '@/components/vendas/OrcamentoAcoesMenu';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
 import { ConverterVendaDialog } from '@/components/vendas/ConverterVendaDialog';
 import { useEmpresasLogosMap } from '@/hooks/useEmpresasLogosMap';
 import { toast } from 'sonner';
@@ -738,18 +738,18 @@ const Orcamentos: React.FC = () => {
         onOpenChange={(v) => !v && setViewOrc(null)}
       />
 
-      <ConfirmDialog
+      <ConfirmDeleteWithDeps
         open={!!deleteOrc}
         onOpenChange={(v) => !v && setDeleteOrc(null)}
-        title="Excluir orçamento"
-        description={`Deseja excluir o orçamento ${deleteOrc?.numero ?? ''}? Esta ação pode ser revertida pelo administrador.`}
-        confirmLabel="Excluir"
-        destructive
+        entidade="orcamentos_venda"
+        id={deleteOrc?.id ?? null}
+        nomeRegistro={deleteOrc?.numero ? `orçamento ${deleteOrc.numero}` : undefined}
         onConfirm={() => {
           if (deleteOrc) deleteMut.mutate(deleteOrc.id);
           setDeleteOrc(null);
         }}
       />
+
 
       <ConverterVendaDialog
         orcamento={converterOrc}

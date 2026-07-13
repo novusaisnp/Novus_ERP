@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Pencil, Trash2, Tags } from 'lucide-react';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
 import { useRegrasClassificacao } from '@/hooks/useRegrasClassificacao';
 import { RegraClassificacaoModal } from '@/components/configuracoes/RegraClassificacaoModal';
 import type { RegraClassificacaoReceita } from '@/types/classificacaoReceita';
@@ -88,13 +88,15 @@ const RegrasClassificacaoReceita: React.FC = () => {
         }}
       />
 
-      <ConfirmDialog
+      <ConfirmDeleteWithDeps
         open={!!toDelete}
         onOpenChange={(o) => !o && setToDelete(null)}
-        title="Excluir regra?"
-        description="A regra será desativada e removida do fluxo de resolução."
+        entidade="regras_classificacao_receita"
+        id={toDelete?.id ?? null}
+        nomeRegistro="esta regra"
         onConfirm={async () => { if (toDelete?.id) await excluir(toDelete.id); setToDelete(null); }}
       />
+
     </div>
   );
 };

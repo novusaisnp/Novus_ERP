@@ -6,7 +6,7 @@ import { ContasPagarStats } from '@/components/financeiro/contas-pagar/ContasPag
 import { ContasPagarFilters } from '@/components/financeiro/contas-pagar/ContasPagarFilters';
 import { ContasPagarContent } from '@/components/financeiro/contas-pagar/ContasPagarContent';
 import { ContasPagarModal } from '@/components/financeiro/contas-pagar/ContasPagarModal';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
 import { ContaPagar, ContaPagarInput, ContaPagarFilters } from '@/types/contasPagar';
 
 
@@ -133,17 +133,18 @@ const ContasPagar = () => {
         isSubmitting={isCreating || isUpdating}
       />
 
-      <ConfirmDialog
+      <ConfirmDeleteWithDeps
         open={!!contaParaExcluir}
         onOpenChange={(open) => !open && setContaParaExcluir(null)}
-        title="Remover conta a pagar"
-        description="Tem certeza que deseja remover esta conta a pagar? Esta ação não pode ser desfeita."
-        confirmLabel="Remover"
+        entidade="contas_pagar"
+        id={contaParaExcluir ?? null}
+        nomeRegistro="esta conta a pagar"
         onConfirm={() => {
           if (contaParaExcluir) remover(contaParaExcluir);
           setContaParaExcluir(null);
         }}
       />
+
     </div>
 
   );

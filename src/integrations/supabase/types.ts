@@ -2148,6 +2148,45 @@ export type Database = {
           },
         ]
       }
+      entidade_dependencias: {
+        Row: {
+          ativo: boolean
+          bloqueia_exclusao: boolean
+          coluna_fk: string
+          created_at: string
+          entidade_pai: string
+          label: string
+          on_delete: string
+          soft_delete_col: string | null
+          tabela_filha: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          bloqueia_exclusao?: boolean
+          coluna_fk: string
+          created_at?: string
+          entidade_pai: string
+          label: string
+          on_delete?: string
+          soft_delete_col?: string | null
+          tabela_filha: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          bloqueia_exclusao?: boolean
+          coluna_fk?: string
+          created_at?: string
+          entidade_pai?: string
+          label?: string
+          on_delete?: string
+          soft_delete_col?: string | null
+          tabela_filha?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       estoque_inventario_itens: {
         Row: {
           created_at: string
@@ -6639,6 +6678,10 @@ export type Database = {
         Args: { p_localizacao_id: string; p_venda_id: string }
         Returns: Json
       }
+      check_dependencias: {
+        Args: { p_entidade: string; p_id: string }
+        Returns: Json
+      }
       check_v2_readiness: {
         Args: { p_min_events?: number; p_nome: string; p_tenant: string }
         Returns: Json
@@ -6808,6 +6851,7 @@ export type Database = {
         Returns: undefined
       }
       refresh_mv_fluxo_competencia: { Args: never; Returns: undefined }
+      regenerar_entidade_dependencias: { Args: never; Returns: number }
       relatorio_fluxo_competencia: {
         Args: { p_data_fim: string; p_data_ini: string; p_empresa_id?: string }
         Returns: {

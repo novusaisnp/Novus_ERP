@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { FileText, Plus, Pencil, Trash2 } from 'lucide-react';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
 import { useContratos } from '@/hooks/useContratos';
 import { ContratoFormModal } from '@/components/contratos/ContratoFormModal';
 import { Contrato, ContratoStatus, ContratoFiltros } from '@/types/contratos';
@@ -125,13 +125,15 @@ const Contratos: React.FC = () => {
 
       <ContratoFormModal open={modalOpen} onOpenChange={setModalOpen} contrato={editing} />
 
-      <ConfirmDialog
+      <ConfirmDeleteWithDeps
         open={!!toDelete}
         onOpenChange={(o) => !o && setToDelete(null)}
-        title="Excluir contrato?"
-        description={`O contrato "${toDelete?.titulo || ''}" será removido.`}
+        entidade="contratos"
+        id={toDelete?.id ?? null}
+        nomeRegistro={toDelete?.titulo || undefined}
         onConfirm={async () => { if (toDelete?.id) await excluirContrato(toDelete.id); setToDelete(null); }}
       />
+
     </div>
   );
 };

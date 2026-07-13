@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ShoppingCart, Plus, Pencil, Trash2, Ban } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
+
 import { useVendas } from '@/hooks/useVendas';
 import { VendaFormModal } from '@/components/vendas/VendaFormModal';
 import { GerarTitulosButton } from '@/components/vendas/GerarTitulosButton';
@@ -123,13 +125,15 @@ const Vendas: React.FC = () => {
 
       <VendaFormModal open={modalOpen} onOpenChange={setModalOpen} venda={editing} />
 
-      <ConfirmDialog
+      <ConfirmDeleteWithDeps
         open={!!toDelete}
         onOpenChange={(o) => !o && setToDelete(null)}
-        title="Excluir venda?"
-        description={`A venda ${toDelete?.numero_venda || ''} será removida.`}
+        entidade="vendas"
+        id={toDelete?.id ?? null}
+        nomeRegistro={toDelete?.numero_venda ? `venda ${toDelete.numero_venda}` : undefined}
         onConfirm={async () => { if (toDelete?.id) await excluirVenda(toDelete.id); setToDelete(null); }}
       />
+
       <ConfirmDialog
         open={!!toCancel}
         onOpenChange={(o) => !o && setToCancel(null)}

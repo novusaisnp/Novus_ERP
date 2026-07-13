@@ -6,7 +6,7 @@ import { PlanoContasModal } from '@/components/financeiro/PlanoContasModal';
 import { PlanoContasHeader } from '@/components/financeiro/PlanoContasHeader';
 import { PlanoContasStats } from '@/components/financeiro/PlanoContasStats';
 import { PlanoContasContent } from '@/components/financeiro/PlanoContasContent';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
 import { PlanoContas as PlanoContasType, PlanoContasInput } from '@/types/planoContas';
 
 const PlanoContas = () => {
@@ -163,17 +163,18 @@ const PlanoContas = () => {
         parentId={parentId}
       />
 
-      <ConfirmDialog
+      <ConfirmDeleteWithDeps
         open={!!contaParaExcluir}
         onOpenChange={(open) => !open && setContaParaExcluir(null)}
-        title="Excluir conta"
-        description={`Tem certeza que deseja excluir a conta "${contaParaExcluir?.nome ?? ''}"? Esta ação não pode ser desfeita.`}
-        confirmLabel="Excluir"
+        entidade="plano_contas"
+        id={contaParaExcluir?.id ?? null}
+        nomeRegistro={contaParaExcluir?.nome}
         onConfirm={() => {
           if (contaParaExcluir) deleteConta(contaParaExcluir.id);
           setContaParaExcluir(null);
         }}
       />
+
     </div>
 
   );

@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
 import { Plus, Gift, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -258,14 +258,15 @@ const BeneficiosVinculados: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      <ConfirmDialog
+      <ConfirmDeleteWithDeps
         open={!!toDelete}
         onOpenChange={(o) => !o && setToDelete(null)}
-        title="Excluir benefício"
-        description={`Confirmar exclusão do benefício "${toDelete?.nome}"?`}
-        confirmLabel="Excluir"
+        entidade="beneficios_vinculados"
+        id={toDelete?.id ?? null}
+        nomeRegistro={toDelete?.nome}
         onConfirm={() => toDelete && deleteMutation.mutate(toDelete.id)}
       />
+
     </div>
   );
 };

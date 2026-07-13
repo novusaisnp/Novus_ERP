@@ -8,7 +8,7 @@ import { useCentrosCusto } from '@/hooks/useCentrosCusto';
 import { CentroCustoModal } from '@/components/configuracoes/CentroCustoModal';
 import { CentroCustoCard } from '@/components/configuracoes/CentroCustoCard';
 import { CentroCustoEmptyState } from '@/components/configuracoes/CentroCustoEmptyState';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { CentroCusto } from '@/types/configuracoes';
 
@@ -144,17 +144,18 @@ const CentrosCusto: React.FC = () => {
         loading={isLoaderActive}
       />
 
-      <ConfirmDialog
+      <ConfirmDeleteWithDeps
         open={!!confirmingDelete}
         onOpenChange={(open) => !open && setConfirmingDelete(null)}
-        title="Remover centro de custo"
-        description={confirmingDelete ? `Tem certeza que deseja remover o centro de custo "${confirmingDelete.nome}"?` : ''}
-        confirmLabel="Remover"
+        entidade="centros_custo"
+        id={confirmingDelete?.id ?? null}
+        nomeRegistro={confirmingDelete?.nome}
         onConfirm={() => {
           if (confirmingDelete) excluir(confirmingDelete.id);
           setConfirmingDelete(null);
         }}
       />
+
     </div>
   );
 };

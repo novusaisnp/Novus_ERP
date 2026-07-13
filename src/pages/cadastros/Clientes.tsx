@@ -10,7 +10,7 @@ import { Users, Plus, Search, Edit, Trash2 } from 'lucide-react';
 import { Cliente } from '@/types/cliente';
 import { useClientes } from '@/hooks/useClientes';
 import { FormCliente } from '@/components/modules/FormCliente';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
 
 const Clientes: React.FC = () => {
   const { clientes, loading, saveCliente, deleteCliente } = useClientes();
@@ -200,14 +200,15 @@ const Clientes: React.FC = () => {
         </CardContent>
       </Card>
 
-      <ConfirmDialog
+      <ConfirmDeleteWithDeps
         open={confirmDeleteId !== null}
         onOpenChange={(open) => { if (!open) setConfirmDeleteId(null); }}
-        title="Excluir cliente"
-        description="Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita."
-        confirmLabel="Excluir"
+        entidade="clientes"
+        id={confirmDeleteId}
+        nomeRegistro="este cliente"
         onConfirm={confirmDelete}
       />
+
     </div>
   );
 };

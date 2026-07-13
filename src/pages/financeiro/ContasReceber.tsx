@@ -5,7 +5,7 @@ import { ContasReceberStats } from '@/components/financeiro/contas-receber/Conta
 import { ContasReceberFilters } from '@/components/financeiro/contas-receber/ContasReceberFilters';
 import { ContasReceberContent } from '@/components/financeiro/contas-receber/ContasReceberContent';
 import { ContaReceberFormModal } from '@/components/financeiro/contas-receber/ContaReceberFormModal';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
 import type {
   ContaReceber,
   ContaReceberFilters as ContaReceberFiltersType,
@@ -95,17 +95,18 @@ const ContasReceber = () => {
         onSubmit={handleSubmit}
       />
 
-      <ConfirmDialog
+      <ConfirmDeleteWithDeps
         open={!!contaParaExcluir}
         onOpenChange={(open) => !open && setContaParaExcluir(null)}
-        title="Remover conta a receber"
-        description="Tem certeza que deseja remover esta conta a receber? Esta ação não pode ser desfeita."
-        confirmLabel="Remover"
+        entidade="contas_receber"
+        id={contaParaExcluir ?? null}
+        nomeRegistro="esta conta a receber"
         onConfirm={() => {
           if (contaParaExcluir) remover(contaParaExcluir);
           setContaParaExcluir(null);
         }}
       />
+
     </div>
   );
 };
