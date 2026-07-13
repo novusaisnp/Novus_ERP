@@ -73,3 +73,22 @@ export interface SugestaoMatchResult {
   sugeridas: number;
   pendentes: number;
 }
+
+export type TipoRegra = "PALAVRA_CHAVE" | "VALOR_EXATO" | "REGEX" | "CONTRAPARTE";
+export type ContraparteTipo = "CLIENTE" | "FORNECEDOR";
+
+export interface RegraConciliacaoInput {
+  nome: string;
+  prioridade: number;
+  ativa: boolean;
+  tipo: TipoRegra;
+  padrao: string | null;
+  tolerancia_valor: number;
+  tolerancia_dias: number;
+  natureza_id: string | null;
+  plano_conta_id: string | null;
+  centro_custo_id: string | null;
+  contraparte_tipo: ContraparteTipo | null;
+  contraparte_id: string | null;
+  observacoes: string | null;
+}

@@ -2,6 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { conciliacaoService } from "@/services/conciliacao/conciliacaoService";
 import { toast } from "@/hooks/use-toast";
+import type { RegraConciliacaoInput } from "@/types/conciliacao";
 
 export function useExtratos() {
   return useQuery({
@@ -125,5 +126,69 @@ export function useCandidatosMatch(params: {
       }),
     enabled: params.enabled && !!params.contaBancariaId && !!params.dataMovimento,
     staleTime: 15_000,
+  });
+}
+
+export function useCriarRegra() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: RegraConciliacaoInput) => conciliacaoService.criarRegra(input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["conciliacao", "regras"] });
+      toast({ title: "Regra criada" });
+    },
+    onError: (e: Error) =>
+      toast({ title: "Erro ao criar regra", description: e.message, variant: "destructive" }),
+  });
+}
+
+export function useAtualizarRegra() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { id: string; input: Partial<RegraConciliacaoInput> }) =>
+      conciliacaoService.atualizarRegra(params.id, params.input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["conciliacao", "regras"] });
+      toast({ title: "Regra atualizada" });
+    },
+    onError: (e: Error) =>
+      toast({ title: "Erro ao atualizar", description: e.message, variant: "destructive" }),
+  });
+}
+
+export function useExcluirRegra() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => conciliacaoService.excluirRegra(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["conciliacao", "regras"] });
+      toast({ title: "Regra excluída" });
+    },
+    onError: (e: Error) =>
+      toast({ title: "Erro ao excluir", description: e.message, variant: "destructive" }),
+  });
+}
+
+export function useLookupNaturezas() {
+  return useQuery({
+    queryKey: ["conciliacao", "lookup", "naturezas"],
+    queryFn: () => conciliacaoService.listarNaturezasReceita(),
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useLookupPlanoContas() {
+  return useQuery({
+    queryKey: ["conciliacao", "lookup", "plano-contas"],
+    queryFn: () => conciliacaoService.listarPlanoContas(),
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useLookupCentrosCusto() {
+  return useQuery({
+    queryKey: ["conciliacao", "lookup", "centros-custo"],
+    queryFn: () => conciliacaoService.listarCentrosCusto(),
+    staleTime: 5 * 60_000,
   });
 }

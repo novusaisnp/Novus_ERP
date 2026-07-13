@@ -1,14 +1,60 @@
+// P15.3 — CRUD Regras de Conciliação Bancária
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useRegrasConciliacao } from "@/hooks/conciliacao/useConciliacao";
+import {
+  useRegrasConciliacao,
+  useExcluirRegra,
+} from "@/hooks/conciliacao/useConciliacao";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { ArrowLeft, Pencil, Plus, Trash2 } from "lucide-react";
+import { RegraForm } from "./RegraForm";
+import type { RegraConciliacao } from "@/types/conciliacao";
+
+const TIPO_LABEL: Record<string, string> = {
+  PALAVRA_CHAVE: "Palavra-chave",
+  VALOR_EXATO: "Valor exato",
+  REGEX: "Regex",
+  CONTRAPARTE: "Contraparte",
+};
 
 export default function RegrasConciliacaoPage() {
   const navigate = useNavigate();
   const { data: regras, isLoading } = useRegrasConciliacao();
+  const excluir = useExcluirRegra();
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<RegraConciliacao | null>(null);
+  const [toDelete, setToDelete] = useState<RegraConciliacao | null>(null);
+
+  const openNew = () => {
+    setEditing(null);
+    setFormOpen(true);
+  };
+  const openEdit = (r: RegraConciliacao) => {
+    setEditing(r);
+    setFormOpen(true);
+  };
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-4">
@@ -17,40 +63,106 @@ export default function RegrasConciliacaoPage() {
       </Button>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-3">
           <CardTitle>Regras de conciliação</CardTitle>
+          <Button size="sm" onClick={openNew}>
+            <Plus className="h-4 w-4 mr-1" /> Nova regra
+          </Button>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="space-y-2">
-              {[0, 1, 2].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
             </div>
           ) : !regras || regras.length === 0 ? (
             <p className="text-sm text-muted-foreground py-6 text-center">
-              Nenhuma regra cadastrada. Regras permitem classificar linhas do extrato
-              automaticamente (natureza, centro de custo etc.) — cadastro de UI virá em iteração
-              futura.
+              Nenhuma regra cadastrada. Clique em "Nova regra" para criar a primeira.
             </p>
           ) : (
-            <div className="divide-y">
-              {regras.map((r) => (
-                <div key={r.id} className="py-3 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="font-medium truncate">{r.nome}</div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      Tipo: {r.tipo} · Prioridade: {r.prioridade}
-                      {r.padrao ? ` · Padrão: ${r.padrao}` : ""}
-                    </div>
-                  </div>
-                  <Badge variant={r.ativa ? "default" : "secondary"}>
-                    {r.ativa ? "Ativa" : "Inativa"}
-                  </Badge>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[80px]">Prior.</TableHead>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Padrão</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right w-[120px]">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {regras.map((r) => (
+                    <TableRow key={r.id}>
+                      <TableCell className="font-mono">{r.prioridade}</TableCell>
+                      <TableCell className="font-medium">{r.nome}</TableCell>
+                      <TableCell>{TIPO_LABEL[r.tipo] ?? r.tipo}</TableCell>
+                      <TableCell className="max-w-[280px] truncate text-muted-foreground">
+                        {r.padrao ?? "—"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={r.ativa ? "default" : "secondary"}>
+                          {r.ativa ? "Ativa" : "Inativa"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => openEdit(r)}
+                          aria-label="Editar"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => setToDelete(r)}
+                          aria-label="Excluir"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>
       </Card>
+
+      <RegraForm open={formOpen} onOpenChange={setFormOpen} regra={editing} />
+
+      <AlertDialog
+        open={!!toDelete}
+        onOpenChange={(v) => !v && setToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir regra?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação exclui a regra "{toDelete?.nome}". Você pode recriá-la depois se
+              necessário.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (toDelete) {
+                  await excluir.mutateAsync(toDelete.id);
+                  setToDelete(null);
+                }
+              }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
