@@ -118,6 +118,65 @@ export const conciliacaoService = {
     return (data ?? []) as RegraConciliacao[];
   },
 
+  async criarRegra(input: RegraConciliacaoInput): Promise<RegraConciliacao> {
+    const { data: empresaId, error: empErr } = await supabase.rpc("get_user_empresa_id");
+    if (empErr) throw empErr;
+    if (!empresaId) throw new Error("Usuário sem empresa vinculada.");
+    const { data, error } = await supabase
+      .from("banco_regras_conciliacao")
+      .insert({ ...input, empresa_representada_id: empresaId as string })
+      .select("*")
+      .single();
+    if (error) throw error;
+    return data as RegraConciliacao;
+  },
+
+  async atualizarRegra(id: string, input: Partial<RegraConciliacaoInput>): Promise<RegraConciliacao> {
+    const { data, error } = await supabase
+      .from("banco_regras_conciliacao")
+      .update(input)
+      .eq("id", id)
+      .select("*")
+      .single();
+    if (error) throw error;
+    return data as RegraConciliacao;
+  },
+
+  async excluirRegra(id: string): Promise<void> {
+    const { error } = await supabase
+      .from("banco_regras_conciliacao")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) throw error;
+  },
+
+  async listarNaturezasReceita() {
+    const { data, error } = await supabase
+      .from("naturezas_receita")
+      .select("id, nome")
+      .order("nome");
+    if (error) throw error;
+    return (data ?? []) as Array<{ id: string; nome: string }>;
+  },
+
+  async listarPlanoContas() {
+    const { data, error } = await supabase
+      .from("plano_contas")
+      .select("id, nome, codigo")
+      .order("codigo");
+    if (error) throw error;
+    return (data ?? []) as Array<{ id: string; nome: string; codigo: string | null }>;
+  },
+
+  async listarCentrosCusto() {
+    const { data, error } = await supabase
+      .from("centros_custo")
+      .select("id, nome")
+      .order("nome");
+    if (error) throw error;
+    return (data ?? []) as Array<{ id: string; nome: string }>;
+  },
+
   async importarExtrato(file: File, contaBancariaId: string) {
     const form = new FormData();
     form.append("file", file);
