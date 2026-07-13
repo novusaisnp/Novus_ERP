@@ -124,6 +124,10 @@ export const sidebarItems: MenuItem[] = [
         title: "Movimentações Bancárias",
         url: "/gestao-bancaria/movimentacoes-bancarias",
       },
+      {
+        title: "Conciliação",
+        url: "/gestao-bancaria/conciliacao",
+      },
     ],
   },
   {

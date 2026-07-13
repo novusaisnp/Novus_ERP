@@ -56,6 +56,11 @@ import Bancos from './pages/gestao-bancaria/bancos/index';
 import Agencias from './pages/gestao-bancaria/agencias/index';
 import ContasBancarias from './pages/gestao-bancaria/contas-bancarias/index';
 import MovimentacoesBancarias from './pages/gestao-bancaria/movimentacoes-bancarias/index';
+import ConciliacaoIndex from './pages/gestao-bancaria/conciliacao/index';
+import ConciliacaoImportar from './pages/gestao-bancaria/conciliacao/importar/index';
+import ConciliacaoExtrato from './pages/gestao-bancaria/conciliacao/[extratoId]/index';
+import ConciliacaoRegras from './pages/gestao-bancaria/conciliacao/regras/index';
+import ConciliacaoRelatorios from './pages/gestao-bancaria/conciliacao/relatorios/index';
 
 // Fiscal Pages
 import NotasFiscais from './pages/fiscal/NotasFiscais';
@@ -158,6 +163,13 @@ function App() {
                     <Route path="agencias" element={<Agencias />} />
                     <Route path="contas-bancarias" element={<ContasBancarias />} />
                     <Route path="movimentacoes-bancarias" element={<MovimentacoesBancarias />} />
+                    <Route path="conciliacao">
+                      <Route index element={<ConciliacaoIndex />} />
+                      <Route path="importar" element={<ConciliacaoImportar />} />
+                      <Route path="regras" element={<ConciliacaoRegras />} />
+                      <Route path="relatorios" element={<ConciliacaoRelatorios />} />
+                      <Route path=":extratoId" element={<ConciliacaoExtrato />} />
+                    </Route>
                   </Route>
                   
                   {/* Financeiro Routes */}
