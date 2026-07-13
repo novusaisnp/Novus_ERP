@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import { ArrowLeftRight, Plus, Search } from 'lucide-react';
+import { ArrowLeftRight, Plus, Search, ScrollText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useMovimentacoes } from '@/hooks/estoque/useEstoque';
 import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
