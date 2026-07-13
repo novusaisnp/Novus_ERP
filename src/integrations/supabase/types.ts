@@ -2490,6 +2490,62 @@ export type Database = {
           },
         ]
       }
+      fiscal_certificados: {
+        Row: {
+          ativo: boolean
+          cn_subject: string | null
+          created_at: string
+          deleted_at: string | null
+          empresa_representada_id: string
+          id: string
+          senha_secret_ref: string
+          storage_path: string
+          thumbprint: string | null
+          updated_at: string
+          uploaded_by: string | null
+          valido_ate: string | null
+          valido_de: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          cn_subject?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          empresa_representada_id: string
+          id?: string
+          senha_secret_ref: string
+          storage_path: string
+          thumbprint?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+          valido_ate?: string | null
+          valido_de?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          cn_subject?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          empresa_representada_id?: string
+          id?: string
+          senha_secret_ref?: string
+          storage_path?: string
+          thumbprint?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+          valido_ate?: string | null
+          valido_de?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_certificados_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fiscal_configuracoes: {
         Row: {
           ambiente: string
@@ -2584,8 +2640,10 @@ export type Database = {
           ambiente: string
           chave_acesso: string | null
           cliente_id: string | null
+          codigo_status_sefaz: string | null
           created_at: string
           created_by: string | null
+          danfe_url: string | null
           data_autorizacao: string | null
           data_emissao: string
           deleted_at: string | null
@@ -2602,9 +2660,13 @@ export type Database = {
           pdf_danfe_url: string | null
           protocolo_autorizacao: string | null
           provedor_id_externo: string | null
+          provider: string | null
+          provider_ref: string | null
           serie: number
           status: string
+          tentativas: number
           tipo: string
+          ultima_tentativa_at: string | null
           updated_at: string
           valor_cofins: number
           valor_desconto: number
@@ -2623,8 +2685,10 @@ export type Database = {
           ambiente?: string
           chave_acesso?: string | null
           cliente_id?: string | null
+          codigo_status_sefaz?: string | null
           created_at?: string
           created_by?: string | null
+          danfe_url?: string | null
           data_autorizacao?: string | null
           data_emissao?: string
           deleted_at?: string | null
@@ -2641,9 +2705,13 @@ export type Database = {
           pdf_danfe_url?: string | null
           protocolo_autorizacao?: string | null
           provedor_id_externo?: string | null
+          provider?: string | null
+          provider_ref?: string | null
           serie?: number
           status?: string
+          tentativas?: number
           tipo: string
+          ultima_tentativa_at?: string | null
           updated_at?: string
           valor_cofins?: number
           valor_desconto?: number
@@ -2662,8 +2730,10 @@ export type Database = {
           ambiente?: string
           chave_acesso?: string | null
           cliente_id?: string | null
+          codigo_status_sefaz?: string | null
           created_at?: string
           created_by?: string | null
+          danfe_url?: string | null
           data_autorizacao?: string | null
           data_emissao?: string
           deleted_at?: string | null
@@ -2680,9 +2750,13 @@ export type Database = {
           pdf_danfe_url?: string | null
           protocolo_autorizacao?: string | null
           provedor_id_externo?: string | null
+          provider?: string | null
+          provider_ref?: string | null
           serie?: number
           status?: string
+          tentativas?: number
           tipo?: string
+          ultima_tentativa_at?: string | null
           updated_at?: string
           valor_cofins?: number
           valor_desconto?: number
@@ -2938,6 +3012,53 @@ export type Database = {
           },
           {
             foreignKeyName: "fiscal_eventos_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fiscal_provedor_credenciais: {
+        Row: {
+          ambiente: string
+          api_key_secret_ref: string
+          ativo: boolean
+          base_url: string | null
+          created_at: string
+          deleted_at: string | null
+          empresa_representada_id: string
+          id: string
+          provider: string
+          updated_at: string
+        }
+        Insert: {
+          ambiente: string
+          api_key_secret_ref: string
+          ativo?: boolean
+          base_url?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          empresa_representada_id: string
+          id?: string
+          provider: string
+          updated_at?: string
+        }
+        Update: {
+          ambiente?: string
+          api_key_secret_ref?: string
+          ativo?: boolean
+          base_url?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          empresa_representada_id?: string
+          id?: string
+          provider?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_provedor_credenciais_empresa_representada_id_fkey"
             columns: ["empresa_representada_id"]
             isOneToOne: false
             referencedRelation: "empresas_representadas"
