@@ -172,4 +172,15 @@ export async function readSaldosByProduto(
   );
 }
 
+export async function readMovimentacoesRecentes(
+  page: Page,
+  limit = 20,
+): Promise<EstoqueMovLiteRow[]> {
+  return restGet<EstoqueMovLiteRow>(
+    page,
+    `estoque_movimentacoes?deleted_at=is.null&select=id,produto_id,tipo,quantidade,data_movimento&order=data_movimento.desc&limit=${limit}`,
+  );
+}
+
+
 
