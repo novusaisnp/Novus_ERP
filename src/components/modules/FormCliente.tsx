@@ -328,6 +328,7 @@ export const FormCliente: React.FC<FormClienteProps> = ({
               <Label htmlFor="nome">Nome {formData.tipo === 'J' ? '/ Razão Social' : 'Completo'} *</Label>
               <Input
                 id="nome"
+                data-testid="cliente-nome-input"
                 value={formData.nome}
                 onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
                 required
@@ -948,7 +949,7 @@ export const FormCliente: React.FC<FormClienteProps> = ({
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancelar
         </Button>
-        <Button type="submit" disabled={loading}>
+        <Button type="submit" disabled={loading} data-testid="cliente-salvar-btn">
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {cliente?.id ? 'Atualizar' : 'Criar'}
         </Button>

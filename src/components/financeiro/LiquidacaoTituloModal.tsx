@@ -205,6 +205,7 @@ export const LiquidacaoTituloModal = ({
               <Label htmlFor="valor_pago">Valor a Pagar/Receber *</Label>
               <CurrencyInput
                 id="valor_pago"
+                data-testid="liquidacao-valor-input"
                 value={formData.valor_pago}
                 onValueChange={(v) => setFormData(prev => ({ ...prev, valor_pago: v }))}
                 placeholder="R$ 0,00"
@@ -303,6 +304,7 @@ export const LiquidacaoTituloModal = ({
             <Button
               type="submit"
               disabled={liquidarMutation.isPending || loadingContas}
+              data-testid="liquidacao-confirmar-btn"
             >
               {liquidarMutation.isPending ? 'Processando...' : 'Liquidar Título'}
             </Button>
