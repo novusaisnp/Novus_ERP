@@ -74,6 +74,332 @@ export type Database = {
           },
         ]
       }
+      banco_conciliacao_log: {
+        Row: {
+          acao: string
+          created_at: string
+          empresa_representada_id: string
+          id: string
+          movimentacao_bancaria_id: string | null
+          movimentacao_extrato_id: string | null
+          snapshot: Json | null
+          usuario_id: string | null
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          empresa_representada_id: string
+          id?: string
+          movimentacao_bancaria_id?: string | null
+          movimentacao_extrato_id?: string | null
+          snapshot?: Json | null
+          usuario_id?: string | null
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          empresa_representada_id?: string
+          id?: string
+          movimentacao_bancaria_id?: string | null
+          movimentacao_extrato_id?: string | null
+          snapshot?: Json | null
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banco_conciliacao_log_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banco_conciliacao_log_movimentacao_bancaria_id_fkey"
+            columns: ["movimentacao_bancaria_id"]
+            isOneToOne: false
+            referencedRelation: "movimentacoes_bancarias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banco_conciliacao_log_movimentacao_extrato_id_fkey"
+            columns: ["movimentacao_extrato_id"]
+            isOneToOne: false
+            referencedRelation: "banco_movimentacoes_extrato"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      banco_extratos_importados: {
+        Row: {
+          conta_bancaria_id: string
+          created_at: string
+          created_by: string | null
+          data_final: string | null
+          data_inicial: string | null
+          deleted_at: string | null
+          empresa_representada_id: string
+          erro_mensagem: string | null
+          formato: string
+          hash_arquivo: string
+          id: string
+          nome_arquivo: string
+          saldo_final: number | null
+          saldo_inicial: number | null
+          status: string
+          storage_path: string | null
+          total_lancamentos: number
+          updated_at: string
+        }
+        Insert: {
+          conta_bancaria_id: string
+          created_at?: string
+          created_by?: string | null
+          data_final?: string | null
+          data_inicial?: string | null
+          deleted_at?: string | null
+          empresa_representada_id: string
+          erro_mensagem?: string | null
+          formato: string
+          hash_arquivo: string
+          id?: string
+          nome_arquivo: string
+          saldo_final?: number | null
+          saldo_inicial?: number | null
+          status?: string
+          storage_path?: string | null
+          total_lancamentos?: number
+          updated_at?: string
+        }
+        Update: {
+          conta_bancaria_id?: string
+          created_at?: string
+          created_by?: string | null
+          data_final?: string | null
+          data_inicial?: string | null
+          deleted_at?: string | null
+          empresa_representada_id?: string
+          erro_mensagem?: string | null
+          formato?: string
+          hash_arquivo?: string
+          id?: string
+          nome_arquivo?: string
+          saldo_final?: number | null
+          saldo_inicial?: number | null
+          status?: string
+          storage_path?: string | null
+          total_lancamentos?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banco_extratos_importados_conta_bancaria_id_fkey"
+            columns: ["conta_bancaria_id"]
+            isOneToOne: false
+            referencedRelation: "contas_bancarias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banco_extratos_importados_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      banco_movimentacoes_extrato: {
+        Row: {
+          conciliado_em: string | null
+          conciliado_por: string | null
+          conta_bancaria_id: string
+          created_at: string
+          data_movimento: string
+          descricao: string
+          documento: string | null
+          empresa_representada_id: string
+          extrato_importado_id: string
+          fit_id: string | null
+          grupo_conciliacao_id: string | null
+          historico: string | null
+          id: string
+          movimentacao_bancaria_id: string | null
+          regra_id: string | null
+          score_match: number | null
+          status_conciliacao: string
+          tipo: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          conciliado_em?: string | null
+          conciliado_por?: string | null
+          conta_bancaria_id: string
+          created_at?: string
+          data_movimento: string
+          descricao: string
+          documento?: string | null
+          empresa_representada_id: string
+          extrato_importado_id: string
+          fit_id?: string | null
+          grupo_conciliacao_id?: string | null
+          historico?: string | null
+          id?: string
+          movimentacao_bancaria_id?: string | null
+          regra_id?: string | null
+          score_match?: number | null
+          status_conciliacao?: string
+          tipo: string
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          conciliado_em?: string | null
+          conciliado_por?: string | null
+          conta_bancaria_id?: string
+          created_at?: string
+          data_movimento?: string
+          descricao?: string
+          documento?: string | null
+          empresa_representada_id?: string
+          extrato_importado_id?: string
+          fit_id?: string | null
+          grupo_conciliacao_id?: string | null
+          historico?: string | null
+          id?: string
+          movimentacao_bancaria_id?: string | null
+          regra_id?: string | null
+          score_match?: number | null
+          status_conciliacao?: string
+          tipo?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banco_movimentacoes_extrato_conta_bancaria_id_fkey"
+            columns: ["conta_bancaria_id"]
+            isOneToOne: false
+            referencedRelation: "contas_bancarias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banco_movimentacoes_extrato_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banco_movimentacoes_extrato_extrato_importado_id_fkey"
+            columns: ["extrato_importado_id"]
+            isOneToOne: false
+            referencedRelation: "banco_extratos_importados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banco_movimentacoes_extrato_movimentacao_bancaria_id_fkey"
+            columns: ["movimentacao_bancaria_id"]
+            isOneToOne: false
+            referencedRelation: "movimentacoes_bancarias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_bme_regra"
+            columns: ["regra_id"]
+            isOneToOne: false
+            referencedRelation: "banco_regras_conciliacao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      banco_regras_conciliacao: {
+        Row: {
+          ativa: boolean
+          centro_custo_id: string | null
+          contraparte_id: string | null
+          contraparte_tipo: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          empresa_representada_id: string
+          id: string
+          natureza_id: string | null
+          nome: string
+          observacoes: string | null
+          padrao: string | null
+          plano_conta_id: string | null
+          prioridade: number
+          tipo: string
+          tolerancia_dias: number
+          tolerancia_valor: number
+          updated_at: string
+        }
+        Insert: {
+          ativa?: boolean
+          centro_custo_id?: string | null
+          contraparte_id?: string | null
+          contraparte_tipo?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          empresa_representada_id: string
+          id?: string
+          natureza_id?: string | null
+          nome: string
+          observacoes?: string | null
+          padrao?: string | null
+          plano_conta_id?: string | null
+          prioridade?: number
+          tipo: string
+          tolerancia_dias?: number
+          tolerancia_valor?: number
+          updated_at?: string
+        }
+        Update: {
+          ativa?: boolean
+          centro_custo_id?: string | null
+          contraparte_id?: string | null
+          contraparte_tipo?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          empresa_representada_id?: string
+          id?: string
+          natureza_id?: string | null
+          nome?: string
+          observacoes?: string | null
+          padrao?: string | null
+          plano_conta_id?: string | null
+          prioridade?: number
+          tipo?: string
+          tolerancia_dias?: number
+          tolerancia_valor?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banco_regras_conciliacao_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banco_regras_conciliacao_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banco_regras_conciliacao_plano_conta_id_fkey"
+            columns: ["plano_conta_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bancos: {
         Row: {
           ativo: boolean | null
@@ -3553,6 +3879,7 @@ export type Database = {
           historico: string | null
           id: string
           lote_id: string | null
+          movimentacao_extrato_id: string | null
           natureza_id: string | null
           numero_documento: string | null
           plano_conta_id: string | null
@@ -3579,6 +3906,7 @@ export type Database = {
           historico?: string | null
           id?: string
           lote_id?: string | null
+          movimentacao_extrato_id?: string | null
           natureza_id?: string | null
           numero_documento?: string | null
           plano_conta_id?: string | null
@@ -3605,6 +3933,7 @@ export type Database = {
           historico?: string | null
           id?: string
           lote_id?: string | null
+          movimentacao_extrato_id?: string | null
           natureza_id?: string | null
           numero_documento?: string | null
           plano_conta_id?: string | null
@@ -3642,6 +3971,13 @@ export type Database = {
             columns: ["lote_id"]
             isOneToOne: false
             referencedRelation: "lotes_movimentacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimentacoes_bancarias_movimentacao_extrato_id_fkey"
+            columns: ["movimentacao_extrato_id"]
+            isOneToOne: false
+            referencedRelation: "banco_movimentacoes_extrato"
             referencedColumns: ["id"]
           },
           {
@@ -6305,7 +6641,27 @@ export type Database = {
         Returns: Json
       }
       conciliar_inventario: { Args: { p_inventario_id: string }; Returns: Json }
+      confirmar_match: {
+        Args: {
+          p_movimentacao_bancaria_id: string
+          p_movimentacao_extrato_id: string
+        }
+        Returns: undefined
+      }
       converter_orcamento_em_venda: { Args: { p_payload: Json }; Returns: Json }
+      criar_lancamento_do_extrato: {
+        Args: {
+          p_centro_custo_id: string
+          p_movimentacao_extrato_id: string
+          p_natureza_id: string
+          p_plano_conta_id: string
+        }
+        Returns: string
+      }
+      desfazer_conciliacao: {
+        Args: { p_movimentacao_extrato_id: string }
+        Returns: undefined
+      }
       estornar_estoque_venda: { Args: { p_venda_id: string }; Returns: Json }
       fn_curva_abc: {
         Args: {
@@ -6469,6 +6825,7 @@ export type Database = {
           regra_versao: number
         }[]
       }
+      reverter_extrato: { Args: { p_extrato_id: string }; Returns: undefined }
       rollback_to_dual: {
         Args: { p_nome: string; p_tenant: string }
         Returns: Json
@@ -6476,6 +6833,14 @@ export type Database = {
       rollback_to_v1: {
         Args: { p_nome: string; p_tenant: string }
         Returns: Json
+      }
+      sugerir_matches_extrato: {
+        Args: { p_extrato_id: string }
+        Returns: {
+          candidato_id: string
+          movimentacao_extrato_id: string
+          score: number
+        }[]
       }
       transferencia_bancaria_atomica: {
         Args: {
