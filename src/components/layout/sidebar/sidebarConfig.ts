@@ -262,6 +262,11 @@ export const sidebarItems: MenuItem[] = [
         title: "Webhooks",
         url: "/configuracoes/webhooks",
       },
+      {
+        // P6.1: admin-only. Filtrado em sidebarVisibility quando isAdmin=false.
+        title: "Relatórios (Ops)",
+        url: "/configuracoes/relatorios-ops",
+      },
     ],
   },
 ];
