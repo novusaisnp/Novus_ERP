@@ -16,6 +16,8 @@ import Sistema from './pages/configuracoes/Sistema';
 import CentrosCusto from './pages/configuracoes/CentrosCusto';
 import Perfil from './pages/configuracoes/Perfil';
 import Webhooks from './pages/configuracoes/Webhooks';
+// P6.1: lazy — página admin de operação do pipeline de relatórios (P5.1).
+const RelatoriosOps = React.lazy(() => import('./pages/configuracoes/RelatoriosOps'));
 
 // Cadastros Pages
 import Servicos from './pages/cadastros/Servicos';
@@ -197,6 +199,23 @@ function App() {
                     <Route path="sistema" element={<Sistema />} />
                     <Route path="perfil" element={<Perfil />} />
                     <Route path="webhooks" element={<Webhooks />} />
+                    {/* P6.1: admin-only. Gate server-side (AdminRoute) + gate próprio na página. */}
+                    <Route
+                      path="relatorios-ops"
+                      element={
+                        <AdminRoute>
+                          <React.Suspense
+                            fallback={
+                              <div className="min-h-[40vh] flex items-center justify-center" aria-busy="true">
+                                <div className="text-muted-foreground text-sm">Carregando…</div>
+                              </div>
+                            }
+                          >
+                            <RelatoriosOps />
+                          </React.Suspense>
+                        </AdminRoute>
+                      }
+                    />
                   </Route>
                   
                   {/* 404 Route */}
