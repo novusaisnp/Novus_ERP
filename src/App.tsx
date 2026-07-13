@@ -124,6 +124,7 @@ function App() {
                     <Route path="tamanhos" element={<Tamanhos />} />
                     <Route path="movimentacoes" element={<MovimentacoesEstoque />} />
                     <Route path="inventario" element={<InventarioEstoque />} />
+                    <Route path="kardex/:produtoId" element={<KardexPage />} />
 
                     <Route path="relatorios" element={<EmBreve titulo="Relatórios de Estoque" icon={BarChart3} descricao="Relatórios analíticos de estoque estarão disponíveis em breve." />} />
                   </Route>
