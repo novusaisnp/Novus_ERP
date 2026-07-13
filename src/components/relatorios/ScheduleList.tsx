@@ -197,12 +197,15 @@ export function ScheduleList({ open, onOpenChange, scope, viewState }: ScheduleL
                       {runsList.map((run) => {
                         const st = statusBadge(run.status);
                         const now = Date.now();
+                        const isPruned = !!run.artifact_pruned_at;
                         const expiresAt = run.signed_url_expires_at ? new Date(run.signed_url_expires_at).getTime() : null;
                         const isExpired =
+                          !isPruned &&
                           run.status === "succeeded" &&
                           !!run.artifact_path &&
                           (!run.signed_url || (expiresAt !== null && expiresAt <= now));
-                        const canResign = run.status === "succeeded" && !!run.artifact_path;
+                        const canResign = !isPruned && run.status === "succeeded" && !!run.artifact_path;
+                        const canDownload = !isPruned && !!run.signed_url && !isExpired;
                         const isResigning = resigning[run.id] === true;
                         return (
                           <div key={run.id} className="flex items-center justify-between gap-2 text-xs">
@@ -217,6 +220,11 @@ export function ScheduleList({ open, onOpenChange, scope, viewState }: ScheduleL
                                 </Badge>
                               )}
                               {run.delivery_status === "sent" && <Badge variant="secondary">Enviado</Badge>}
+                              {isPruned && (
+                                <Badge variant="outline" data-testid={`pruned-badge-${run.id}`}>
+                                  Arquivo removido por retenção
+                                </Badge>
+                              )}
                               {isExpired && (
                                 <Badge variant="outline" data-testid={`expired-badge-${run.id}`}>
                                   Link expirado
@@ -224,9 +232,9 @@ export function ScheduleList({ open, onOpenChange, scope, viewState }: ScheduleL
                               )}
                             </div>
                             <div className="flex items-center gap-2">
-                              {run.signed_url && !isExpired && (
+                              {canDownload && (
                                 <a
-                                  href={run.signed_url}
+                                  href={run.signed_url!}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="inline-flex items-center gap-1 text-primary hover:underline"
