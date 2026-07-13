@@ -59,6 +59,10 @@ export interface ReportScheduleRun {
   delivery_reason: string | null;
   error_message: string | null;
   created_at: string;
+  // P5.2 — auditoria de resign
+  resigned_at: string | null;
+  resigned_by: string | null;
+  resign_count: number;
 }
 
 // Payload aceito por createSchedule / updateSchedule (o backend preenche id/user_id/next_run_at defaults).
@@ -150,6 +154,9 @@ export function parseRun(row: Record<string, unknown>): ReportScheduleRun {
     delivery_reason: (row.delivery_reason as string | null) ?? null,
     error_message: (row.error_message as string | null) ?? null,
     created_at: String(row.created_at),
+    resigned_at: (row.resigned_at as string | null) ?? null,
+    resigned_by: (row.resigned_by as string | null) ?? null,
+    resign_count: Number(row.resign_count ?? 0),
   };
 }
 

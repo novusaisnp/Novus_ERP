@@ -19,8 +19,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { CalendarClock, Download, ExternalLink, Loader2, Pencil, Trash2 } from "lucide-react";
+import { CalendarClock, Download, ExternalLink, Loader2, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { useReportSchedules } from "@/hooks/useReportSchedules";
+import { reportSchedulesService } from "@/services/reportSchedulesService";
+import { toast } from "sonner";
 import { ScheduleModal } from "@/components/relatorios/ScheduleModal";
 import {
   type ReportSchedule,
@@ -60,6 +62,7 @@ export function ScheduleList({ open, onOpenChange, scope, viewState }: ScheduleL
   const [editing, setEditing] = useState<ReportSchedule | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<ReportSchedule | null>(null);
   const [openedRuns, setOpenedRuns] = useState<Record<string, ReportScheduleRun[] | "loading" | undefined>>({});
+  const [resigning, setResigning] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (open) void refetch();
@@ -85,6 +88,35 @@ export function ScheduleList({ open, onOpenChange, scope, viewState }: ScheduleL
       setOpenedRuns((prev) => ({ ...prev, [sch.id]: runs }));
     } catch {
       setOpenedRuns((prev) => ({ ...prev, [sch.id]: [] }));
+    }
+  };
+
+  // P5.2 — regenera signed URL sem reprocessar export.
+  const handleResign = async (sch: ReportSchedule, run: ReportScheduleRun) => {
+    setResigning((prev) => ({ ...prev, [run.id]: true }));
+    try {
+      const result = await reportSchedulesService.resignRun(run.id);
+      setOpenedRuns((prev) => {
+        const cur = prev[sch.id];
+        if (!Array.isArray(cur)) return prev;
+        const updated = cur.map((r) =>
+          r.id === run.id
+            ? {
+                ...r,
+                signed_url: result.signed_url,
+                signed_url_expires_at: result.signed_url_expires_at,
+                resigned_at: result.resigned_at,
+                resign_count: result.resign_count,
+              }
+            : r,
+        );
+        return { ...prev, [sch.id]: updated };
+      });
+      toast.success("Link regenerado com sucesso.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao regenerar link.");
+    } finally {
+      setResigning((prev) => ({ ...prev, [run.id]: false }));
     }
   };
 
@@ -164,9 +196,17 @@ export function ScheduleList({ open, onOpenChange, scope, viewState }: ScheduleL
                     <div className="space-y-1 border-t pt-2">
                       {runsList.map((run) => {
                         const st = statusBadge(run.status);
+                        const now = Date.now();
+                        const expiresAt = run.signed_url_expires_at ? new Date(run.signed_url_expires_at).getTime() : null;
+                        const isExpired =
+                          run.status === "succeeded" &&
+                          !!run.artifact_path &&
+                          (!run.signed_url || (expiresAt !== null && expiresAt <= now));
+                        const canResign = run.status === "succeeded" && !!run.artifact_path;
+                        const isResigning = resigning[run.id] === true;
                         return (
                           <div key={run.id} className="flex items-center justify-between gap-2 text-xs">
-                            <div className="flex items-center gap-2 min-w-0">
+                            <div className="flex items-center gap-2 min-w-0 flex-wrap">
                               <Badge variant={st.variant}>{st.label}</Badge>
                               <span className="text-muted-foreground truncate">
                                 {new Date(run.started_at).toLocaleString()} · tent. {run.attempt}
@@ -177,9 +217,14 @@ export function ScheduleList({ open, onOpenChange, scope, viewState }: ScheduleL
                                 </Badge>
                               )}
                               {run.delivery_status === "sent" && <Badge variant="secondary">Enviado</Badge>}
+                              {isExpired && (
+                                <Badge variant="outline" data-testid={`expired-badge-${run.id}`}>
+                                  Link expirado
+                                </Badge>
+                              )}
                             </div>
                             <div className="flex items-center gap-2">
-                              {run.signed_url && (
+                              {run.signed_url && !isExpired && (
                                 <a
                                   href={run.signed_url}
                                   target="_blank"
@@ -189,6 +234,22 @@ export function ScheduleList({ open, onOpenChange, scope, viewState }: ScheduleL
                                   <Download className="h-3.5 w-3.5" /> Baixar
                                   <ExternalLink className="h-3 w-3" />
                                 </a>
+                              )}
+                              {canResign && isExpired && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={isResigning}
+                                  onClick={() => void handleResign(sch, run)}
+                                  data-testid={`resign-button-${run.id}`}
+                                >
+                                  {isResigning ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                                  ) : (
+                                    <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                                  )}
+                                  Regenerar link
+                                </Button>
                               )}
                             </div>
                           </div>
