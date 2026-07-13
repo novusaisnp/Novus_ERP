@@ -133,17 +133,18 @@ const ContasPagar = () => {
         isSubmitting={isCreating || isUpdating}
       />
 
-      <ConfirmDialog
+      <ConfirmDeleteWithDeps
         open={!!contaParaExcluir}
         onOpenChange={(open) => !open && setContaParaExcluir(null)}
-        title="Remover conta a pagar"
-        description="Tem certeza que deseja remover esta conta a pagar? Esta ação não pode ser desfeita."
-        confirmLabel="Remover"
+        entidade="contas_pagar"
+        id={contaParaExcluir ?? null}
+        nomeRegistro="esta conta a pagar"
         onConfirm={() => {
           if (contaParaExcluir) remover(contaParaExcluir);
           setContaParaExcluir(null);
         }}
       />
+
     </div>
 
   );
