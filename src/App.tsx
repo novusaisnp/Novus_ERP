@@ -33,6 +33,7 @@ import Tamanhos from './pages/estoque/Tamanhos';
 import EmBreve from './pages/estoque/EmBreve';
 import MovimentacoesEstoque from './pages/estoque/movimentacoes/index';
 import InventarioEstoque from './pages/estoque/inventario/index';
+import KardexPage from './pages/estoque/kardex/index';
 import { ArrowLeftRight, ClipboardList, BarChart3, FileText } from 'lucide-react';
 
 // Financeiro Pages
