@@ -36,7 +36,7 @@ SELECT
   round(max_exec_time::numeric, 2)    AS max_ms,
   round(total_exec_time::numeric, 2)  AS total_ms,
   rows
-FROM pg_stat_statements
+FROM extensions.pg_stat_statements
 WHERE query ~* '(report_schedule_runs|report_schedules|report_ops_alerts|report_ops_audit|report-exports)'
 ORDER BY total_exec_time DESC
 LIMIT 30;
@@ -49,7 +49,7 @@ SELECT
   calls,
   round(mean_exec_time::numeric, 2)                              AS p50_ms_approx,
   round((mean_exec_time + 1.645 * stddev_exec_time)::numeric, 2) AS p95_ms_approx
-FROM pg_stat_statements
+FROM extensions.pg_stat_statements
 WHERE query ~* '(report_schedule_runs|report_schedules|report_ops_alerts|report_ops_audit)'
   AND calls > 5
 ORDER BY p95_ms_approx DESC NULLS LAST
@@ -136,17 +136,17 @@ SELECT status, COUNT(*) AS total
 -- 5.b RelatoriosOps: falhas 24h
 \echo '5.b report_ops_failures_24h'
 EXPLAIN (ANALYZE, BUFFERS, VERBOSE, FORMAT TEXT)
-SELECT id, schedule_id, status, error_code, created_at
+SELECT id, schedule_id, status, error_message, created_at
   FROM public.report_schedule_runs
  WHERE created_at >= now() - interval '24 hours'
-   AND status IN ('failed', 'error')
+   AND status IN ('failed'::report_run_status)
  ORDER BY created_at DESC
  LIMIT 200;
 
 -- 5.c RelatoriosOps: listagem filtrada (P6.4)
 \echo '5.c report_runs filtrada'
 EXPLAIN (ANALYZE, BUFFERS, VERBOSE, FORMAT TEXT)
-SELECT id, schedule_id, status, format, created_at, artifact_pruned_at
+SELECT id, schedule_id, status, created_at, artifact_pruned_at
   FROM public.report_schedule_runs
  WHERE created_at >= now() - interval '24 hours'
  ORDER BY created_at DESC
@@ -155,14 +155,13 @@ SELECT id, schedule_id, status, format, created_at, artifact_pruned_at
 -- 5.d Schedule list (P5/P7.2)
 \echo '5.d schedules + last runs'
 EXPLAIN (ANALYZE, BUFFERS, VERBOSE, FORMAT TEXT)
-SELECT s.id, s.nome, s.ativo, s.created_at,
+SELECT s.id, s.name, s.enabled, s.created_at,
        (SELECT r.status
           FROM public.report_schedule_runs r
          WHERE r.schedule_id = s.id
          ORDER BY r.created_at DESC
          LIMIT 1) AS last_status
   FROM public.report_schedules s
- WHERE s.deleted_at IS NULL
  ORDER BY s.created_at DESC
  LIMIT 100;
 
@@ -178,7 +177,7 @@ SELECT id, kind, severity, created_at
 -- 5.f Audit trail (P5.4)
 \echo '5.f report_ops_audit recent'
 EXPLAIN (ANALYZE, BUFFERS, VERBOSE, FORMAT TEXT)
-SELECT id, actor_id, action, created_at
+SELECT id, actor_user_id, action, created_at
   FROM public.report_ops_audit
  WHERE created_at >= now() - interval '7 days'
  ORDER BY created_at DESC
