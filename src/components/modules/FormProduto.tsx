@@ -470,7 +470,7 @@ export const FormProduto: React.FC<FormProdutoProps> = ({
             <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" data-testid="produto-salvar-btn" disabled={loading}>
               {loading ? 'Salvando...' : produto ? 'Atualizar' : 'Criar'}
             </Button>
           </div>
