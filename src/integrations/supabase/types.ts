@@ -2101,6 +2101,510 @@ export type Database = {
           },
         ]
       }
+      fiscal_configuracoes: {
+        Row: {
+          ambiente: string
+          ativo: boolean
+          certificado_cnpj: string | null
+          certificado_secret_ref: string | null
+          certificado_validade: string | null
+          cnpj_emitente: string | null
+          created_at: string
+          created_by: string | null
+          csc_id: string | null
+          csc_token_secret_ref: string | null
+          deleted_at: string | null
+          emissoes_mes: number
+          empresa_representada_id: string
+          id: string
+          inscricao_estadual: string | null
+          inscricao_municipal: string | null
+          observacoes: string | null
+          provedor: string
+          proximo_numero_nfce: number | null
+          proximo_numero_nfe: number | null
+          regime_tributario: string
+          serie_nfce: number | null
+          serie_nfe: number | null
+          updated_at: string
+        }
+        Insert: {
+          ambiente?: string
+          ativo?: boolean
+          certificado_cnpj?: string | null
+          certificado_secret_ref?: string | null
+          certificado_validade?: string | null
+          cnpj_emitente?: string | null
+          created_at?: string
+          created_by?: string | null
+          csc_id?: string | null
+          csc_token_secret_ref?: string | null
+          deleted_at?: string | null
+          emissoes_mes?: number
+          empresa_representada_id: string
+          id?: string
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          observacoes?: string | null
+          provedor?: string
+          proximo_numero_nfce?: number | null
+          proximo_numero_nfe?: number | null
+          regime_tributario?: string
+          serie_nfce?: number | null
+          serie_nfe?: number | null
+          updated_at?: string
+        }
+        Update: {
+          ambiente?: string
+          ativo?: boolean
+          certificado_cnpj?: string | null
+          certificado_secret_ref?: string | null
+          certificado_validade?: string | null
+          cnpj_emitente?: string | null
+          created_at?: string
+          created_by?: string | null
+          csc_id?: string | null
+          csc_token_secret_ref?: string | null
+          deleted_at?: string | null
+          emissoes_mes?: number
+          empresa_representada_id?: string
+          id?: string
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          observacoes?: string | null
+          provedor?: string
+          proximo_numero_nfce?: number | null
+          proximo_numero_nfe?: number | null
+          regime_tributario?: string
+          serie_nfce?: number | null
+          serie_nfe?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_configuracoes_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: true
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fiscal_documentos_eletronicos: {
+        Row: {
+          ambiente: string
+          chave_acesso: string | null
+          cliente_id: string | null
+          created_at: string
+          created_by: string | null
+          data_autorizacao: string | null
+          data_emissao: string
+          deleted_at: string | null
+          empresa_representada_id: string
+          fornecedor_id: string | null
+          id: string
+          idempotency_key: string | null
+          modelo: number | null
+          motivo_rejeicao: string | null
+          natureza_operacao_id: string | null
+          numero: number | null
+          observacoes: string | null
+          payload_provedor: Json | null
+          pdf_danfe_url: string | null
+          protocolo_autorizacao: string | null
+          provedor_id_externo: string | null
+          serie: number
+          status: string
+          tipo: string
+          updated_at: string
+          valor_cofins: number
+          valor_desconto: number
+          valor_frete: number
+          valor_icms: number
+          valor_icms_st: number
+          valor_ipi: number
+          valor_outras_despesas: number
+          valor_pis: number
+          valor_produtos: number
+          valor_total: number
+          venda_id: string | null
+          xml_url: string | null
+        }
+        Insert: {
+          ambiente?: string
+          chave_acesso?: string | null
+          cliente_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_autorizacao?: string | null
+          data_emissao?: string
+          deleted_at?: string | null
+          empresa_representada_id: string
+          fornecedor_id?: string | null
+          id?: string
+          idempotency_key?: string | null
+          modelo?: number | null
+          motivo_rejeicao?: string | null
+          natureza_operacao_id?: string | null
+          numero?: number | null
+          observacoes?: string | null
+          payload_provedor?: Json | null
+          pdf_danfe_url?: string | null
+          protocolo_autorizacao?: string | null
+          provedor_id_externo?: string | null
+          serie?: number
+          status?: string
+          tipo: string
+          updated_at?: string
+          valor_cofins?: number
+          valor_desconto?: number
+          valor_frete?: number
+          valor_icms?: number
+          valor_icms_st?: number
+          valor_ipi?: number
+          valor_outras_despesas?: number
+          valor_pis?: number
+          valor_produtos?: number
+          valor_total?: number
+          venda_id?: string | null
+          xml_url?: string | null
+        }
+        Update: {
+          ambiente?: string
+          chave_acesso?: string | null
+          cliente_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_autorizacao?: string | null
+          data_emissao?: string
+          deleted_at?: string | null
+          empresa_representada_id?: string
+          fornecedor_id?: string | null
+          id?: string
+          idempotency_key?: string | null
+          modelo?: number | null
+          motivo_rejeicao?: string | null
+          natureza_operacao_id?: string | null
+          numero?: number | null
+          observacoes?: string | null
+          payload_provedor?: Json | null
+          pdf_danfe_url?: string | null
+          protocolo_autorizacao?: string | null
+          provedor_id_externo?: string | null
+          serie?: number
+          status?: string
+          tipo?: string
+          updated_at?: string
+          valor_cofins?: number
+          valor_desconto?: number
+          valor_frete?: number
+          valor_icms?: number
+          valor_icms_st?: number
+          valor_ipi?: number
+          valor_outras_despesas?: number
+          valor_pis?: number
+          valor_produtos?: number
+          valor_total?: number
+          venda_id?: string | null
+          xml_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_documentos_eletronicos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_documentos_eletronicos_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_documentos_eletronicos_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_documentos_eletronicos_natureza_operacao_id_fkey"
+            columns: ["natureza_operacao_id"]
+            isOneToOne: false
+            referencedRelation: "natureza_operacao"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_documentos_eletronicos_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fiscal_documentos_eletronicos_itens: {
+        Row: {
+          cest: string | null
+          cfop: string | null
+          cofins_aliquota: number | null
+          cofins_cst: string | null
+          cofins_valor: number | null
+          created_at: string
+          descricao: string
+          documento_id: string
+          empresa_representada_id: string
+          icms_aliquota: number | null
+          icms_base: number | null
+          icms_cst: string | null
+          icms_st_aliquota: number | null
+          icms_st_base: number | null
+          icms_st_valor: number | null
+          icms_valor: number | null
+          id: string
+          informacoes_adicionais: string | null
+          ipi_aliquota: number | null
+          ipi_cst: string | null
+          ipi_valor: number | null
+          ncm: string | null
+          ordem: number
+          origem_mercadoria: string | null
+          pis_aliquota: number | null
+          pis_cst: string | null
+          pis_valor: number | null
+          produto_id: string | null
+          quantidade: number
+          servico_id: string | null
+          unidade: string | null
+          updated_at: string
+          valor_desconto: number
+          valor_total: number
+          valor_unitario: number
+        }
+        Insert: {
+          cest?: string | null
+          cfop?: string | null
+          cofins_aliquota?: number | null
+          cofins_cst?: string | null
+          cofins_valor?: number | null
+          created_at?: string
+          descricao: string
+          documento_id: string
+          empresa_representada_id: string
+          icms_aliquota?: number | null
+          icms_base?: number | null
+          icms_cst?: string | null
+          icms_st_aliquota?: number | null
+          icms_st_base?: number | null
+          icms_st_valor?: number | null
+          icms_valor?: number | null
+          id?: string
+          informacoes_adicionais?: string | null
+          ipi_aliquota?: number | null
+          ipi_cst?: string | null
+          ipi_valor?: number | null
+          ncm?: string | null
+          ordem?: number
+          origem_mercadoria?: string | null
+          pis_aliquota?: number | null
+          pis_cst?: string | null
+          pis_valor?: number | null
+          produto_id?: string | null
+          quantidade: number
+          servico_id?: string | null
+          unidade?: string | null
+          updated_at?: string
+          valor_desconto?: number
+          valor_total: number
+          valor_unitario: number
+        }
+        Update: {
+          cest?: string | null
+          cfop?: string | null
+          cofins_aliquota?: number | null
+          cofins_cst?: string | null
+          cofins_valor?: number | null
+          created_at?: string
+          descricao?: string
+          documento_id?: string
+          empresa_representada_id?: string
+          icms_aliquota?: number | null
+          icms_base?: number | null
+          icms_cst?: string | null
+          icms_st_aliquota?: number | null
+          icms_st_base?: number | null
+          icms_st_valor?: number | null
+          icms_valor?: number | null
+          id?: string
+          informacoes_adicionais?: string | null
+          ipi_aliquota?: number | null
+          ipi_cst?: string | null
+          ipi_valor?: number | null
+          ncm?: string | null
+          ordem?: number
+          origem_mercadoria?: string | null
+          pis_aliquota?: number | null
+          pis_cst?: string | null
+          pis_valor?: number | null
+          produto_id?: string | null
+          quantidade?: number
+          servico_id?: string | null
+          unidade?: string | null
+          updated_at?: string
+          valor_desconto?: number
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_documentos_eletronicos_iten_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_documentos_eletronicos_itens_documento_id_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_documentos_eletronicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_documentos_eletronicos_itens_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_documentos_eletronicos_itens_servico_id_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "servicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fiscal_eventos: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          documento_id: string
+          empresa_representada_id: string
+          id: string
+          justificativa: string | null
+          motivo_rejeicao: string | null
+          payload_provedor: Json | null
+          protocolo: string | null
+          sequencia: number
+          status: string
+          tipo: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          documento_id: string
+          empresa_representada_id: string
+          id?: string
+          justificativa?: string | null
+          motivo_rejeicao?: string | null
+          payload_provedor?: Json | null
+          protocolo?: string | null
+          sequencia?: number
+          status?: string
+          tipo: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          documento_id?: string
+          empresa_representada_id?: string
+          id?: string
+          justificativa?: string | null
+          motivo_rejeicao?: string | null
+          payload_provedor?: Json | null
+          protocolo?: string | null
+          sequencia?: number
+          status?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_eventos_documento_id_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_documentos_eletronicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_eventos_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fiscal_sped_arquivos: {
+        Row: {
+          arquivo_url: string | null
+          created_at: string
+          created_by: string | null
+          empresa_representada_id: string
+          erro_mensagem: string | null
+          hash_sha256: string | null
+          id: string
+          linhas_geradas: number | null
+          periodo_fim: string
+          periodo_ini: string
+          status: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          arquivo_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          empresa_representada_id: string
+          erro_mensagem?: string | null
+          hash_sha256?: string | null
+          id?: string
+          linhas_geradas?: number | null
+          periodo_fim: string
+          periodo_ini: string
+          status?: string
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          arquivo_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          empresa_representada_id?: string
+          erro_mensagem?: string | null
+          hash_sha256?: string | null
+          id?: string
+          linhas_geradas?: number | null
+          periodo_fim?: string
+          periodo_ini?: string
+          status?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_sped_arquivos_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       folha_pagamento: {
         Row: {
           colaborador_id: string
