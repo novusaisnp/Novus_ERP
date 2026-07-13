@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Package, Plus, Search, Edit, Trash2, Image } from 'lucide-react';
+import { Package, Plus, Search, Edit, Trash2, Image, ScrollText } from 'lucide-react';
 import { useProdutos } from '@/hooks/useProdutos';
 import { FormProduto } from '@/components/modules/FormProduto';
 import { Produto } from '@/types/produto';
