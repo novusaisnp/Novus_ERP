@@ -262,3 +262,54 @@ Todos < 500ms (alvo P8.2). Nenhum novo Seq Scan em tabela > 10k. Seq Scan em 5.d
 | Dataset `[SEED-P8]` ainda residente | Média | Baixo | `supabase/sql/seed_99_down.sql` disponível, execução via migration pendente |
 
 ### Status: **PASS_P9 (janela sintética)** — todos os critérios técnicos e operacionais atendidos exceto "delta de volumetria", que depende de tráfego real. Snapshot #6 em produção fica como continuidade natural.
+
+---
+
+## Snapshot #6 (13/07/2026, tentativa P10) — **NÃO COLETADO**
+
+**Contexto:** Sprint P10 requereu janela de tráfego humano real (≥ 48h, ideal 7d) com delta de volumetria > 0 como critério obrigatório de validade. O ambiente disponível nesta sessão é sandbox de sessão única, sem usuários reais e sem persistência entre turnos suficiente para uma janela válida. Prosseguir com aquecimento sintético reproduziria exatamente o Snapshot #5.
+
+**T0 real capturado (referência):**
+- Timestamp: 2026-07-13 16:42:50 UTC
+- `pg_postmaster_start_time`: 2026-07-10 10:31:40 UTC (uptime ~3d 06h, sem restart)
+- `pg_stat_statements_reset()`: executado com sucesso (permissão mantida desde P9)
+- Volumetria T0 (dataset `[SEED-P8]` ainda residente):
+
+| Tabela | Rows |
+|---|---|
+| report_schedules | 10 |
+| report_schedule_runs | 2000 |
+| report_ops_alerts | 500 |
+| report_ops_audit | 1500 |
+
+**Passos NÃO executados (bloqueio explícito):**
+- Não foi aplicada a migration de cleanup do `[SEED-P8]` (`supabase/sql/seed_99_down.sql`) — destruir o baseline seed sem substituí-lo por tráfego real removeria a única referência com dados > 0 do histórico.
+- Não foi feita janela T0→T1 de 48h com tráfego humano.
+- Não foi coletado `p8_baseline_queries.sql` como T1 nem `EXPLAIN (ANALYZE, BUFFERS)` das queries 5.a–5.g em nova rodada — resultado seria idêntico ao Snapshot #5.
+
+**Validação dos critérios P10:**
+
+| Critério | Alvo | Resultado |
+|---|---|---|
+| Ambiente com tráfego humano real | Obrigatório | ❌ Não disponível em sandbox |
+| Janela ≥ 48h | Obrigatório | ❌ Não disponível em sandbox |
+| Cleanup `[SEED-P8]` antes de T0 | Obrigatório | ❌ Não aplicado (ver justificativa) |
+| Delta de volumetria > 0 | Obrigatório | ❌ Impossível sem tráfego real |
+| `pg_stat_statements_reset` | Obrigatório | ✅ OK |
+| Uptime DB constante | Obrigatório | ✅ OK |
+| p95 < 500ms | PASS | — (não coletado) |
+| Sem Seq Scan > 10k | PASS | — (não coletado) |
+
+**Riscos remanescentes:**
+
+| Risco | Prob | Impacto | Mitigação |
+|---|---|---|---|
+| P8.1 baseline permanece sem confirmação em produção | Alta | Alto | Agendar Snapshot #6 real com stakeholders de ops |
+| Seq Scan 5.d escalará com > 10k schedules | Média | Alto | Backlog P10-idx: `CREATE INDEX ON report_schedule_runs (schedule_id, created_at DESC)` |
+| Dataset `[SEED-P8]` continua residente | Média | Baixo | `supabase/sql/seed_99_down.sql` executável via migration quando janela real for agendada |
+
+**Status: FAIL_P10 (bloqueio operacional, não regressão de performance)**
+
+Falha é de contexto (sandbox ≠ produção com usuários reais), não de execução técnica nem de performance do sistema. Nenhum critério técnico de performance foi violado — eles simplesmente não foram avaliáveis. `PASS_GERAL_P8` permanece válido com base em Snapshots #3–#5.
+
+**Próximo passo único:** coordenar com operações a agendamento de janela real de 48h–7d em produção/homologação com pilotos, executar `seed_99_down.sql` no início da janela, então repetir a coleta seguindo `docs/RUNBOOK_P8_PERFORMANCE.md`.

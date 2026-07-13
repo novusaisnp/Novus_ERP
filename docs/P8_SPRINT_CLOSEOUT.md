@@ -131,3 +131,25 @@ Sprint P8 encerrada. Todos os critérios objetivos do gate atendidos. Sistema en
 - `evidence/p8/snapshot5_explain.txt` (EXPLAIN ANALYZE das 7 queries)
 
 **Decisão pós-P9:** manter `PASS_GERAL_P8`; abrir P10 apenas para índice residual + Snapshot #6 sob tráfego humano.
+
+---
+
+## Addendum P10 (13/07/2026) — Snapshot #6 não coletado
+
+**Tentativa:** executar plano P10 para coletar Snapshot #6 sob tráfego humano real.
+
+**Resultado:** **FAIL_P10** por bloqueio operacional. Ambiente de sandbox de sessão única não permite janela de 48h–7d com usuários reais nem produz delta de volumetria positivo. Prosseguir com aquecimento sintético apenas repetiria Snapshot #5 (P9).
+
+**Evidências geradas:**
+- `evidence/p8/snapshot6_t0.txt` — T0 real (uptime, contagens, reset OK)
+- `evidence/p8/snapshot6.txt` — marcador textual de não-coleta
+- `evidence/p8/snapshot6_explain.txt` — marcador textual de não-coleta
+
+**Impacto no gate P8:** `PASS_GERAL_P8` **mantido**. Nenhuma regressão de performance foi detectada; o critério que falhou (delta de volumetria real) é operacional, não técnico. Snapshots #3–#5 continuam suportando o gate.
+
+**Backlog reafirmado:**
+- Agendar Snapshot #6 em produção com pilotos ativos (≥ 48h).
+- Aplicar `supabase/sql/seed_99_down.sql` antes do T0 dessa janela.
+- Avaliar índice composto `report_schedule_runs(schedule_id, created_at DESC)` após Snapshot #6 confirmar Seq Scan 5.d como hotspot real.
+
+**Decisão final da sprint P8 (pós-P10):** `PASS_GERAL_P8` **inalterado**. P10 fica em `FAIL_P10 (bloqueio ambiental)` — reabrir quando janela real estiver agendada.
