@@ -76,3 +76,49 @@ export async function readVendaIdByCliente(page: Page, clienteId: string): Promi
   );
   return rows[0]?.id ?? null;
 }
+
+// ================ F3 - Conciliação ================
+
+export interface ExtratoImportadoRow {
+  id: string;
+  status: string;
+  total_lancamentos: number | null;
+  nome_arquivo: string | null;
+}
+
+export interface LinhaExtratoRow {
+  id: string;
+  status_conciliacao: string;
+  valor: number | null;
+  data_movimento: string | null;
+  movimentacao_bancaria_id: string | null;
+}
+
+export interface ContaBancariaLiteRow {
+  id: string;
+  descricao: string | null;
+}
+
+export async function readExtratoById(page: Page, extratoId: string): Promise<ExtratoImportadoRow | null> {
+  const rows = await restGet<ExtratoImportadoRow>(
+    page,
+    `banco_extratos_importados?id=eq.${extratoId}&select=id,status,total_lancamentos,nome_arquivo`,
+  );
+  return rows[0] ?? null;
+}
+
+export async function readLinhasExtrato(page: Page, extratoId: string): Promise<LinhaExtratoRow[]> {
+  return restGet<LinhaExtratoRow>(
+    page,
+    `banco_movimentacoes_extrato?extrato_importado_id=eq.${extratoId}&select=id,status_conciliacao,valor,data_movimento,movimentacao_bancaria_id`,
+  );
+}
+
+export async function readFirstContaBancaria(page: Page): Promise<ContaBancariaLiteRow | null> {
+  const rows = await restGet<ContaBancariaLiteRow>(
+    page,
+    `contas_bancarias?deleted_at=is.null&select=id,descricao&limit=1`,
+  );
+  return rows[0] ?? null;
+}
+
