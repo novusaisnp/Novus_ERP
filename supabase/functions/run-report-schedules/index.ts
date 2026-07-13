@@ -218,15 +218,27 @@ async function processSchedule(client: SupabaseClient, sch: ScheduleRow): Promis
   }
   const runId = runRow.id as string;
 
-  try {
+  // P5.3: orçamento total (timeout budget) por run via AbortController.
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), RUN_TIMEOUT_MS);
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    controller.signal.addEventListener("abort", () => {
+      reject(new Error("run_timeout:budget_exceeded"));
+    });
+  });
+
+  const work = (async () => {
     const vs = validateViewState(sch.view_state);
     if (!vs.ok || !vs.data) throw new Error(`invalid_view_state:${vs.error}`);
 
     let scoped: { columns: string[]; rows: Array<Record<string, unknown>> };
     try {
-      scoped = await loadScopeData(client, sch.scope, vs.data);
+      scoped = await loadScopeData(client, sch.scope, vs.data, sch.format, controller.signal);
     } catch (e) {
-      throw new Error(`scope_query_failed:${e instanceof Error ? e.message : String(e)}`);
+      const em = e instanceof Error ? e.message : String(e);
+      // Preserva reasons canônicos vindos de loadScopeData (row_limit_exceeded / run_timeout).
+      if (em.startsWith("row_limit_exceeded:") || em.startsWith("run_timeout:")) throw e;
+      throw new Error(`scope_query_failed:${em}`);
     }
 
     const empresaId = inferEmpresaId(vs.data, scoped.rows);
@@ -295,23 +307,16 @@ async function processSchedule(client: SupabaseClient, sch: ScheduleRow): Promis
       .eq("id", sch.id);
 
     log("run_succeeded", { schedule_id: sch.id, run_id: runId, attempt, rows: scoped.rows.length });
+  })();
+
+  try {
+    await Promise.race([work, timeoutPromise]);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    const isFinal = attempt >= MAX_ATTEMPTS;
-    // P5.1: normaliza reason contra catálogo padronizado (prefixo antes de ':').
-    const KNOWN_REASONS = new Set([
-      "invalid_view_state",
-      "scope_query_failed",
-      "row_limit_exceeded",
-      "run_timeout",
-      "artifact_generation_failed",
-      "upload_failed",
-      "sign_failed",
-      "delivery_skipped",
-    ]);
-    const rawPrefix = msg.split(":")[0]?.trim() ?? "";
-    const reason = KNOWN_REASONS.has(rawPrefix) ? rawPrefix : "unknown";
-    const detail = msg.includes(":") ? msg.slice(msg.indexOf(":") + 1) : msg;
+    const { reason, detail } = classifyReason(msg);
+    // P5.3: row_limit_exceeded e invalid_view_state são definitivos (sem retry).
+    // run_timeout mantém política transitória (retry com backoff).
+    const isFinal = attempt >= MAX_ATTEMPTS || isDefinitive(reason);
     const normalized = `${reason}:${detail}`.slice(0, 500);
 
     await client
@@ -324,7 +329,6 @@ async function processSchedule(client: SupabaseClient, sch: ScheduleRow): Promis
       .eq("id", runId);
 
     if (isFinal) {
-      // Avança next_run_at para próximo slot regular.
       const nextAt = computeNextRunAt({
         frequency: sch.frequency,
         hour: sch.hour_utc,
@@ -335,11 +339,12 @@ async function processSchedule(client: SupabaseClient, sch: ScheduleRow): Promis
       });
       await client.from("report_schedules").update({ next_run_at: nextAt.toISOString() }).eq("id", sch.id);
     } else {
-      // Reagenda para retry com backoff.
       const retryAt = new Date(Date.now() + backoffDelayMs(attempt)).toISOString();
       await client.from("report_schedules").update({ next_run_at: retryAt }).eq("id", sch.id);
     }
-    log("run_failed", { schedule_id: sch.id, run_id: runId, attempt, final: isFinal });
+    log("run_failed", { schedule_id: sch.id, run_id: runId, attempt, final: isFinal, reason });
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
