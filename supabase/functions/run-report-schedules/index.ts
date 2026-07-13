@@ -18,6 +18,8 @@ import { exportCsvServer } from "../_shared/report-export/exportCsvServer.ts";
 import { exportXlsxServer } from "../_shared/report-export/exportXlsxServer.ts";
 import { exportPdfServer } from "../_shared/report-export/exportPdfServer.ts";
 import { resolveBrandingForEmpresa, resolveBrandingForUser, type Branding } from "../_shared/report-export/branding.ts";
+import { maxRowsForFormat, PAGE_SIZE, RUN_TIMEOUT_MS, type ExportFormat } from "../_shared/report-export/limits.ts";
+import { classifyReason, isDefinitive } from "../_shared/report-export/errorCodes.ts";
 
 const BUCKET = "report-exports";
 const SIGNED_URL_TTL_SECONDS = 7 * 24 * 60 * 60;
