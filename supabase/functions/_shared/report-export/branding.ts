@@ -1,7 +1,7 @@
 // Branding helper — resolve identidade visual do tenant para exports server-side.
 // Sem APIs de browser. Fetch com timeout curto e cache em memória por execução.
 
-import type { SupabaseClient } from "npm:@supabase/supabase-js@2.45.0";
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2.110.2";
 
 export interface BrandingLogo {
   bytes: Uint8Array;

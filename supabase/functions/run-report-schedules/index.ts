@@ -3,7 +3,7 @@
 // carrega dados -> gera artefato -> upload -> signed URL -> NoopProvider (skipped) ->
 // atualiza schedule.next_run_at. Retry/backoff em falhas (5m/15m/60m, max 3 tentativas).
 
-import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2.45.0";
+import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2.110.2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 import { resolveDeliveryProvider } from "../_shared/delivery/resolveProvider.ts";
