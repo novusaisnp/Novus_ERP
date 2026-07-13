@@ -28,3 +28,22 @@ Sandbox não permite janela de 48h+ com tráfego humano real.
 Dataset [SEED-P8] permanece residente (cleanup exige migration destrutiva).
 Prosseguir com T1 sintético repetiria exatamente Snapshot #5 (janela sintética).
 → Coleta abortada. Ver docs/P8_BASELINE.md seção Snapshot #6.
+=== SNAPSHOT #6 RETRY — verificação em 2026-07-13T16:47:52Z ===
+            t_check            |             boot              
+-------------------------------+-------------------------------
+ 2026-07-13 16:47:53.379458+00 | 2026-07-10 10:31:40.816421+00
+(1 row)
+
+          t           | count 
+----------------------+-------
+ report_schedules     |    10
+ report_schedule_runs |  2000
+ report_ops_alerts    |   500
+ report_ops_audit     |  1500
+(4 rows)
+
+
+Delta vs T0 P10 (16:42:50 UTC): 0 linhas em todas as tabelas críticas.
+Uptime constante — sem restart, sem tráfego real na janela intermediária.
+Pré-requisito 'janela ≥48h agendada com ops' NÃO atendido.
+→ RETRY abortado pelo mesmo bloqueio operacional documentado em P10.
