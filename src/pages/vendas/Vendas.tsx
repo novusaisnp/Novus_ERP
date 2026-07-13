@@ -125,13 +125,15 @@ const Vendas: React.FC = () => {
 
       <VendaFormModal open={modalOpen} onOpenChange={setModalOpen} venda={editing} />
 
-      <ConfirmDialog
+      <ConfirmDeleteWithDeps
         open={!!toDelete}
         onOpenChange={(o) => !o && setToDelete(null)}
-        title="Excluir venda?"
-        description={`A venda ${toDelete?.numero_venda || ''} será removida.`}
+        entidade="vendas"
+        id={toDelete?.id ?? null}
+        nomeRegistro={toDelete?.numero_venda ? `venda ${toDelete.numero_venda}` : undefined}
         onConfirm={async () => { if (toDelete?.id) await excluirVenda(toDelete.id); setToDelete(null); }}
       />
+
       <ConfirmDialog
         open={!!toCancel}
         onOpenChange={(o) => !o && setToCancel(null)}
