@@ -116,6 +116,7 @@ export default function ConciliacaoExtratoPage() {
                   <button
                     key={l.id}
                     onClick={() => setSelected(l)}
+                    data-testid={`extrato-linha-${l.id}`}
                     className={`w-full text-left px-4 py-3 hover:bg-accent transition-colors ${
                       selected?.id === l.id ? "bg-accent" : ""
                     }`}
@@ -135,7 +136,11 @@ export default function ConciliacaoExtratoPage() {
                         >
                           {fmtMoney(l.valor)}
                         </div>
-                        <Badge variant={statusVariant[l.status_conciliacao]} className="text-[10px]">
+                        <Badge
+                          variant={statusVariant[l.status_conciliacao]}
+                          className="text-[10px]"
+                          data-testid={`extrato-linha-status-${l.id}`}
+                        >
                           {l.status_conciliacao}
                           {l.score_match != null && ` · ${(l.score_match * 100).toFixed(0)}%`}
                         </Badge>
