@@ -132,7 +132,12 @@ function App() {
                     <Route path="inventario" element={<InventarioEstoque />} />
                     <Route path="kardex/:produtoId" element={<KardexPage />} />
 
-                    <Route path="relatorios" element={<EmBreve titulo="Relatórios de Estoque" icon={BarChart3} descricao="Relatórios analíticos de estoque estarão disponíveis em breve." />} />
+                    <Route path="relatorios" element={<RelatoriosEstoqueHub />} />
+                    <Route path="relatorios/giro" element={<GiroPage />} />
+                    <Route path="relatorios/curva-abc" element={<CurvaAbcPage />} />
+                    <Route path="relatorios/posicao" element={<PosicaoPage />} />
+                    <Route path="relatorios/parados" element={<ParadosPage />} />
+                    <Route path="relatorios/ruptura" element={<RupturaPage />} />
                   </Route>
                   
                   {/* Vendas Routes - declared before generic routes to avoid conflicts */}
