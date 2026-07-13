@@ -171,3 +171,17 @@ Sprint P8 encerrada. Todos os critérios objetivos do gate atendidos. Sistema en
 Antes de qualquer novo retry, ops precisa: (i) agendar janela real de 48h–7d em produção/homologação com pilotos ativos; (ii) publicar freeze de deploy; (iii) suspender jobs sintéticos/E2E; (iv) aplicar `supabase/sql/seed_99_down.sql` antes do T0.
 
 **Impacto no gate:** `PASS_GERAL_P8` **permanece válido**, apoiado em Snapshots #3–#5. `FAIL_P10-RETRY` é reincidência ambiental, não regressão.
+
+---
+
+## Addendum P11 (13/07/2026 16:54 UTC) — Cleanup do dataset `[SEED-P8]`
+
+**Status:** **PASS_P11**.
+
+Migration aplicada com correção de FK (script `seed_99_down.sql` original não cobria `vendas`/`itens_venda`). Todas as contagens de marcador retornam 0; `_seed_registry` inexistente; 3 clientes, 3 fornecedores e 1 conta a receber reais preservados.
+
+**Evidência:** `evidence/p8/p11_cleanup.txt`.
+
+**Impacto no gate:** `PASS_GERAL_P8` **mantido**. Base agora limpa para futuro Snapshot #6 sob tráfego real (P10-retry).
+
+**Followup opcional:** atualizar `supabase/sql/seed_99_down.sql` para incluir `vendas` e `itens_venda` — fora do escopo P11 (regra: não alterar `supabase/sql/**` fora do plano).
