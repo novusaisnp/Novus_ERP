@@ -185,3 +185,21 @@ Migration aplicada com correção de FK (script `seed_99_down.sql` original não
 **Impacto no gate:** `PASS_GERAL_P8` **mantido**. Base agora limpa para futuro Snapshot #6 sob tráfego real (P10-retry).
 
 **Followup opcional:** atualizar `supabase/sql/seed_99_down.sql` para incluir `vendas` e `itens_venda` — fora do escopo P11 (regra: não alterar `supabase/sql/**` fora do plano).
+
+---
+
+## Addendum P10-RETRY-2 (13/07/2026 16:57 UTC, pós-P11)
+
+**Resultado:** **FAIL_P10-RETRY-2** por bloqueio operacional (não técnico).
+
+**Diferença vs tentativas anteriores:** base agora limpa (P11 concluído). T0 real capturado com sucesso em condições ideais (contagens zeradas nas 4 tabelas críticas, uptime constante, `pg_stat_statements_reset()` OK).
+
+**Bloqueio persistente:** nenhuma janela ≥48h com tráfego humano real foi agendada com operações. Sandbox de sessão única não fabrica delta de volumetria real. Prosseguir para T1 reproduziria Snapshot #5.
+
+**Impacto no gate:** `PASS_GERAL_P8` **permanece válido** (apoiado em Snapshots #3–#5). Snapshot #6 real segue como dependência exclusiva de ops.
+
+**Pré-requisito para P10-RETRY-3:**
+1. Operações agenda janela ≥48h em produção/homologação com pilotos.
+2. Freeze de deploy publicado.
+3. Jobs sintéticos e E2E suspensos.
+4. Nova coleta T0 (base já limpa) → aguardar → T1 → coletar `p8_baseline_queries.sql` + EXPLAIN + top-N `pg_stat_statements`.

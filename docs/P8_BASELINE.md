@@ -349,3 +349,23 @@ Migration de limpeza aplicada com sucesso após correção de FK (script origina
 **Observações:**
 - Script `supabase/sql/seed_99_down.sql` está **incompleto** — não remove `vendas`/`itens_venda`. Correção aplicada apenas via migration desta sprint; atualizar o script fica como P11-followup opcional (não bloqueia backlog).
 - Baseline agora reflete tabelas verdadeiramente vazias (P5–P7). Próximo Snapshot #6 dependerá de tráfego real (backlog P10-retry).
+
+---
+
+## Snapshot #6 — RETRY-2 (13/07/2026 16:57 UTC, pós-P11): **não coletado**
+
+**Novidade vs P10/RETRY-1:** base agora está **limpa** (dataset `[SEED-P8]` removido em P11). Contagens T0 pós-cleanup: 0/0/0/0 nas 4 tabelas críticas — este é o estado ideal para começar uma janela real futura.
+
+**Passos executados:**
+- T0: `now=2026-07-13 16:57:08 UTC`, `boot=2026-07-10 10:31:40 UTC` (uptime constante ~3d 06h30, sem restart entre P10 e RETRY-2).
+- `pg_stat_statements_reset()`: ✅ OK.
+- Contagens T0 registradas em `evidence/p8/snapshot6_t0.txt`.
+
+**Passos não executados (bloqueio ambiental persistente):**
+- Janela T0→T1 ≥48h com tráfego humano real não foi agendada com operações.
+- Sem tráfego real, delta de volumetria permaneceria 0 — critério obrigatório do plano P10.
+- T1, EXPLAIN e coleta `p8_baseline_queries.sql` pulados; reproduziriam Snapshot #5.
+
+**Status: FAIL_P10-RETRY-2** por bloqueio operacional (não regressão técnica). Reincidência da causa raiz documentada em P10 e P10-RETRY: sandbox ≠ ambiente produtivo com usuários reais.
+
+**Ganho concreto desta iteração:** base limpa e T0 real preparado. Próximo retry (P10-RETRY-3) só faz sentido após ops formalmente agendar janela real de 48h–7d.
