@@ -88,13 +88,15 @@ const RegrasClassificacaoReceita: React.FC = () => {
         }}
       />
 
-      <ConfirmDialog
+      <ConfirmDeleteWithDeps
         open={!!toDelete}
         onOpenChange={(o) => !o && setToDelete(null)}
-        title="Excluir regra?"
-        description="A regra será desativada e removida do fluxo de resolução."
+        entidade="regras_classificacao_receita"
+        id={toDelete?.id ?? null}
+        nomeRegistro="esta regra"
         onConfirm={async () => { if (toDelete?.id) await excluir(toDelete.id); setToDelete(null); }}
       />
+
     </div>
   );
 };
