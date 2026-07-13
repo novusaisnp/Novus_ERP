@@ -64,7 +64,9 @@ export async function ackOpsAlert(alertId: string): Promise<void> {
     .maybeSingle();
   if (readErr || !alertRow) throw new Error("Alerta não encontrado.");
 
-  const patch: Record<string, unknown> = { acknowledged_by: userId };
+  const patch: { acknowledged_by: string; resolved_at?: string } = {
+    acknowledged_by: userId,
+  };
   if (alertRow.severity === "warning" && !alertRow.resolved_at) {
     patch.resolved_at = new Date().toISOString();
   }
