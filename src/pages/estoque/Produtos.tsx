@@ -191,7 +191,9 @@ const Produtos: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <div>
-                        <div className={`font-medium ${
+                        <div
+                          data-testid={`produto-saldo-final-${produto.id}`}
+                          className={`font-medium ${
                           produto.estoque_atual! <= produto.estoque_minimo! 
                             ? 'text-destructive' 
                             : 'text-foreground'
