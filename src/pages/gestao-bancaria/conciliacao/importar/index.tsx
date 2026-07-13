@@ -22,9 +22,9 @@ export default function ImportarExtratoPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("contas_bancarias")
-        .select("id, apelido, numero_conta")
+        .select("id, descricao, numero_conta, nome_titular")
         .is("deleted_at", null)
-        .order("apelido");
+        .order("descricao");
       if (error) throw error;
       return data ?? [];
     },
