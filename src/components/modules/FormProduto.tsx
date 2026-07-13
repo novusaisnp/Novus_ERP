@@ -207,6 +207,7 @@ export const FormProduto: React.FC<FormProdutoProps> = ({
                         <Label htmlFor="nome">Nome do Produto *</Label>
                         <Input
                           id="nome"
+                          data-testid="produto-nome-input"
                           value={formData.nome}
                           onChange={(e) => handleInputChange('nome', e.target.value)}
                           required
