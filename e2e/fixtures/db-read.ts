@@ -122,3 +122,54 @@ export async function readFirstContaBancaria(page: Page): Promise<ContaBancariaL
   return rows[0] ?? null;
 }
 
+// ================ F4 - Produto & Estoque ================
+
+export interface ProdutoLiteRow {
+  id: string;
+  nome: string;
+  estoque_atual: number | null;
+}
+
+export interface EstoqueMovLiteRow {
+  id: string;
+  produto_id: string;
+  tipo: string;
+  quantidade: number;
+  data_movimento: string;
+}
+
+export interface EstoqueSaldoLiteRow {
+  produto_id: string;
+  localizacao_id: string;
+  quantidade: number;
+}
+
+export async function readProdutoByNome(page: Page, nome: string): Promise<ProdutoLiteRow | null> {
+  const rows = await restGet<ProdutoLiteRow>(
+    page,
+    `produtos?nome=eq.${encodeURIComponent(nome)}&select=id,nome,estoque_atual&limit=1`,
+  );
+  return rows[0] ?? null;
+}
+
+export async function readMovimentacoesByProduto(
+  page: Page,
+  produtoId: string,
+): Promise<EstoqueMovLiteRow[]> {
+  return restGet<EstoqueMovLiteRow>(
+    page,
+    `estoque_movimentacoes?produto_id=eq.${produtoId}&deleted_at=is.null&select=id,produto_id,tipo,quantidade,data_movimento&order=data_movimento.desc`,
+  );
+}
+
+export async function readSaldosByProduto(
+  page: Page,
+  produtoId: string,
+): Promise<EstoqueSaldoLiteRow[]> {
+  return restGet<EstoqueSaldoLiteRow>(
+    page,
+    `estoque_saldos?produto_id=eq.${produtoId}&select=produto_id,localizacao_id,quantidade`,
+  );
+}
+
+
