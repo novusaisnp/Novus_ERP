@@ -31,6 +31,8 @@ import Localizacoes from './pages/estoque/Localizacoes';
 import UnidadesMedida from './pages/estoque/UnidadesMedida';
 import Tamanhos from './pages/estoque/Tamanhos';
 import EmBreve from './pages/estoque/EmBreve';
+import MovimentacoesEstoque from './pages/estoque/movimentacoes/index';
+import InventarioEstoque from './pages/estoque/inventario/index';
 import { ArrowLeftRight, ClipboardList, BarChart3, FileText } from 'lucide-react';
 
 // Financeiro Pages
@@ -119,8 +121,9 @@ function App() {
                     <Route path="localizacoes" element={<Localizacoes />} />
                     <Route path="unidades-medida" element={<UnidadesMedida />} />
                     <Route path="tamanhos" element={<Tamanhos />} />
-                    <Route path="movimentacoes" element={<EmBreve titulo="Movimentações de Estoque" icon={ArrowLeftRight} descricao="Entradas, saídas e transferências de estoque estarão disponíveis em breve." />} />
-                    <Route path="inventario" element={<EmBreve titulo="Inventário" icon={ClipboardList} descricao="Contagem e conciliação de inventário estarão disponíveis em breve." />} />
+                    <Route path="movimentacoes" element={<MovimentacoesEstoque />} />
+                    <Route path="inventario" element={<InventarioEstoque />} />
+
                     <Route path="relatorios" element={<EmBreve titulo="Relatórios de Estoque" icon={BarChart3} descricao="Relatórios analíticos de estoque estarão disponíveis em breve." />} />
                   </Route>
                   
