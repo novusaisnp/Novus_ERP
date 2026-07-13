@@ -738,18 +738,18 @@ const Orcamentos: React.FC = () => {
         onOpenChange={(v) => !v && setViewOrc(null)}
       />
 
-      <ConfirmDialog
+      <ConfirmDeleteWithDeps
         open={!!deleteOrc}
         onOpenChange={(v) => !v && setDeleteOrc(null)}
-        title="Excluir orçamento"
-        description={`Deseja excluir o orçamento ${deleteOrc?.numero ?? ''}? Esta ação pode ser revertida pelo administrador.`}
-        confirmLabel="Excluir"
-        destructive
+        entidade="orcamentos_venda"
+        id={deleteOrc?.id ?? null}
+        nomeRegistro={deleteOrc?.numero ? `orçamento ${deleteOrc.numero}` : undefined}
         onConfirm={() => {
           if (deleteOrc) deleteMut.mutate(deleteOrc.id);
           setDeleteOrc(null);
         }}
       />
+
 
       <ConverterVendaDialog
         orcamento={converterOrc}
