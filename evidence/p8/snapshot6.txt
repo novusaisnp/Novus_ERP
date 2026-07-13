@@ -1,0 +1,12 @@
+=== SNAPSHOT #6 — NÃO COLETADO ===
+
+Motivo: o plano P10 exige explicitamente "tráfego humano real por 48h–7d" e
+"volumetria delta > 0" como critérios de validade obrigatórios. Ambos são
+inatingíveis em ambiente de sandbox de sessão única.
+
+Arquivos de referência:
+- evidence/p8/snapshot6_t0.txt — T0 real capturado (uptime, contagens, reset).
+- evidence/p8/snapshot5.txt    — última coleta sintética válida (P9).
+
+Decisão: FAIL_P10 por bloqueio operacional (não regressão de performance).
+Ver docs/P8_BASELINE.md § Snapshot #6 e docs/P8_SPRINT_CLOSEOUT.md addendum P10.
