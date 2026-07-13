@@ -200,14 +200,15 @@ const Clientes: React.FC = () => {
         </CardContent>
       </Card>
 
-      <ConfirmDialog
+      <ConfirmDeleteWithDeps
         open={confirmDeleteId !== null}
         onOpenChange={(open) => { if (!open) setConfirmDeleteId(null); }}
-        title="Excluir cliente"
-        description="Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita."
-        confirmLabel="Excluir"
+        entidade="clientes"
+        id={confirmDeleteId}
+        nomeRegistro="este cliente"
         onConfirm={confirmDelete}
       />
+
     </div>
   );
 };
