@@ -405,6 +405,7 @@ export type Database = {
           ativo: boolean | null
           codigo: string | null
           created_at: string
+          deleted_at: string | null
           empresa_representada_id: string
           id: string
           ispb: string | null
@@ -418,6 +419,7 @@ export type Database = {
           ativo?: boolean | null
           codigo?: string | null
           created_at?: string
+          deleted_at?: string | null
           empresa_representada_id: string
           id?: string
           ispb?: string | null
@@ -431,6 +433,7 @@ export type Database = {
           ativo?: boolean | null
           codigo?: string | null
           created_at?: string
+          deleted_at?: string | null
           empresa_representada_id?: string
           id?: string
           ispb?: string | null
