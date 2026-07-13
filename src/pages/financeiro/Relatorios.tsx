@@ -123,7 +123,7 @@ export default function RelatoriosFinanceiro() {
 
   const presets = useReportPresets<FinanceiroViewState>('financeiro');
   const { empresas } = useEmpresasRepresentadas();
-  const { data: logosMap } = useEmpresasLogosMap(empresas);
+  const { data: logosMap, isLoading: logosLoading } = useEmpresasLogosMap(empresas);
 
   const applyPreset = (s: FinanceiroViewState) => {
     setDataInicio(s.dataInicio);
@@ -464,7 +464,7 @@ export default function RelatoriosFinanceiro() {
           <ExportMenu
             payload={exportPayload}
             onCsv={handleExport}
-            disabled={loading || baseFiltered.length === 0}
+            disabled={loading || logosLoading || baseFiltered.length === 0}
           />
           <Button variant="outline" size="sm" onClick={() => setScheduleOpen(true)}>
             <CalendarClock className="h-4 w-4 mr-1" /> Agendar…

@@ -131,7 +131,7 @@ export default function RelatoriosVendas() {
 
   const presets = useReportPresets<VendasViewState>('vendas');
   const { empresas } = useEmpresasRepresentadas();
-  const { data: logosMap } = useEmpresasLogosMap(empresas);
+  const { data: logosMap, isLoading: logosLoading } = useEmpresasLogosMap(empresas);
 
   const applyPreset = (s: VendasViewState) => {
     setDataInicio(s.dataInicio);
@@ -415,7 +415,7 @@ export default function RelatoriosVendas() {
           <ExportMenu
             payload={exportPayload}
             onCsv={handleExport}
-            disabled={loading || baseFiltered.length === 0}
+            disabled={loading || logosLoading || baseFiltered.length === 0}
           />
           <Button variant="outline" size="sm" onClick={() => setScheduleOpen(true)}>
             <CalendarClock className="h-4 w-4 mr-1" /> Agendar…
