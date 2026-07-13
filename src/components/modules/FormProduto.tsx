@@ -340,6 +340,7 @@ export const FormProduto: React.FC<FormProdutoProps> = ({
                         <Label htmlFor="preco_venda">Preço de Venda *</Label>
                         <CurrencyInput
                           id="preco_venda"
+                          data-testid="produto-preco-venda-input"
                           value={formData.preco_venda}
                           onValueChange={(v) => handleInputChange('preco_venda', v)}
                           onBlur={calcularMargem}
