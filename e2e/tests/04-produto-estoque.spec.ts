@@ -5,6 +5,7 @@ import { dbReset } from '../fixtures/db-reset';
 import {
   readProdutoByNome,
   readMovimentacoesByProduto,
+  readMovimentacoesRecentes,
   readSaldosByProduto,
 } from '../fixtures/db-read';
 import { makeProduto } from '../fixtures/test-data';
