@@ -136,3 +136,85 @@ empresa_esperada:
 - Contratos preservados: P1–P15 (RLS, RPCs, edge functions existentes).
 - Restrições: nada alterado em `src/integrations/**`, `scripts/**`, `evidence/**`.
 - `DELIVERY_PROVIDER` permanece `noop`.
+
+---
+
+## 5. Execução — P16.4 (Consolidação)
+
+### 5.1 Comandos locais
+
+```bash
+# 1) Subir o dev server (janela dedicada)
+bun run dev  # http://localhost:8080
+
+# 2) Instalar browsers do Playwright (uma vez)
+bunx playwright install --with-deps chromium firefox
+
+# 3) Rodar suíte completa
+E2E_USER=e2e@novus.test \
+E2E_PASS=<senha> \
+E2E_BASE_URL=http://localhost:8080 \
+bunx playwright test -c e2e/playwright.config.ts
+
+# Rodar um único fluxo
+bunx playwright test -c e2e/playwright.config.ts e2e/tests/05-regras-conciliacao.spec.ts
+
+# Rodar apenas Chromium
+bunx playwright test -c e2e/playwright.config.ts --project=chromium
+```
+
+### 5.2 Variáveis de ambiente necessárias
+
+| Variável | Obrigatório | Uso |
+|---|---|---|
+| `E2E_USER` | sim | Email do usuário E2E (default `e2e@novus.test`) |
+| `E2E_PASS` | sim | Senha do usuário E2E — nunca versionada |
+| `E2E_BASE_URL` | opcional | Default `http://localhost:8080` |
+| `VITE_SUPABASE_URL` | sim | Lido pelas fixtures `db-reset`/`db-read` |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | sim | idem |
+| `E2E_START_DEV_SERVER` | opcional | `1` para o Playwright subir o Vite automaticamente |
+| `CI` | auto | Playwright detecta e ativa retries/reporter GitHub |
+
+### 5.3 Ordem de execução
+
+`01-login.spec.ts` deve rodar primeiro — gera `e2e/.auth/user.json` reutilizado
+pelos demais specs via `test.use({ storageState })`. Os specs 02–05 usam
+`test.skip()` caso o storageState não exista.
+
+Configuração `workers: 1` + `fullyParallel: false` no `playwright.config.ts`
+garante que o `dbReset({ tenantName: 'E2E TEST CO' })` do `beforeEach` seja
+idempotente — dois testes concorrentes no mesmo tenant causariam corrida.
+
+### 5.4 CI (GitHub Actions — sugestão)
+
+```yaml
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    env:
+      E2E_USER: ${{ secrets.E2E_USER }}
+      E2E_PASS: ${{ secrets.E2E_PASS }}
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      E2E_START_DEV_SERVER: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bunx playwright install --with-deps chromium firefox
+      - run: bunx playwright test -c e2e/playwright.config.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+```
+
+### 5.5 Riscos remanescentes
+
+- `dbReset` reseta apenas dados transacionais; a semente mestre (produtos,
+  contas bancárias, colaboradores) deve estar pré-populada no tenant.
+- Testes dependem de UI estável; mudanças em `data-testid` quebram POMs —
+  centralize alterações via os POMs correspondentes.
+- `workers: 1` limita paralelismo. Para paralelizar no futuro, será
+  necessário isolar tenants por worker (`E2E TEST CO ${index}`).
