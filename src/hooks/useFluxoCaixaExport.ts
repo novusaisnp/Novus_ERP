@@ -1,313 +1,280 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import * as XLSX from 'xlsx';
 import { FluxoCaixaItem, FluxoCaixaResumo, FluxoCaixaFiltros } from '@/types/fluxoCaixa';
+import { useEmpresasRepresentadas } from '@/hooks/useEmpresasRepresentadas';
+import { useEmpresasLogosMap } from '@/hooks/useEmpresasLogosMap';
+import type { ReportBranding } from '@/utils/reportExportShared';
+import { getLogoRenderSize, normalizeReportColor, resolveReportLogo } from '@/utils/reportBranding';
 
-// Declaração de tipo para jsPDF com plugin autotable
 declare module 'jspdf' {
   interface jsPDF {
-    autoTable: (options: any) => jsPDF;
+    autoTable: (options: Record<string, unknown>) => jsPDF;
   }
 }
 
+const formatCurrency = (value: number): string =>
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+
+const formatDate = (date: string): string => new Date(date).toLocaleDateString('pt-BR');
+
+const getFilterDescription = (filtros: FluxoCaixaFiltros): string => {
+  const descriptions: string[] = [];
+  if (filtros.data_inicio) descriptions.push(`De: ${formatDate(filtros.data_inicio)}`);
+  if (filtros.data_fim) descriptions.push(`Até: ${formatDate(filtros.data_fim)}`);
+  if (filtros.tipo_movimento && filtros.tipo_movimento !== 'TODOS') descriptions.push(`Tipo: ${filtros.tipo_movimento}`);
+  if (filtros.status && filtros.status !== 'TODOS') descriptions.push(`Status: ${filtros.status}`);
+  if (filtros.tipo_fluxo && filtros.tipo_fluxo !== 'TODOS') descriptions.push(`Fluxo: ${filtros.tipo_fluxo}`);
+  if (filtros.busca) descriptions.push(`Busca: "${filtros.busca}"`);
+  return descriptions.join(' | ');
+};
+
 export const useFluxoCaixaExport = () => {
-  console.log('[FluxoCaixa] Hook de exportação inicializado');
+  const { empresas } = useEmpresasRepresentadas();
+  const { data: logosMap, isLoading: brandingLoading } = useEmpresasLogosMap(empresas);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
+  const branding: ReportBranding | null = useMemo(() => {
+    const empresa = empresas.find((item) => item.ativo !== false) ?? empresas[0];
+    if (!empresa?.id) return null;
+    const cfg = (empresa.configuracoes as Record<string, unknown> | null | undefined) ?? {};
+    return {
+      companyName: empresa.nome,
+      logoUrl: logosMap?.get(empresa.id) ?? null,
+      primaryColor: typeof cfg.primary_color === 'string' ? cfg.primary_color : null,
+    };
+  }, [empresas, logosMap]);
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('pt-BR');
-  };
-
-  const getFilterDescription = (filtros: FluxoCaixaFiltros) => {
-    const descriptions: string[] = [];
-    
-    if (filtros.data_inicio) {
-      descriptions.push(`De: ${formatDate(filtros.data_inicio)}`);
-    }
-    if (filtros.data_fim) {
-      descriptions.push(`Até: ${formatDate(filtros.data_fim)}`);
-    }
-    if (filtros.tipo_movimento && filtros.tipo_movimento !== 'TODOS') {
-      descriptions.push(`Tipo: ${filtros.tipo_movimento}`);
-    }
-    if (filtros.status && filtros.status !== 'TODOS') {
-      descriptions.push(`Status: ${filtros.status}`);
-    }
-    if (filtros.tipo_fluxo && filtros.tipo_fluxo !== 'TODOS') {
-      descriptions.push(`Fluxo: ${filtros.tipo_fluxo}`);
-    }
-    if (filtros.busca) {
-      descriptions.push(`Busca: "${filtros.busca}"`);
-    }
-
-    return descriptions.join(' | ');
-  };
-
-  const exportToPDF = useCallback((
+  const exportToPDF = useCallback(async (
     movimentacoes: FluxoCaixaItem[],
     resumo: FluxoCaixaResumo | undefined,
-    filtros: FluxoCaixaFiltros
+    filtros: FluxoCaixaFiltros,
   ) => {
-    console.log('[FluxoCaixa] Exportando para PDF:', movimentacoes.length, 'movimentações');
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 15;
+    let yPosition = margin;
+    const headerColor = normalizeReportColor(branding?.primaryColor) ?? [59, 130, 246];
+    const logo = await resolveReportLogo(branding);
 
-    try {
-      // Criar documento em orientação horizontal
-      const doc = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a4'
-      });
+    doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
+    doc.rect(0, 0, pageWidth, 25, 'F');
 
-      // Configurações
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 15;
-      let yPosition = margin;
-
-      // Cabeçalho com logo (simulado)
-      doc.setFillColor(59, 130, 246); // Azul primário
-      doc.rect(0, 0, pageWidth, 25, 'F');
-      
-      // Logo placeholder e título
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(20);
-      doc.setFont('helvetica', 'bold');
-      doc.text('NOVUS.AI', margin, 15);
-      
-      doc.setFontSize(16);
-      doc.text('Relatório de Fluxo de Caixa', pageWidth - margin - 80, 15);
-      
-      yPosition = 35;
-
-      // Informações do relatório
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, margin, yPosition);
-      doc.text(`EGMX PARTICIPAÇÕES LTDA - CNPJ: 42.830.593/0001-63`, pageWidth - margin - 80, yPosition);
-      
-      yPosition += 10;
-
-      // Filtros aplicados
-      if (filtros) {
-        const filterDesc = getFilterDescription(filtros);
-        if (filterDesc) {
-          doc.setFont('helvetica', 'bold');
-          doc.text('Filtros Aplicados: ', margin, yPosition);
-          doc.setFont('helvetica', 'normal');
-          doc.text(filterDesc, margin + 30, yPosition);
-          yPosition += 10;
-        }
+    if (logo) {
+      try {
+        const size = getLogoRenderSize(logo, 34, 14);
+        doc.addImage(logo.dataUrl, logo.extension.toUpperCase(), margin, 5.5, size.width, size.height);
+      } catch {
+        // Logo inválida não deve bloquear geração do relatório.
       }
+    }
 
-      // Resumo financeiro
-      if (resumo) {
-        yPosition += 5;
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(12);
-        doc.text('Resumo Financeiro', margin, yPosition);
-        yPosition += 8;
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(logo ? 12 : 20);
+    doc.setFont('helvetica', 'bold');
+    doc.text(branding?.companyName || 'NOVUS.AI', logo ? margin + 40 : margin, 15);
+    doc.setFontSize(16);
+    doc.text('Relatório de Fluxo de Caixa', pageWidth - margin - 80, 15);
+    yPosition = 35;
 
-        // Tabela do resumo
-        const resumoData = [
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, margin, yPosition);
+    if (branding?.companyName) doc.text(branding.companyName, pageWidth - margin - 80, yPosition);
+    yPosition += 10;
+
+    const filterDesc = getFilterDescription(filtros);
+    if (filterDesc) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('Filtros Aplicados: ', margin, yPosition);
+      doc.setFont('helvetica', 'normal');
+      doc.text(filterDesc, margin + 30, yPosition);
+      yPosition += 10;
+    }
+
+    if (resumo) {
+      yPosition += 5;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text('Resumo Financeiro', margin, yPosition);
+      yPosition += 8;
+      doc.autoTable({
+        startY: yPosition,
+        head: [['Indicador', 'Valor']],
+        body: [
           ['Total de Entradas', formatCurrency(resumo.total_entradas)],
           ['Total de Saídas', formatCurrency(resumo.total_saidas)],
           ['Saldo Atual', formatCurrency(resumo.saldo_atual)],
           ['Saldo Projetado (30d)', formatCurrency(resumo.saldo_projetado_30d)],
           ['Capital de Giro', formatCurrency(resumo.capital_giro)],
-          ['Runway', `${resumo.runway_dias} dias`]
-        ];
+          ['Runway', `${resumo.runway_dias} dias`],
+        ],
+        theme: 'grid',
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor: headerColor, textColor: 255, fontStyle: 'bold' },
+        columnStyles: { 0: { cellWidth: 60 }, 1: { cellWidth: 40, halign: 'right' } },
+        margin: { left: margin },
+      });
+      yPosition = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 15;
+    }
 
-        doc.autoTable({
-          startY: yPosition,
-          head: [['Indicador', 'Valor']],
-          body: resumoData,
-          theme: 'grid',
-          styles: {
-            fontSize: 9,
-            cellPadding: 3
-          },
-          headStyles: {
-            fillColor: [59, 130, 246],
-            textColor: 255,
-            fontStyle: 'bold'
-          },
-          columnStyles: {
-            0: { cellWidth: 60 },
-            1: { cellWidth: 40, halign: 'right' }
-          },
-          margin: { left: margin }
-        });
+    if (yPosition > pageHeight - 60) {
+      doc.addPage();
+      yPosition = margin;
+    }
 
-        yPosition = (doc as any).lastAutoTable.finalY + 15;
-      }
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text('Movimentações Detalhadas', margin, yPosition);
+    yPosition += 8;
 
-      // Verificar se há espaço na página
-      if (yPosition > pageHeight - 60) {
-        doc.addPage();
-        yPosition = margin;
-      }
-
-      // Tabela de movimentações
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text('Movimentações Detalhadas', margin, yPosition);
-      yPosition += 8;
-
-      if (movimentacoes.length > 0) {
-        const tableData = movimentacoes.map(mov => [
+    if (movimentacoes.length > 0) {
+      doc.autoTable({
+        startY: yPosition,
+        head: [['Data', 'Tipo', 'Descrição', 'Valor', 'Status', 'Conta', 'Plano de Contas']],
+        body: movimentacoes.map((mov) => [
           formatDate(mov.data),
           mov.tipo === 'ENTRADA' ? 'Entrada' : 'Saída',
           mov.descricao.substring(0, 40) + (mov.descricao.length > 40 ? '...' : ''),
           formatCurrency(mov.valor),
           mov.status === 'REALIZADO' ? 'Realizado' : 'Previsto',
           mov.conta_bancaria?.titular || 'N/A',
-          mov.plano_conta?.nome || 'N/A'
-        ]);
-
-        doc.autoTable({
-          startY: yPosition,
-          head: [['Data', 'Tipo', 'Descrição', 'Valor', 'Status', 'Conta', 'Plano de Contas']],
-          body: tableData,
-          theme: 'striped',
-          styles: {
-            fontSize: 8,
-            cellPadding: 2
-          },
-          headStyles: {
-            fillColor: [59, 130, 246],
-            textColor: 255,
-            fontStyle: 'bold'
-          },
-          columnStyles: {
-            0: { cellWidth: 20 },
-            1: { cellWidth: 20 },
-            2: { cellWidth: 50 },
-            3: { cellWidth: 25, halign: 'right' },
-            4: { cellWidth: 20 },
-            5: { cellWidth: 35 },
-            6: { cellWidth: 35 }
-          },
-          margin: { left: margin, right: margin }
-        });
-      } else {
-        doc.setFont('helvetica', 'italic');
-        doc.text('Nenhuma movimentação encontrada com os filtros aplicados.', margin, yPosition);
-      }
-
-      // Rodapé
-      const totalPages = doc.internal.pages.length - 1;
-      for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.text(
-          `Página ${i} de ${totalPages}`,
-          pageWidth - margin - 20,
-          pageHeight - 10
-        );
-        doc.text(
-          'Relatório gerado pelo ERP NOVUS.AI',
-          margin,
-          pageHeight - 10
-        );
-      }
-
-      // Salvar o PDF
-      const fileName = `fluxo_caixa_${new Date().toISOString().split('T')[0]}.pdf`;
-      doc.save(fileName);
-
-      console.log('[FluxoCaixa] PDF exportado com sucesso:', fileName);
-    } catch (error) {
-      console.error('[FluxoCaixa] Erro ao exportar PDF:', error);
-      throw error;
+          mov.plano_conta?.nome || 'N/A',
+        ]),
+        theme: 'striped',
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: headerColor, textColor: 255, fontStyle: 'bold' },
+        columnStyles: {
+          0: { cellWidth: 20 },
+          1: { cellWidth: 20 },
+          2: { cellWidth: 50 },
+          3: { cellWidth: 25, halign: 'right' },
+          4: { cellWidth: 20 },
+          5: { cellWidth: 35 },
+          6: { cellWidth: 35 },
+        },
+        margin: { left: margin, right: margin },
+      });
+    } else {
+      doc.setFont('helvetica', 'italic');
+      doc.text('Nenhuma movimentação encontrada com os filtros aplicados.', margin, yPosition);
     }
-  }, []);
 
-  const exportToExcel = useCallback((
+    const totalPages = doc.internal.pages.length - 1;
+    for (let i = 1; i <= totalPages; i += 1) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.text(`Página ${i} de ${totalPages}`, pageWidth - margin - 20, pageHeight - 10);
+      doc.text('Relatório gerado pelo ERP NOVUS.AI', margin, pageHeight - 10);
+    }
+
+    doc.save(`fluxo_caixa_${new Date().toISOString().split('T')[0]}.pdf`);
+  }, [branding]);
+
+  const exportToExcel = useCallback(async (
     movimentacoes: FluxoCaixaItem[],
     resumo: FluxoCaixaResumo | undefined,
-    filtros: FluxoCaixaFiltros
+    filtros: FluxoCaixaFiltros,
   ) => {
-    console.log('[FluxoCaixa] Exportando para Excel:', movimentacoes.length, 'movimentações');
+    const ExcelJS = (await import('exceljs')).default;
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'NOVUS ERP';
+    wb.created = new Date();
+    const logo = await resolveReportLogo(branding);
+    const headerColor = normalizeReportColor(branding?.primaryColor) ?? [59, 130, 246];
+    const argb = `FF${headerColor.map((value) => value.toString(16).padStart(2, '0')).join('').toUpperCase()}`;
 
-    try {
-      // Criar workbook
-      const wb = XLSX.utils.book_new();
-
-      // Aba 1: Resumo
-      if (resumo) {
-        const resumoData = [
-          ['Indicador', 'Valor'],
-          ['Total de Entradas', formatCurrency(resumo.total_entradas)],
-          ['Total de Saídas', formatCurrency(resumo.total_saidas)],
-          ['Saldo Atual', formatCurrency(resumo.saldo_atual)],
-          ['Saldo Projetado (7d)', formatCurrency(resumo.saldo_projetado_7d)],
-          ['Saldo Projetado (14d)', formatCurrency(resumo.saldo_projetado_14d)],
-          ['Saldo Projetado (30d)', formatCurrency(resumo.saldo_projetado_30d)],
-          ['Capital de Giro', formatCurrency(resumo.capital_giro)],
-          ['Runway (dias)', resumo.runway_dias.toString()],
-          ['Saldo Mínimo', formatCurrency(resumo.saldo_minimo)]
-        ];
-
-        const wsResumo = XLSX.utils.aoa_to_sheet(resumoData);
-        XLSX.utils.book_append_sheet(wb, wsResumo, 'Resumo');
+    const wsResumo = wb.addWorksheet('Resumo');
+    let currentRow = 1;
+    if (logo) {
+      try {
+        const imageId = wb.addImage({ base64: logo.dataUrl, extension: logo.extension });
+        wsResumo.addImage(imageId, { tl: { col: 0, row: 0 }, ext: { width: 140, height: 50 } });
+        wsResumo.getRow(1).height = 38;
+        currentRow = 4;
+      } catch {
+        currentRow = 1;
       }
-
-      // Aba 2: Movimentações
-      const movimentacoesData = [
-        ['Data', 'Tipo', 'Descrição', 'Valor', 'Status', 'Tipo de Fluxo', 'Conta Bancária', 'Plano de Contas', 'Centro de Custo', 'Observações']
-      ];
-
-      movimentacoes.forEach(mov => {
-        movimentacoesData.push([
-          formatDate(mov.data),
-          mov.tipo,
-          mov.descricao,
-          formatCurrency(mov.valor),
-          mov.status,
-          mov.tipo_fluxo,
-          mov.conta_bancaria?.titular || '',
-          mov.plano_conta?.nome || '',
-          mov.centro_custo?.nome || '',
-          mov.observacoes || ''
-        ]);
-      });
-
-      const wsMovimentacoes = XLSX.utils.aoa_to_sheet(movimentacoesData);
-      XLSX.utils.book_append_sheet(wb, wsMovimentacoes, 'Movimentações');
-
-      // Aba 3: Filtros aplicados
-      const filtrosData = [
-        ['Filtro', 'Valor'],
-        ['Data Início', filtros.data_inicio || ''],
-        ['Data Fim', filtros.data_fim || ''],
-        ['Tipo de Movimento', filtros.tipo_movimento || ''],
-        ['Status', filtros.status || ''],
-        ['Tipo de Fluxo', filtros.tipo_fluxo || ''],
-        ['Busca', filtros.busca || ''],
-        ['Data/Hora da Exportação', new Date().toLocaleString('pt-BR')]
-      ];
-
-      const wsFiltros = XLSX.utils.aoa_to_sheet(filtrosData);
-      XLSX.utils.book_append_sheet(wb, wsFiltros, 'Filtros');
-
-      // Salvar arquivo
-      const fileName = `fluxo_caixa_${new Date().toISOString().split('T')[0]}.xlsx`;
-      XLSX.writeFile(wb, fileName);
-
-      console.log('[FluxoCaixa] Excel exportado com sucesso:', fileName);
-    } catch (error) {
-      console.error('[FluxoCaixa] Erro ao exportar Excel:', error);
-      throw error;
     }
-  }, []);
+    if (branding?.companyName) {
+      wsResumo.getCell(currentRow, 1).value = branding.companyName;
+      wsResumo.getCell(currentRow, 1).font = { bold: true, size: 12 };
+      currentRow += 1;
+    }
+    wsResumo.getCell(currentRow, 1).value = 'Indicador';
+    wsResumo.getCell(currentRow, 2).value = 'Valor';
+    wsResumo.getRow(currentRow).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    wsResumo.getRow(currentRow).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb } };
+    if (resumo) {
+      wsResumo.addRows([
+        ['Total de Entradas', formatCurrency(resumo.total_entradas)],
+        ['Total de Saídas', formatCurrency(resumo.total_saidas)],
+        ['Saldo Atual', formatCurrency(resumo.saldo_atual)],
+        ['Saldo Projetado (7d)', formatCurrency(resumo.saldo_projetado_7d)],
+        ['Saldo Projetado (14d)', formatCurrency(resumo.saldo_projetado_14d)],
+        ['Saldo Projetado (30d)', formatCurrency(resumo.saldo_projetado_30d)],
+        ['Capital de Giro', formatCurrency(resumo.capital_giro)],
+        ['Runway (dias)', resumo.runway_dias.toString()],
+        ['Saldo Mínimo', formatCurrency(resumo.saldo_minimo)],
+      ]);
+    }
+    wsResumo.columns = [{ width: 30 }, { width: 24 }];
+
+    const wsMovimentacoes = wb.addWorksheet('Movimentações');
+    wsMovimentacoes.columns = [
+      { header: 'Data', key: 'data', width: 16 },
+      { header: 'Tipo', key: 'tipo', width: 14 },
+      { header: 'Descrição', key: 'descricao', width: 40 },
+      { header: 'Valor', key: 'valor', width: 18 },
+      { header: 'Status', key: 'status', width: 16 },
+      { header: 'Tipo de Fluxo', key: 'tipo_fluxo', width: 18 },
+      { header: 'Conta Bancária', key: 'conta', width: 24 },
+      { header: 'Plano de Contas', key: 'plano', width: 24 },
+      { header: 'Centro de Custo', key: 'centro', width: 24 },
+      { header: 'Observações', key: 'observacoes', width: 32 },
+    ];
+    wsMovimentacoes.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    wsMovimentacoes.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb } };
+    movimentacoes.forEach((mov) => {
+      wsMovimentacoes.addRow({
+        data: formatDate(mov.data),
+        tipo: mov.tipo,
+        descricao: mov.descricao,
+        valor: formatCurrency(mov.valor),
+        status: mov.status,
+        tipo_fluxo: mov.tipo_fluxo,
+        conta: mov.conta_bancaria?.titular || '',
+        plano: mov.plano_conta?.nome || '',
+        centro: mov.centro_custo?.nome || '',
+        observacoes: mov.observacoes || '',
+      });
+    });
+
+    const wsFiltros = wb.addWorksheet('Filtros');
+    wsFiltros.columns = [{ width: 26 }, { width: 38 }];
+    wsFiltros.addRows([
+      ['Filtro', 'Valor'],
+      ['Data Início', filtros.data_inicio || ''],
+      ['Data Fim', filtros.data_fim || ''],
+      ['Tipo de Movimento', filtros.tipo_movimento || ''],
+      ['Status', filtros.status || ''],
+      ['Tipo de Fluxo', filtros.tipo_fluxo || ''],
+      ['Busca', filtros.busca || ''],
+      ['Data/Hora da Exportação', new Date().toLocaleString('pt-BR')],
+    ]);
+    wsFiltros.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    wsFiltros.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb } };
+
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `fluxo_caixa_${new Date().toISOString().split('T')[0]}.xlsx`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }, [branding]);
 
   const exportToCSV = useCallback((
     movimentacoes: FluxoCaixaItem[],
@@ -362,7 +329,8 @@ export const useFluxoCaixaExport = () => {
   return {
     exportToPDF,
     exportToExcel,
-    exportToCSV
+    exportToCSV,
+    brandingLoading,
   };
 };
 
