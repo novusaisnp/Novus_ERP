@@ -1819,6 +1819,288 @@ export type Database = {
           },
         ]
       }
+      estoque_inventario_itens: {
+        Row: {
+          created_at: string
+          custo_unitario: number
+          diferenca: number | null
+          empresa_representada_id: string
+          id: string
+          inventario_id: string
+          observacoes: string | null
+          produto_id: string
+          saldo_contado: number
+          saldo_sistema: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          custo_unitario?: number
+          diferenca?: number | null
+          empresa_representada_id: string
+          id?: string
+          inventario_id: string
+          observacoes?: string | null
+          produto_id: string
+          saldo_contado?: number
+          saldo_sistema?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          custo_unitario?: number
+          diferenca?: number | null
+          empresa_representada_id?: string
+          id?: string
+          inventario_id?: string
+          observacoes?: string | null
+          produto_id?: string
+          saldo_contado?: number
+          saldo_sistema?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estoque_inventario_itens_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_inventario_itens_inventario_id_fkey"
+            columns: ["inventario_id"]
+            isOneToOne: false
+            referencedRelation: "estoque_inventarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_inventario_itens_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estoque_inventarios: {
+        Row: {
+          codigo: string
+          created_at: string
+          created_by: string | null
+          data_fim: string | null
+          data_inicio: string
+          deleted_at: string | null
+          empresa_representada_id: string
+          id: string
+          localizacao_id: string | null
+          observacoes: string | null
+          responsavel_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          codigo: string
+          created_at?: string
+          created_by?: string | null
+          data_fim?: string | null
+          data_inicio?: string
+          deleted_at?: string | null
+          empresa_representada_id: string
+          id?: string
+          localizacao_id?: string | null
+          observacoes?: string | null
+          responsavel_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          codigo?: string
+          created_at?: string
+          created_by?: string | null
+          data_fim?: string | null
+          data_inicio?: string
+          deleted_at?: string | null
+          empresa_representada_id?: string
+          id?: string
+          localizacao_id?: string | null
+          observacoes?: string | null
+          responsavel_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estoque_inventarios_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_inventarios_localizacao_id_fkey"
+            columns: ["localizacao_id"]
+            isOneToOne: false
+            referencedRelation: "localizacoes_estoque"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estoque_movimentacoes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custo_unitario: number
+          data_movimento: string
+          deleted_at: string | null
+          documento_ref: string | null
+          empresa_representada_id: string
+          id: string
+          inventario_id: string | null
+          localizacao_destino_id: string | null
+          localizacao_origem_id: string | null
+          observacoes: string | null
+          produto_id: string
+          quantidade: number
+          tipo: string
+          updated_at: string
+          venda_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custo_unitario?: number
+          data_movimento?: string
+          deleted_at?: string | null
+          documento_ref?: string | null
+          empresa_representada_id: string
+          id?: string
+          inventario_id?: string | null
+          localizacao_destino_id?: string | null
+          localizacao_origem_id?: string | null
+          observacoes?: string | null
+          produto_id: string
+          quantidade: number
+          tipo: string
+          updated_at?: string
+          venda_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custo_unitario?: number
+          data_movimento?: string
+          deleted_at?: string | null
+          documento_ref?: string | null
+          empresa_representada_id?: string
+          id?: string
+          inventario_id?: string | null
+          localizacao_destino_id?: string | null
+          localizacao_origem_id?: string | null
+          observacoes?: string | null
+          produto_id?: string
+          quantidade?: number
+          tipo?: string
+          updated_at?: string
+          venda_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estoque_movimentacoes_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_localizacao_destino_id_fkey"
+            columns: ["localizacao_destino_id"]
+            isOneToOne: false
+            referencedRelation: "localizacoes_estoque"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_localizacao_origem_id_fkey"
+            columns: ["localizacao_origem_id"]
+            isOneToOne: false
+            referencedRelation: "localizacoes_estoque"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_estoque_mov_inventario"
+            columns: ["inventario_id"]
+            isOneToOne: false
+            referencedRelation: "estoque_inventarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estoque_saldos: {
+        Row: {
+          custo_medio: number
+          empresa_representada_id: string
+          id: string
+          localizacao_id: string
+          produto_id: string
+          quantidade: number
+          updated_at: string
+        }
+        Insert: {
+          custo_medio?: number
+          empresa_representada_id: string
+          id?: string
+          localizacao_id: string
+          produto_id: string
+          quantidade?: number
+          updated_at?: string
+        }
+        Update: {
+          custo_medio?: number
+          empresa_representada_id?: string
+          id?: string
+          localizacao_id?: string
+          produto_id?: string
+          quantidade?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estoque_saldos_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_saldos_localizacao_id_fkey"
+            columns: ["localizacao_id"]
+            isOneToOne: false
+            referencedRelation: "localizacoes_estoque"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_saldos_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       folha_pagamento: {
         Row: {
           colaborador_id: string
@@ -2006,6 +2288,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      historico_estoque_movimentacoes: {
+        Row: {
+          acao: string
+          created_at: string
+          dados_anteriores: Json | null
+          dados_novos: Json | null
+          empresa_representada_id: string
+          id: string
+          ip_origem: unknown
+          movimentacao_id: string
+          usuario_id: string | null
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          empresa_representada_id: string
+          id?: string
+          ip_origem?: unknown
+          movimentacao_id: string
+          usuario_id?: string | null
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          empresa_representada_id?: string
+          id?: string
+          ip_origem?: unknown
+          movimentacao_id?: string
+          usuario_id?: string | null
+        }
+        Relationships: []
       }
       historico_movimentacoes_bancarias: {
         Row: {
@@ -5319,11 +5637,17 @@ export type Database = {
       }
     }
     Functions: {
+      baixar_estoque_venda: {
+        Args: { p_localizacao_id: string; p_venda_id: string }
+        Returns: Json
+      }
       check_v2_readiness: {
         Args: { p_min_events?: number; p_nome: string; p_tenant: string }
         Returns: Json
       }
+      conciliar_inventario: { Args: { p_inventario_id: string }; Returns: Json }
       converter_orcamento_em_venda: { Args: { p_payload: Json }; Returns: Json }
+      estornar_estoque_venda: { Args: { p_venda_id: string }; Returns: Json }
       gerar_contas_receber_da_venda: {
         Args: { p_idempotency_key?: string; p_venda_id: string }
         Returns: Json
@@ -5378,6 +5702,10 @@ export type Database = {
         Args: { p_min_events?: number; p_nome: string; p_tenant: string }
         Returns: Json
       }
+      recalc_saldo_estoque: {
+        Args: { p_empresa: string; p_localizacao: string; p_produto: string }
+        Returns: undefined
+      }
       refresh_mv_fluxo_competencia: { Args: never; Returns: undefined }
       relatorio_fluxo_competencia: {
         Args: { p_data_fim: string; p_data_ini: string; p_empresa_id?: string }
@@ -5429,6 +5757,10 @@ export type Database = {
         Returns: boolean
       }
       validar_pagamento_venda: { Args: { p_venda_id: string }; Returns: Json }
+      validar_saldo_estoque: {
+        Args: { p_localizacao: string; p_produto: string; p_quantidade: number }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "gerente" | "operador" | "visualizador"
