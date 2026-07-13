@@ -189,13 +189,25 @@ async function processSchedule(client: SupabaseClient, sch: ScheduleRow): Promis
     const vs = validateViewState(sch.view_state);
     if (!vs.ok || !vs.data) throw new Error(`invalid_view_state:${vs.error}`);
 
-    const scoped = await loadScopeData(client, sch.scope, vs.data);
+    let scoped: { columns: string[]; rows: Array<Record<string, unknown>> };
+    try {
+      scoped = await loadScopeData(client, sch.scope, vs.data);
+    } catch (e) {
+      throw new Error(`scope_query_failed:${e instanceof Error ? e.message : String(e)}`);
+    }
+
     const empresaId = inferEmpresaId(vs.data, scoped.rows);
     const brandingByEmpresa = await resolveBrandingForEmpresa(client, empresaId);
     const branding = brandingByEmpresa.logo || brandingByEmpresa.companyName
       ? brandingByEmpresa
       : await resolveBrandingForUser(client, sch.user_id);
-    const artifact = await generateArtifact(sch.format, sch.name, scoped.columns, scoped.rows, branding);
+
+    let artifact: { bytes: Uint8Array; ext: string; contentType: string };
+    try {
+      artifact = await generateArtifact(sch.format, sch.name, scoped.columns, scoped.rows, branding);
+    } catch (e) {
+      throw new Error(`artifact_generation_failed:${e instanceof Error ? e.message : String(e)}`);
+    }
 
     const path = `${sch.user_id}/${sch.id}/${runId}.${artifact.ext}`;
     const { error: upErr } = await client.storage
