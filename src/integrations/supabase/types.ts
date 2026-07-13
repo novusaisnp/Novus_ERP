@@ -1881,6 +1881,13 @@ export type Database = {
             referencedRelation: "produtos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "estoque_inventario_itens_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_estoque_ruptura"
+            referencedColumns: ["produto_id"]
+          },
         ]
       }
       estoque_inventarios: {
@@ -2034,6 +2041,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "estoque_movimentacoes_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_estoque_ruptura"
+            referencedColumns: ["produto_id"]
+          },
+          {
             foreignKeyName: "estoque_movimentacoes_venda_id_fkey"
             columns: ["venda_id"]
             isOneToOne: false
@@ -2098,6 +2112,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "produtos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_saldos_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_estoque_ruptura"
+            referencedColumns: ["produto_id"]
           },
         ]
       }
@@ -2479,6 +2500,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "produtos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_documentos_eletronicos_itens_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_estoque_ruptura"
+            referencedColumns: ["produto_id"]
           },
           {
             foreignKeyName: "fiscal_documentos_eletronicos_itens_servico_id_fkey"
@@ -3098,6 +3126,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "produtos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "itens_venda_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_estoque_ruptura"
+            referencedColumns: ["produto_id"]
           },
           {
             foreignKeyName: "itens_venda_servico_id_fkey"
@@ -4344,6 +4379,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "produtos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produto_fornecedores_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_estoque_ruptura"
+            referencedColumns: ["produto_id"]
           },
         ]
       }
@@ -6102,6 +6144,40 @@ export type Database = {
       }
     }
     Views: {
+      mv_estoque_curva_abc: {
+        Row: {
+          classe: string | null
+          empresa_id: string | null
+          percentual_acumulado: number | null
+          produto_id: string | null
+          qtd_saida: number | null
+          refreshed_at: string | null
+          valor_saida: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estoque_movimentacoes_empresa_representada_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_estoque_ruptura"
+            referencedColumns: ["produto_id"]
+          },
+        ]
+      }
       mv_fluxo_competencia: {
         Row: {
           ano_mes: string | null
@@ -6139,6 +6215,85 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_estoque_posicao_localizacao: {
+        Row: {
+          categoria_id: string | null
+          custo_medio: number | null
+          empresa_id: string | null
+          localizacao_id: string | null
+          localizacao_nome: string | null
+          produto_codigo: string | null
+          produto_id: string | null
+          produto_nome: string | null
+          quantidade: number | null
+          valor_total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estoque_saldos_empresa_representada_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_saldos_localizacao_id_fkey"
+            columns: ["localizacao_id"]
+            isOneToOne: false
+            referencedRelation: "localizacoes_estoque"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_saldos_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_saldos_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_estoque_ruptura"
+            referencedColumns: ["produto_id"]
+          },
+          {
+            foreignKeyName: "produtos_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vw_estoque_ruptura: {
+        Row: {
+          categoria_id: string | null
+          empresa_id: string | null
+          estoque_minimo: number | null
+          produto_codigo: string | null
+          produto_id: string | null
+          produto_nome: string | null
+          saldo_total: number | null
+          status: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produtos_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produtos_empresa_representada_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       baixar_estoque_venda: {
@@ -6152,6 +6307,26 @@ export type Database = {
       conciliar_inventario: { Args: { p_inventario_id: string }; Returns: Json }
       converter_orcamento_em_venda: { Args: { p_payload: Json }; Returns: Json }
       estornar_estoque_venda: { Args: { p_venda_id: string }; Returns: Json }
+      fn_curva_abc: {
+        Args: {
+          p_categoria_id?: string
+          p_empresa_id: string
+          p_limit?: number
+          p_offset?: number
+        }
+        Returns: {
+          categoria_id: string
+          classe: string
+          codigo: string
+          nome: string
+          percentual_acumulado: number
+          produto_id: string
+          qtd_saida: number
+          refreshed_at: string
+          total_count: number
+          valor_saida: number
+        }[]
+      }
       fn_kardex_produto: {
         Args: {
           p_data_fim?: string
@@ -6176,6 +6351,41 @@ export type Database = {
           saldo_acumulado: number
           tipo: string
           total_count: number
+        }[]
+      }
+      fn_produtos_parados: {
+        Args: { p_dias?: number; p_empresa_id: string }
+        Returns: {
+          categoria_id: string
+          codigo: string
+          custo_medio: number
+          dias_parado: number
+          nome: string
+          produto_id: string
+          saldo_total: number
+          ultima_saida: string
+          valor_imobilizado: number
+        }[]
+      }
+      fn_refresh_mv_curva_abc: { Args: never; Returns: undefined }
+      fn_relatorio_giro: {
+        Args: {
+          p_categoria_id?: string
+          p_data_fim: string
+          p_data_inicio: string
+          p_empresa_id: string
+          p_localizacao_id?: string
+        }
+        Returns: {
+          categoria_id: string
+          codigo: string
+          estoque_medio: number
+          giro: number
+          nome: string
+          produto_id: string
+          qtd_saida: number
+          saldo_final: number
+          saldo_inicial: number
         }[]
       }
       gerar_contas_receber_da_venda: {
