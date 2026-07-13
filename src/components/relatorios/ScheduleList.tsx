@@ -19,8 +19,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { CalendarClock, Download, ExternalLink, Loader2, Pencil, Trash2 } from "lucide-react";
+import { CalendarClock, Download, ExternalLink, Loader2, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { useReportSchedules } from "@/hooks/useReportSchedules";
+import { reportSchedulesService } from "@/services/reportSchedulesService";
+import { toast } from "sonner";
 import { ScheduleModal } from "@/components/relatorios/ScheduleModal";
 import {
   type ReportSchedule,
