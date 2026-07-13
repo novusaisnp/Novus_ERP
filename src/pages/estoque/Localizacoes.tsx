@@ -89,12 +89,17 @@ const Localizacoes: React.FC = () => {
         localizacao: data,
       });
     } else {
-      console.log('[Localizacoes] Criando nova localização');
-      createMutation.mutate(data);
+      if (!empresaId) {
+        toast.error('Empresa atual não identificada. Não é possível cadastrar a localização.');
+        return;
+      }
+      console.log('[Localizacoes] Criando nova localização para empresa:', empresaId);
+      createMutation.mutate({ ...data, empresa_representada_id: empresaId });
     }
     setIsFormOpen(false);
     setSelectedLocalizacao(null);
   };
+
 
   if (isLoading) {
     return (
