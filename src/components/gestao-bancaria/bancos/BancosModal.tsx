@@ -76,10 +76,10 @@ export const BancosModal = ({
   }, [banco, reset]);
 
   const buscarPorCodigo = async () => {
-    if (!codigoValue || codigoValue.length < 3) {
+    if (!codigoValue || !/^\d+$/.test(codigoValue)) {
       toast({
         title: 'Atenção',
-        description: 'Digite pelo menos 3 dígitos do código do banco',
+        description: 'Digite o código numérico do banco',
         variant: 'destructive',
       });
       return;
