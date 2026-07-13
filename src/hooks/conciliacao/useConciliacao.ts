@@ -2,6 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { conciliacaoService } from "@/services/conciliacao/conciliacaoService";
 import { toast } from "@/hooks/use-toast";
+import type { RegraConciliacaoInput } from "@/types/conciliacao";
 
 export function useExtratos() {
   return useQuery({
