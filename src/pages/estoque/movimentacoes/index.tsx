@@ -128,6 +128,7 @@ const MovimentacoesEstoque: React.FC = () => {
                 <TableHead>Origem</TableHead>
                 <TableHead>Destino</TableHead>
                 <TableHead>Documento</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
