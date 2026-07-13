@@ -3986,6 +3986,9 @@ export type Database = {
           finished_at: string | null
           id: string
           idempotency_key: string
+          resign_count: number
+          resigned_at: string | null
+          resigned_by: string | null
           schedule_id: string
           signed_url: string | null
           signed_url_expires_at: string | null
@@ -4004,6 +4007,9 @@ export type Database = {
           finished_at?: string | null
           id?: string
           idempotency_key: string
+          resign_count?: number
+          resigned_at?: string | null
+          resigned_by?: string | null
           schedule_id: string
           signed_url?: string | null
           signed_url_expires_at?: string | null
@@ -4022,6 +4028,9 @@ export type Database = {
           finished_at?: string | null
           id?: string
           idempotency_key?: string
+          resign_count?: number
+          resigned_at?: string | null
+          resigned_by?: string | null
           schedule_id?: string
           signed_url?: string | null
           signed_url_expires_at?: string | null
@@ -5209,6 +5218,30 @@ export type Database = {
           tipo: string | null
           valor_previsto: number | null
           valor_realizado: number | null
+        }
+        Relationships: []
+      }
+      v_report_run_failures_by_reason_24h: {
+        Row: {
+          failures: number | null
+          format: string | null
+          last_seen_at: string | null
+          reason: string | null
+          scope: string | null
+        }
+        Relationships: []
+      }
+      v_report_run_kpis_24h: {
+        Row: {
+          avg_duration_ms: number | null
+          failed: number | null
+          format: string | null
+          p95_duration_ms: number | null
+          running: number | null
+          scope: string | null
+          succeeded: number | null
+          success_rate_pct: number | null
+          total_runs: number | null
         }
         Relationships: []
       }
