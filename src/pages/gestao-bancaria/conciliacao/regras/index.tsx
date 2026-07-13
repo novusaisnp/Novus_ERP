@@ -17,16 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDeleteWithDeps } from "@/components/shared/ConfirmDeleteWithDeps";
 import { ArrowLeft, Pencil, Plus, Trash2 } from "lucide-react";
 import { RegraForm } from "./RegraForm";
 import type { RegraConciliacao } from "@/types/conciliacao";
