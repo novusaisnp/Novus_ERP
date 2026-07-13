@@ -42,7 +42,8 @@ export const buscarBancoPorCodigo = async (codigo: string): Promise<BancoBrasilA
   try {
     console.log('[Bancos] Buscando banco por código:', codigo);
     const bancos = await buscarBancosBrasilAPI();
-    const banco = bancos.find(b => b.code.toString() === codigo);
+    const codigoNum = Number(String(codigo).replace(/\D/g, ''));
+    const banco = bancos.find(b => b.code != null && Number(b.code) === codigoNum);
     
     if (banco) {
       console.log('[Bancos] Banco encontrado:', banco);
