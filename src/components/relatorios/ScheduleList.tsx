@@ -62,6 +62,7 @@ export function ScheduleList({ open, onOpenChange, scope, viewState }: ScheduleL
   const [editing, setEditing] = useState<ReportSchedule | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<ReportSchedule | null>(null);
   const [openedRuns, setOpenedRuns] = useState<Record<string, ReportScheduleRun[] | "loading" | undefined>>({});
+  const [resigning, setResigning] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (open) void refetch();
@@ -87,6 +88,35 @@ export function ScheduleList({ open, onOpenChange, scope, viewState }: ScheduleL
       setOpenedRuns((prev) => ({ ...prev, [sch.id]: runs }));
     } catch {
       setOpenedRuns((prev) => ({ ...prev, [sch.id]: [] }));
+    }
+  };
+
+  // P5.2 — regenera signed URL sem reprocessar export.
+  const handleResign = async (sch: ReportSchedule, run: ReportScheduleRun) => {
+    setResigning((prev) => ({ ...prev, [run.id]: true }));
+    try {
+      const result = await reportSchedulesService.resignRun(run.id);
+      setOpenedRuns((prev) => {
+        const cur = prev[sch.id];
+        if (!Array.isArray(cur)) return prev;
+        const updated = cur.map((r) =>
+          r.id === run.id
+            ? {
+                ...r,
+                signed_url: result.signed_url,
+                signed_url_expires_at: result.signed_url_expires_at,
+                resigned_at: result.resigned_at,
+                resign_count: result.resign_count,
+              }
+            : r,
+        );
+        return { ...prev, [sch.id]: updated };
+      });
+      toast.success("Link regenerado com sucesso.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao regenerar link.");
+    } finally {
+      setResigning((prev) => ({ ...prev, [run.id]: false }));
     }
   };
 
