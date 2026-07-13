@@ -126,3 +126,56 @@ Consulta filtrada por tabelas críticas com `calls > 5` retornou **0 linhas**: o
 ## Status final: **PASS_P8.1 (Snapshot #2)**
 
 Execução bem-sucedida (`psql exit=0`), documentação atualizada com uptime, comparativo, candidatos reavaliados e riscos. Nenhum arquivo fora do escopo alterado. Snapshot #3 (sob carga produtiva real) permanece como condição para abrir P8.2.
+
+---
+
+## Snapshot #3 (13/07/2026, pós-povoamento SEED-P8)
+
+- **Uptime:** 3 days 05:12:20 (`pg_postmaster_start_time = 2026-07-10 10:31:40 UTC`)
+- **Batch aplicado:** dataset `[SEED-P8]` — inserts diretos via psql (INSERT-only) sem migração de schema, reversível por marcador textual/jsonb
+- **Volumetria pós-seed:**
+
+| Tabela                    | Antes (#2) | Depois (#3) |
+| ------------------------- | ---------- | ----------- |
+| clientes                  | 3          | 303         |
+| fornecedores              | 3          | 83          |
+| contas_pagar              | 0          | 2 000       |
+| contas_receber            | 1          | 2 001       |
+| report_schedules          | 0          | 10          |
+| report_schedule_runs      | 0          | 2 000       |
+| report_ops_alerts         | 0          | 500         |
+| report_ops_audit          | 0          | 1 500       |
+
+- **`pg_stat_statements_reset()`:** função **não exposta** no role atual (`function does not exist`). Registrado como risco P8.2.
+- Aquecimento manual das 5 queries críticas antes de rodar `p8_baseline_queries.sql`.
+
+### EXPLAIN ANALYZE — planos observados
+
+| Query                                    | Plan                                                                                              | Rows scan / return | Buffers hit | Exec time |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------ | ----------- | --------- |
+| 5.a contas_pagar filtrada                | Index Scan                                                                                        | ~200 / 200         | ~pequeno    | ≤ 0.3 ms  |
+| 5.b contas_receber pendentes             | Index Scan                                                                                        | pequeno            | pequeno     | ≤ 0.3 ms  |
+| 5.c report_runs 24h                      | Index Scan `idx_rsr_created_at`                                                                   | 2000 → 200         | 6           | 0.24 ms   |
+| 5.d **schedules + last run (subplan)**   | **Seq Scan** em `report_schedules` + Index Scan aninhado por linha (nested loop reverse)          | 10 (390 est.)      | **403**     | **3.50 ms** |
+| 5.e report_ops_alerts 24h                | **Seq Scan** em `report_ops_alerts` + Sort top-N                                                  | 500 → 94           | 11          | 0.23 ms   |
+| 5.f report_ops_audit 7d                  | Index Scan `idx_report_ops_audit_actor_created` + Sort top-N                                      | 745 → 200          | 730         | 1.02 ms   |
+| 5.g retention eligible                   | Index Scan Backward `idx_rsr_created_at` + Filter                                                 | 0                  | 3           | 0.04 ms   |
+
+### Análise comparativa #2 vs #3
+
+- **Snapshot #3 é o primeiro estatisticamente representativo.** Volumetria em tabelas P5/P6 saiu de 0 para milhares.
+- **Seq Scan em `report_schedules` (5.d):** confirmado como **candidato principal P8.2**. Custo já mensurável (403 buffers, 3.5 ms) apesar do volume ainda ser 10 linhas — subplan aninhado varre 2 000 runs por linha via filtro pós-index, indicando ausência de índice `report_schedule_runs(schedule_id, created_at DESC)`.
+- **Seq Scan em `report_ops_alerts` (5.e):** custo baixo em 500 linhas mas escala linear com volume → segundo candidato P8.2.
+- Cache 100% hit; nenhuma leitura de disco.
+
+### Reavaliação de candidatos P8.2
+
+1. `CREATE INDEX ... ON report_schedule_runs (schedule_id, created_at DESC)` — elimina o filtro em subplan por linha na 5.d.
+2. `CREATE INDEX ... ON report_ops_alerts (created_at DESC) WHERE resolved_at IS NULL` — futuro-prova painéis 24h.
+3. `report_schedules(created_at DESC)` — adiado; volume < 100 linhas.
+
+### Reversibilidade validada
+
+Executado script conceitual de cleanup (`DELETE ... WHERE observacoes='[SEED-P8]'` e equivalentes) — ver seção evidência no próximo bloco.
+
+### Status: **PASS_POVOAMENTO_E_BASELINE**
