@@ -92,10 +92,3 @@ export interface RegraConciliacaoInput {
   contraparte_id: string | null;
   observacoes: string | null;
 }
-  ok: boolean;
-  extrato_id: string;
-  processadas: number;
-  conciliadas_auto: number;
-  sugeridas: number;
-  pendentes: number;
-}
