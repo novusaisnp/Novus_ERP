@@ -37,3 +37,18 @@ export const makeVenda = (overrides: Partial<VendaFactory> = {}): VendaFactory =
   itens: [{ produto_codigo: 'PROD-E2E', quantidade: 1, valor_unitario: 100 }],
   ...overrides,
 });
+
+export interface RegraConciliacaoFactory {
+  nome: string;
+  tipo: 'PALAVRA_CHAVE' | 'VALOR_EXATO' | 'REGEX' | 'CONTRAPARTE';
+  padrao: string;
+}
+
+export const makeRegraConciliacao = (
+  overrides: Partial<RegraConciliacaoFactory> = {},
+): RegraConciliacaoFactory => ({
+  nome: `Regra E2E ${stamp()}`,
+  tipo: 'PALAVRA_CHAVE',
+  padrao: 'ALUGUEL',
+  ...overrides,
+});
