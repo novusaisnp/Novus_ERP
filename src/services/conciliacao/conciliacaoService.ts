@@ -4,6 +4,7 @@ import type {
   ExtratoImportado,
   LinhaExtrato,
   RegraConciliacao,
+  RegraConciliacaoInput,
   SugestaoMatchResult,
 } from "@/types/conciliacao";
 
