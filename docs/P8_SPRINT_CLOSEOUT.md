@@ -153,3 +153,21 @@ Sprint P8 encerrada. Todos os critérios objetivos do gate atendidos. Sistema en
 - Avaliar índice composto `report_schedule_runs(schedule_id, created_at DESC)` após Snapshot #6 confirmar Seq Scan 5.d como hotspot real.
 
 **Decisão final da sprint P8 (pós-P10):** `PASS_GERAL_P8` **inalterado**. P10 fica em `FAIL_P10 (bloqueio ambiental)` — reabrir quando janela real estiver agendada.
+
+---
+
+## Addendum P10-RETRY (13/07/2026)
+
+**Tentativa:** re-executar coleta do Snapshot #6 sob tráfego real.
+
+**Verificação em 2026-07-13 16:47:53 UTC (5 min após T0 do P10):**
+- `pg_postmaster_start_time`: **inalterado** (2026-07-10 10:31:40 UTC) — sem restart.
+- Volumetria das 4 tabelas críticas: **inalterada** (10 / 2000 / 500 / 1500) — delta = 0.
+- Nenhuma janela real foi agendada com operações no intervalo entre P10 e P10-RETRY.
+
+**Resultado:** **FAIL_P10-RETRY** pelo **mesmo** bloqueio operacional descrito em P10 — ambiente sandbox sem tráfego humano real e sem janela ≥ 48h formalizada. Nenhum critério técnico de performance falhou; o pré-requisito operacional simplesmente permanece não atendido.
+
+**Ação necessária (não-Lovable):**
+Antes de qualquer novo retry, ops precisa: (i) agendar janela real de 48h–7d em produção/homologação com pilotos ativos; (ii) publicar freeze de deploy; (iii) suspender jobs sintéticos/E2E; (iv) aplicar `supabase/sql/seed_99_down.sql` antes do T0.
+
+**Impacto no gate:** `PASS_GERAL_P8` **permanece válido**, apoiado em Snapshots #3–#5. `FAIL_P10-RETRY` é reincidência ambiental, não regressão.

@@ -313,3 +313,9 @@ Todos < 500ms (alvo P8.2). Nenhum novo Seq Scan em tabela > 10k. Seq Scan em 5.d
 Falha é de contexto (sandbox ≠ produção com usuários reais), não de execução técnica nem de performance do sistema. Nenhum critério técnico de performance foi violado — eles simplesmente não foram avaliáveis. `PASS_GERAL_P8` permanece válido com base em Snapshots #3–#5.
 
 **Próximo passo único:** coordenar com operações a agendamento de janela real de 48h–7d em produção/homologação com pilotos, executar `seed_99_down.sql` no início da janela, então repetir a coleta seguindo `docs/RUNBOOK_P8_PERFORMANCE.md`.
+
+---
+
+## Snapshot #6 — RETRY (13/07/2026 16:47 UTC): **também não coletado**
+
+Nova tentativa 5 minutos após P10. `pg_postmaster_start_time` e contagens das 4 tabelas críticas **inalterados** → delta = 0, janela de tráfego real inexistente. **FAIL_P10-RETRY** pelo mesmo motivo (bloqueio operacional). Evidência anexada em `evidence/p8/snapshot6_t0.txt` (bloco RETRY).
