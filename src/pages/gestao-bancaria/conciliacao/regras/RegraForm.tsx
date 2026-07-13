@@ -342,7 +342,7 @@ export function RegraForm({ open, onOpenChange, regra }: Props) {
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={saving}>
+            <Button type="submit" disabled={saving} data-testid="btn-salvar-regra">
               {saving ? "Salvando..." : regra ? "Salvar alterações" : "Criar regra"}
             </Button>
           </DialogFooter>
