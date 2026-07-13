@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ShoppingCart, Plus, Pencil, Trash2, Ban } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
+
 import { useVendas } from '@/hooks/useVendas';
 import { VendaFormModal } from '@/components/vendas/VendaFormModal';
 import { GerarTitulosButton } from '@/components/vendas/GerarTitulosButton';
