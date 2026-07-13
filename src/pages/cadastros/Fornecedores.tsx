@@ -250,14 +250,15 @@ const Fornecedores: React.FC = () => {
         </CardContent>
       </Card>
 
-      <ConfirmDialog
+      <ConfirmDeleteWithDeps
         open={confirmDeleteId !== null}
         onOpenChange={(open) => { if (!open) setConfirmDeleteId(null); }}
-        title="Excluir fornecedor"
-        description="Tem certeza que deseja excluir este fornecedor? Esta ação não pode ser desfeita."
-        confirmLabel="Excluir"
+        entidade="fornecedores"
+        id={confirmDeleteId}
+        nomeRegistro="este fornecedor"
         onConfirm={confirmDelete}
       />
+
     </div>
   );
 };
