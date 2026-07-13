@@ -121,10 +121,11 @@ const Localizacoes: React.FC = () => {
             Gerencie os setores e locais de armazenamento
           </p>
         </div>
-        <Button onClick={handleCreate}>
+        <Button onClick={handleCreate} disabled={!empresaId}>
           <Plus className="mr-2 h-4 w-4" />
           Nova Localização
         </Button>
+
       </div>
 
       <Card>
