@@ -95,17 +95,18 @@ const ContasReceber = () => {
         onSubmit={handleSubmit}
       />
 
-      <ConfirmDialog
+      <ConfirmDeleteWithDeps
         open={!!contaParaExcluir}
         onOpenChange={(open) => !open && setContaParaExcluir(null)}
-        title="Remover conta a receber"
-        description="Tem certeza que deseja remover esta conta a receber? Esta ação não pode ser desfeita."
-        confirmLabel="Remover"
+        entidade="contas_receber"
+        id={contaParaExcluir ?? null}
+        nomeRegistro="esta conta a receber"
         onConfirm={() => {
           if (contaParaExcluir) remover(contaParaExcluir);
           setContaParaExcluir(null);
         }}
       />
+
     </div>
   );
 };
