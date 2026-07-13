@@ -184,3 +184,35 @@ export async function readMovimentacoesRecentes(
 
 
 
+
+// ================ F5 - Regras de Conciliação ================
+
+export interface RegraConciliacaoLiteRow {
+  id: string;
+  nome: string;
+  tipo: string;
+  padrao: string | null;
+  ativa: boolean | null;
+  prioridade: number | null;
+}
+
+export async function readRegraByNome(
+  page: Page,
+  nome: string,
+): Promise<RegraConciliacaoLiteRow | null> {
+  const rows = await restGet<RegraConciliacaoLiteRow>(
+    page,
+    `banco_regras_conciliacao?nome=eq.${encodeURIComponent(nome)}&deleted_at=is.null&select=id,nome,tipo,padrao,ativa,prioridade&limit=1`,
+  );
+  return rows[0] ?? null;
+}
+
+export async function readRegraByNomeIncludingDeleted(
+  page: Page,
+  nome: string,
+): Promise<Array<RegraConciliacaoLiteRow & { deleted_at: string | null }>> {
+  return restGet<RegraConciliacaoLiteRow & { deleted_at: string | null }>(
+    page,
+    `banco_regras_conciliacao?nome=eq.${encodeURIComponent(nome)}&select=id,nome,tipo,padrao,ativa,prioridade,deleted_at`,
+  );
+}
