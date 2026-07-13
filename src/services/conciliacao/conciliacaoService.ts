@@ -99,10 +99,10 @@ export const conciliacaoService = {
     return data;
   },
 
-  async criarLancamento(linhaId: string, payload: Record<string, unknown> = {}) {
+  async criarLancamento(linhaId: string, payload: Record<string, string | number | null> = {}) {
     const { data, error } = await supabase.rpc("criar_lancamento_do_extrato", {
       p_extrato_linha_id: linhaId,
-      p_payload: payload,
+      p_payload: payload as never,
     });
     if (error) throw error;
     return data;
