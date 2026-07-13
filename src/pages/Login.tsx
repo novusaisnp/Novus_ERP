@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import loginHero from '@/assets/login-hero.png.asset.json';
 
 const loginSchema = z.object({
   email: z.string().min(1, 'E-mail é obrigatório').email('Formato de e-mail inválido'),
@@ -203,7 +204,7 @@ const Login: React.FC = () => {
       {/* Background Image - Right side */}
       <div
         className="hidden lg:block lg:w-3/5 bg-cover bg-center bg-no-repeat relative"
-        style={{ backgroundImage: `url('/lovable-uploads/a18945ec-c5b9-4d49-b438-0ce66ff55b7d.png')` }}
+        style={{ backgroundImage: `url('${loginHero.url}')` }}
       >
         {/* Overlay with logo and text */}
         <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
