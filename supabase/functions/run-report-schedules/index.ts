@@ -189,13 +189,25 @@ async function processSchedule(client: SupabaseClient, sch: ScheduleRow): Promis
     const vs = validateViewState(sch.view_state);
     if (!vs.ok || !vs.data) throw new Error(`invalid_view_state:${vs.error}`);
 
-    const scoped = await loadScopeData(client, sch.scope, vs.data);
+    let scoped: { columns: string[]; rows: Array<Record<string, unknown>> };
+    try {
+      scoped = await loadScopeData(client, sch.scope, vs.data);
+    } catch (e) {
+      throw new Error(`scope_query_failed:${e instanceof Error ? e.message : String(e)}`);
+    }
+
     const empresaId = inferEmpresaId(vs.data, scoped.rows);
     const brandingByEmpresa = await resolveBrandingForEmpresa(client, empresaId);
     const branding = brandingByEmpresa.logo || brandingByEmpresa.companyName
       ? brandingByEmpresa
       : await resolveBrandingForUser(client, sch.user_id);
-    const artifact = await generateArtifact(sch.format, sch.name, scoped.columns, scoped.rows, branding);
+
+    let artifact: { bytes: Uint8Array; ext: string; contentType: string };
+    try {
+      artifact = await generateArtifact(sch.format, sch.name, scoped.columns, scoped.rows, branding);
+    } catch (e) {
+      throw new Error(`artifact_generation_failed:${e instanceof Error ? e.message : String(e)}`);
+    }
 
     const path = `${sch.user_id}/${sch.id}/${runId}.${artifact.ext}`;
     const { error: upErr } = await client.storage
@@ -253,13 +265,28 @@ async function processSchedule(client: SupabaseClient, sch: ScheduleRow): Promis
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     const isFinal = attempt >= MAX_ATTEMPTS;
+    // P5.1: normaliza reason contra catálogo padronizado (prefixo antes de ':').
+    const KNOWN_REASONS = new Set([
+      "invalid_view_state",
+      "scope_query_failed",
+      "row_limit_exceeded",
+      "run_timeout",
+      "artifact_generation_failed",
+      "upload_failed",
+      "sign_failed",
+      "delivery_skipped",
+    ]);
+    const rawPrefix = msg.split(":")[0]?.trim() ?? "";
+    const reason = KNOWN_REASONS.has(rawPrefix) ? rawPrefix : "unknown";
+    const detail = msg.includes(":") ? msg.slice(msg.indexOf(":") + 1) : msg;
+    const normalized = `${reason}:${detail}`.slice(0, 500);
 
     await client
       .from("report_schedule_runs")
       .update({
         status: "failed",
         finished_at: nowIso(),
-        error_message: msg.slice(0, 500),
+        error_message: normalized,
       })
       .eq("id", runId);
 
