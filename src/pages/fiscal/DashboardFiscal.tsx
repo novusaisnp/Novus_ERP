@@ -63,7 +63,7 @@ const DashboardFiscal = () => {
       const { data, error } = await supabase
         .from('fiscal_documentos_eletronicos')
         .select('id, numero, serie, status, data_emissao, provider, venda_id')
-        .eq('status', 'processando')
+        .in('status', ['processando', 'EM_PROCESSAMENTO'])
         .lt('created_at', limite)
         .is('deleted_at', null)
         .order('created_at', { ascending: true })
@@ -75,9 +75,9 @@ const DashboardFiscal = () => {
 
   const kpis = useMemo(() => {
     const total = metrics.reduce((a, r) => a + r.total, 0);
-    const autorizadas = metrics.filter((r) => r.status === 'autorizada').reduce((a, r) => a + r.total, 0);
-    const rejeitadas = metrics.filter((r) => ['rejeitada', 'denegada', 'erro'].includes(r.status)).reduce((a, r) => a + r.total, 0);
-    const valorTotal = metrics.filter((r) => r.status === 'autorizada').reduce((a, r) => a + Number(r.valor_total ?? 0), 0);
+    const autorizadas = metrics.filter((r) => r.status.toUpperCase() === 'AUTORIZADA').reduce((a, r) => a + r.total, 0);
+    const rejeitadas = metrics.filter((r) => ['REJEITADA', 'DENEGADA', 'ERRO'].includes(r.status.toUpperCase())).reduce((a, r) => a + r.total, 0);
+    const valorTotal = metrics.filter((r) => r.status.toUpperCase() === 'AUTORIZADA').reduce((a, r) => a + Number(r.valor_total ?? 0), 0);
     const taxa = total > 0 ? (autorizadas / total) * 100 : 0;
     const ticket = autorizadas > 0 ? valorTotal / autorizadas : 0;
     return { total, autorizadas, rejeitadas, valorTotal, taxa, ticket };
