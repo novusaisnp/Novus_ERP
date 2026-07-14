@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ShoppingCart, Plus, Pencil, Trash2, Ban, FileText } from 'lucide-react';
+import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
 
@@ -143,17 +144,18 @@ const Vendas: React.FC = () => {
                         <TableCell className="text-right space-x-1">
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <span>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  disabled={!check.ok}
-                                  onClick={() => check.ok && setEmitirVenda(v)}
-                                  title="Emitir NF-e"
-                                >
-                                  <FileText className="h-4 w-4" />
-                                </Button>
-                              </span>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => {
+                                  if (check.ok) setEmitirVenda(v);
+                                  else toast.warning(check.motivo ?? 'Venda não elegível para emissão de NF-e.');
+                                }}
+                                className={!check.ok ? 'opacity-60' : undefined}
+                                title="Emitir NF-e"
+                              >
+                                <FileText className="h-4 w-4" />
+                              </Button>
                             </TooltipTrigger>
                             <TooltipContent>{check.ok ? 'Emitir NF-e' : check.motivo}</TooltipContent>
                           </Tooltip>
