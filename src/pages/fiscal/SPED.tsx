@@ -216,7 +216,7 @@ const SPED: React.FC = () => {
                 <Database className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-4 text-lg font-semibold">SPED Contábil</h3>
                 <p className="mt-2 text-muted-foreground">
-                  Funcionalidade em desenvolvimento
+                  Geração da ECD depende da integração contábil-fiscal real. Disponível após ativação do provedor.
                 </p>
               </div>
             </CardContent>
