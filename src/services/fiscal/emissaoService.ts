@@ -50,7 +50,12 @@ async function invokeOrThrow<T>(fn: string, body: unknown): Promise<T> {
   const { data, error } = await supabase.functions.invoke<T>(fn, { body });
   if (error) {
     console.error(`[Fiscal] ${fn} erro:`, error);
-    throw error;
+    const context = typeof error.context === 'object' && error.context !== null
+      ? error.context as { status?: number; statusText?: string }
+      : null;
+    const status = context?.status ? `HTTP ${context.status}` : 'Erro de função';
+    const details = error.message ? ` — ${error.message}` : '';
+    throw new Error(`${status} em ${fn}${details}`);
   }
   if (!data) throw new Error(`Resposta vazia de ${fn}`);
   return data;
