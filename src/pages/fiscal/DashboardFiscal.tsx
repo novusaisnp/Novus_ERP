@@ -137,6 +137,7 @@ const DashboardFiscal = () => {
                   <TableHead>Emissão</TableHead>
                   <TableHead>Provedor</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Ação</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -146,6 +147,17 @@ const DashboardFiscal = () => {
                     <TableCell>{d.data_emissao ? new Date(d.data_emissao).toLocaleString('pt-BR') : '—'}</TableCell>
                     <TableCell>{d.provider ?? '—'}</TableCell>
                     <TableCell><Badge variant="secondary">{d.status}</Badge></TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => reprocessar(d)}
+                        disabled={reprocessando === d.id || !d.venda_id}
+                      >
+                        <RefreshCw className={`h-3.5 w-3.5 mr-1 ${reprocessando === d.id ? 'animate-spin' : ''}`} />
+                        Reprocessar
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
