@@ -177,6 +177,10 @@ export const sidebarItems: MenuItem[] = [
     icon: FileText,
     items: [
       {
+        title: "Dashboard Fiscal",
+        url: "/fiscal/dashboard",
+      },
+      {
         title: "Notas Fiscais",
         url: "/fiscal/notas-fiscais",
       },
