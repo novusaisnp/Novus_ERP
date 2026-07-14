@@ -240,12 +240,11 @@ const NotasFiscais = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos os status</SelectItem>
-                    <SelectItem value="autorizada">Autorizadas</SelectItem>
-                    <SelectItem value="processando">Processando</SelectItem>
-                    <SelectItem value="rejeitada">Rejeitadas</SelectItem>
-                    <SelectItem value="denegada">Denegadas</SelectItem>
-                    <SelectItem value="cancelada">Canceladas</SelectItem>
-                    <SelectItem value="erro">Erro</SelectItem>
+                    <SelectItem value="AUTORIZADA">Autorizadas</SelectItem>
+                    <SelectItem value="EM_PROCESSAMENTO">Processando</SelectItem>
+                    <SelectItem value="REJEITADA">Rejeitadas</SelectItem>
+                    <SelectItem value="DENEGADA">Denegadas</SelectItem>
+                    <SelectItem value="CANCELADA">Canceladas</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button
