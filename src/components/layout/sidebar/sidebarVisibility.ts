@@ -19,6 +19,14 @@ export const getVisibleSidebarItems = ({ isAdmin }: Options): MenuItem[] => {
   for (const group of sidebarItems) {
     // Fiscal: escondido a menos que a flag esteja ativa
     if (group.title === 'Fiscal' && !featureFlags.fiscal) continue;
+    // Fiscal → Dashboard Fiscal: admin-only
+    if (group.title === 'Fiscal' && group.items) {
+      const filtered = group.items.filter((sub) =>
+        sub.url === '/fiscal/dashboard' ? isAdmin : true,
+      );
+      items.push({ ...group, items: filtered });
+      continue;
+    }
 
     // Integração/Sync: admin-only + flag
     if (group.title === 'Integração') {
