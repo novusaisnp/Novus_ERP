@@ -54,11 +54,45 @@ Deno.serve(async (req: Request) => {
 
   let body: SmokeRequest;
   try {
-    body = (await req.json()) as SmokeRequest;
+    body = (await req.json().catch(() => ({}))) as SmokeRequest;
   } catch {
     return json({ error: 'invalid_json' }, 400);
   }
-  if (!body?.vendaId) return json({ error: 'invalid_input', missing: ['vendaId'] }, 400);
+
+  // Resolve vendaId: usa o informado ou auto-seleciona a última venda "faturada".
+  let vendaId = body?.vendaId?.trim();
+  const isUuid = (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+
+  const pickFaturada = async (): Promise<{ id?: string; error?: string }> => {
+    const { data, error } = await client
+      .from('vendas')
+      .select('id')
+      .eq('status', 'faturada')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) return { error: error.message };
+    if (!data?.id) return { error: 'nenhuma venda com status=faturada disponível para smoke test' };
+    return { id: data.id };
+  };
+
+  if (!vendaId) {
+    const pick = await pickFaturada();
+    if (pick.error) return json({ error: 'no_venda_available', message: pick.error }, 404);
+    vendaId = pick.id!;
+  } else {
+    if (!isUuid(vendaId)) return json({ error: 'invalid_venda_id', message: 'vendaId não é um UUID válido' }, 400);
+    const { data: exists } = await client.from('vendas').select('id, status').eq('id', vendaId).maybeSingle();
+    if (!exists) {
+      const pick = await pickFaturada();
+      if (pick.error) {
+        return json({ error: 'venda_not_found', message: `venda ${vendaId} não existe e não há vendas faturadas para fallback` }, 404);
+      }
+      console.log(`[fiscal-smoke-run] venda ${vendaId} não encontrada — usando fallback ${pick.id}`);
+      vendaId = pick.id!;
+    }
+  }
+
 
   // Chama sub-função via fetch direto para conseguirmos ler o body do erro
   // (supabase.functions.invoke esconde o body quando o status é não-2xx).
