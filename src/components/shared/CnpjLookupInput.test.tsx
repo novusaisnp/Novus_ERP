@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { useState } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CnpjLookupInput } from './CnpjLookupInput';
@@ -21,10 +22,8 @@ vi.mock('sonner', () => ({ toast: toastMock }));
 const CNPJ = '11222333000181';
 const CNPJ_FORMATADO = '11.222.333/0001-81';
 
-function Wrapper({ onLookup, autoLookup }: { onLookup?: any; autoLookup?: boolean }) {
-  const [v, setV] = (globalThis as any).React
-    ? (globalThis as any).React.useState('')
-    : require('react').useState('');
+function Wrapper({ onLookup, autoLookup }: { onLookup?: (d: any) => void; autoLookup?: boolean }) {
+  const [v, setV] = useState('');
   return (
     <CnpjLookupInput value={v} onChange={setV} onLookup={onLookup} autoLookup={autoLookup} />
   );
