@@ -9,6 +9,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, Loader2, Upload, Users, Building2, Trash2 } from 'lucide-react';
 import { TipoClienteSelector } from '@/components/modules/FormCliente/TipoClienteSelector';
+import { EnderecoSection } from '@/components/modules/shared/EnderecoSection';
 import { format } from 'date-fns';
 import { Cliente } from '@/types/cliente';
 import { consultarCEP, formatarCPF, formatarCNPJ, formatarCEP, validarCPF } from '@/services/cnpjApi';
@@ -571,119 +572,18 @@ export const FormCliente: React.FC<FormClienteProps> = ({
       )}
 
       {/* Seção Endereço */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Endereço</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="cep">CEP</Label>
-              <div className="relative">
-                <Input
-                  id="cep"
-                  value={formData.endereco?.cep || ''}
-                  onChange={(e) => handleCepChange(e.target.value)}
-                  placeholder="00000-000"
-                />
-                {loadingApi && (
-                  <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin" />
-                )}
-              </div>
-            </div>
-            
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="logradouro">Logradouro</Label>
-              <Input
-                id="logradouro"
-                value={formData.endereco?.logradouro || ''}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  endereco: { ...formData.endereco, logradouro: e.target.value }
-                })}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="numero">Número</Label>
-              <Input
-                id="numero"
-                value={formData.endereco?.numero || ''}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  endereco: { ...formData.endereco, numero: e.target.value }
-                })}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="complemento">Complemento</Label>
-              <Input
-                id="complemento"
-                value={formData.endereco?.complemento || ''}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  endereco: { ...formData.endereco, complemento: e.target.value }
-                })}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="bairro">Bairro</Label>
-              <Input
-                id="bairro"
-                value={formData.endereco?.bairro || ''}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  endereco: { ...formData.endereco, bairro: e.target.value }
-                })}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="uf">UF</Label>
-              <Input
-                id="uf"
-                value={formData.endereco?.uf || ''}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  endereco: { ...formData.endereco, uf: e.target.value.toUpperCase() }
-                })}
-                maxLength={2}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="cidade">Cidade</Label>
-              <Input
-                id="cidade"
-                value={formData.endereco?.cidade || ''}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  endereco: { ...formData.endereco, cidade: e.target.value }
-                })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="pais">País</Label>
-              <Input
-                id="pais"
-                value={formData.endereco?.pais || 'Brasil'}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  endereco: { ...formData.endereco, pais: e.target.value }
-                })}
-              />
-            </div>
-          </div>
-
-        </CardContent>
-      </Card>
+      <EnderecoSection
+        endereco={formData.endereco}
+        onFieldChange={(field, value) =>
+          setFormData((prev) => ({
+            ...prev,
+            endereco: { ...prev.endereco, [field]: value },
+          }))
+        }
+        onCepChange={handleCepChange}
+        loadingCep={loadingApi}
+        showPais
+      />
 
       {/* Seção Contato */}
       {formData.tipo === 'F' ? (
