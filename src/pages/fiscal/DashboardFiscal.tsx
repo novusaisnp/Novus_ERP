@@ -74,6 +74,24 @@ const DashboardFiscal = () => {
     return { total, autorizadas, rejeitadas, valorTotal, taxa, ticket };
   }, [metrics]);
   const [reprocessando, setReprocessando] = useState<string | null>(null);
+  const [smokeVendaId, setSmokeVendaId] = useState<string>("");
+  const [smokeRunning, setSmokeRunning] = useState(false);
+
+  const { data: alertasAtivos = [], refetch: refetchAlertas } = useQuery<AlertaAtivo[]>({
+    queryKey: ['fiscal-alertas-ativos'],
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('report_ops_alerts')
+        .select('id, kind, severity, reason, payload, created_at')
+        .is('resolved_at', null)
+        .like('kind', 'fiscal_%')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return (data ?? []) as AlertaAtivo[];
+    },
+  });
 
   const reprocessar = async (doc: DocEmProc) => {
     if (!doc.venda_id) {
@@ -94,6 +112,38 @@ const DashboardFiscal = () => {
       setReprocessando(null);
     }
   };
+
+  const rodarSmoke = async () => {
+    const vendaId = smokeVendaId.trim();
+    if (!vendaId) {
+      toast.error('Informe o ID de uma venda faturada para o smoke test.');
+      return;
+    }
+    setSmokeRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('fiscal-smoke-run', {
+        body: { vendaId },
+      });
+      if (error) throw error;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const d = data as any;
+      if (!d?.ok) {
+        toast.error(`Smoke falhou na etapa "${d?.step ?? '?'}".`);
+      } else {
+        toast.success(`Smoke concluído — documento ${d.documento_id?.slice(0, 8) ?? '?'}`);
+      }
+      refetchAlertas();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Falha ao rodar smoke.';
+      toast.error(msg);
+    } finally {
+      setSmokeRunning(false);
+    }
+  };
+
+  const severityVariant = (s: string): 'destructive' | 'secondary' =>
+    s === 'page' ? 'destructive' : 'secondary';
+
 
   return (
     <div className="container mx-auto px-6 py-8 space-y-6">
