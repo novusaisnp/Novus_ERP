@@ -162,12 +162,13 @@ Deno.serve(async (req) => {
     // 4) Chama provider (mockado por padrão)
     const useMock = (Deno.env.get('FISCAL_MOCK') ?? 'true').toLowerCase() !== 'false';
     let result: NFeEmitResult;
+    let provider: ReturnType<typeof resolveFiscalProvider> | null = null;
     try {
       if (useMock) {
         result = mockEmitResult(idempotencyKey);
         console.log('[fiscal-emitir-nfe] MOCK ativo — nenhuma chamada real ao provedor.');
       } else {
-        const provider = resolveFiscalProvider(providerName, environment);
+        provider = resolveFiscalProvider(providerName, environment);
         result = await provider.emitNFe(payload);
       }
     } catch (err) {
@@ -187,7 +188,57 @@ Deno.serve(async (req) => {
       return json({ error: 'provider_error', message, documento_id: documentoId }, 502);
     }
 
-    // 5) Persiste resultado + evento
+    // 5) Fase 3: baixar XML/DANFE do provedor e subir para Storage (apenas em modo real).
+    //    Em modo mock mantemos as URLs mock:// que o UI já sabe rejeitar.
+    let xmlStoragePath: string | undefined;
+    let danfeStoragePath: string | undefined;
+    if (!useMock && provider && result.status === 'autorizada') {
+      try {
+        const admin = createClient(
+          supabaseUrl,
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+          { auth: { persistSession: false } },
+        );
+        const baseName = result.chaveAcesso ?? result.providerRef ?? documentoId;
+        const yyyymm = new Date().toISOString().slice(0, 7); // YYYY-MM
+        const dirPrefix = `${venda.empresa_representada_id}/${yyyymm}`;
+
+        if (provider.downloadXml && result.xmlUrl) {
+          const xml = await provider.downloadXml(result.xmlUrl);
+          xmlStoragePath = `${dirPrefix}/${baseName}.xml`;
+          const { error: upErr } = await admin.storage
+            .from('fiscal-xml')
+            .upload(xmlStoragePath, xml.content, {
+              contentType: xml.contentType,
+              upsert: true,
+            });
+          if (upErr) {
+            console.error('[fiscal-emitir-nfe] upload XML falhou', upErr);
+            xmlStoragePath = undefined;
+          }
+        }
+
+        if (provider.downloadDanfe && result.danfeUrl) {
+          const danfe = await provider.downloadDanfe(result.danfeUrl);
+          danfeStoragePath = `${dirPrefix}/${baseName}.pdf`;
+          const { error: upErr } = await admin.storage
+            .from('fiscal-danfe')
+            .upload(danfeStoragePath, danfe.content, {
+              contentType: danfe.contentType,
+              upsert: true,
+            });
+          if (upErr) {
+            console.error('[fiscal-emitir-nfe] upload DANFE falhou', upErr);
+            danfeStoragePath = undefined;
+          }
+        }
+      } catch (err) {
+        // Falha no download/upload não invalida a autorização — só loga.
+        console.error('[fiscal-emitir-nfe] falha ao arquivar XML/DANFE', err);
+      }
+    }
+
+    // 6) Persiste resultado + evento
     await client
       .from('fiscal_documentos_eletronicos')
       .update({
@@ -197,9 +248,9 @@ Deno.serve(async (req) => {
         protocolo_autorizacao: result.protocoloAutorizacao,
         codigo_status_sefaz: result.codigoStatusSefaz,
         motivo_rejeicao: result.motivoRejeicao,
-        xml_url: result.xmlUrl,
-        danfe_url: result.danfeUrl,
-        pdf_danfe_url: result.danfeUrl,
+        xml_url: xmlStoragePath ?? result.xmlUrl,
+        danfe_url: danfeStoragePath ?? result.danfeUrl,
+        pdf_danfe_url: danfeStoragePath ?? result.danfeUrl,
         payload_provedor: (result.raw ?? null) as unknown,
       })
       .eq('id', documentoId);
@@ -215,13 +266,10 @@ Deno.serve(async (req) => {
       created_by: userData.user.id,
     });
 
-    // 6) TODO Fase 3: baixar XML/DANFE reais e subir para Storage
     if (useMock) {
-      console.log('[fiscal-emitir-nfe] MOCK: simulando upload de XML/DANFE para Storage', {
-        xml_url: result.xmlUrl,
-        danfe_url: result.danfeUrl,
-      });
+      console.log('[fiscal-emitir-nfe] MOCK: pulando upload real de XML/DANFE.');
     }
+
 
     return json({
       ok: true,
