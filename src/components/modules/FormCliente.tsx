@@ -9,6 +9,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, Loader2, Upload, Users, Building2, Trash2 } from 'lucide-react';
 import { TipoClienteSelector } from '@/components/modules/FormCliente/TipoClienteSelector';
+import { EnderecoSection } from '@/components/modules/shared/EnderecoSection';
 import { format } from 'date-fns';
 import { Cliente } from '@/types/cliente';
 import { consultarCEP, formatarCPF, formatarCNPJ, formatarCEP, validarCPF } from '@/services/cnpjApi';
