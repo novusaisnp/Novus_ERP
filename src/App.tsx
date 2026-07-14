@@ -192,10 +192,27 @@ function App() {
                   
                   {/* Fiscal Routes */}
                   <Route path="fiscal">
+                    <Route
+                      path="dashboard"
+                      element={
+                        <AdminRoute>
+                          <React.Suspense
+                            fallback={
+                              <div className="min-h-[40vh] flex items-center justify-center" aria-busy="true">
+                                <div className="text-muted-foreground text-sm">Carregando…</div>
+                              </div>
+                            }
+                          >
+                            <DashboardFiscal />
+                          </React.Suspense>
+                        </AdminRoute>
+                      }
+                    />
                     <Route path="notas-fiscais" element={<NotasFiscais />} />
                     <Route path="sped" element={<SPED />} />
                     <Route path="tributos" element={<Tributos />} />
                   </Route>
+                  
                   
                   {/* RH Routes */}
                   <Route path="rh">
