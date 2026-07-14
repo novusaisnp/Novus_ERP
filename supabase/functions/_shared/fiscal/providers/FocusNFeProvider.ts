@@ -3,6 +3,7 @@
 // Cancel/CCe/Status ficam com stubs (throw) para serem implementados na Fase 2.
 
 import {
+  FiscalAssetDownload,
   FiscalEnvironment,
   FiscalProvider,
   FiscalProviderError,
