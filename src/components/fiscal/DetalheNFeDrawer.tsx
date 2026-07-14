@@ -70,45 +70,73 @@ const DetalheNFeDrawer = ({ open, onOpenChange, documentoId }: DetalheNFeDrawerP
     setTimeout(() => URL.revokeObjectURL(href), 1000);
   };
 
-  const buildMockXml = () => {
+  const loadMockData = async (): Promise<DanfeMockData> => {
     const d = documento!;
-    return `<?xml version="1.0" encoding="UTF-8"?>
-<!-- DOCUMENTO SIMULADO (FISCAL_MOCK=true) — NÃO POSSUI VALIDADE FISCAL -->
-<nfeProc versao="4.00">
-  <NFe>
-    <infNFe Id="NFe${d.chave_acesso ?? ''}">
-      <ide><nNF>${d.numero ?? ''}</nNF><serie>${d.serie ?? ''}</serie><dhEmi>${d.data_emissao ?? ''}</dhEmi></ide>
-      <total><ICMSTot><vNF>${d.valor_total ?? 0}</vNF></ICMSTot></total>
-      <infAdic><infCpl>Documento gerado em modo simulação para validação de fluxo.</infCpl></infAdic>
-    </infNFe>
-  </NFe>
-  <protNFe><infProt><nProt>${d.protocolo_autorizacao ?? 'MOCK'}</nProt><cStat>100</cStat></infProt></protNFe>
-</nfeProc>`;
-  };
+    let emitente: DanfeMockData['emitente'] = {};
+    let destinatario: DanfeMockData['destinatario'] = {};
+    let itens: DanfeMockData['itens'] = [];
+    let naturezaOperacao: string | null = null;
 
-  const buildMockDanfeHtml = () => {
-    const d = documento!;
-    const valor = typeof d.valor_total === 'number'
-      ? d.valor_total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-      : '—';
-    return `<!doctype html><html><head><meta charset="utf-8"><title>DANFE Simulado</title>
-<style>body{font-family:Arial,sans-serif;padding:32px;max-width:800px;margin:auto}
-.watermark{position:fixed;top:40%;left:10%;font-size:96px;color:#eee;transform:rotate(-30deg);z-index:-1}
-h1{border-bottom:2px solid #333}table{width:100%;border-collapse:collapse;margin-top:16px}
-td,th{border:1px solid #999;padding:8px;text-align:left}</style></head>
-<body><div class="watermark">SIMULAÇÃO</div>
-<h1>DANFE — Documento Auxiliar da NF-e</h1>
-<p><strong>⚠ Documento gerado em modo simulação (FISCAL_MOCK). Sem validade fiscal.</strong></p>
-<table>
-<tr><th>Nº / Série</th><td>${d.numero ?? '—'} / ${d.serie ?? '—'}</td></tr>
-<tr><th>Chave de acesso</th><td>${d.chave_acesso ?? '—'}</td></tr>
-<tr><th>Protocolo</th><td>${d.protocolo_autorizacao ?? '—'}</td></tr>
-<tr><th>Emissão</th><td>${d.data_emissao ? new Date(d.data_emissao).toLocaleString('pt-BR') : '—'}</td></tr>
-<tr><th>Status</th><td>${d.status ?? '—'}</td></tr>
-<tr><th>Valor total</th><td>${valor}</td></tr>
-</table>
-<p style="margin-top:24px;color:#666;font-size:12px">Use Ctrl+P para salvar como PDF.</p>
-</body></html>`;
+    try {
+      if (d.empresa_representada_id) {
+        const { data: emp } = await supabase
+          .from('empresas_representadas')
+          .select('razao_social, nome_fantasia, cnpj, inscricao_estadual, telefone, logradouro, numero, complemento, bairro, cidade, estado, cep')
+          .eq('id', d.empresa_representada_id)
+          .maybeSingle();
+        if (emp) emitente = emp as DanfeMockData['emitente'];
+      }
+      if (d.venda_id) {
+        const { data: venda } = await supabase
+          .from('vendas')
+          .select('cliente_id, natureza_operacao, observacoes')
+          .eq('id', d.venda_id)
+          .maybeSingle();
+        naturezaOperacao = (venda as { natureza_operacao?: string | null } | null)?.natureza_operacao ?? null;
+        const clienteId = (venda as { cliente_id?: string | null } | null)?.cliente_id;
+        if (clienteId) {
+          const { data: cli } = await supabase
+            .from('clientes')
+            .select('nome, razao_social, tipo_pessoa, cnpj, cpf, inscricao_estadual, email, telefone, logradouro, numero, complemento, bairro, cidade, estado, cep')
+            .eq('id', clienteId)
+            .maybeSingle();
+          if (cli) destinatario = cli as DanfeMockData['destinatario'];
+        }
+        const { data: rows } = await supabase
+          .from('itens_venda')
+          .select('descricao, quantidade, unidade, preco_unitario, valor_total_item, ordem')
+          .eq('venda_id', d.venda_id)
+          .order('ordem', { ascending: true });
+        itens = (rows ?? []).map((r, i) => ({
+          codigo: String(i + 1).padStart(3, '0'),
+          descricao: (r as { descricao?: string | null }).descricao ?? '',
+          quantidade: (r as { quantidade?: number | null }).quantidade ?? 0,
+          unidade: (r as { unidade?: string | null }).unidade ?? 'UN',
+          preco_unitario: (r as { preco_unitario?: number | null }).preco_unitario ?? 0,
+          valor_total: (r as { valor_total_item?: number | null }).valor_total_item ?? 0,
+          ncm: '00000000',
+          cfop: '5102',
+        }));
+      }
+    } catch (err) {
+      console.warn('[DANFE mock] falha ao enriquecer dados:', err);
+    }
+
+    return {
+      numero: d.numero,
+      serie: d.serie,
+      chave_acesso: d.chave_acesso,
+      protocolo: d.protocolo_autorizacao,
+      data_emissao: d.data_emissao,
+      status: d.status,
+      ambiente: d.ambiente,
+      valor_total: d.valor_total,
+      natureza_operacao: naturezaOperacao,
+      emitente,
+      destinatario,
+      itens,
+      observacoes: 'Documento sem validade fiscal — gerado em modo simulação para validação de fluxo.',
+    };
   };
 
   const handleOpenSigned = async (url: string | null | undefined, label: string) => {
@@ -116,11 +144,13 @@ td,th{border:1px solid #999;padding:8px;text-align:left}</style></head>
     if (!url) return;
     if (url.startsWith('mock://')) {
       const chave = documento.chave_acesso ?? documento.id;
+      const mockData = await loadMockData();
       if (label === 'XML') {
-        downloadBlob(buildMockXml(), `nfe-mock-${chave}.xml`, 'application/xml');
+        downloadBlob(buildNFeMockXml(mockData), `nfe-mock-${chave}.xml`, 'application/xml');
       } else {
+        const html = buildDanfeMockHtml(mockData);
         const win = window.open('', '_blank');
-        if (win) { win.document.write(buildMockDanfeHtml()); win.document.close(); }
+        if (win) { win.document.write(html); win.document.close(); }
       }
       toast.info(`${label} simulado gerado (modo mock — sem validade fiscal).`);
       return;
