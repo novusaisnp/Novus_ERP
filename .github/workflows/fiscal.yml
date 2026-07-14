@@ -1,0 +1,79 @@
+name: fiscal-tests
+
+on:
+  pull_request:
+    paths:
+      - "src/components/fiscal/**"
+      - "src/hooks/fiscal/**"
+      - "src/pages/fiscal/**"
+      - "src/services/fiscal/**"
+      - "supabase/functions/_shared/fiscal/**"
+      - "supabase/functions/fiscal-*/**"
+      - "supabase/functions/fiscal-smoke-run/**"
+      - "e2e/tests/06-fiscal-emissao.spec.ts"
+      - ".github/workflows/fiscal.yml"
+  push:
+    branches: [main]
+
+jobs:
+  vitest:
+    name: Vitest (frontend fiscal)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - name: Vitest — módulo fiscal
+        run: bunx vitest run src/components/fiscal src/hooks/fiscal --coverage
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fiscal-vitest-coverage
+          path: coverage/
+          retention-days: 7
+
+  deno:
+    name: Deno tests (edge functions fiscais)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+      - name: Deno test — fiscal edge functions
+        env:
+          FISCAL_MOCK: "true"
+        run: |
+          deno test \
+            --allow-net --allow-env --allow-read \
+            supabase/functions/fiscal-emitir-nfe/index.test.ts \
+            supabase/functions/fiscal-cancelar-nfe/index.test.ts \
+            supabase/functions/fiscal-cce-nfe/index.test.ts \
+            supabase/functions/fiscal-signed-url/index.test.ts \
+            supabase/functions/fiscal-upload-certificado/index.test.ts \
+            supabase/functions/_shared/fiscal/mappers/__tests__/vendaToNFePayload.test.ts
+
+  playwright:
+    name: Playwright (fiscal e2e)
+    runs-on: ubuntu-latest
+    needs: [vitest, deno]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bunx playwright install --with-deps chromium
+      - name: Playwright — fiscal spec
+        env:
+          FISCAL_MOCK: "true"
+          E2E_FISCAL_ENABLED: "1"
+        run: bunx playwright test e2e/tests/06-fiscal-emissao.spec.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fiscal-playwright-report
+          path: playwright-report/
+          retention-days: 7
