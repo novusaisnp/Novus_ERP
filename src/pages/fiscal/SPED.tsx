@@ -193,7 +193,7 @@ const SPED: React.FC = () => {
                 <Database className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-4 text-lg font-semibold">SPED Contribuições</h3>
                 <p className="mt-2 text-muted-foreground">
-                  Funcionalidade em desenvolvimento
+                  Geração do EFD-Contribuições depende da integração fiscal real. Disponível após ativação do provedor (<code>FISCAL_MOCK=false</code>).
                 </p>
               </div>
             </CardContent>
@@ -216,7 +216,7 @@ const SPED: React.FC = () => {
                 <Database className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-4 text-lg font-semibold">SPED Contábil</h3>
                 <p className="mt-2 text-muted-foreground">
-                  Funcionalidade em desenvolvimento
+                  Geração da ECD depende da integração contábil-fiscal real. Disponível após ativação do provedor.
                 </p>
               </div>
             </CardContent>
@@ -239,7 +239,7 @@ const SPED: React.FC = () => {
                 <Settings className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-4 text-lg font-semibold">Configurações</h3>
                 <p className="mt-2 text-muted-foreground">
-                  Funcionalidade em desenvolvimento
+                  Configurações de layout, certificado e envio SPED serão liberadas junto com a integração fiscal real.
                 </p>
               </div>
             </CardContent>
