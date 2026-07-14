@@ -61,6 +61,7 @@ const NotasFiscais = () => {
           .from("vendas")
           .select("id, numero_venda, cliente_id, valor_total, data_venda, status")
           .in("status", statusEmissaoFiscal)
+          .not("cliente_id", "is", null)
           .is("deleted_at", null)
           .order("data_venda", { ascending: false })
           .limit(50);

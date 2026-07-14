@@ -241,10 +241,10 @@ Deno.serve(async (req) => {
 function mockEmitResult(ref: string): NFeEmitResult {
   const chaveMock = '35' + Date.now().toString().padStart(42, '0').slice(-42);
   return {
-    status: 'processando',
+    status: 'autorizada',
     providerRef: ref,
     chaveAcesso: chaveMock,
-    protocoloAutorizacao: undefined,
+    protocoloAutorizacao: `MOCK-AUT-${Date.now()}`,
     codigoStatusSefaz: '100',
     motivoRejeicao: undefined,
     xmlUrl: `mock://fiscal-xml/${ref}.xml`,
