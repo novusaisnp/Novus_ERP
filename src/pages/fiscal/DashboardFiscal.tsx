@@ -24,6 +24,7 @@ interface DocEmProc {
   status: string;
   data_emissao: string | null;
   provider: string | null;
+  venda_id: string | null;
 }
 
 const currency = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
