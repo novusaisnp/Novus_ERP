@@ -72,6 +72,27 @@ const DashboardFiscal = () => {
     const ticket = autorizadas > 0 ? valorTotal / autorizadas : 0;
     return { total, autorizadas, rejeitadas, valorTotal, taxa, ticket };
   }, [metrics]);
+  const [reprocessando, setReprocessando] = useState<string | null>(null);
+
+  const reprocessar = async (doc: DocEmProc) => {
+    if (!doc.venda_id) {
+      toast.error('Documento sem venda vinculada — não é possível reprocessar automaticamente.');
+      return;
+    }
+    setReprocessando(doc.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('fiscal-emitir-nfe', {
+        body: { vendaId: doc.venda_id },
+      });
+      if (error) throw error;
+      toast.success(`Reprocessamento disparado (${data?.status ?? 'ok'}).`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Falha ao reprocessar.';
+      toast.error(msg);
+    } finally {
+      setReprocessando(null);
+    }
+  };
 
   return (
     <div className="container mx-auto px-6 py-8 space-y-6">
