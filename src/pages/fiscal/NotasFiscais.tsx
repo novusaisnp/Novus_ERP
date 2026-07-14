@@ -50,6 +50,21 @@ const NotasFiscais: React.FC = () => {
     },
   });
 
+  const handleAtualizar = async () => {
+    const result = await refetch();
+    if (result.error) {
+      toast.error(`Falha ao atualizar notas fiscais: ${result.error.message}`);
+      return;
+    }
+    const total = result.data?.length ?? 0;
+    toast.success(total > 0 ? `${total} nota(s) fiscal(is) carregada(s).` : 'Nenhuma nota fiscal encontrada.');
+  };
+
+  const handleEmitirAPartirDeVenda = () => {
+    toast.info('Selecione uma venda FATURADA ou ENTREGUE e clique no ícone de NF-e.');
+    navigate('/vendas/pedidos');
+  };
+
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
     if (!q) return docs;
@@ -82,11 +97,11 @@ const NotasFiscais: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
+          <Button variant="outline" onClick={handleAtualizar} disabled={isFetching}>
             <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
             Atualizar
           </Button>
-          <Button onClick={() => navigate('/vendas/pedidos')}>
+          <Button onClick={handleEmitirAPartirDeVenda}>
             <FileText className="h-4 w-4 mr-2" />
             Emitir a partir de Venda
           </Button>
@@ -243,8 +258,10 @@ const NotasFiscais: React.FC = () => {
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => {
-                                  navigator.clipboard.writeText(d.chave_acesso!);
-                                  toast.success('Chave de acesso copiada.');
+                                  navigator.clipboard
+                                    .writeText(d.chave_acesso!)
+                                    .then(() => toast.success('Chave de acesso copiada.'))
+                                    .catch(() => toast.error('Não foi possível copiar a chave de acesso.'));
                                 }}
                                 title="Copiar chave"
                               >
