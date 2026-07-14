@@ -124,20 +124,17 @@ const DashboardFiscal = () => {
 
   const rodarSmoke = async () => {
     const vendaId = smokeVendaId.trim();
-    if (!vendaId) {
-      toast.error('Informe o ID de uma venda faturada para o smoke test.');
-      return;
-    }
     setSmokeRunning(true);
     try {
       const { data, error } = await supabase.functions.invoke('fiscal-smoke-run', {
-        body: { vendaId },
+        body: vendaId ? { vendaId } : {},
       });
       if (error) throw error;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const d = data as any;
       if (!d?.ok) {
-        toast.error(`Smoke falhou na etapa "${d?.step ?? '?'}".`);
+        const first = d?.results?.[0];
+        toast.error(`Smoke falhou (${d?.step ?? '?'}): ${first?.error ?? 'erro desconhecido'}`);
       } else {
         toast.success(`Smoke concluído — documento ${d.documento_id?.slice(0, 8) ?? '?'}`);
       }
@@ -233,7 +230,7 @@ const DashboardFiscal = () => {
               onChange={(e) => setSmokeVendaId(e.target.value)}
               disabled={smokeRunning}
             />
-            <Button onClick={rodarSmoke} disabled={smokeRunning || !smokeVendaId.trim()}>
+            <Button onClick={rodarSmoke} disabled={smokeRunning}>
               <PlayCircle className={`h-4 w-4 mr-1 ${smokeRunning ? 'animate-pulse' : ''}`} />
               {smokeRunning ? 'Executando…' : 'Rodar smoke mock'}
             </Button>
