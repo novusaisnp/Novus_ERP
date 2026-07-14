@@ -88,3 +88,23 @@ Se o comportamento real estiver instável:
 
 - **Time interno:** `#erp-fiscal` (Slack).
 - **Provedor:** suporte Focus NFe — SLA 4h em horário comercial.
+
+## 9. Arquivamento de XML/DANFE (Fase 3 concluída)
+
+Ao autorizar uma NF-e em modo real (`FISCAL_MOCK=false`), a Edge Function
+`fiscal-emitir-nfe` executa automaticamente:
+
+1. `provider.downloadXml(result.xmlUrl)` — baixa o XML autorizado do provedor.
+2. `provider.downloadDanfe(result.danfeUrl)` — baixa o PDF do DANFE.
+3. Upload para os buckets privados:
+   - `fiscal-xml/{empresa_id}/{YYYY-MM}/{chave_acesso}.xml`
+   - `fiscal-danfe/{empresa_id}/{YYYY-MM}/{chave_acesso}.pdf`
+4. Grava o **path** (não a URL do provedor) em
+   `fiscal_documentos_eletronicos.xml_url` / `danfe_url` / `pdf_danfe_url`.
+
+O UI usa `fiscal-signed-url` (TTL 5 min) para baixar. Falhas de upload são
+logadas mas **não invalidam a autorização** — as URLs originais do provedor
+ficam persistidas como fallback.
+
+Em modo mock (`FISCAL_MOCK=true`) o upload é pulado e paths `mock://` são
+rejeitados por `fiscal-signed-url`.
