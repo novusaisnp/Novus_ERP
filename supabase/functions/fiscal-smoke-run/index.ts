@@ -136,7 +136,7 @@ Deno.serve(async (req: Request) => {
   const results: StepResult[] = [];
 
   // 1) Emitir
-  const r1 = await invoke('fiscal-emitir-nfe', { vendaId: body.vendaId });
+  const r1 = await invoke('fiscal-emitir-nfe', { vendaId: vendaId });
   results.push(r1);
   if (!r1.ok) return json({ ok: false, step: 'emitir', results }, 502);
 
@@ -163,5 +163,5 @@ Deno.serve(async (req: Request) => {
     results.push(r3);
   }
 
-  return json({ ok: true, step: 'done', vendaId: body.vendaId, documento_id: documentoId, results }, 200);
+  return json({ ok: true, step: 'done', vendaId: vendaId, documento_id: documentoId, results }, 200);
 });
