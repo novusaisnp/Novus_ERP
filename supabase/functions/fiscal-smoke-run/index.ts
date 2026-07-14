@@ -12,7 +12,13 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
 interface SmokeRequest {
-  vendaId: string;
+  vendaId?: string;
+}
+
+interface VendaSmokeCandidate {
+  id: string;
+  numero_venda: string | null;
+  status: string | null;
 }
 
 interface StepResult {
@@ -59,37 +65,68 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'invalid_json' }, 400);
   }
 
-  // Resolve vendaId: usa o informado ou auto-seleciona a última venda "faturada".
+  // Resolve vendaId: usa UUID informado, número da venda informado ou auto-seleciona
+  // a última venda em status fiscalmente elegível. O cadastro de vendas usa status
+  // em caixa alta (ex.: CONFIRMADO/FATURADO), não o texto legado "faturada".
   let vendaId = body?.vendaId?.trim();
   const isUuid = (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+  const eligibleStatuses = ['CONFIRMADO', 'EM_PRODUCAO', 'FATURADO', 'ENTREGUE'];
+  const eligibleStatusValues = [...eligibleStatuses, ...eligibleStatuses.map((s) => s.toLowerCase())];
 
-  const pickFaturada = async (): Promise<{ id?: string; error?: string }> => {
+  const isEligible = (status?: string | null) => eligibleStatuses.includes((status ?? '').toUpperCase());
+
+  const pickElegivel = async (): Promise<{ venda?: VendaSmokeCandidate; error?: string }> => {
     const { data, error } = await client
       .from('vendas')
-      .select('id')
-      .eq('status', 'faturada')
+      .select('id, numero_venda, status')
+      .is('deleted_at', null)
+      .in('status', eligibleStatusValues)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
     if (error) return { error: error.message };
-    if (!data?.id) return { error: 'nenhuma venda com status=faturada disponível para smoke test' };
-    return { id: data.id };
+    if (!data?.id) return { error: `nenhuma venda elegível disponível para smoke test (status aceitos: ${eligibleStatuses.join(', ')})` };
+    return { venda: data as VendaSmokeCandidate };
+  };
+
+  const findVenda = async (ref: string): Promise<{ venda?: VendaSmokeCandidate; error?: string }> => {
+    const query = client
+      .from('vendas')
+      .select('id, numero_venda, status')
+      .is('deleted_at', null)
+      .limit(1)
+      .maybeSingle();
+
+    const { data, error } = isUuid(ref)
+      ? await query.eq('id', ref)
+      : await query.eq('numero_venda', ref);
+
+    if (error) return { error: error.message };
+    if (!data?.id) return {};
+    return { venda: data as VendaSmokeCandidate };
   };
 
   if (!vendaId) {
-    const pick = await pickFaturada();
+    const pick = await pickElegivel();
     if (pick.error) return json({ error: 'no_venda_available', message: pick.error }, 404);
-    vendaId = pick.id!;
+    vendaId = pick.venda!.id;
   } else {
-    if (!isUuid(vendaId)) return json({ error: 'invalid_venda_id', message: 'vendaId não é um UUID válido' }, 400);
-    const { data: exists } = await client.from('vendas').select('id, status').eq('id', vendaId).maybeSingle();
-    if (!exists) {
-      const pick = await pickFaturada();
+    const found = await findVenda(vendaId);
+    if (found.error) return json({ error: 'venda_lookup_failed', message: found.error }, 500);
+    if (!found.venda) {
+      const pick = await pickElegivel();
       if (pick.error) {
-        return json({ error: 'venda_not_found', message: `venda ${vendaId} não existe e não há vendas faturadas para fallback` }, 404);
+        return json({ error: 'venda_not_found', message: `venda ${vendaId} não encontrada por UUID/número e não há venda elegível para fallback` }, 404);
       }
-      console.log(`[fiscal-smoke-run] venda ${vendaId} não encontrada — usando fallback ${pick.id}`);
-      vendaId = pick.id!;
+      console.log(`[fiscal-smoke-run] venda ${vendaId} não encontrada — usando fallback ${pick.venda!.id}`);
+      vendaId = pick.venda!.id;
+    } else if (!isEligible(found.venda.status)) {
+      return json({
+        error: 'venda_status_not_eligible',
+        message: `venda ${found.venda.numero_venda ?? found.venda.id} está com status=${found.venda.status}; status aceitos: ${eligibleStatuses.join(', ')}`,
+      }, 409);
+    } else {
+      vendaId = found.venda.id;
     }
   }
 
