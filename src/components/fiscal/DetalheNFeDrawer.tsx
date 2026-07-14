@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Ban, Copy, Download, ExternalLink, FileText, MailCheck } from "lucide-react";
+import { Download, ExternalLink, FileText, Ban, MailCheck } from "lucide-react";
 import {
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
@@ -56,10 +56,7 @@ const DetalheNFeDrawer = ({ open, onOpenChange, documentoId }: DetalheNFeDrawerP
   const [cceOpen, setCceOpen] = useState(false);
 
   const handleOpenSigned = async (url: string | null | undefined, label: string) => {
-    if (!url) {
-      toast.info(`${label} ainda não disponível para este documento.`);
-      return;
-    }
+    if (!url) return;
     if (url.startsWith('http')) { window.open(url, '_blank', 'noreferrer'); return; }
     if (url.startsWith('mock://')) {
       toast.info(`${label} indisponível — documento em modo simulação.`);
@@ -73,35 +70,6 @@ const DetalheNFeDrawer = ({ open, onOpenChange, documentoId }: DetalheNFeDrawerP
     } catch (err) {
       toast.error(`Falha ao gerar link do ${label}: ${(err as Error).message}`);
     }
-  };
-
-  const handleCopyChave = async () => {
-    if (!documento?.chave_acesso) {
-      toast.info('Chave de acesso ainda não disponível para este documento.');
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(documento.chave_acesso);
-      toast.success('Chave de acesso copiada.');
-    } catch {
-      toast.error('Não foi possível copiar a chave de acesso.');
-    }
-  };
-
-  const handleCancelClick = () => {
-    if (documento?.status !== 'autorizada') {
-      toast.warning(`Cancelamento disponível apenas para NF-e autorizada. Status atual: ${documento?.status ?? 'desconhecido'}.`);
-      return;
-    }
-    setCancelOpen(true);
-  };
-
-  const handleCceClick = () => {
-    if (documento?.status !== 'autorizada') {
-      toast.warning(`CC-e disponível apenas para NF-e autorizada. Status atual: ${documento?.status ?? 'desconhecido'}.`);
-      return;
-    }
-    setCceOpen(true);
   };
 
   const proxSeqCCe = 1 + eventos.filter((e) => e.tipo === 'cce').reduce((m, e) => Math.max(m, e.sequencia ?? 0), 0);
@@ -156,24 +124,23 @@ const DetalheNFeDrawer = ({ open, onOpenChange, documentoId }: DetalheNFeDrawerP
               <Separator />
 
               <div className="flex flex-col gap-2">
-                <Button variant="outline" onClick={() => handleOpenSigned(documento.xml_url, 'XML')}>
+                <Button variant="outline" onClick={() => handleOpenSigned(documento.xml_url, 'XML')} disabled={!documento.xml_url}>
                   <Download className="h-4 w-4 mr-2" /> Baixar XML
                 </Button>
-                <Button variant="outline" onClick={() => handleOpenSigned(documento.danfe_url ?? documento.pdf_danfe_url, 'DANFE')}>
+                <Button variant="outline" onClick={() => handleOpenSigned(documento.danfe_url ?? documento.pdf_danfe_url, 'DANFE')} disabled={!documento.danfe_url && !documento.pdf_danfe_url}>
                   <ExternalLink className="h-4 w-4 mr-2" /> Abrir DANFE
                 </Button>
-                <Button variant="outline" onClick={handleCopyChave}>
-                  <Copy className="h-4 w-4 mr-2" /> Copiar chave
-                </Button>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <Button variant="destructive" onClick={handleCancelClick}>
-                    <Ban className="h-4 w-4 mr-2" /> Cancelar NF-e
-                  </Button>
-                  <Button variant="secondary" onClick={handleCceClick}>
-                    <MailCheck className="h-4 w-4 mr-2" /> CC-e
-                  </Button>
-                </div>
+                {documento.status === 'autorizada' && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="destructive" onClick={() => setCancelOpen(true)}>
+                      <Ban className="h-4 w-4 mr-2" /> Cancelar NF-e
+                    </Button>
+                    <Button variant="secondary" onClick={() => setCceOpen(true)}>
+                      <MailCheck className="h-4 w-4 mr-2" /> CC-e
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <Separator />

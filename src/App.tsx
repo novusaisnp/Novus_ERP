@@ -1,8 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './components/ui/theme-provider';
-import { Toaster } from './components/ui/toaster';
-import { Toaster as SonnerToaster } from './components/ui/sonner';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import { AppLayout } from './components/layout/AppLayout';
@@ -252,8 +250,6 @@ function App() {
                   <Route path="*" element={<div className="flex items-center justify-center min-h-screen"><div className="text-center"><h1 className="text-4xl font-bold mb-4">404</h1><p className="text-xl text-muted-foreground">Página não encontrada</p></div></div>} />
                 </Route>
               </Routes>
-              <Toaster />
-              <SonnerToaster richColors closeButton position="top-right" />
             </div>
           </AuthProvider>
         </QueryClientProvider>

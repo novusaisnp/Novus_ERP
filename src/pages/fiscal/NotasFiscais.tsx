@@ -1,290 +1,237 @@
-import React, { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { FileText, Eye, RefreshCw, ExternalLink, Search } from 'lucide-react';
-import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import FiscalStatusBadge from '@/components/fiscal/FiscalStatusBadge';
-import DetalheNFeDrawer from '@/components/fiscal/DetalheNFeDrawer';
+
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, FileText, Download, Eye, Send } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 console.log('[Fiscal] Inicializando página de Notas Fiscais');
 
-interface DocRow {
-  id: string;
-  numero: number | null;
-  serie: number | null;
-  status: string;
-  data_emissao: string | null;
-  valor_total: number | null;
-  chave_acesso: string | null;
-  provider: string | null;
-  ambiente: string | null;
-  venda_id: string | null;
-}
-
-const currency = (v: number | null) =>
-  typeof v === 'number' ? v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '—';
-
 const NotasFiscais: React.FC = () => {
-  const navigate = useNavigate();
-  const [busca, setBusca] = useState('');
-  const [detalheId, setDetalheId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('dashboard');
 
-  const { data: docs = [], isLoading, refetch, isFetching } = useQuery<DocRow[]>({
-    queryKey: ['fiscal-documentos', 'list'],
-    staleTime: 30_000,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('fiscal_documentos_eletronicos')
-        .select('id, numero, serie, status, data_emissao, valor_total, chave_acesso, provider, ambiente, venda_id')
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false })
-        .limit(200);
-      if (error) throw error;
-      return (data ?? []) as DocRow[];
+  // Dados mockados para demonstração
+  const mockNotas = [
+    {
+      id: '1',
+      numero: '000001',
+      serie: '1',
+      tipo: 'NF-e',
+      cliente: 'Cliente Exemplo Ltda',
+      valor: 1250.00,
+      status: 'autorizada',
+      dataEmissao: '2024-01-15',
+      chaveAcesso: '35240100000000000000550010000000011000000001'
     },
-  });
-
-  const handleAtualizar = async () => {
-    const result = await refetch();
-    if (result.error) {
-      toast.error(`Falha ao atualizar notas fiscais: ${result.error.message}`);
-      return;
+    {
+      id: '2',
+      numero: '000002',
+      serie: '1',
+      tipo: 'NFC-e',
+      cliente: 'Consumidor Final',
+      valor: 89.90,
+      status: 'pendente',
+      dataEmissao: '2024-01-15',
+      chaveAcesso: ''
     }
-    const total = result.data?.length ?? 0;
-    toast.success(total > 0 ? `${total} nota(s) fiscal(is) carregada(s).` : 'Nenhuma nota fiscal encontrada.');
+  ];
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'autorizada': return 'bg-green-100 text-green-800';
+      case 'pendente': return 'bg-yellow-100 text-yellow-800';
+      case 'cancelada': return 'bg-red-100 text-red-800';
+      case 'rejeitada': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   };
-
-  const handleEmitirAPartirDeVenda = () => {
-    toast.info('Selecione uma venda FATURADA ou ENTREGUE e clique no ícone de NF-e.');
-    navigate('/vendas/pedidos');
-  };
-
-  const filtrados = useMemo(() => {
-    const q = busca.trim().toLowerCase();
-    if (!q) return docs;
-    return docs.filter(
-      (d) =>
-        String(d.numero ?? '').includes(q) ||
-        (d.chave_acesso ?? '').toLowerCase().includes(q) ||
-        (d.status ?? '').toLowerCase().includes(q),
-    );
-  }, [docs, busca]);
-
-  const kpis = useMemo(() => {
-    const total = docs.length;
-    const autorizadas = docs.filter((d) => d.status === 'autorizada').length;
-    const processando = docs.filter((d) => d.status === 'processando').length;
-    const rejeitadas = docs.filter((d) => ['rejeitada', 'denegada', 'erro'].includes(d.status)).length;
-    const valorTotal = docs
-      .filter((d) => d.status === 'autorizada')
-      .reduce((a, d) => a + Number(d.valor_total ?? 0), 0);
-    return { total, autorizadas, processando, rejeitadas, valorTotal };
-  }, [docs]);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center gap-3 flex-wrap">
+      <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Notas Fiscais</h1>
           <p className="text-muted-foreground">
-            Documentos fiscais eletrônicos emitidos pelo sistema
+            Gerencie suas notas fiscais eletrônicas (NF-e e NFC-e)
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleAtualizar} disabled={isFetching}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
-            Atualizar
-          </Button>
-          <Button onClick={handleEmitirAPartirDeVenda}>
-            <FileText className="h-4 w-4 mr-2" />
-            Emitir a partir de Venda
-          </Button>
-        </div>
+        <Button>
+          <Plus className="h-4 w-4 mr-2" />
+          Nova Nota Fiscal
+        </Button>
       </div>
 
-      <Tabs defaultValue="dashboard" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="emitir">Emitir</TabsTrigger>
           <TabsTrigger value="consultar">Consultar</TabsTrigger>
+          <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-6">
+          {/* Estatísticas */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardContent className="p-6">
-                <p className="text-sm text-muted-foreground">Total</p>
-                <p className="text-2xl font-bold">{kpis.total}</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Total Emitidas</p>
+                    <p className="text-2xl font-bold">1.234</p>
+                  </div>
+                  <FileText className="h-8 w-8 text-blue-600" />
+                </div>
               </CardContent>
             </Card>
+
             <Card>
               <CardContent className="p-6">
-                <p className="text-sm text-muted-foreground">Autorizadas</p>
-                <p className="text-2xl font-bold text-primary">{kpis.autorizadas}</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Pendentes</p>
+                    <p className="text-2xl font-bold text-yellow-600">8</p>
+                  </div>
+                  <FileText className="h-8 w-8 text-yellow-600" />
+                </div>
               </CardContent>
             </Card>
+
             <Card>
               <CardContent className="p-6">
-                <p className="text-sm text-muted-foreground">Processando</p>
-                <p className="text-2xl font-bold">{kpis.processando}</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Autorizadas</p>
+                    <p className="text-2xl font-bold text-green-600">1.226</p>
+                  </div>
+                  <FileText className="h-8 w-8 text-green-600" />
+                </div>
               </CardContent>
             </Card>
+
             <Card>
               <CardContent className="p-6">
-                <p className="text-sm text-muted-foreground">Rejeitadas</p>
-                <p className="text-2xl font-bold text-destructive">{kpis.rejeitadas}</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Valor Total</p>
+                    <p className="text-2xl font-bold">R$ 125.430</p>
+                  </div>
+                  <FileText className="h-8 w-8 text-primary" />
+                </div>
               </CardContent>
             </Card>
           </div>
 
+          {/* Lista de Notas Recentes */}
           <Card>
             <CardHeader>
-              <CardTitle>Últimas notas</CardTitle>
-              <CardDescription>10 documentos mais recentes</CardDescription>
+              <CardTitle>Notas Fiscais Recentes</CardTitle>
+              <CardDescription>
+                Últimas notas fiscais emitidas
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              {docs.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-8 text-center">
-                  Nenhum documento fiscal emitido ainda. Emita a partir de uma venda.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {docs.slice(0, 10).map((d) => (
-                    <div
-                      key={d.id}
-                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/40 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <FileText className="h-6 w-6 text-primary" />
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold">
-                              NF-e {d.numero ?? '—'}/{d.serie ?? '—'}
-                            </span>
-                            <FiscalStatusBadge status={d.status} />
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            {d.data_emissao ? new Date(d.data_emissao).toLocaleString('pt-BR') : 'Sem data'}
-                          </p>
+              <div className="space-y-4">
+                {mockNotas.map((nota) => (
+                  <div key={nota.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <FileText className="h-8 w-8 text-primary" />
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span className="font-semibold">{nota.tipo} {nota.numero}/{nota.serie}</span>
+                          <Badge className={getStatusColor(nota.status)}>
+                            {nota.status.charAt(0).toUpperCase() + nota.status.slice(1)}
+                          </Badge>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="font-semibold">{currency(d.valor_total)}</span>
-                        <Button size="sm" variant="ghost" onClick={() => setDetalheId(d.id)}>
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                        <p className="text-sm text-muted-foreground">{nota.cliente}</p>
+                        <p className="text-sm text-muted-foreground">{nota.dataEmissao}</p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
+                    <div className="flex items-center space-x-2">
+                      <span className="text-lg font-semibold">
+                        R$ {nota.valor.toFixed(2)}
+                      </span>
+                      <div className="flex space-x-1">
+                        <Button variant="ghost" size="sm">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm">
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        {nota.status === 'autorizada' && (
+                          <Button variant="ghost" size="sm">
+                            <Send className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="consultar" className="space-y-4">
+        <TabsContent value="emitir">
           <Card>
             <CardHeader>
-              <CardTitle>Consultar documentos</CardTitle>
-              <CardDescription>Busque por número, chave de acesso ou status</CardDescription>
+              <CardTitle>Emitir Nova Nota Fiscal</CardTitle>
+              <CardDescription>
+                Preencha os dados para emitir uma nova nota fiscal
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  className="pl-9"
-                  placeholder="Ex.: 123, 3524..., autorizada"
-                  value={busca}
-                  onChange={(e) => setBusca(e.target.value)}
-                />
-              </div>
-
-              {isLoading ? (
-                <p className="text-sm text-muted-foreground">Carregando…</p>
-              ) : filtrados.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-6 text-center">
-                  Nenhum documento encontrado.
+            <CardContent>
+              <div className="text-center py-12">
+                <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
+                <h3 className="mt-4 text-lg font-semibold">Formulário de Emissão</h3>
+                <p className="mt-2 text-muted-foreground">
+                  Funcionalidade em desenvolvimento
                 </p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nº</TableHead>
-                      <TableHead>Emissão</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Ambiente</TableHead>
-                      <TableHead className="text-right">Valor</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filtrados.map((d) => (
-                      <TableRow key={d.id}>
-                        <TableCell className="font-medium">
-                          {d.numero ? `${d.numero}/${d.serie}` : d.id.slice(0, 8)}
-                        </TableCell>
-                        <TableCell>
-                          {d.data_emissao ? new Date(d.data_emissao).toLocaleString('pt-BR') : '—'}
-                        </TableCell>
-                        <TableCell>
-                          <FiscalStatusBadge status={d.status} />
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {d.ambiente ?? '—'} · {d.provider ?? '—'}
-                        </TableCell>
-                        <TableCell className="text-right">{currency(d.valor_total)}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button size="sm" variant="ghost" onClick={() => setDetalheId(d.id)} title="Detalhes">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            {d.venda_id && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => navigate(`/vendas/pedidos`)}
-                                title="Ver venda"
-                              >
-                                <ExternalLink className="h-4 w-4" />
-                              </Button>
-                            )}
-                            {d.chave_acesso && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => {
-                                  navigator.clipboard
-                                    .writeText(d.chave_acesso!)
-                                    .then(() => toast.success('Chave de acesso copiada.'))
-                                    .catch(() => toast.error('Não foi possível copiar a chave de acesso.'));
-                                }}
-                                title="Copiar chave"
-                              >
-                                <FileText className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="consultar">
+          <Card>
+            <CardHeader>
+              <CardTitle>Consultar Notas Fiscais</CardTitle>
+              <CardDescription>
+                Consulte o status das suas notas fiscais na SEFAZ
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-12">
+                <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
+                <h3 className="mt-4 text-lg font-semibold">Consulta SEFAZ</h3>
+                <p className="mt-2 text-muted-foreground">
+                  Funcionalidade em desenvolvimento
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="relatorios">
+          <Card>
+            <CardHeader>
+              <CardTitle>Relatórios Fiscais</CardTitle>
+              <CardDescription>
+                Gere relatórios detalhados das suas notas fiscais
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-12">
+                <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
+                <h3 className="mt-4 text-lg font-semibold">Relatórios</h3>
+                <p className="mt-2 text-muted-foreground">
+                  Funcionalidade em desenvolvimento
+                </p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-
-      <DetalheNFeDrawer
-        open={!!detalheId}
-        onOpenChange={(o) => { if (!o) setDetalheId(null); }}
-        documentoId={detalheId}
-      />
     </div>
   );
 };

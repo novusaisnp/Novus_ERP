@@ -203,7 +203,7 @@ Deno.serve(async (req) => {
       })
       .eq('id', documentoId);
 
-    const { error: evErr } = await client.from('fiscal_eventos').insert({
+    await client.from('fiscal_eventos').insert({
       empresa_representada_id: venda.empresa_representada_id,
       documento_id: documentoId,
       tipo: result.status === 'autorizada' ? 'autorizacao' : 'processamento',
@@ -213,7 +213,6 @@ Deno.serve(async (req) => {
       payload_provedor: (result.raw ?? null) as unknown,
       created_by: userData.user.id,
     });
-    if (evErr) console.error('[fiscal-emitir-nfe] falha ao gravar evento', evErr);
 
     // 6) TODO Fase 3: baixar XML/DANFE reais e subir para Storage
     if (useMock) {
@@ -242,17 +241,15 @@ Deno.serve(async (req) => {
 function mockEmitResult(ref: string): NFeEmitResult {
   const chaveMock = '35' + Date.now().toString().padStart(42, '0').slice(-42);
   return {
-    // Em modo mock, autorizamos imediatamente para que os próximos passos
-    // (cancelamento, CC-e, timeline) possam ser exercitados na UI.
-    status: 'autorizada',
+    status: 'processando',
     providerRef: ref,
     chaveAcesso: chaveMock,
-    protocoloAutorizacao: `MOCK-PROT-${Date.now()}`,
+    protocoloAutorizacao: undefined,
     codigoStatusSefaz: '100',
     motivoRejeicao: undefined,
     xmlUrl: `mock://fiscal-xml/${ref}.xml`,
     danfeUrl: `mock://fiscal-danfe/${ref}.pdf`,
-    raw: { mock: true, ref, autorizacao_simulada: true },
+    raw: { mock: true, ref },
   };
 }
 
