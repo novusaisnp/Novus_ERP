@@ -27,8 +27,9 @@ export const CnpjLookupInput: React.FC<CnpjLookupInputProps> = ({
 }) => {
   const [loading, setLoading] = useState(false);
 
-  const doLookup = async () => {
-    const clean = (value || '').replace(/\D/g, '');
+  const doLookup = async (override?: string) => {
+    const source = override ?? value ?? '';
+    const clean = source.replace(/\D/g, '');
     if (clean.length !== 14 || !onLookup) return;
     if (!validarCNPJ(clean)) {
       toast.error('CNPJ inválido');
@@ -53,7 +54,7 @@ export const CnpjLookupInput: React.FC<CnpjLookupInputProps> = ({
           const masked = mask(e.target.value);
           onChange(masked);
           if (autoLookup && masked.replace(/\D/g, '').length === 14) {
-            void doLookup();
+            void doLookup(masked);
           }
         }}
         onBlur={(e) => {
