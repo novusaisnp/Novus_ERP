@@ -221,11 +221,11 @@ const DashboardFiscal = () => {
         <CardContent className="space-y-2">
           <p className="text-sm text-muted-foreground">
             Executa <code>emitir → CC-e → cancelar</code> em modo mock para exercitar o pipeline fiscal
-            end-to-end. Requer uma venda faturada de teste.
+            end-to-end. Se o campo ficar vazio, usa automaticamente a venda elegível mais recente.
           </p>
           <div className="flex flex-col md:flex-row gap-2">
             <Input
-              placeholder="ID da venda faturada (UUID)"
+              placeholder="UUID ou número da venda (ex.: ABC0001)"
               value={smokeVendaId}
               onChange={(e) => setSmokeVendaId(e.target.value)}
               disabled={smokeRunning}
