@@ -15,6 +15,7 @@ import { DocumentUpload } from './DocumentUpload';
 import { TelefoneManager } from './TelefoneManager';
 import { DateInput } from './DateInput';
 import { fornecedorUtils } from '@/utils/fornecedorUtils';
+import { TipoPessoaSelector } from '@/components/modules/FormFornecedor/TipoPessoaSelector';
 
 interface FormFornecedorProps {
   fornecedor?: Fornecedor;
@@ -221,34 +222,13 @@ export const FormFornecedor: React.FC<FormFornecedorProps> = ({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Seleção do Tipo de Pessoa */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            Tipo de Fornecedor
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Tabs
-            value={formData.tipo_pessoa}
-            onValueChange={(value: TipoPessoa) => {
-              console.log('[FormFornecedor] Alterando tipo:', value);
-              setFormData(prev => ({ ...prev, tipo_pessoa: value }));
-            }}
-            className="w-full"
-          >
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="PJ" className="flex items-center gap-2">
-                <Building2 className="h-4 w-4" />
-                Pessoa Jurídica
-              </TabsTrigger>
-              <TabsTrigger value="PF" className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                Pessoa Física
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </CardContent>
-      </Card>
+      <TipoPessoaSelector
+        value={formData.tipo_pessoa}
+        onChange={(value) => {
+          console.log('[FormFornecedor] Alterando tipo:', value);
+          setFormData(prev => ({ ...prev, tipo_pessoa: value }));
+        }}
+      />
 
       {/* Campos específicos por tipo */}
       {formData.tipo_pessoa === 'PJ' ? (

@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, Loader2, Upload, Users, Building2, Trash2 } from 'lucide-react';
+import { TipoClienteSelector } from '@/components/modules/FormCliente/TipoClienteSelector';
 import { format } from 'date-fns';
 import { Cliente } from '@/types/cliente';
 import { consultarCEP, formatarCPF, formatarCNPJ, formatarCEP, validarCPF } from '@/services/cnpjApi';
@@ -263,36 +264,7 @@ export const FormCliente: React.FC<FormClienteProps> = ({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Seletor de Tipo - Destaque no topo */}
-      <Card className="border-primary/20">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Users className="h-5 w-5" />
-            Tipo de Cliente
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
-            <Button
-              type="button"
-              variant={formData.tipo === 'F' ? 'default' : 'outline'}
-              onClick={() => handleTipoChange('F')}
-              className="flex-1 h-12 transition-all duration-200"
-            >
-              <Users className="mr-2 h-4 w-4" />
-              Pessoa Física
-            </Button>
-            <Button
-              type="button"
-              variant={formData.tipo === 'J' ? 'default' : 'outline'}
-              onClick={() => handleTipoChange('J')}
-              className="flex-1 h-12 transition-all duration-200"
-            >
-              <Building2 className="mr-2 h-4 w-4" />
-              Pessoa Jurídica
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <TipoClienteSelector value={formData.tipo} onChange={handleTipoChange} />
 
       {/* Seção Identificação */}
       <Card>
