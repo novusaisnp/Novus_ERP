@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
       .eq('id', body.documentoId)
       .maybeSingle();
     if (docErr || !doc) return json({ error: 'documento_not_found' }, 404);
-    if (doc.status !== 'autorizada') {
+    if (String(doc.status).toUpperCase() !== 'AUTORIZADA') {
       return json({ error: 'invalid_status', message: `Somente NF-e autorizada pode ser cancelada (atual: ${doc.status}).` }, 409);
     }
 
@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
 
     const { error: upErr } = await client
       .from('fiscal_documentos_eletronicos')
-      .update({ status: 'cancelada', motivo_rejeicao: null })
+      .update({ status: 'CANCELADA', motivo_rejeicao: null })
       .eq('id', body.documentoId);
     if (upErr) return json({ error: 'db_update_failed', details: upErr.message }, 500);
 
