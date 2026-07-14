@@ -1,8 +1,10 @@
-import { useMemo } from "react";
-import { FileText, TrendingUp, XCircle, Clock } from "lucide-react";
+import { useMemo, useState } from "react";
+import { FileText, TrendingUp, XCircle, Clock, RefreshCw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -22,6 +24,7 @@ interface DocEmProc {
   status: string;
   data_emissao: string | null;
   provider: string | null;
+  venda_id: string | null;
 }
 
 const currency = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -49,7 +52,7 @@ const DashboardFiscal = () => {
       const limite = new Date(Date.now() - 10 * 60 * 1000).toISOString();
       const { data, error } = await supabase
         .from('fiscal_documentos_eletronicos')
-        .select('id, numero, serie, status, data_emissao, provider')
+        .select('id, numero, serie, status, data_emissao, provider, venda_id')
         .eq('status', 'processando')
         .lt('created_at', limite)
         .is('deleted_at', null)
@@ -69,6 +72,27 @@ const DashboardFiscal = () => {
     const ticket = autorizadas > 0 ? valorTotal / autorizadas : 0;
     return { total, autorizadas, rejeitadas, valorTotal, taxa, ticket };
   }, [metrics]);
+  const [reprocessando, setReprocessando] = useState<string | null>(null);
+
+  const reprocessar = async (doc: DocEmProc) => {
+    if (!doc.venda_id) {
+      toast.error('Documento sem venda vinculada — não é possível reprocessar automaticamente.');
+      return;
+    }
+    setReprocessando(doc.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('fiscal-emitir-nfe', {
+        body: { vendaId: doc.venda_id },
+      });
+      if (error) throw error;
+      toast.success(`Reprocessamento disparado (${data?.status ?? 'ok'}).`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Falha ao reprocessar.';
+      toast.error(msg);
+    } finally {
+      setReprocessando(null);
+    }
+  };
 
   return (
     <div className="container mx-auto px-6 py-8 space-y-6">
@@ -113,6 +137,7 @@ const DashboardFiscal = () => {
                   <TableHead>Emissão</TableHead>
                   <TableHead>Provedor</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Ação</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -122,6 +147,17 @@ const DashboardFiscal = () => {
                     <TableCell>{d.data_emissao ? new Date(d.data_emissao).toLocaleString('pt-BR') : '—'}</TableCell>
                     <TableCell>{d.provider ?? '—'}</TableCell>
                     <TableCell><Badge variant="secondary">{d.status}</Badge></TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => reprocessar(d)}
+                        disabled={reprocessando === d.id || !d.venda_id}
+                      >
+                        <RefreshCw className={`h-3.5 w-3.5 mr-1 ${reprocessando === d.id ? 'animate-spin' : ''}`} />
+                        Reprocessar
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

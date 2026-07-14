@@ -10,7 +10,7 @@ export interface FiscalStatusPorVenda {
 
 /**
  * Retorna o status fiscal mais recente para cada venda_id passado.
- * Uma única query cobre a página inteira (evita N+1).
+ * Usa a RPC `get_ultimo_documento_por_venda` (single round-trip, sem N+1).
  */
 export const useFiscalStatusPorVenda = (vendaIds: string[]) => {
   const key = [...new Set(vendaIds)].sort();
@@ -19,24 +19,14 @@ export const useFiscalStatusPorVenda = (vendaIds: string[]) => {
     enabled: key.length > 0,
     staleTime: 30_000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('fiscal_documentos_eletronicos')
-        .select('id, venda_id, status, updated_at')
-        .in('venda_id', key)
-        .is('deleted_at', null)
-        .order('updated_at', { ascending: false });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.rpc as any)('get_ultimo_documento_por_venda', {
+        venda_ids: key,
+      });
       if (error) throw error;
       const map: Record<string, FiscalStatusPorVenda> = {};
-      for (const row of data ?? []) {
-        if (!row.venda_id) continue;
-        if (!map[row.venda_id]) {
-          map[row.venda_id] = {
-            venda_id: row.venda_id,
-            documento_id: row.id,
-            status: row.status,
-            updated_at: row.updated_at,
-          };
-        }
+      for (const row of (data ?? []) as FiscalStatusPorVenda[]) {
+        if (row.venda_id) map[row.venda_id] = row;
       }
       return map;
     },

@@ -6952,6 +6952,15 @@ export type Database = {
           usuario_id: string
         }[]
       }
+      get_ultimo_documento_por_venda: {
+        Args: { venda_ids: string[] }
+        Returns: {
+          documento_id: string
+          status: string
+          updated_at: string
+          venda_id: string
+        }[]
+      }
       get_user_empresa_id: { Args: never; Returns: string }
       has_role: {
         Args: {
