@@ -59,6 +59,7 @@ describe('FormFornecedor (integração leve)', () => {
     const user = userEvent.setup();
     render(<FormFornecedor onSave={onSave} onCancel={onCancel} />);
 
+    await user.type(screen.getByLabelText(/CNPJ/i), '12345678000199');
     await user.type(screen.getByLabelText(/Razão Social/i), 'ACME LTDA');
     await user.click(screen.getByRole('button', { name: /^Criar$/i }));
 
