@@ -81,7 +81,7 @@ describe('FormCliente (integração leve)', () => {
     const onSave = vi.fn().mockResolvedValue(true);
     const user = userEvent.setup();
     render(<FormCliente onSave={onSave} onCancel={vi.fn()} />);
-    await user.click(screen.getByRole('button', { name: /^Salvar$/i }));
+    await user.click(screen.getByRole('button', { name: /^Criar$/i }));
     expect(onSave).not.toHaveBeenCalled();
   });
 
@@ -92,7 +92,7 @@ describe('FormCliente (integração leve)', () => {
     render(<FormCliente onSave={onSave} onCancel={onCancel} />);
 
     await user.type(screen.getByTestId('cliente-nome-input'), 'João Teste');
-    await user.click(screen.getByRole('button', { name: /^Salvar$/i }));
+    await user.click(screen.getByRole('button', { name: /^Criar$/i }));
 
     expect(onSave).toHaveBeenCalledTimes(1);
     expect(onSave.mock.calls[0][0]).toMatchObject({
