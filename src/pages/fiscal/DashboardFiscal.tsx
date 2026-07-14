@@ -27,8 +27,17 @@ interface DocEmProc {
   provider: string | null;
   venda_id: string | null;
 }
+interface AlertaAtivo {
+  id: string;
+  kind: string;
+  severity: string;
+  reason: string;
+  payload: Record<string, unknown> | null;
+  created_at: string;
+}
 
 const currency = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
 
 const DashboardFiscal = () => {
   const { data: metrics = [] } = useQuery<MetricRow[]>({
