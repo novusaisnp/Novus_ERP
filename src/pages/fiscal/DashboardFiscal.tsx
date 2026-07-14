@@ -52,7 +52,7 @@ const DashboardFiscal = () => {
       const limite = new Date(Date.now() - 10 * 60 * 1000).toISOString();
       const { data, error } = await supabase
         .from('fiscal_documentos_eletronicos')
-        .select('id, numero, serie, status, data_emissao, provider')
+        .select('id, numero, serie, status, data_emissao, provider, venda_id')
         .eq('status', 'processando')
         .lt('created_at', limite)
         .is('deleted_at', null)
