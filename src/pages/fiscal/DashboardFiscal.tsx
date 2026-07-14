@@ -230,7 +230,7 @@ const DashboardFiscal = () => {
               onChange={(e) => setSmokeVendaId(e.target.value)}
               disabled={smokeRunning}
             />
-            <Button onClick={rodarSmoke} disabled={smokeRunning || !smokeVendaId.trim()}>
+            <Button onClick={rodarSmoke} disabled={smokeRunning}>
               <PlayCircle className={`h-4 w-4 mr-1 ${smokeRunning ? 'animate-pulse' : ''}`} />
               {smokeRunning ? 'Executando…' : 'Rodar smoke mock'}
             </Button>
