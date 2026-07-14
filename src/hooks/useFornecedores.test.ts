@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 
-const toastFn = vi.fn();
+const { toastFn } = vi.hoisted(() => ({ toastFn: vi.fn() }));
 vi.mock('@/hooks/use-toast', () => ({
   useToast: () => ({ toast: toastFn }),
   toast: toastFn,
