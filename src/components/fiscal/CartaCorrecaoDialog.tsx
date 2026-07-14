@@ -25,7 +25,7 @@ const CartaCorrecaoDialog = ({ open, onOpenChange, documentoId, numero, proximaS
   const handleConfirm = async () => {
     if (!documentoId || !valid) return;
     try {
-      await cce.mutateAsync({ documentoId, correcao: correcao.trim() });
+      await cce.mutateAsync({ documentoId, correcao: correcao.trim(), sequencia: proximaSequencia });
       setCorrecao("");
       onOpenChange(false);
     } catch { /* toast já no hook */ }
