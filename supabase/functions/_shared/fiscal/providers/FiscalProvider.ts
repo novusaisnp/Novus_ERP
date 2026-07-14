@@ -97,6 +97,11 @@ export interface NFeStatusResult {
   raw: unknown;
 }
 
+export interface FiscalAssetDownload {
+  content: Uint8Array;
+  contentType: string;
+}
+
 export interface FiscalProvider {
   readonly name: FiscalProviderName;
   readonly environment: FiscalEnvironment;
@@ -105,6 +110,11 @@ export interface FiscalProvider {
   cancelNFe(payload: NFeCancelPayload): Promise<NFeStatusResult>;
   consultNFeStatus(providerRef: string): Promise<NFeStatusResult>;
   sendCCe(payload: NFeCCePayload): Promise<NFeStatusResult>;
+
+  /** Baixa binário do XML autorizado pelo provedor. Aceita URL absoluta ou providerRef. */
+  downloadXml?(refOrUrl: string): Promise<FiscalAssetDownload>;
+  /** Baixa binário do DANFE (PDF) pelo provedor. Aceita URL absoluta ou providerRef. */
+  downloadDanfe?(refOrUrl: string): Promise<FiscalAssetDownload>;
 }
 
 export class FiscalProviderError extends Error {

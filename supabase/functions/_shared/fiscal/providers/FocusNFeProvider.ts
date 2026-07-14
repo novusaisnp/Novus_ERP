@@ -3,6 +3,7 @@
 // Cancel/CCe/Status ficam com stubs (throw) para serem implementados na Fase 2.
 
 import {
+  FiscalAssetDownload,
   FiscalEnvironment,
   FiscalProvider,
   FiscalProviderError,
@@ -196,5 +197,27 @@ export class FocusNFeProvider implements FiscalProvider {
 
   sendCCe(_payload: NFeCCePayload): Promise<NFeStatusResult> {
     return Promise.reject(new Error('FocusNFeProvider.sendCCe: não implementado na Fase 1.'));
+  }
+
+  private async fetchAsset(refOrUrl: string, fallbackType: string): Promise<FiscalAssetDownload> {
+    const url = refOrUrl.startsWith('http') ? refOrUrl : `${this.baseUrl}${refOrUrl}`;
+    const resp = await fetch(url, { headers: { Authorization: this.authHeader() } });
+    if (!resp.ok) {
+      throw new FiscalProviderError(
+        `Focus NFe download falhou [${resp.status}] ${url}`,
+        resp.status,
+        await resp.text(),
+      );
+    }
+    const buf = new Uint8Array(await resp.arrayBuffer());
+    return { content: buf, contentType: resp.headers.get('content-type') ?? fallbackType };
+  }
+
+  downloadXml(refOrUrl: string): Promise<FiscalAssetDownload> {
+    return this.fetchAsset(refOrUrl, 'application/xml');
+  }
+
+  downloadDanfe(refOrUrl: string): Promise<FiscalAssetDownload> {
+    return this.fetchAsset(refOrUrl, 'application/pdf');
   }
 }
