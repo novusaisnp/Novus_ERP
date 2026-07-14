@@ -183,6 +183,68 @@ const DashboardFiscal = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-destructive" /> Alertas fiscais ativos
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {alertasAtivos.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum alerta fiscal aberto.</p>
+          ) : (
+            <div className="space-y-2">
+              {alertasAtivos.map((a) => (
+                <div key={a.id} className="flex items-start justify-between gap-3 rounded-md border p-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <Badge variant={severityVariant(a.severity)}>{a.severity}</Badge>
+                      <span className="font-medium">{a.kind}</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">{a.reason}</p>
+                    {a.payload && Object.keys(a.payload).length > 0 && (
+                      <pre className="text-xs bg-muted rounded px-2 py-1 mt-1 overflow-x-auto">
+                        {JSON.stringify(a.payload)}
+                      </pre>
+                    )}
+                  </div>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    {new Date(a.created_at).toLocaleString('pt-BR')}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <PlayCircle className="h-5 w-5" /> Rodar smoke mock
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Executa <code>emitir → CC-e → cancelar</code> em modo mock para exercitar o pipeline fiscal
+            end-to-end. Requer uma venda faturada de teste.
+          </p>
+          <div className="flex flex-col md:flex-row gap-2">
+            <Input
+              placeholder="ID da venda faturada (UUID)"
+              value={smokeVendaId}
+              onChange={(e) => setSmokeVendaId(e.target.value)}
+              disabled={smokeRunning}
+            />
+            <Button onClick={rodarSmoke} disabled={smokeRunning || !smokeVendaId.trim()}>
+              <PlayCircle className={`h-4 w-4 mr-1 ${smokeRunning ? 'animate-pulse' : ''}`} />
+              {smokeRunning ? 'Executando…' : 'Rodar smoke mock'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" /> Em processamento há mais de 10 min
           </CardTitle>
         </CardHeader>
