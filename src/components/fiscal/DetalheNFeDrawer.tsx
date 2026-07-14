@@ -56,13 +56,74 @@ const DetalheNFeDrawer = ({ open, onOpenChange, documentoId }: DetalheNFeDrawerP
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cceOpen, setCceOpen] = useState(false);
 
+  const downloadBlob = (content: string, filename: string, mime: string) => {
+    const blob = new Blob([content], { type: mime });
+    const href = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = href;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(href), 1000);
+  };
+
+  const buildMockXml = () => {
+    const d = documento!;
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<!-- DOCUMENTO SIMULADO (FISCAL_MOCK=true) — NÃO POSSUI VALIDADE FISCAL -->
+<nfeProc versao="4.00">
+  <NFe>
+    <infNFe Id="NFe${d.chave_acesso ?? ''}">
+      <ide><nNF>${d.numero ?? ''}</nNF><serie>${d.serie ?? ''}</serie><dhEmi>${d.data_emissao ?? ''}</dhEmi></ide>
+      <total><ICMSTot><vNF>${d.valor_total ?? 0}</vNF></ICMSTot></total>
+      <infAdic><infCpl>Documento gerado em modo simulação para validação de fluxo.</infCpl></infAdic>
+    </infNFe>
+  </NFe>
+  <protNFe><infProt><nProt>${d.protocolo_autorizacao ?? 'MOCK'}</nProt><cStat>100</cStat></infProt></protNFe>
+</nfeProc>`;
+  };
+
+  const buildMockDanfeHtml = () => {
+    const d = documento!;
+    const valor = typeof d.valor_total === 'number'
+      ? d.valor_total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+      : '—';
+    return `<!doctype html><html><head><meta charset="utf-8"><title>DANFE Simulado</title>
+<style>body{font-family:Arial,sans-serif;padding:32px;max-width:800px;margin:auto}
+.watermark{position:fixed;top:40%;left:10%;font-size:96px;color:#eee;transform:rotate(-30deg);z-index:-1}
+h1{border-bottom:2px solid #333}table{width:100%;border-collapse:collapse;margin-top:16px}
+td,th{border:1px solid #999;padding:8px;text-align:left}</style></head>
+<body><div class="watermark">SIMULAÇÃO</div>
+<h1>DANFE — Documento Auxiliar da NF-e</h1>
+<p><strong>⚠ Documento gerado em modo simulação (FISCAL_MOCK). Sem validade fiscal.</strong></p>
+<table>
+<tr><th>Nº / Série</th><td>${d.numero ?? '—'} / ${d.serie ?? '—'}</td></tr>
+<tr><th>Chave de acesso</th><td>${d.chave_acesso ?? '—'}</td></tr>
+<tr><th>Protocolo</th><td>${d.protocolo_autorizacao ?? '—'}</td></tr>
+<tr><th>Emissão</th><td>${d.data_emissao ? new Date(d.data_emissao).toLocaleString('pt-BR') : '—'}</td></tr>
+<tr><th>Status</th><td>${d.status ?? '—'}</td></tr>
+<tr><th>Valor total</th><td>${valor}</td></tr>
+</table>
+<p style="margin-top:24px;color:#666;font-size:12px">Use Ctrl+P para salvar como PDF.</p>
+</body></html>`;
+  };
+
   const handleOpenSigned = async (url: string | null | undefined, label: string) => {
+    if (!documento) return;
     if (!url) return;
-    if (url.startsWith('http')) { window.open(url, '_blank', 'noreferrer'); return; }
     if (url.startsWith('mock://')) {
-      toast.info(`${label} indisponível — documento em modo simulação.`);
+      const chave = documento.chave_acesso ?? documento.id;
+      if (label === 'XML') {
+        downloadBlob(buildMockXml(), `nfe-mock-${chave}.xml`, 'application/xml');
+      } else {
+        const win = window.open('', '_blank');
+        if (win) { win.document.write(buildMockDanfeHtml()); win.document.close(); }
+      }
+      toast.info(`${label} simulado gerado (modo mock — sem validade fiscal).`);
       return;
     }
+    if (url.startsWith('http')) { window.open(url, '_blank', 'noreferrer'); return; }
     const ref = buildBucketPath(url);
     if (!ref) { toast.error(`Não foi possível resolver o caminho do ${label}.`); return; }
     try {
