@@ -203,7 +203,7 @@ Deno.serve(async (req) => {
       })
       .eq('id', documentoId);
 
-    await client.from('fiscal_eventos').insert({
+    const { error: evErr } = await client.from('fiscal_eventos').insert({
       empresa_representada_id: venda.empresa_representada_id,
       documento_id: documentoId,
       tipo: result.status === 'autorizada' ? 'autorizacao' : 'processamento',
@@ -213,6 +213,7 @@ Deno.serve(async (req) => {
       payload_provedor: (result.raw ?? null) as unknown,
       created_by: userData.user.id,
     });
+    if (evErr) console.error('[fiscal-emitir-nfe] falha ao gravar evento', evErr);
 
     // 6) TODO Fase 3: baixar XML/DANFE reais e subir para Storage
     if (useMock) {
