@@ -5,6 +5,15 @@ Ações operacionais frequentes para o módulo fiscal. Todos os comandos assumem
 
 ## Executar smoke test em modo mock
 
+### Pela UI (recomendado)
+
+1. Acesse **Fiscal → Dashboard Fiscal** (admin-only, rota `/fiscal/dashboard`).
+2. Role até o card **"Rodar smoke mock"**.
+3. Cole o UUID de uma venda faturada e clique **Rodar smoke mock**.
+4. Toast confirma sucesso; o documento aparece nos KPIs e nos eventos da venda em segundos.
+
+### Via CLI (automação)
+
 ```bash
 export VITE_SUPABASE_URL=...
 export VITE_SUPABASE_PUBLISHABLE_KEY=...
@@ -14,6 +23,7 @@ node scripts/fiscal/smoke-mock.mjs
 ```
 
 Saída esperada: 3 linhas `ok: true` (`emitir`, `cce`, `cancelar`) e `step: done`.
+
 
 ## Reprocessar documento fiscal preso em `processando`
 
