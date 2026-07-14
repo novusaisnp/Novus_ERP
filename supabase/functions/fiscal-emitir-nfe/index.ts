@@ -277,8 +277,10 @@ Deno.serve(async (req) => {
       status: result.status,
       provider_ref: result.providerRef,
       chave_acesso: result.chaveAcesso,
-      xml_url: result.xmlUrl,
-      danfe_url: result.danfeUrl,
+      xml_url: xmlStoragePath ?? result.xmlUrl,
+      danfe_url: danfeStoragePath ?? result.danfeUrl,
+      xml_bucket: xmlStoragePath ? 'fiscal-xml' : undefined,
+      danfe_bucket: danfeStoragePath ? 'fiscal-danfe' : undefined,
       mock: useMock,
     }, 200);
   } catch (err) {
