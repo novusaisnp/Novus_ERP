@@ -60,22 +60,39 @@ Deno.serve(async (req: Request) => {
   }
   if (!body?.vendaId) return json({ error: 'invalid_input', missing: ['vendaId'] }, 400);
 
-  // Preserva a estrutura de auth para as chamadas internas.
+  // Chama sub-função via fetch direto para conseguirmos ler o body do erro
+  // (supabase.functions.invoke esconde o body quando o status é não-2xx).
   const invoke = async (fn: string, payload: Record<string, unknown>): Promise<StepResult> => {
     const t0 = Date.now();
+    const url = `${supabaseUrl}/functions/v1/${fn}`;
     try {
-      const { data, error } = await client.functions.invoke(fn, { body: payload });
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: authHeader,
+          apikey: anonKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
       const latency = Date.now() - t0;
-      if (error) {
-        return { step: fn, ok: false, error: error.message, status: `latency_ms=${latency}` };
-      }
+      const text = await resp.text();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const d = data as any;
+      let parsed: any = null;
+      try { parsed = text ? JSON.parse(text) : null; } catch { /* not json */ }
+      if (!resp.ok) {
+        return {
+          step: fn,
+          ok: false,
+          error: parsed?.error ?? parsed?.message ?? text.slice(0, 500) ?? `HTTP ${resp.status}`,
+          status: `http=${resp.status} latency_ms=${latency}`,
+        };
+      }
       return {
         step: fn,
         ok: true,
-        status: d?.status ?? 'ok',
-        documento_id: d?.documento_id ?? d?.documentoId,
+        status: parsed?.status ?? 'ok',
+        documento_id: parsed?.documento_id ?? parsed?.documentoId,
       };
     } catch (err) {
       return { step: fn, ok: false, error: (err as Error).message };
