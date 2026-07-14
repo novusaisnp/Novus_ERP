@@ -193,7 +193,7 @@ const SPED: React.FC = () => {
                 <Database className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-4 text-lg font-semibold">SPED Contribuições</h3>
                 <p className="mt-2 text-muted-foreground">
-                  Funcionalidade em desenvolvimento
+                  Geração do EFD-Contribuições depende da integração fiscal real. Disponível após ativação do provedor (<code>FISCAL_MOCK=false</code>).
                 </p>
               </div>
             </CardContent>
