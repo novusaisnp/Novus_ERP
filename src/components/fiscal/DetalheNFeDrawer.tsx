@@ -21,9 +21,10 @@ interface DetalheNFeDrawerProps {
 }
 
 const statusVariant = (status?: string | null): 'default' | 'secondary' | 'destructive' | 'outline' => {
-  switch (status) {
+  switch (status?.toLowerCase()) {
     case 'autorizada': return 'default';
     case 'processando': return 'secondary';
+    case 'em_processamento': return 'secondary';
     case 'cancelada':
     case 'denegada':
     case 'rejeitada':
@@ -131,7 +132,7 @@ const DetalheNFeDrawer = ({ open, onOpenChange, documentoId }: DetalheNFeDrawerP
                   <ExternalLink className="h-4 w-4 mr-2" /> Abrir DANFE
                 </Button>
 
-                {documento.status === 'autorizada' && (
+                {documento.status?.toLowerCase() === 'autorizada' && (
                   <div className="grid grid-cols-2 gap-2">
                     <Button variant="destructive" onClick={() => setCancelOpen(true)}>
                       <Ban className="h-4 w-4 mr-2" /> Cancelar NF-e

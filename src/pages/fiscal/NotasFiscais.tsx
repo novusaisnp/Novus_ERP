@@ -19,6 +19,7 @@ interface VendaEmitivel {
   cliente_id: string | null;
   valor_total: number | null;
   data_venda: string | null;
+  status: string | null;
 }
 interface DocRow {
   id: string;
@@ -49,7 +50,9 @@ const NotasFiscais = () => {
   const [filtroStatus, setFiltroStatus] = useState<string>("todos");
   const [busca, setBusca] = useState("");
 
-  // ---------- Emitir: vendas faturadas sem NF vinculada ----------
+  const statusEmissaoFiscal = ["CONFIRMADO", "EM_PRODUCAO", "FATURADO", "ENTREGUE"];
+
+  // ---------- Emitir: vendas elegíveis sem NF vinculada ----------
   const { data: vendasEmitiveis = [], refetch: refetchVendas, isFetching: fetchingVendas } =
     useQuery<VendaEmitivel[]>({
       queryKey: ["fiscal-vendas-emitiveis"],
@@ -57,7 +60,9 @@ const NotasFiscais = () => {
         const { data, error } = await supabase
           .from("vendas")
           .select("id, numero_venda, cliente_id, valor_total, data_venda, status")
-          .eq("status", "faturada")
+          .in("status", statusEmissaoFiscal)
+          .not("cliente_id", "is", null)
+          .is("deleted_at", null)
           .order("data_venda", { ascending: false })
           .limit(50);
         if (error) throw error;
@@ -149,9 +154,9 @@ const NotasFiscais = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Vendas faturadas prontas para emissão</CardTitle>
+                <CardTitle>Vendas prontas para emissão</CardTitle>
                 <CardDescription>
-                  Selecione uma venda e emita a NF-e. A emissão roda em modo mock quando
+                  Selecione uma venda confirmada, em produção, faturada ou entregue e emita a NF-e. A emissão roda em modo mock quando
                   <code className="mx-1">FISCAL_MOCK=true</code>.
                 </CardDescription>
               </div>
@@ -169,7 +174,7 @@ const NotasFiscais = () => {
               {vendasEmitiveis.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <FileText className="mx-auto h-10 w-10 mb-3" />
-                  Nenhuma venda faturada pendente de emissão fiscal.
+                  Nenhuma venda elegível pendente de emissão fiscal.
                 </div>
               ) : (
                 <Table>
@@ -177,6 +182,7 @@ const NotasFiscais = () => {
                     <TableRow>
                       <TableHead>Venda</TableHead>
                       <TableHead>Data</TableHead>
+                      <TableHead>Status</TableHead>
                       <TableHead>Valor</TableHead>
                       <TableHead className="text-right">Ação</TableHead>
                     </TableRow>
@@ -190,6 +196,7 @@ const NotasFiscais = () => {
                         <TableCell>
                           {v.data_venda ? new Date(v.data_venda).toLocaleDateString("pt-BR") : "—"}
                         </TableCell>
+                        <TableCell>{v.status ?? "—"}</TableCell>
                         <TableCell>{currency(v.valor_total)}</TableCell>
                         <TableCell className="text-right">
                           <Button size="sm" onClick={() => setEmitirVenda(v)}>
@@ -233,12 +240,11 @@ const NotasFiscais = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos os status</SelectItem>
-                    <SelectItem value="autorizada">Autorizadas</SelectItem>
-                    <SelectItem value="processando">Processando</SelectItem>
-                    <SelectItem value="rejeitada">Rejeitadas</SelectItem>
-                    <SelectItem value="denegada">Denegadas</SelectItem>
-                    <SelectItem value="cancelada">Canceladas</SelectItem>
-                    <SelectItem value="erro">Erro</SelectItem>
+                    <SelectItem value="AUTORIZADA">Autorizadas</SelectItem>
+                    <SelectItem value="EM_PROCESSAMENTO">Processando</SelectItem>
+                    <SelectItem value="REJEITADA">Rejeitadas</SelectItem>
+                    <SelectItem value="DENEGADA">Denegadas</SelectItem>
+                    <SelectItem value="CANCELADA">Canceladas</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button

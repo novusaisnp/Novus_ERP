@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
       .eq('id', body.documentoId)
       .maybeSingle();
     if (docErr || !doc) return json({ error: 'documento_not_found' }, 404);
-    if (doc.status !== 'autorizada') {
+    if (String(doc.status).toUpperCase() !== 'AUTORIZADA') {
       return json({ error: 'invalid_status', message: `Somente NF-e autorizada aceita CC-e (atual: ${doc.status}).` }, 409);
     }
 

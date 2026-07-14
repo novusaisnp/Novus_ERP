@@ -63,7 +63,7 @@ const DashboardFiscal = () => {
       const { data, error } = await supabase
         .from('fiscal_documentos_eletronicos')
         .select('id, numero, serie, status, data_emissao, provider, venda_id')
-        .eq('status', 'processando')
+        .in('status', ['processando', 'EM_PROCESSAMENTO'])
         .lt('created_at', limite)
         .is('deleted_at', null)
         .order('created_at', { ascending: true })
@@ -75,9 +75,9 @@ const DashboardFiscal = () => {
 
   const kpis = useMemo(() => {
     const total = metrics.reduce((a, r) => a + r.total, 0);
-    const autorizadas = metrics.filter((r) => r.status === 'autorizada').reduce((a, r) => a + r.total, 0);
-    const rejeitadas = metrics.filter((r) => ['rejeitada', 'denegada', 'erro'].includes(r.status)).reduce((a, r) => a + r.total, 0);
-    const valorTotal = metrics.filter((r) => r.status === 'autorizada').reduce((a, r) => a + Number(r.valor_total ?? 0), 0);
+    const autorizadas = metrics.filter((r) => r.status.toUpperCase() === 'AUTORIZADA').reduce((a, r) => a + r.total, 0);
+    const rejeitadas = metrics.filter((r) => ['REJEITADA', 'DENEGADA', 'ERRO'].includes(r.status.toUpperCase())).reduce((a, r) => a + r.total, 0);
+    const valorTotal = metrics.filter((r) => r.status.toUpperCase() === 'AUTORIZADA').reduce((a, r) => a + Number(r.valor_total ?? 0), 0);
     const taxa = total > 0 ? (autorizadas / total) * 100 : 0;
     const ticket = autorizadas > 0 ? valorTotal / autorizadas : 0;
     return { total, autorizadas, rejeitadas, valorTotal, taxa, ticket };
@@ -221,11 +221,11 @@ const DashboardFiscal = () => {
         <CardContent className="space-y-2">
           <p className="text-sm text-muted-foreground">
             Executa <code>emitir → CC-e → cancelar</code> em modo mock para exercitar o pipeline fiscal
-            end-to-end. Requer uma venda faturada de teste.
+            end-to-end. Se o campo ficar vazio, usa automaticamente a venda elegível mais recente.
           </p>
           <div className="flex flex-col md:flex-row gap-2">
             <Input
-              placeholder="ID da venda faturada (UUID)"
+              placeholder="UUID ou número da venda (ex.: ABC0001)"
               value={smokeVendaId}
               onChange={(e) => setSmokeVendaId(e.target.value)}
               disabled={smokeRunning}

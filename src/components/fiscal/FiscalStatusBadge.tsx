@@ -18,7 +18,8 @@ const map: Record<string, { label: string; variant: 'default' | 'secondary' | 'd
 
 const FiscalStatusBadge = ({ status, className, onClick }: FiscalStatusBadgeProps) => {
   if (!status) return null;
-  const cfg = map[status] ?? { label: `NF-e ${status}`, variant: 'outline' as const };
+  const normalized = status.toLowerCase();
+  const cfg = map[normalized] ?? { label: `NF-e ${status}`, variant: 'outline' as const };
   return (
     <Badge
       variant={cfg.variant}

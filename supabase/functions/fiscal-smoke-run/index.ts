@@ -12,7 +12,15 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
 interface SmokeRequest {
-  vendaId: string;
+  vendaId?: string;
+}
+
+interface VendaSmokeCandidate {
+  id: string;
+  numero_venda: string | null;
+  status: string | null;
+  cliente_id?: string | null;
+  empresa_representada_id?: string | null;
 }
 
 interface StepResult {
@@ -59,37 +67,205 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'invalid_json' }, 400);
   }
 
-  // Resolve vendaId: usa o informado ou auto-seleciona a última venda "faturada".
+  // Resolve vendaId: usa UUID informado, número da venda informado ou auto-seleciona
+  // a última venda em status fiscalmente elegível. O cadastro de vendas usa status
+  // em caixa alta (ex.: CONFIRMADO/FATURADO), não o texto legado "faturada".
   let vendaId = body?.vendaId?.trim();
   const isUuid = (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+  const eligibleStatuses = ['CONFIRMADO', 'EM_PRODUCAO', 'FATURADO', 'ENTREGUE'];
+  const eligibleStatusValues = [...eligibleStatuses, ...eligibleStatuses.map((s) => s.toLowerCase())];
 
-  const pickFaturada = async (): Promise<{ id?: string; error?: string }> => {
+  const isEligible = (status?: string | null) => eligibleStatuses.includes((status ?? '').toUpperCase());
+
+  const ensureSmokeFixture = async (): Promise<{ venda?: VendaSmokeCandidate; error?: string }> => {
+    const { data: empresa, error: empresaErr } = await client
+      .from('empresas_representadas')
+      .select('id')
+      .eq('ativo', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (empresaErr) return { error: empresaErr.message };
+    if (!empresa?.id) return { error: 'nenhuma empresa ativa disponível para criar fixture fiscal mock' };
+
+    const { data: clienteExistente, error: clienteSelectErr } = await client
+      .from('clientes')
+      .select('id')
+      .eq('empresa_representada_id', empresa.id)
+      .eq('nome', 'Cliente Fiscal Smoke Mock')
+      .is('deleted_at', null)
+      .limit(1)
+      .maybeSingle();
+
+    if (clienteSelectErr) return { error: clienteSelectErr.message };
+
+    let clienteId = clienteExistente?.id as string | undefined;
+    if (!clienteId) {
+      const { data: clienteNovo, error: clienteInsertErr } = await client
+        .from('clientes')
+        .insert({
+          empresa_representada_id: empresa.id,
+          tipo_pessoa: 'PJ',
+          nome: 'Cliente Fiscal Smoke Mock',
+          razao_social: 'Cliente Fiscal Smoke Mock Ltda',
+          cnpj: '11222333000181',
+          inscricao_estadual: 'ISENTO',
+          email: 'fiscal-smoke@example.test',
+          cep: '01001000',
+          logradouro: 'Praca da Se',
+          numero: '100',
+          bairro: 'Se',
+          cidade: 'Sao Paulo',
+          estado: 'SP',
+          ativo: true,
+        })
+        .select('id')
+        .single();
+      if (clienteInsertErr || !clienteNovo?.id) return { error: clienteInsertErr?.message ?? 'falha ao criar cliente fiscal mock' };
+      clienteId = clienteNovo.id;
+    }
+
+    const { data: vendaExistente, error: vendaSelectErr } = await client
+      .from('vendas')
+      .select('id, numero_venda, status, cliente_id, empresa_representada_id')
+      .eq('numero_venda', 'SMOKE-MOCK')
+      .is('deleted_at', null)
+      .limit(1)
+      .maybeSingle();
+
+    if (vendaSelectErr) return { error: vendaSelectErr.message };
+
+    let venda = vendaExistente as VendaSmokeCandidate | null;
+    if (!venda) {
+      const { data: vendaNova, error: vendaInsertErr } = await client
+        .from('vendas')
+        .insert({
+          empresa_representada_id: empresa.id,
+          cliente_id: clienteId,
+          numero_venda: 'SMOKE-MOCK',
+          data_venda: new Date().toISOString().slice(0, 10),
+          status: 'CONFIRMADO',
+          origem: 'mock',
+          canal_venda: 'fiscal-smoke',
+          subtotal: 1117.9,
+          valor_total: 1117.9,
+          tipo: 'P',
+          observacoes: 'Venda sintética criada automaticamente pelo smoke fiscal mock.',
+        })
+        .select('id, numero_venda, status, cliente_id, empresa_representada_id')
+        .single();
+      if (vendaInsertErr || !vendaNova?.id) return { error: vendaInsertErr?.message ?? 'falha ao criar venda fiscal mock' };
+      venda = vendaNova as VendaSmokeCandidate;
+    }
+
+    const { count: itemCount, error: itemCountErr } = await client
+      .from('itens_venda')
+      .select('id', { count: 'exact', head: true })
+      .eq('venda_id', venda.id);
+
+    if (itemCountErr) return { error: itemCountErr.message };
+    if ((itemCount ?? 0) === 0) {
+      const { error: itemInsertErr } = await client.from('itens_venda').insert({
+        empresa_representada_id: empresa.id,
+        venda_id: venda.id,
+        descricao: 'Produto smoke fiscal mock',
+        quantidade: 1,
+        unidade: 'UN',
+        preco_unitario: 1117.9,
+        valor_total_item: 1117.9,
+        ordem: 1,
+        tipo_item: 'P',
+      });
+      if (itemInsertErr) return { error: itemInsertErr.message };
+    }
+
+    return { venda };
+  };
+
+  const isVendaEmitivel = async (id: string): Promise<{ ok: boolean; reason?: string }> => {
+    const { data: venda, error: vendaErr } = await client
+      .from('vendas')
+      .select('id, cliente_id, empresa_representada_id')
+      .eq('id', id)
+      .maybeSingle();
+    if (vendaErr) return { ok: false, reason: vendaErr.message };
+    if (!venda?.cliente_id) return { ok: false, reason: 'venda sem cliente vinculado' };
+    if (!venda?.empresa_representada_id) return { ok: false, reason: 'venda sem empresa vinculada' };
+
+    const { count, error: itensErr } = await client
+      .from('itens_venda')
+      .select('id', { count: 'exact', head: true })
+      .eq('venda_id', id);
+    if (itensErr) return { ok: false, reason: itensErr.message };
+    if ((count ?? 0) === 0) return { ok: false, reason: 'venda sem itens' };
+    return { ok: true };
+  };
+
+  const pickElegivel = async (): Promise<{ venda?: VendaSmokeCandidate; error?: string }> => {
     const { data, error } = await client
       .from('vendas')
-      .select('id')
-      .eq('status', 'faturada')
+      .select('id, numero_venda, status, cliente_id, empresa_representada_id')
+      .is('deleted_at', null)
+      .in('status', eligibleStatusValues)
+      .not('cliente_id', 'is', null)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
     if (error) return { error: error.message };
-    if (!data?.id) return { error: 'nenhuma venda com status=faturada disponível para smoke test' };
-    return { id: data.id };
+    if (!data?.id) return ensureSmokeFixture();
+
+    const ready = await isVendaEmitivel(data.id);
+    if (!ready.ok) return ensureSmokeFixture();
+    return { venda: data as VendaSmokeCandidate };
+  };
+
+  const findVenda = async (ref: string): Promise<{ venda?: VendaSmokeCandidate; error?: string }> => {
+    const query = client
+      .from('vendas')
+      .select('id, numero_venda, status, cliente_id, empresa_representada_id')
+      .is('deleted_at', null)
+      .limit(1)
+      .maybeSingle();
+
+    const { data, error } = isUuid(ref)
+      ? await query.eq('id', ref)
+      : await query.eq('numero_venda', ref);
+
+    if (error) return { error: error.message };
+    if (!data?.id) return {};
+    return { venda: data as VendaSmokeCandidate };
   };
 
   if (!vendaId) {
-    const pick = await pickFaturada();
+    const pick = await pickElegivel();
     if (pick.error) return json({ error: 'no_venda_available', message: pick.error }, 404);
-    vendaId = pick.id!;
+    vendaId = pick.venda!.id;
   } else {
-    if (!isUuid(vendaId)) return json({ error: 'invalid_venda_id', message: 'vendaId não é um UUID válido' }, 400);
-    const { data: exists } = await client.from('vendas').select('id, status').eq('id', vendaId).maybeSingle();
-    if (!exists) {
-      const pick = await pickFaturada();
+    const found = await findVenda(vendaId);
+    if (found.error) return json({ error: 'venda_lookup_failed', message: found.error }, 500);
+    if (!found.venda) {
+      const pick = await pickElegivel();
       if (pick.error) {
-        return json({ error: 'venda_not_found', message: `venda ${vendaId} não existe e não há vendas faturadas para fallback` }, 404);
+        return json({ error: 'venda_not_found', message: `venda ${vendaId} não encontrada por UUID/número e não há venda elegível para fallback` }, 404);
       }
-      console.log(`[fiscal-smoke-run] venda ${vendaId} não encontrada — usando fallback ${pick.id}`);
-      vendaId = pick.id!;
+      console.log(`[fiscal-smoke-run] venda ${vendaId} não encontrada — usando fallback ${pick.venda!.id}`);
+      vendaId = pick.venda!.id;
+    } else if (!isEligible(found.venda.status)) {
+      return json({
+        error: 'venda_status_not_eligible',
+        message: `venda ${found.venda.numero_venda ?? found.venda.id} está com status=${found.venda.status}; status aceitos: ${eligibleStatuses.join(', ')}`,
+      }, 409);
+    } else {
+      const ready = await isVendaEmitivel(found.venda.id);
+      if (!ready.ok) {
+        const fixture = await ensureSmokeFixture();
+        if (fixture.error) return json({ error: 'venda_not_emitible', message: `${ready.reason}; fallback mock falhou: ${fixture.error}` }, 422);
+        console.log(`[fiscal-smoke-run] venda ${found.venda.numero_venda ?? found.venda.id} não emitível (${ready.reason}) — usando fixture ${fixture.venda!.id}`);
+        vendaId = fixture.venda!.id;
+      } else {
+        vendaId = found.venda.id;
+      }
     }
   }
 
