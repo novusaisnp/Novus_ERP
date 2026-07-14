@@ -169,6 +169,111 @@ export function evalBehindSchedules(i: BehindSchedInput): AlertCandidate | null 
   return null;
 }
 
+// ---------- PROBE FISCAL 1: documentos "processando" travados ----------
+export interface FiscalStuckInput {
+  stuckCount: number; // docs em status='processando' há > 10 min
+  oldestAgeSeconds: number | null;
+}
+
+export function evalFiscalProcessandoStuck(i: FiscalStuckInput): AlertCandidate | null {
+  const age = i.oldestAgeSeconds ?? 0;
+  if (i.stuckCount === 0) return null;
+  if (i.stuckCount > 5 || age > 1800) {
+    return {
+      kind: "fiscal_processando_stuck",
+      reason: "fiscal_processando_page",
+      severity: "page",
+      payload: { stuck_count: i.stuckCount, oldest_age_seconds: age },
+    };
+  }
+  return {
+    kind: "fiscal_processando_stuck",
+    reason: "fiscal_processando_warning",
+    severity: "warning",
+    payload: { stuck_count: i.stuckCount, oldest_age_seconds: age },
+  };
+}
+
+// ---------- PROBE FISCAL 2: taxa de rejeição em 1h ----------
+export interface FiscalRejeicaoInput {
+  autorizadas1h: number;
+  rejeitadas1h: number; // inclui rejeitada, denegada, erro
+}
+
+export function evalFiscalRejeicaoAlta(i: FiscalRejeicaoInput): AlertCandidate | null {
+  const total = i.autorizadas1h + i.rejeitadas1h;
+  if (total < 5) return null;
+  const pct = Math.round((1000 * i.rejeitadas1h) / total) / 10;
+  if (pct >= 20) {
+    return {
+      kind: "fiscal_rejeicao_alta",
+      reason: "fiscal_rejeicao_page",
+      severity: "page",
+      payload: { rejeicao_pct: pct, total_1h: total, rejeitadas_1h: i.rejeitadas1h },
+    };
+  }
+  if (pct >= 5) {
+    return {
+      kind: "fiscal_rejeicao_alta",
+      reason: "fiscal_rejeicao_warning",
+      severity: "warning",
+      payload: { rejeicao_pct: pct, total_1h: total, rejeitadas_1h: i.rejeitadas1h },
+    };
+  }
+  return null;
+}
+
+// ---------- PROBE FISCAL 3: erros em edge functions fiscais (15 min) ----------
+export interface FiscalErroEdgeInput {
+  erros15m: number; // eventos tipo 'erro_emissao' | 'erro_cancelamento' | 'erro_cce'
+}
+
+export function evalFiscalErroEdge(i: FiscalErroEdgeInput): AlertCandidate | null {
+  if (i.erros15m >= 10) {
+    return {
+      kind: "fiscal_erro_edge",
+      reason: "fiscal_erro_edge_page",
+      severity: "page",
+      payload: { erros_15m: i.erros15m },
+    };
+  }
+  if (i.erros15m >= 3) {
+    return {
+      kind: "fiscal_erro_edge",
+      reason: "fiscal_erro_edge_warning",
+      severity: "warning",
+      payload: { erros_15m: i.erros15m },
+    };
+  }
+  return null;
+}
+
+// ---------- PROBE FISCAL 4: certificado A1 próximo do vencimento ----------
+export interface FiscalCertificadoInput {
+  expira30d: number; // <30 dias
+  expira7d: number;  // <7 dias
+}
+
+export function evalFiscalCertificadoExpira(i: FiscalCertificadoInput): AlertCandidate | null {
+  if (i.expira7d > 0) {
+    return {
+      kind: "fiscal_certificado_expira",
+      reason: "fiscal_certificado_page",
+      severity: "page",
+      payload: { expira_7d: i.expira7d, expira_30d: i.expira30d },
+    };
+  }
+  if (i.expira30d > 0) {
+    return {
+      kind: "fiscal_certificado_expira",
+      reason: "fiscal_certificado_warning",
+      severity: "warning",
+      payload: { expira_30d: i.expira30d },
+    };
+  }
+  return null;
+}
+
 /** Retorna o conjunto ativo de `kind` avaliados (usado para auto-resolve). */
 export const ALL_ALERT_KINDS = [
   "cron_heartbeat",
@@ -177,4 +282,8 @@ export const ALL_ALERT_KINDS = [
   "failure_spike",
   "resign_saturation",
   "behind_schedules",
+  "fiscal_processando_stuck",
+  "fiscal_rejeicao_alta",
+  "fiscal_erro_edge",
+  "fiscal_certificado_expira",
 ] as const;

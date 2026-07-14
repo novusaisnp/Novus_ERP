@@ -4,6 +4,20 @@
 
 **URL**: https://lovable.dev/projects/fa228a7b-84a2-46ec-a4ba-ea16c3c3e172
 
+## Módulo Fiscal (NF-e)
+
+- **Dashboard Fiscal** (admin): `/fiscal/dashboard` — KPIs, documentos travados,
+  alertas fiscais ativos e botão **"Rodar smoke mock"**.
+- **Diagnóstico completo do módulo:** [`docs/DIAGNOSTICO_FISCAL_REAL.md`](./docs/DIAGNOSTICO_FISCAL_REAL.md).
+- **Auditoria/tomografia:** [`docs/AUDITORIA_TOMOGRAFIA_NOVUS_ERP.md`](./docs/AUDITORIA_TOMOGRAFIA_NOVUS_ERP.md).
+- **Runbook operacional:** [`docs/fiscal/RUNBOOK.md`](./docs/fiscal/RUNBOOK.md).
+- **Ativação do provedor real (Focus NFe):** [`docs/FISCAL_ATIVACAO_PROVEDOR_REAL.md`](./docs/FISCAL_ATIVACAO_PROVEDOR_REAL.md).
+
+Em `FISCAL_MOCK=true` (default), toda a UI, edge functions, alertas e testes
+operam com dados simulados — pronto para conexão com provedor real assim que
+`FISCAL_PROVIDER_API_KEY_HOM` e `FISCAL_WEBHOOK_SECRET` forem configurados.
+
+
 ## How can I edit this code?
 
 There are several ways of editing your application.

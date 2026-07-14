@@ -7,6 +7,10 @@ import {
   ALL_ALERT_KINDS,
   evalBehindSchedules,
   evalFailureSpikes,
+  evalFiscalCertificadoExpira,
+  evalFiscalErroEdge,
+  evalFiscalProcessandoStuck,
+  evalFiscalRejeicaoAlta,
   evalHeartbeat,
   evalResignSaturation,
   evalStorageRate,
@@ -154,6 +158,72 @@ Deno.serve(async (req: Request) => {
       maxDelaySeconds: maxDelay,
     });
     if (cBehind) candidates.push(cBehind);
+
+    // ---------- PROBES FISCAIS (P4 hardening) ----------
+
+    // FISCAL 1 — documentos "processando" há > 10 min
+    const fiscalStuckThreshold = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const { data: fiscalStuckRows } = await admin
+      .from("fiscal_documentos_eletronicos")
+      .select("created_at")
+      .eq("status", "processando")
+      .is("deleted_at", null)
+      .lt("created_at", fiscalStuckThreshold)
+      .order("created_at", { ascending: true })
+      .limit(50);
+    const fStuck = (fiscalStuckRows ?? []) as Array<{ created_at: string }>;
+    const oldestFiscal = fStuck[0]?.created_at ?? null;
+    const oldestFiscalAge = oldestFiscal
+      ? Math.floor((Date.now() - new Date(oldestFiscal).getTime()) / 1000)
+      : null;
+    const cFStuck = evalFiscalProcessandoStuck({
+      stuckCount: fStuck.length,
+      oldestAgeSeconds: oldestFiscalAge,
+    });
+    if (cFStuck) candidates.push(cFStuck);
+
+    // FISCAL 2 — taxa de rejeição na última hora
+    const { data: fiscalStatusRows } = await admin
+      .from("fiscal_documentos_eletronicos")
+      .select("status")
+      .gte("updated_at", sinceIso1h)
+      .is("deleted_at", null)
+      .limit(5000);
+    const fRows = (fiscalStatusRows ?? []) as Array<{ status: string | null }>;
+    const autorizadas = fRows.filter((r) => r.status === "autorizada").length;
+    const rejeitadas = fRows.filter((r) =>
+      ["rejeitada", "denegada", "erro"].includes(r.status ?? "")
+    ).length;
+    const cFRej = evalFiscalRejeicaoAlta({
+      autorizadas1h: autorizadas,
+      rejeitadas1h: rejeitadas,
+    });
+    if (cFRej) candidates.push(cFRej);
+
+    // FISCAL 3 — erros em eventos fiscais (15 min)
+    const { data: fiscalErrosRows } = await admin
+      .from("fiscal_eventos")
+      .select("id, tipo")
+      .in("tipo", ["erro_emissao", "erro_cancelamento", "erro_cce"])
+      .gte("created_at", sinceIso15)
+      .limit(200);
+    const cFErr = evalFiscalErroEdge({ erros15m: (fiscalErrosRows ?? []).length });
+    if (cFErr) candidates.push(cFErr);
+
+    // FISCAL 4 — certificados A1 próximos do vencimento
+    const in30dIso = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
+    const in7dIso = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString();
+    const { data: certRows } = await admin
+      .from("fiscal_certificados")
+      .select("validade_ate")
+      .lt("validade_ate", in30dIso)
+      .is("deleted_at", null)
+      .limit(200);
+    const certs = (certRows ?? []) as Array<{ validade_ate: string | null }>;
+    const expira30d = certs.length;
+    const expira7d = certs.filter((c) => c.validade_ate && c.validade_ate < in7dIso).length;
+    const cFCert = evalFiscalCertificadoExpira({ expira30d, expira7d });
+    if (cFCert) candidates.push(cFCert);
   } catch (err) {
     log("probes_failed", { err: (err as Error).message });
     return json({ error: "probes_failed" }, 500);

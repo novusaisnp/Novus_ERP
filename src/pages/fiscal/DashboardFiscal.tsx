@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
-import { FileText, TrendingUp, XCircle, Clock, RefreshCw } from "lucide-react";
+import { FileText, TrendingUp, XCircle, Clock, RefreshCw, PlayCircle, AlertTriangle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -26,8 +27,17 @@ interface DocEmProc {
   provider: string | null;
   venda_id: string | null;
 }
+interface AlertaAtivo {
+  id: string;
+  kind: string;
+  severity: string;
+  reason: string;
+  payload: Record<string, unknown> | null;
+  created_at: string;
+}
 
 const currency = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
 
 const DashboardFiscal = () => {
   const { data: metrics = [] } = useQuery<MetricRow[]>({
@@ -73,6 +83,24 @@ const DashboardFiscal = () => {
     return { total, autorizadas, rejeitadas, valorTotal, taxa, ticket };
   }, [metrics]);
   const [reprocessando, setReprocessando] = useState<string | null>(null);
+  const [smokeVendaId, setSmokeVendaId] = useState<string>("");
+  const [smokeRunning, setSmokeRunning] = useState(false);
+
+  const { data: alertasAtivos = [], refetch: refetchAlertas } = useQuery<AlertaAtivo[]>({
+    queryKey: ['fiscal-alertas-ativos'],
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('report_ops_alerts')
+        .select('id, kind, severity, reason, payload, created_at')
+        .is('resolved_at', null)
+        .like('kind', 'fiscal_%')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return (data ?? []) as AlertaAtivo[];
+    },
+  });
 
   const reprocessar = async (doc: DocEmProc) => {
     if (!doc.venda_id) {
@@ -93,6 +121,38 @@ const DashboardFiscal = () => {
       setReprocessando(null);
     }
   };
+
+  const rodarSmoke = async () => {
+    const vendaId = smokeVendaId.trim();
+    if (!vendaId) {
+      toast.error('Informe o ID de uma venda faturada para o smoke test.');
+      return;
+    }
+    setSmokeRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('fiscal-smoke-run', {
+        body: { vendaId },
+      });
+      if (error) throw error;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const d = data as any;
+      if (!d?.ok) {
+        toast.error(`Smoke falhou na etapa "${d?.step ?? '?'}".`);
+      } else {
+        toast.success(`Smoke concluído — documento ${d.documento_id?.slice(0, 8) ?? '?'}`);
+      }
+      refetchAlertas();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Falha ao rodar smoke.';
+      toast.error(msg);
+    } finally {
+      setSmokeRunning(false);
+    }
+  };
+
+  const severityVariant = (s: string): 'destructive' | 'secondary' =>
+    s === 'page' ? 'destructive' : 'secondary';
+
 
   return (
     <div className="container mx-auto px-6 py-8 space-y-6">
@@ -119,6 +179,68 @@ const DashboardFiscal = () => {
           <CardContent><p className="text-2xl font-bold">{currency(kpis.ticket)}</p></CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-destructive" /> Alertas fiscais ativos
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {alertasAtivos.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum alerta fiscal aberto.</p>
+          ) : (
+            <div className="space-y-2">
+              {alertasAtivos.map((a) => (
+                <div key={a.id} className="flex items-start justify-between gap-3 rounded-md border p-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <Badge variant={severityVariant(a.severity)}>{a.severity}</Badge>
+                      <span className="font-medium">{a.kind}</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">{a.reason}</p>
+                    {a.payload && Object.keys(a.payload).length > 0 && (
+                      <pre className="text-xs bg-muted rounded px-2 py-1 mt-1 overflow-x-auto">
+                        {JSON.stringify(a.payload)}
+                      </pre>
+                    )}
+                  </div>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    {new Date(a.created_at).toLocaleString('pt-BR')}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <PlayCircle className="h-5 w-5" /> Rodar smoke mock
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Executa <code>emitir → CC-e → cancelar</code> em modo mock para exercitar o pipeline fiscal
+            end-to-end. Requer uma venda faturada de teste.
+          </p>
+          <div className="flex flex-col md:flex-row gap-2">
+            <Input
+              placeholder="ID da venda faturada (UUID)"
+              value={smokeVendaId}
+              onChange={(e) => setSmokeVendaId(e.target.value)}
+              disabled={smokeRunning}
+            />
+            <Button onClick={rodarSmoke} disabled={smokeRunning || !smokeVendaId.trim()}>
+              <PlayCircle className={`h-4 w-4 mr-1 ${smokeRunning ? 'animate-pulse' : ''}`} />
+              {smokeRunning ? 'Executando…' : 'Rodar smoke mock'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
 
       <Card>
         <CardHeader>

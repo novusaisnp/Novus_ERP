@@ -3,6 +3,15 @@
 > Guia passo-a-passo para sair do modo mock (`FISCAL_MOCK=true`) e ativar a
 > comunicação real com o provedor fiscal em ambiente de homologação.
 
+> **Nota — smoke test em mock:** para exercitar o pipeline fiscal sem provedor
+> real, use o botão **"Rodar smoke mock"** no **Dashboard Fiscal**
+> (`/fiscal/dashboard`, admin-only). Ele dispara a edge function
+> `fiscal-smoke-run` que executa `emitir → CC-e → cancelar` para uma venda
+> faturada e popula `fiscal_documentos_eletronicos` + `fiscal_eventos`.
+> O script `scripts/fiscal/smoke-mock.mjs` continua disponível para automação
+> externa (ver [`docs/fiscal/RUNBOOK.md`](./fiscal/RUNBOOK.md)).
+
+
 ## 1. Pré-requisitos
 
 - Conta ativa na **Focus NFe** (ou provedor equivalente) com CNPJ de homologação já provisionado.
