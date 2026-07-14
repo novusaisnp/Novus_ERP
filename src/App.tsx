@@ -66,6 +66,9 @@ import ConciliacaoRelatorios from './pages/gestao-bancaria/conciliacao/relatorio
 import NotasFiscais from './pages/fiscal/NotasFiscais';
 import SPED from './pages/fiscal/SPED';
 import Tributos from './pages/fiscal/Tributos';
+const DashboardFiscal = React.lazy(() => import('./pages/fiscal/DashboardFiscal'));
+
+
 
 
 // RH Pages
