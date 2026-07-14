@@ -241,15 +241,17 @@ Deno.serve(async (req) => {
 function mockEmitResult(ref: string): NFeEmitResult {
   const chaveMock = '35' + Date.now().toString().padStart(42, '0').slice(-42);
   return {
-    status: 'processando',
+    // Em modo mock, autorizamos imediatamente para que os próximos passos
+    // (cancelamento, CC-e, timeline) possam ser exercitados na UI.
+    status: 'autorizada',
     providerRef: ref,
     chaveAcesso: chaveMock,
-    protocoloAutorizacao: undefined,
+    protocoloAutorizacao: `MOCK-PROT-${Date.now()}`,
     codigoStatusSefaz: '100',
     motivoRejeicao: undefined,
     xmlUrl: `mock://fiscal-xml/${ref}.xml`,
     danfeUrl: `mock://fiscal-danfe/${ref}.pdf`,
-    raw: { mock: true, ref },
+    raw: { mock: true, ref, autorizacao_simulada: true },
   };
 }
 
