@@ -105,7 +105,8 @@ Deno.serve(async (req) => {
       .eq('idempotency_key', idempotencyKey)
       .maybeSingle();
 
-    if (docExistente && ['autorizada', 'processando'].includes(docExistente.status)) {
+    const statusExistente = String(docExistente?.status ?? '').toUpperCase();
+    if (docExistente && ['AUTORIZADA', 'EM_PROCESSAMENTO'].includes(statusExistente)) {
       return json({
         error: 'duplicate_emission',
         message: 'Já existe NF-e em processamento ou autorizada para esta venda.',
@@ -117,10 +118,10 @@ Deno.serve(async (req) => {
       empresa_representada_id: venda.empresa_representada_id,
       venda_id: venda.id,
       cliente_id: venda.cliente_id,
-      tipo: 'NFe',
+      tipo: 'NFE',
       modelo: 55,
       serie: payload.serie,
-      ambiente: environment === 'production' ? 'Producao' : 'Teste',
+      ambiente: environment === 'production' ? 'PRODUCAO' : 'HOMOLOGACAO',
       data_emissao: payload.dataEmissao,
       valor_produtos: payload.valorTotal,
       valor_frete: 0,
@@ -132,7 +133,7 @@ Deno.serve(async (req) => {
       valor_ipi: 0,
       valor_pis: 0,
       valor_cofins: 0,
-      status: 'processando',
+      status: 'EM_PROCESSAMENTO',
       provider: providerName,
       idempotency_key: idempotencyKey,
       created_by: userData.user.id,
@@ -173,7 +174,7 @@ Deno.serve(async (req) => {
       const message = (err as Error).message ?? 'erro desconhecido';
       await client
         .from('fiscal_documentos_eletronicos')
-        .update({ status: 'erro', motivo_rejeicao: message })
+        .update({ status: 'REJEITADA', motivo_rejeicao: message })
         .eq('id', documentoId);
       await client.from('fiscal_eventos').insert({
         empresa_representada_id: venda.empresa_representada_id,
@@ -190,7 +191,7 @@ Deno.serve(async (req) => {
     await client
       .from('fiscal_documentos_eletronicos')
       .update({
-        status: result.status,
+        status: toDocumentoStatus(result.status),
         provider_ref: result.providerRef,
         chave_acesso: result.chaveAcesso,
         protocolo_autorizacao: result.protocoloAutorizacao,
@@ -251,6 +252,20 @@ function mockEmitResult(ref: string): NFeEmitResult {
     danfeUrl: `mock://fiscal-danfe/${ref}.pdf`,
     raw: { mock: true, ref },
   };
+}
+
+function toDocumentoStatus(status: string): string {
+  const normalized = status.toLowerCase();
+  const map: Record<string, string> = {
+    processando: 'EM_PROCESSAMENTO',
+    autorizada: 'AUTORIZADA',
+    rejeitada: 'REJEITADA',
+    cancelada: 'CANCELADA',
+    denegada: 'DENEGADA',
+    inutilizada: 'INUTILIZADA',
+    erro: 'REJEITADA',
+  };
+  return map[normalized] ?? status.toUpperCase();
 }
 
 function json(body: unknown, status: number): Response {
