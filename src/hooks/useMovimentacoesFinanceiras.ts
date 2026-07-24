@@ -6,7 +6,8 @@ import {
   FiltrosMovimentacao,
   EstatisticasMovimentacao,
   PermissoesMovimentacao,
-  TipoTitulo
+  TipoTitulo,
+  StatusTitulo
 } from '@/types/movimentacoesFinanceiras';
 import { qk } from '@/lib/queryKeys';
 import {
@@ -28,7 +29,7 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
 
       // Buscar contas a pagar se não filtrou apenas contas a receber
       if (filtros.tipo_titulo !== 'CONTAS_RECEBER') {
-        let queryPagar: any = supabase
+        let queryPagar = supabase
           .from('contas_pagar')
           .select(`
             *,
@@ -86,7 +87,7 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
         if (errorPagar) {
           console.error('[useMovimentacoesFinanceiras] Erro ao buscar contas a pagar:', errorPagar);
         } else if (contasPagar) {
-          contasPagar.forEach((conta: any) => {
+          contasPagar.forEach((conta) => {
             const titulo: TituloFinanceiro = {
               id: conta.id,
               tipo: 'CONTAS_PAGAR',
@@ -99,7 +100,7 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
               ),
               data_emissao: conta.data_emissao,
               data_vencimento: conta.data_vencimento,
-              situacao: dbStatusPagarToUi(conta.status ?? conta.situacao) as any,
+              situacao: dbStatusPagarToUi(conta.status ?? conta.situacao) as StatusTitulo,
 
               observacoes: conta.observacoes,
               created_at: conta.created_at,
@@ -120,7 +121,7 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
 
       // Buscar contas a receber se não filtrou apenas contas a pagar
       if (filtros.tipo_titulo !== 'CONTAS_PAGAR') {
-        let queryReceber: any = supabase
+        let queryReceber = supabase
           .from('contas_receber')
           .select(`
             *,
@@ -168,7 +169,7 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
           console.error('[useMovimentacoesFinanceiras] Erro ao buscar contas a receber:', errorReceber);
 
         } else if (contasReceber) {
-          contasReceber.forEach((conta: any) => {
+          contasReceber.forEach((conta) => {
             const titulo: TituloFinanceiro = {
               id: conta.id,
               tipo: 'CONTAS_RECEBER',
@@ -182,7 +183,7 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
               data_emissao: conta.data_emissao,
               data_vencimento: conta.data_vencimento,
               data_pagamento: conta.data_recebimento ?? conta.data_pagamento,
-              situacao: dbStatusReceberToUi(conta.status ?? conta.situacao) as any,
+              situacao: dbStatusReceberToUi(conta.status ?? conta.situacao) as StatusTitulo,
 
               observacoes: conta.observacoes,
               created_at: conta.created_at,

@@ -23,6 +23,18 @@ interface SyncStatusPeriod {
   }>;
 }
 
+type SyncLogStatus = 'success' | 'error' | 'pending';
+
+interface SyncLogRow {
+  status: SyncLogStatus;
+  created_at: string;
+  execution_time_ms: number | null;
+}
+
+type CountsByStatus = Record<SyncLogStatus, number>;
+
+const emptyCounts = (): CountsByStatus => ({ success: 0, error: 0, pending: 0 });
+
 export const useSyncStatus = () => {
   const [syncStatus, setSyncStatus] = useState<SyncStatusPeriod>({
     last24h: { total: 0, success: 0, error: 0, pending: 0 },
@@ -35,7 +47,7 @@ export const useSyncStatus = () => {
   const fetchSyncStatus = async () => {
     try {
       setLoading(true);
-      
+
       // Buscar dados das últimas 24h
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { data: last24hData, error: error24h } = await supabase
@@ -54,44 +66,47 @@ export const useSyncStatus = () => {
 
       if (error7d) throw error7d;
 
+      const rows24h = (last24hData ?? []) as SyncLogRow[];
+      const rows7d = (last7dData ?? []) as SyncLogRow[];
+
       // Processar dados das últimas 24h
-      const stats24h = (last24hData || []).reduce((acc: any, log: any) => {
+      const stats24h = rows24h.reduce((acc, log) => {
         acc.total++;
-        acc[log.status as keyof SyncStatus]++;
+        acc[log.status]++;
         return acc;
-      }, { total: 0, success: 0, error: 0, pending: 0 } as any);
+      }, { total: 0, ...emptyCounts() });
 
       // Calcular tempo médio de execução (24h)
-      const executionTimes = (last24hData || [])
-        .filter((log: any) => log.execution_time_ms)
-        .map((log: any) => log.execution_time_ms);
-      
-      const avgExecutionTime = executionTimes.length > 0 
-        ? Math.round(executionTimes.reduce((sum: number, time: number) => sum + time, 0) / executionTimes.length)
+      const executionTimes = rows24h
+        .filter((log) => log.execution_time_ms)
+        .map((log) => log.execution_time_ms as number);
+
+      const avgExecutionTime = executionTimes.length > 0
+        ? Math.round(executionTimes.reduce((sum, time) => sum + time, 0) / executionTimes.length)
         : 0;
 
       // Processar dados dos últimos 7 dias
-      const stats7d = (last7dData || []).reduce((acc: any, log: any) => {
+      const stats7d = rows7d.reduce((acc, log) => {
         acc.total++;
-        acc[log.status as keyof SyncStatus]++;
+        acc[log.status]++;
         return acc;
-      }, { total: 0, success: 0, error: 0, pending: 0 } as any);
+      }, { total: 0, ...emptyCounts() });
 
       // Preparar dados para gráfico (últimas 24h por hora)
       const chartData = [];
       for (let i = 23; i >= 0; i--) {
         const hourStart = new Date(Date.now() - i * 60 * 60 * 1000);
         const hourEnd = new Date(Date.now() - (i - 1) * 60 * 60 * 1000);
-        
-        const hourData = (last24hData || []).filter((log: any) => {
+
+        const hourData = rows24h.filter((log) => {
           const logTime = new Date(log.created_at);
           return logTime >= hourStart && logTime < hourEnd;
         });
 
-        const hourStats = hourData.reduce((acc: any, log: any) => {
-          acc[log.status as keyof Omit<SyncStatus, 'total' | 'lastSync' | 'avgExecutionTime'>]++;
+        const hourStats = hourData.reduce((acc, log) => {
+          acc[log.status]++;
           return acc;
-        }, { success: 0, error: 0, pending: 0 } as any);
+        }, emptyCounts());
 
         chartData.push({
           period: hourStart.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
@@ -99,15 +114,15 @@ export const useSyncStatus = () => {
         });
       }
 
-      const lastSync = (last24hData as any[])?.[0]?.created_at;
+      const lastSync = rows24h[0]?.created_at;
 
       setSyncStatus({
         last24h: { ...stats24h, lastSync, avgExecutionTime },
         last7d: { ...stats7d, lastSync },
         chartData
       });
-      
-    } catch (error: any) {
+
+    } catch (error) {
       console.error('Erro ao buscar status de sincronização:', error);
       toast({
         title: "Erro",
@@ -122,20 +137,20 @@ export const useSyncStatus = () => {
   const retryFailedSyncs = async () => {
     try {
       setLoading(true);
-      
+
       const { data, error } = await supabase.functions.invoke('retry-failed-syncs');
-      
+
       if (error) throw error;
-      
+
       toast({
         title: "Sucesso",
         description: `${data.processed} sincronizações reprocessadas`,
       });
-      
+
       // Atualizar status após retry
       await fetchSyncStatus();
-      
-    } catch (error: any) {
+
+    } catch (error) {
       console.error('Erro ao reprocessar sincronizações:', error);
       toast({
         title: "Erro",
@@ -149,10 +164,10 @@ export const useSyncStatus = () => {
 
   useEffect(() => {
     fetchSyncStatus();
-    
+
     // Atualizar status a cada 30 segundos
     const interval = setInterval(fetchSyncStatus, 30000);
-    
+
     return () => clearInterval(interval);
   }, []);
 

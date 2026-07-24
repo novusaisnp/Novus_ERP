@@ -20,7 +20,7 @@ export const useProdutos = () => {
       const produtosTransformados = data.map(produtoUtils.transformSupabaseToProduto);
       
       setProdutos(produtosTransformados);
-    } catch (err: any) {
+    } catch (err) {
       console.error('[useProdutos] Erro ao carregar produtos:', err);
       setError('Erro ao carregar produtos');
       toast({
@@ -55,9 +55,9 @@ export const useProdutos = () => {
       
       await fetchProdutos();
       return true;
-    } catch (err: any) {
+    } catch (err) {
       console.error('[useProdutos] Erro ao criar produto:', err);
-      const errorMessage = produtoUtils.getErrorMessage(err);
+      const errorMessage = produtoUtils.getErrorMessage(err as { code?: string; message?: string });
       toast({
         title: "Erro",
         description: errorMessage,
@@ -89,9 +89,9 @@ export const useProdutos = () => {
       
       await fetchProdutos();
       return true;
-    } catch (err: any) {
+    } catch (err) {
       console.error('[useProdutos] Erro ao atualizar produto:', err);
-      const errorMessage = produtoUtils.getErrorMessage(err);
+      const errorMessage = produtoUtils.getErrorMessage(err as { code?: string; message?: string });
       toast({
         title: "Erro",
         description: errorMessage,
@@ -113,7 +113,7 @@ export const useProdutos = () => {
       
       await fetchProdutos();
       return true;
-    } catch (err: any) {
+    } catch (err) {
       console.error('[useProdutos] Erro ao excluir produto:', err);
       toast({
         title: "Erro",
@@ -131,7 +131,7 @@ export const useProdutos = () => {
       if (!data) return null;
       
       return produtoUtils.transformSupabaseToProduto(data);
-    } catch (err: any) {
+    } catch (err) {
       console.error('[useProdutos] Erro ao buscar por código de barras:', err);
       return null;
     }

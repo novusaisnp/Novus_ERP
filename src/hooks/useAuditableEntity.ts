@@ -55,8 +55,8 @@ export const useAuditableEntity = <T extends { id: string; deleted_at?: string |
 
       console.log(`[${entityName}] ${data?.length || 0} registros ativos encontrados`);
       setEntities(data as T[]);
-    } catch (err: any) {
-      const message = err.message || `Erro ao carregar ${entityName.toLowerCase()}`;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : `Erro ao carregar ${entityName.toLowerCase()}`;
       setError(message);
       toast({
         title: "Erro",
@@ -88,8 +88,8 @@ export const useAuditableEntity = <T extends { id: string; deleted_at?: string |
 
       console.log(`[${entityName}] ${data?.length || 0} registros arquivados encontrados`);
       setEntities(data as T[]);
-    } catch (err: any) {
-      const message = err.message || `Erro ao carregar ${entityName.toLowerCase()} arquivados`;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : `Erro ao carregar ${entityName.toLowerCase()} arquivados`;
       setError(message);
       toast({
         title: "Erro",
@@ -120,8 +120,8 @@ export const useAuditableEntity = <T extends { id: string; deleted_at?: string |
 
       console.log(`[${entityName}] ${data?.length || 0} registros totais encontrados`);
       setEntities(data as T[]);
-    } catch (err: any) {
-      const message = err.message || `Erro ao carregar todos os ${entityName.toLowerCase()}`;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : `Erro ao carregar todos os ${entityName.toLowerCase()}`;
       setError(message);
       toast({
         title: "Erro",
@@ -192,7 +192,7 @@ export const useAuditableEntity = <T extends { id: string; deleted_at?: string |
       // Recarregar dados ativos
       await fetchActive();
       return true;
-    } catch (err: any) {
+    } catch (err) {
       console.error(`[${entityName}] Erro inesperado no soft delete:`, err);
       toast({
         title: "Erro",
@@ -230,7 +230,7 @@ export const useAuditableEntity = <T extends { id: string; deleted_at?: string |
       });
 
       return true;
-    } catch (err: any) {
+    } catch (err) {
       console.error(`[${entityName}] Erro inesperado na restauração:`, err);
       toast({
         title: "Erro",
