@@ -28,7 +28,57 @@ export interface AlertaAtivo {
   created_at: string;
 }
 
+export interface VendaEmitivel {
+  id: string;
+  numero_venda: string | number | null;
+  cliente_id: string | null;
+  valor_total: number | null;
+  data_venda: string | null;
+  status: string | null;
+}
+
+export interface DocFiscalRow {
+  id: string;
+  numero: number | null;
+  serie: number | null;
+  status: string;
+  data_emissao: string | null;
+  valor_total: number | null;
+  chave_acesso: string | null;
+  provider: string | null;
+  venda_id: string | null;
+}
+
+const STATUS_EMISSAO_FISCAL = ['CONFIRMADO', 'EM_PRODUCAO', 'FATURADO', 'ENTREGUE'];
+
 export const fiscalDashboardService = {
+  async listVendasEmitiveis(): Promise<VendaEmitivel[]> {
+    const { data, error } = await supabase
+      .from('vendas')
+      .select('id, numero_venda, cliente_id, valor_total, data_venda, status')
+      .in('status', STATUS_EMISSAO_FISCAL)
+      .not('cliente_id', 'is', null)
+      .is('deleted_at', null)
+      .order('data_venda', { ascending: false })
+      .limit(50);
+    if (error) throw error;
+    return data ?? [];
+  },
+
+  async listDocumentosFiscais(filtroStatus?: string): Promise<DocFiscalRow[]> {
+    let q = supabase
+      .from('fiscal_documentos_eletronicos')
+      .select('id, numero, serie, status, data_emissao, valor_total, chave_acesso, provider, venda_id')
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+      .limit(200);
+    if (filtroStatus && filtroStatus !== 'todos') q = q.eq('status', filtroStatus);
+    const { data, error } = await q;
+    if (error) throw error;
+    return data ?? [];
+  },
+
+
   async getMetricasDiarias(): Promise<MetricRow[]> {
     const desde = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString().slice(0, 10);
     const { data, error } = await supabase

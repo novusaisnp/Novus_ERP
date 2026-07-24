@@ -2,7 +2,7 @@
 // Gate: apenas usuários com role 'admin'. Não-admin veem aviso e nenhum dado.
 import React, { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { checkHasRole } from "@/utils/authUtils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -31,14 +31,7 @@ const RelatoriosOps: React.FC = () => {
   const { data: isAdmin, isLoading: loadingRole } = useQuery({
     queryKey: ["is-admin", user?.id ?? null],
     enabled: !!user?.id,
-    queryFn: async (): Promise<boolean> => {
-      const { data, error } = await supabase.rpc("has_role", {
-        _user_id: user!.id,
-        _role: "admin",
-      });
-      if (error) return false;
-      return Boolean(data);
-    },
+    queryFn: () => checkHasRole(user!.id, "admin"),
     staleTime: 60_000,
   });
 

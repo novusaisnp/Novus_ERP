@@ -1,6 +1,14 @@
 
-import { supabase as _supabase } from '@/integrations/supabase/client';
-const supabase: any = _supabase;
+import { supabase } from '@/integrations/supabase/client';
+
+export const checkHasRole = async (userId: string, role: 'admin' | 'moderator' | 'user'): Promise<boolean> => {
+  const { data, error } = await supabase.rpc('has_role', {
+    _user_id: userId,
+    _role: role,
+  });
+  if (error) return false;
+  return Boolean(data);
+};
 
 export const createTestUser = async (email: string, password: string) => {
   try {

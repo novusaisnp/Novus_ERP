@@ -7,38 +7,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  fiscalDashboardService,
+  type VendaEmitivel,
+  type DocFiscalRow as DocRow,
+  type MetricRow,
+} from "@/services/fiscal/fiscalDashboardService";
 import DashboardFiscal from "./DashboardFiscal";
 import EmitirNFeDialog from "@/components/fiscal/EmitirNFeDialog";
 import DetalheNFeDrawer from "@/components/fiscal/DetalheNFeDrawer";
 import FiscalStatusBadge from "@/components/fiscal/FiscalStatusBadge";
-
-interface VendaEmitivel {
-  id: string;
-  numero_venda: string | number | null;
-  cliente_id: string | null;
-  valor_total: number | null;
-  data_venda: string | null;
-  status: string | null;
-}
-interface DocRow {
-  id: string;
-  numero: number | null;
-  serie: number | null;
-  status: string;
-  data_emissao: string | null;
-  valor_total: number | null;
-  chave_acesso: string | null;
-  provider: string | null;
-  venda_id: string | null;
-}
-interface MetricRow {
-  dia: string;
-  provider: string;
-  status: string;
-  total: number;
-  valor_total: number;
-}
 
 const currency = (v?: number | null) =>
   typeof v === "number" ? v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "—";
@@ -50,42 +28,18 @@ const NotasFiscais = () => {
   const [filtroStatus, setFiltroStatus] = useState<string>("todos");
   const [busca, setBusca] = useState("");
 
-  const statusEmissaoFiscal = ["CONFIRMADO", "EM_PRODUCAO", "FATURADO", "ENTREGUE"];
-
   // ---------- Emitir: vendas elegíveis sem NF vinculada ----------
   const { data: vendasEmitiveis = [], refetch: refetchVendas, isFetching: fetchingVendas } =
     useQuery<VendaEmitivel[]>({
       queryKey: ["fiscal-vendas-emitiveis"],
-      queryFn: async () => {
-        const { data, error } = await supabase
-          .from("vendas")
-          .select("id, numero_venda, cliente_id, valor_total, data_venda, status")
-          .in("status", statusEmissaoFiscal)
-          .not("cliente_id", "is", null)
-          .is("deleted_at", null)
-          .order("data_venda", { ascending: false })
-          .limit(50);
-        if (error) throw error;
-        return (data ?? []) as VendaEmitivel[];
-      },
+      queryFn: fiscalDashboardService.listVendasEmitiveis,
     });
 
   // ---------- Consultar: documentos fiscais ----------
   const { data: documentos = [], refetch: refetchDocs, isFetching: fetchingDocs } =
     useQuery<DocRow[]>({
       queryKey: ["fiscal-documentos", filtroStatus],
-      queryFn: async () => {
-        let q = supabase
-          .from("fiscal_documentos_eletronicos")
-          .select("id, numero, serie, status, data_emissao, valor_total, chave_acesso, provider, venda_id")
-          .is("deleted_at", null)
-          .order("created_at", { ascending: false })
-          .limit(200);
-        if (filtroStatus !== "todos") q = q.eq("status", filtroStatus);
-        const { data, error } = await q;
-        if (error) throw error;
-        return (data ?? []) as DocRow[];
-      },
+      queryFn: () => fiscalDashboardService.listDocumentosFiscais(filtroStatus),
     });
 
   const documentosFiltrados = useMemo(() => {
@@ -101,16 +55,7 @@ const NotasFiscais = () => {
   // ---------- Relatórios: agregação por dia/provider/status ----------
   const { data: metrics = [] } = useQuery<MetricRow[]>({
     queryKey: ["fiscal-metrics-relatorio"],
-    queryFn: async () => {
-      const desde = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString().slice(0, 10);
-      const { data, error } = await supabase
-        .from("fiscal_metrics_daily")
-        .select("dia, provider, status, total, valor_total")
-        .gte("dia", desde)
-        .order("dia", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as MetricRow[];
-    },
+    queryFn: fiscalDashboardService.getMetricasDiarias,
   });
 
   const totaisPorStatus = useMemo(() => {

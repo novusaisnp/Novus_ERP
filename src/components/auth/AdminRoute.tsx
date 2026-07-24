@@ -4,7 +4,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { checkHasRole } from '@/utils/authUtils';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface Props {
@@ -17,14 +17,7 @@ export const AdminRoute: React.FC<Props> = ({ children }) => {
   const { data: isAdmin, isLoading } = useQuery({
     queryKey: ['is-admin', user?.id ?? null],
     enabled: !!user?.id,
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('has_role', {
-        _user_id: user!.id,
-        _role: 'admin',
-      });
-      if (error) return false;
-      return Boolean(data);
-    },
+    queryFn: () => checkHasRole(user!.id, 'admin'),
     staleTime: 60_000,
   });
 

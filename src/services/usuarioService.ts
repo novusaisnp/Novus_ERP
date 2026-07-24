@@ -16,7 +16,74 @@ export interface SupabaseUsuario {
   updated_at: string;
 }
 
+export interface UsuarioComPessoa {
+  id: string;
+  user_id: string;
+  empresa_representada_id: string | null;
+  ativo: boolean | null;
+  nome?: string | null;
+  email?: string | null;
+  perfil_id?: string | null;
+  role?: string | null;
+  pessoa_tipo?: 'COLABORADOR' | 'SOCIO' | null;
+  pessoa_pendente?: boolean | null;
+  colaborador_id?: string | null;
+  socio_id?: string | null;
+  pessoa_nome?: string | null;
+}
+
 export const usuarioService = {
+  /**
+   * Lista usuários com o vínculo de pessoa (colaborador/sócio) e role resolvidos.
+   * Usado na tela de Configurações > Usuários (vínculo pessoa_tipo/colaborador_id/socio_id).
+   */
+  async fetchUsuariosComPessoa(): Promise<UsuarioComPessoa[]> {
+    const { data: usuarios, error } = await supabase
+      .from('usuarios')
+      .select('id, user_id, empresa_representada_id, ativo, nome, email, perfil_id, pessoa_tipo, pessoa_pendente, colaborador_id, socio_id');
+    if (error) {
+      console.error('[usuarioService] erro ao carregar usuários:', error);
+      return [];
+    }
+
+    const colabIds = (usuarios ?? []).map((u) => u.colaborador_id).filter((v): v is string => !!v);
+    const socioIds = (usuarios ?? []).map((u) => u.socio_id).filter((v): v is string => !!v);
+    const colabMap: Record<string, string> = {};
+    const socioMap: Record<string, string> = {};
+
+    if (colabIds.length) {
+      const { data } = await supabase.from('colaboradores').select('id, nome').in('id', colabIds);
+      (data ?? []).forEach((c) => { colabMap[c.id] = c.nome; });
+    }
+    if (socioIds.length) {
+      const { data } = await supabase.from('socios_representantes').select('id, nome').in('id', socioIds);
+      (data ?? []).forEach((s) => { socioMap[s.id] = s.nome; });
+    }
+
+    const userIds = (usuarios ?? []).map((u) => u.user_id).filter((v): v is string => !!v);
+    const roles: Record<string, string> = {};
+    if (userIds.length) {
+      const { data: rolesData } = await supabase.from('user_roles').select('user_id, role').in('user_id', userIds);
+      (rolesData ?? []).forEach((r) => { roles[r.user_id] = r.role; });
+    }
+
+    return (usuarios ?? []).map((u) => ({
+      ...u,
+      role: roles[u.user_id] || '-',
+      pessoa_nome: u.colaborador_id ? colabMap[u.colaborador_id] : u.socio_id ? socioMap[u.socio_id] : null,
+    }));
+  },
+
+  async toggleAtivo(id: string, ativo: boolean): Promise<void> {
+    const { error } = await supabase.from('usuarios').update({ ativo, updated_at: new Date().toISOString() }).eq('id', id);
+    if (error) throw error;
+  },
+
+  async atualizarPerfilUsuario(id: string, perfil_id: string | null): Promise<void> {
+    const { error } = await supabase.from('usuarios').update({ perfil_id, updated_at: new Date().toISOString() }).eq('id', id);
+    if (error) throw error;
+  },
+
   async fetchUsuarios() {
     const { data, error } = await supabase
       .from('usuarios')

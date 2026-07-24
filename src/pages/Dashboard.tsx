@@ -3,52 +3,10 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Users, ArrowDown, ArrowUp, Landmark, AlertCircle, TrendingUp } from 'lucide-react';
-import { supabase as _supabase } from '@/integrations/supabase/client';
-
-const supabase: any = _supabase;
+import { dashboardService } from '@/services/dashboardService';
 
 const brl = (v: number) =>
   (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-async function fetchClientesAtivos(): Promise<number> {
-  try {
-    const { count, error } = await supabase
-      .from('clientes')
-      .select('id', { count: 'exact', head: true })
-      .eq('ativo', true)
-      .is('deleted_at', null);
-    if (error) throw error;
-    return count || 0;
-  } catch {
-    return 0;
-  }
-}
-
-async function fetchSumContas(table: 'contas_pagar' | 'contas_receber'): Promise<number> {
-  try {
-    const { data, error } = await supabase
-      .from(table)
-      .select('valor_original')
-      .eq('status', 'PENDENTE');
-    if (error) throw error;
-    return (data || []).reduce((acc: number, r: any) => acc + Number(r.valor_original || 0), 0);
-  } catch {
-    return 0;
-  }
-}
-
-async function fetchSaldoBancario(): Promise<number> {
-  try {
-    const { data, error } = await supabase
-      .from('contas_bancarias')
-      .select('saldo_atual')
-      .eq('ativo', true);
-    if (error) throw error;
-    return (data || []).reduce((acc: number, r: any) => acc + Number(r.saldo_atual || 0), 0);
-  } catch {
-    return 0;
-  }
-}
 
 interface MetricProps {
   title: string;
@@ -76,10 +34,10 @@ const MetricCard: React.FC<MetricProps> = ({ title, icon: Icon, value, loading, 
 );
 
 const Dashboard: React.FC = () => {
-  const clientes = useQuery({ queryKey: ['dash-clientes'], queryFn: fetchClientesAtivos });
-  const pagar = useQuery({ queryKey: ['dash-pagar'], queryFn: () => fetchSumContas('contas_pagar') });
-  const receber = useQuery({ queryKey: ['dash-receber'], queryFn: () => fetchSumContas('contas_receber') });
-  const saldo = useQuery({ queryKey: ['dash-saldo'], queryFn: fetchSaldoBancario });
+  const clientes = useQuery({ queryKey: ['dash-clientes'], queryFn: dashboardService.fetchClientesAtivos });
+  const pagar = useQuery({ queryKey: ['dash-pagar'], queryFn: () => dashboardService.fetchSumContas('contas_pagar') });
+  const receber = useQuery({ queryKey: ['dash-receber'], queryFn: () => dashboardService.fetchSumContas('contas_receber') });
+  const saldo = useQuery({ queryKey: ['dash-saldo'], queryFn: dashboardService.fetchSaldoBancario });
 
   return (
     <div className="container mx-auto px-6 py-8">
