@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { supabase as _supabase } from '@/integrations/supabase/client';
-const supabase: any = _supabase;
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface SyncStatus {
@@ -39,7 +38,7 @@ export const useSyncStatus = () => {
       
       // Buscar dados das últimas 24h
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      const { data: last24hData, error: error24h } = await (supabase as any)
+      const { data: last24hData, error: error24h } = await supabase
         .from('sync_logs')
         .select('status, created_at, execution_time_ms')
         .gte('created_at', twentyFourHoursAgo);
@@ -48,7 +47,7 @@ export const useSyncStatus = () => {
 
       // Buscar dados dos últimos 7 dias
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-      const { data: last7dData, error: error7d } = await (supabase as any)
+      const { data: last7dData, error: error7d } = await supabase
         .from('sync_logs')
         .select('status, created_at, execution_time_ms')
         .gte('created_at', sevenDaysAgo);

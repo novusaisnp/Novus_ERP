@@ -28,7 +28,7 @@ export const estoqueService = {
     from?: string;
     to?: string;
   }): Promise<EstoqueMovimentacao[]> {
-    let q = (supabase as any)
+    let q = supabase
       .from('estoque_movimentacoes')
       .select('*')
       .is('deleted_at', null)
@@ -45,7 +45,7 @@ export const estoqueService = {
   },
 
   async criarMovimentacao(input: NovaMovimentacaoInput): Promise<EstoqueMovimentacao> {
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('estoque_movimentacoes')
       .insert(input)
       .select()
@@ -55,7 +55,7 @@ export const estoqueService = {
   },
 
   async validarSaldo(produto_id: string, localizacao_id: string, quantidade: number) {
-    const { data, error } = await (supabase as any).rpc('validar_saldo_estoque', {
+    const { data, error } = await supabase.rpc('validar_saldo_estoque', {
       p_produto: produto_id,
       p_localizacao: localizacao_id,
       p_quantidade: quantidade,
@@ -65,7 +65,7 @@ export const estoqueService = {
   },
 
   async listSaldos(empresa_id: string): Promise<EstoqueSaldo[]> {
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('estoque_saldos')
       .select('*')
       .eq('empresa_representada_id', empresa_id);
@@ -74,7 +74,7 @@ export const estoqueService = {
   },
 
   async listInventarios(empresa_id: string): Promise<EstoqueInventario[]> {
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('estoque_inventarios')
       .select('*')
       .eq('empresa_representada_id', empresa_id)
@@ -90,7 +90,7 @@ export const estoqueService = {
     localizacao_id: string;
     observacoes?: string | null;
   }): Promise<EstoqueInventario> {
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('estoque_inventarios')
       .insert({ ...input, status: 'EM_CONTAGEM' })
       .select()
@@ -98,14 +98,14 @@ export const estoqueService = {
     if (error) throw error;
 
     // Popular itens a partir dos saldos da localização
-    const { data: saldos } = await (supabase as any)
+    const { data: saldos } = await supabase
       .from('estoque_saldos')
       .select('produto_id, quantidade, custo_medio')
       .eq('empresa_representada_id', input.empresa_representada_id)
       .eq('localizacao_id', input.localizacao_id);
 
     if (saldos && saldos.length > 0) {
-      const itens = saldos.map((s: any) => ({
+      const itens = saldos.map((s) => ({
         empresa_representada_id: input.empresa_representada_id,
         inventario_id: data.id,
         produto_id: s.produto_id,
@@ -113,14 +113,14 @@ export const estoqueService = {
         saldo_contado: s.quantidade,
         custo_unitario: s.custo_medio,
       }));
-      await (supabase as any).from('estoque_inventario_itens').insert(itens);
+      await supabase.from('estoque_inventario_itens').insert(itens);
     }
 
     return data as EstoqueInventario;
   },
 
   async listInventarioItens(inventario_id: string): Promise<EstoqueInventarioItem[]> {
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('estoque_inventario_itens')
       .select('*')
       .eq('inventario_id', inventario_id)
@@ -130,7 +130,7 @@ export const estoqueService = {
   },
 
   async atualizarContagem(item_id: string, saldo_contado: number): Promise<void> {
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('estoque_inventario_itens')
       .update({ saldo_contado })
       .eq('id', item_id);
@@ -138,7 +138,7 @@ export const estoqueService = {
   },
 
   async conciliarInventario(inventario_id: string) {
-    const { data, error } = await (supabase as any).rpc('conciliar_inventario', {
+    const { data, error } = await supabase.rpc('conciliar_inventario', {
       p_inventario_id: inventario_id,
     });
     if (error) throw error;
@@ -146,7 +146,7 @@ export const estoqueService = {
   },
 
   async cancelarInventario(inventario_id: string): Promise<void> {
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('estoque_inventarios')
       .update({ status: 'CANCELADO', data_fim: new Date().toISOString() })
       .eq('id', inventario_id);

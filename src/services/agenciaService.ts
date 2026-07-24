@@ -1,6 +1,5 @@
 
-import { supabase as _supabase } from '@/integrations/supabase/client';
-const supabase: any = _supabase;
+import { supabase } from '@/integrations/supabase/client';
 import { Agencia, AgenciaInput, AgenciaFilters, AgenciaStats, SupabaseAgencia } from '@/types/agencia';
 
 console.log('[AgenciaService] Serviço de agências carregado');

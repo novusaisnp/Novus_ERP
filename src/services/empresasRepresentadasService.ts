@@ -1,7 +1,6 @@
-import { supabase as _supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import type { EmpresaRepresentada } from '@/hooks/useEmpresasRepresentadas';
 
-const supabase: any = _supabase;
 
 // Colunas reais da tabela empresas_representadas
 const REAL_COLUMNS = [

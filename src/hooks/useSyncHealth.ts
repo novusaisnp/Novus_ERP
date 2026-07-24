@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { supabase as _supabase } from '@/integrations/supabase/client';
-const supabase: any = _supabase;
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface HealthCheck {

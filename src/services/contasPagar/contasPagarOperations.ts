@@ -1,7 +1,6 @@
 
-import { supabase as _supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { uiStatusPagarToDb } from '@/lib/statusMappers';
-const supabase: any = _supabase;
 import type { ContaPagarInput } from '@/types/contasPagar';
 
 // Monta payload apenas com colunas que realmente existem em public.contas_pagar.

@@ -1,7 +1,6 @@
-import { supabase as _supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { Venda, ItemVenda, VendaFiltros } from '@/types/vendas';
 
-const supabase: any = _supabase;
 
 async function getEmpresaId(): Promise<string> {
   const { data, error } = await supabase.rpc('get_user_empresa_id');

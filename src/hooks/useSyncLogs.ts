@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { supabase as _supabase } from '@/integrations/supabase/client';
-const supabase: any = _supabase;
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface SyncLog {
@@ -27,7 +26,7 @@ export const useSyncLogs = (limit: number = 20) => {
     try {
       setLoading(true);
       
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('sync_logs')
         .select('*')
         .order('created_at', { ascending: false })

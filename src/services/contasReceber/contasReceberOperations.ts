@@ -1,8 +1,7 @@
-import { supabase as _supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { transformToSupabase } from './contasReceberTransforms';
 import type { ContaReceberInput, RateioContaReceber } from '@/types/contasReceber';
 
-const supabase: any = _supabase;
 
 const buildRateiosPayload = (
   contaReceberId: string,

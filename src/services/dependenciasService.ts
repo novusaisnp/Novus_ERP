@@ -1,7 +1,6 @@
-import { supabase as _supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import type { CheckDependenciasResult } from '@/types/dependencias';
 
-const supabase: any = _supabase;
 
 export const dependenciasService = {
   async check(entidade: string, id: string): Promise<CheckDependenciasResult> {

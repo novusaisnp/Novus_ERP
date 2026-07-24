@@ -1,7 +1,6 @@
-import { supabase as _supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import type { SocioRepresentante } from '@/types/socios';
 
-const supabase: any = _supabase;
 
 export const sociosRepresentantesService = {
   async listByEmpresa(empresaId: string): Promise<SocioRepresentante[]> {

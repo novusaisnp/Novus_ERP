@@ -1,12 +1,11 @@
 // FIN-E2: serviço de política de pagamento/crédito por cliente
-import { supabase as _supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import type {
   ClientePoliticaPagamento,
   ClientePoliticaInput,
   ClienteModalidadeBloqueada,
 } from '@/types/clientePolitica';
 
-const supabase: any = _supabase;
 
 export function friendlyError(error: any): string {
   const code = error?.code || error?.details?.code;

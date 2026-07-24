@@ -1,6 +1,5 @@
-import { supabase as _supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
-const supabase: any = _supabase;
 
 // Schema alinhado com public.webhook_configs
 export const WebhookConfigSchema = z.object({

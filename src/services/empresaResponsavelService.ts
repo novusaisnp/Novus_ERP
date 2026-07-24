@@ -1,7 +1,6 @@
-import { supabase as _supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import type { EmpresaResponsavel } from '@/hooks/useEmpresaResponsavel';
 
-const supabase: any = _supabase;
 
 // Colunas reais da tabela empresa_responsavel
 const REAL_COLUMNS = ['nome', 'cnpj', 'email', 'telefone', 'endereco', 'logo_url'] as const;

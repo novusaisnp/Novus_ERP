@@ -1,5 +1,4 @@
-import { supabase as _supabase } from '@/integrations/supabase/client';
-const supabase: any = _supabase;
+import { supabase } from '@/integrations/supabase/client';
 import { BankingError } from '@/lib/bankingErrors';
 import {
   MovimentacaoBancaria,

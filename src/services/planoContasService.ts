@@ -1,5 +1,4 @@
-import { supabase as _supabase } from '@/integrations/supabase/client';
-const supabase: any = _supabase;
+import { supabase } from '@/integrations/supabase/client';
 import { PlanoContas, PlanoContasInput } from '@/types/planoContas';
 
 // DB usa: conta_pai_id, aceita_lancamento. Mantemos app-facing como id_pai/analitica.

@@ -1,6 +1,5 @@
 
-import { supabase as _supabase } from '@/integrations/supabase/client';
-const supabase: any = _supabase;
+import { supabase } from '@/integrations/supabase/client';
 import { Departamento } from '@/types/rh';
 
 export const departamentoService = {

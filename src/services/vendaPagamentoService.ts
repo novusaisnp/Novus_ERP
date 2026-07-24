@@ -1,5 +1,5 @@
 // FIN-E3: serviço da camada de pagamento da venda
-import { supabase as _supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import type {
   VendaPagamento,
   VendaPagamentoInput,
@@ -8,7 +8,6 @@ import type {
 } from '@/types/vendaPagamento';
 import { gerarParcelas, hashPayload, type ParcelamentoInput } from '@/utils/parcelamento';
 
-const supabase: any = _supabase;
 
 export function friendlyError(error: any): string {
   const code = error?.code || error?.details?.code;

@@ -1,13 +1,12 @@
 // FIN-E1: leitura dos catálogos globais de pagamento (modalidades/naturezas).
 // Somente leitura nesta fase; escrita/administração virá em lotes futuros.
 
-import { supabase as _supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import type {
   ModalidadePagamento,
   NaturezaPagamento,
 } from '@/types/pagamento';
 
-const supabase: any = _supabase;
 
 export const pagamentoCatalogoService = {
   async listarModalidades(apenasAtivos = true): Promise<ModalidadePagamento[]> {

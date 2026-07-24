@@ -1,7 +1,6 @@
-import { supabase as _supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { friendlyError } from '@/services/vendaPagamentoService';
 
-const supabase: any = _supabase;
 
 export interface TituloGerado {
   parcela_id: string;

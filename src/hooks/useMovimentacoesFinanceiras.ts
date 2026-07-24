@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase as _supabase } from '@/integrations/supabase/client';
-const supabase: any = _supabase;
+import { supabase } from '@/integrations/supabase/client';
 import {
   TituloFinanceiro,
   FiltrosMovimentacao,
@@ -29,7 +28,7 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
 
       // Buscar contas a pagar se não filtrou apenas contas a receber
       if (filtros.tipo_titulo !== 'CONTAS_RECEBER') {
-        let queryPagar: any = (supabase as any)
+        let queryPagar: any = supabase
           .from('contas_pagar')
           .select(`
             *,
@@ -121,7 +120,7 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
 
       // Buscar contas a receber se não filtrou apenas contas a pagar
       if (filtros.tipo_titulo !== 'CONTAS_PAGAR') {
-        let queryReceber: any = (supabase as any)
+        let queryReceber: any = supabase
           .from('contas_receber')
           .select(`
             *,

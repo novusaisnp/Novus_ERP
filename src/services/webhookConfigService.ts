@@ -1,4 +1,4 @@
-import { supabase as _supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import {
   WebhookConfig,
   WebhookConfigInput,
@@ -7,7 +7,6 @@ import {
   hmacSha256Hex,
 } from '@/types/webhookConfig';
 
-const supabase: any = _supabase;
 
 const TABLE = 'webhook_configs';
 const UNIQUE_NOME_CONSTRAINT = 'webhook_configs_empresa_nome_key';

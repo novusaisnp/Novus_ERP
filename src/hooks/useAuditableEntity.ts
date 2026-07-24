@@ -1,7 +1,6 @@
 
 import { useState, useCallback } from 'react';
-import { supabase as _supabase } from '@/integrations/supabase/client';
-const supabase: any = _supabase;
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export interface AuditableEntityHookOptions {
@@ -43,7 +42,7 @@ export const useAuditableEntity = <T extends { id: string; deleted_at?: string |
       console.log(`[${entityName}] Buscando registros ativos...`);
       
       // Usar any para evitar erro de tipo específico do Supabase
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from(tableName)
         .select('*')
         .is('deleted_at', null)
@@ -76,7 +75,7 @@ export const useAuditableEntity = <T extends { id: string; deleted_at?: string |
       console.log(`[${entityName}] Buscando registros arquivados...`);
       
       // Usar any para evitar erro de tipo específico do Supabase
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from(tableName)
         .select('*')
         .not('deleted_at', 'is', null)
@@ -109,7 +108,7 @@ export const useAuditableEntity = <T extends { id: string; deleted_at?: string |
       console.log(`[${entityName}] Buscando todos os registros...`);
       
       // Usar any para evitar erro de tipo específico do Supabase
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from(tableName)
         .select('*')
         .order('created_at', { ascending: false });
@@ -159,7 +158,7 @@ export const useAuditableEntity = <T extends { id: string; deleted_at?: string |
         variant: "destructive",
       });
       return false;
-      const { error } = await (supabase as any).rpc('soft_delete_with_audit', {
+      const { error } = await supabase.rpc('soft_delete_with_audit', {
         p_tabela_nome: tableName,
         p_registro_id: id,
         p_dados_antigos: entityData ? JSON.stringify(entityData) : null
@@ -209,7 +208,7 @@ export const useAuditableEntity = <T extends { id: string; deleted_at?: string |
       console.log(`[${entityName}] Restaurando registro ID:`, id);
       
       // Usar any para evitar erro de tipo específico do Supabase
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from(tableName)
         .update({ deleted_at: null })
         .eq('id', id);

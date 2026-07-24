@@ -1,7 +1,6 @@
 // FILE NAME: clienteService.ts
 // FILE CONTENT: 
-import { supabase as _supabase } from '@/integrations/supabase/client';
-const supabase: any = _supabase;
+import { supabase } from '@/integrations/supabase/client';
 import { Cliente } from '@/types/cliente';
 
 export interface SupabaseCliente {
@@ -15,8 +14,8 @@ export interface SupabaseCliente {
   tipo: string;
   rg?: string | null;
   data_nascimento?: string | null;
-  endereco?: any;
-  qualificacao_fiscal?: any;
+  endereco?: Record<string, unknown>;
+  qualificacao_fiscal?: Record<string, unknown>;
   // Novos campos específicos para PJ
   nome_fantasia?: string | null;
   cnae?: string | null;
@@ -24,12 +23,12 @@ export interface SupabaseCliente {
   forma_atuacao?: string | null;
   data_fundacao?: string | null;
   atividade_principal?: string | null;
-  contato_empresa?: any;
-  contatos?: any;
-  documentos?: any; // <--- VERIFIQUE O TIPO DESTA COLUNA NO DB (TEXT ou JSONB para base64)
-  emails?: any;
-  telefones?: any;
-  dados_pessoais?: any;
+  contato_empresa?: Record<string, unknown>;
+  contatos?: unknown[];
+  documentos?: unknown[]; // <--- VERIFIQUE O TIPO DESTA COLUNA NO DB (TEXT ou JSONB para base64)
+  emails?: string[];
+  telefones?: string[];
+  dados_pessoais?: Record<string, unknown>;
   // Campo setor para integração CRM
   setor_id?: string | null;
   ativo: boolean;

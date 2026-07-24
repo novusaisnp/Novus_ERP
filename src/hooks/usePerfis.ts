@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { supabase as _supabase } from '@/integrations/supabase/client';
-const supabase: any = _supabase;
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Perfil } from '@/types/empresa';
 
@@ -13,7 +12,7 @@ export const usePerfis = () => {
   const loadPerfis = async () => {
     setLoading(true);
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('perfis_acesso')
         .select('*')
         .order('nome');
@@ -71,14 +70,14 @@ export const usePerfis = () => {
 
       let result: any;
       if (perfilData.id) {
-        result = await (supabase as any)
+        result = await supabase
           .from('perfis_acesso')
           .update(dataToSave)
           .eq('id', perfilData.id)
           .select()
           .single();
       } else {
-        result = await (supabase as any)
+        result = await supabase
           .from('perfis_acesso')
           .insert(dataToSave)
           .select()
