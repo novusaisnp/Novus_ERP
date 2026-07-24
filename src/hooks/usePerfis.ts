@@ -28,7 +28,7 @@ export const usePerfis = () => {
       }
 
       if (data) {
-        const perfisFormatados = (data as any[]).map((item: any) => ({
+        const perfisFormatados = data.map((item) => ({
           id: item.id,
           nome: item.nome,
           codigo: item.codigo,
@@ -62,27 +62,24 @@ export const usePerfis = () => {
         nome: perfilData.nome,
         codigo: perfilData.codigo,
         descricao: perfilData.descricao,
-        permissoes: perfilData.permissoes as any,
+        permissoes: perfilData.permissoes,
         ativo: perfilData.ativo,
         sistema: perfilData.sistema,
         updated_at: new Date().toISOString()
       };
 
-      let result: any;
-      if (perfilData.id) {
-        result = await supabase
-          .from('perfis_acesso')
-          .update(dataToSave)
-          .eq('id', perfilData.id)
-          .select()
-          .single();
-      } else {
-        result = await supabase
-          .from('perfis_acesso')
-          .insert(dataToSave)
-          .select()
-          .single();
-      }
+      const result = perfilData.id
+        ? await supabase
+            .from('perfis_acesso')
+            .update(dataToSave)
+            .eq('id', perfilData.id)
+            .select()
+            .single()
+        : await supabase
+            .from('perfis_acesso')
+            .insert(dataToSave)
+            .select()
+            .single();
 
       if (result.error) {
         console.error('Erro ao salvar perfil:', result.error);

@@ -13,8 +13,8 @@ export interface EmpresaRepresentada {
   estado?: string | null;
   cep?: string | null;
   ativo?: boolean;
-  configuracoes?: Record<string, any> | null;
-  [key: string]: any;
+  configuracoes?: Record<string, unknown> | null;
+  [key: string]: unknown;
 }
 
 export const useEmpresasRepresentadas = (_?: string) => {
@@ -46,7 +46,7 @@ export const useEmpresasRepresentadas = (_?: string) => {
       qc.invalidateQueries({ queryKey: ['empresas-representadas'] });
       toast.success('Empresa salva com sucesso');
     },
-    onError: (e: any) => {
+    onError: (e: Error) => {
       console.error('[EmpresasRepresentadas] erro ao salvar');
       toast.error(e?.message || 'Falha ao salvar empresa');
     },
@@ -58,7 +58,7 @@ export const useEmpresasRepresentadas = (_?: string) => {
       qc.invalidateQueries({ queryKey: ['empresas-representadas'] });
       toast.success('Empresa removida');
     },
-    onError: (e: any) => {
+    onError: (e: Error) => {
       console.error('[EmpresasRepresentadas] erro ao excluir');
       toast.error(e?.message || 'Falha ao excluir empresa');
     },

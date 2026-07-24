@@ -28,8 +28,8 @@ export function useVendaPagamento(vendaId?: string) {
         lista.map(async (p) => { mapa[p.id] = await vendaPagamentoService.listParcelas(p.id); }),
       );
       setParcelasByPagamento(mapa);
-    } catch (e: any) {
-      toast({ title: 'Erro', description: e.message, variant: 'destructive' });
+    } catch (e) {
+      toast({ title: 'Erro', description: e instanceof Error ? e.message : String(e), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -49,8 +49,8 @@ export function useVendaPagamento(vendaId?: string) {
         description: r.replay ? 'Requisição idempotente detectada.' : `${r.parcelas.length} parcela(s) geradas.`,
       });
       return r;
-    } catch (e: any) {
-      toast({ title: 'Erro', description: e.message, variant: 'destructive' });
+    } catch (e) {
+      toast({ title: 'Erro', description: e instanceof Error ? e.message : String(e), variant: 'destructive' });
       return null;
     }
   }, [load, toast]);
@@ -60,8 +60,8 @@ export function useVendaPagamento(vendaId?: string) {
       await vendaPagamentoService.removerPagamento(id);
       await load();
       return true;
-    } catch (e: any) {
-      toast({ title: 'Erro', description: e.message, variant: 'destructive' });
+    } catch (e) {
+      toast({ title: 'Erro', description: e instanceof Error ? e.message : String(e), variant: 'destructive' });
       return false;
     }
   }, [load, toast]);
@@ -72,8 +72,8 @@ export function useVendaPagamento(vendaId?: string) {
       const r = await vendaPagamentoService.validarPagamentoVenda(vendaId);
       setValidacao(r);
       return r;
-    } catch (e: any) {
-      toast({ title: 'Erro', description: e.message, variant: 'destructive' });
+    } catch (e) {
+      toast({ title: 'Erro', description: e instanceof Error ? e.message : String(e), variant: 'destructive' });
       return null;
     }
   }, [vendaId, toast]);

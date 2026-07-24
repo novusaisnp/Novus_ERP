@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import {
   listarRegras,
@@ -7,11 +6,14 @@ import {
   atualizarRegra,
   excluirRegra,
 } from '@/services/classificacaoReceita/regrasService';
+import { usuarioService } from '@/services/usuarioService';
 import type { RegraClassificacaoInput } from '@/types/classificacaoReceita';
 
 export const useRegrasClassificacao = () => {
-  const { empresaAtual } = useAuth() as any;
-  const empresaId: string | undefined = empresaAtual?.id;
+  const { data: empresaId } = useQuery({
+    queryKey: ['user-empresa-id'],
+    queryFn: usuarioService.getEmpresaIdAtual,
+  });
   const qc = useQueryClient();
 
   const query = useQuery({
@@ -26,7 +28,7 @@ export const useRegrasClassificacao = () => {
       qc.invalidateQueries({ queryKey: ['regras-classificacao-receita', empresaId] });
       toast({ title: 'Regra criada' });
     },
-    onError: (e: any) => toast({ title: 'Erro ao criar regra', description: e?.message, variant: 'destructive' }),
+    onError: (e: Error) => toast({ title: 'Erro ao criar regra', description: e.message, variant: 'destructive' }),
   });
 
   const mAtualizar = useMutation({
@@ -35,7 +37,7 @@ export const useRegrasClassificacao = () => {
       qc.invalidateQueries({ queryKey: ['regras-classificacao-receita', empresaId] });
       toast({ title: 'Regra atualizada' });
     },
-    onError: (e: any) => toast({ title: 'Erro ao atualizar regra', description: e?.message, variant: 'destructive' }),
+    onError: (e: Error) => toast({ title: 'Erro ao atualizar regra', description: e.message, variant: 'destructive' }),
   });
 
   const mExcluir = useMutation({
@@ -44,7 +46,7 @@ export const useRegrasClassificacao = () => {
       qc.invalidateQueries({ queryKey: ['regras-classificacao-receita', empresaId] });
       toast({ title: 'Regra removida' });
     },
-    onError: (e: any) => toast({ title: 'Erro ao remover', description: e?.message, variant: 'destructive' }),
+    onError: (e: Error) => toast({ title: 'Erro ao remover', description: e.message, variant: 'destructive' }),
   });
 
   return {
