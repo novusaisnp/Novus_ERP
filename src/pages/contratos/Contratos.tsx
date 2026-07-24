@@ -13,13 +13,19 @@ import { useContratos } from '@/hooks/useContratos';
 import { ContratoFormModal } from '@/components/contratos/ContratoFormModal';
 import { Contrato, ContratoStatus, ContratoFiltros } from '@/types/contratos';
 import { clienteService } from '@/services/clienteService';
+import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
 
 const STATUS: ContratoStatus[] = ['RASCUNHO', 'ATIVO', 'SUSPENSO', 'ENCERRADO', 'CANCELADO'];
 
 const Contratos: React.FC = () => {
   const [filtros, setFiltros] = useState<ContratoFiltros>({});
   const { contratos, loading, excluirContrato } = useContratos(filtros);
-  const { data: clientes = [] } = useQuery({ queryKey: ['clientes'], queryFn: clienteService.fetchClientes });
+  const { data: empresaId } = useEmpresaAtual();
+  const { data: clientes = [] } = useQuery({
+    queryKey: ['clientes', empresaId],
+    queryFn: () => clienteService.fetchClientes(empresaId!),
+    enabled: !!empresaId,
+  });
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Contrato | null>(null);

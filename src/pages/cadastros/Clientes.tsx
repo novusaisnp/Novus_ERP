@@ -9,11 +9,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Users, Plus, Search, Edit, Trash2 } from 'lucide-react';
 import { Cliente } from '@/types/cliente';
 import { useClientes } from '@/hooks/useClientes';
+import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
 import { FormCliente } from '@/components/modules/FormCliente';
 import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
 
 const Clientes: React.FC = () => {
-  const { clientes, loading, saveCliente, deleteCliente } = useClientes();
+  const { data: empresaId } = useEmpresaAtual();
+  const { clientes, loading, saveCliente, deleteCliente } = useClientes(empresaId ?? null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCliente, setEditingCliente] = useState<Cliente | null>(null);

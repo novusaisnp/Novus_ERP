@@ -45,6 +45,7 @@ import type {
 import { calcItemTotal, calcTotal } from '@/services/orcamentosService';
 import { useClientes } from '@/hooks/useClientes';
 import { useEmpresasRepresentadas } from '@/hooks/useEmpresasRepresentadas';
+import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
 import { useCatalogoProdutos } from '@/hooks/useCatalogoOrcamento';
 import { CatalogoItemPicker } from '@/components/vendas/CatalogoItemPicker';
 import { OrcamentoViewDialog } from '@/components/vendas/OrcamentoViewDialog';
@@ -121,7 +122,8 @@ const emptyForm = () => ({
 
 const Orcamentos: React.FC = () => {
   const { data: orcamentos, isLoading } = useOrcamentos();
-  const { clientes } = useClientes();
+  const { data: empresaId } = useEmpresaAtual();
+  const { clientes } = useClientes(empresaId ?? null);
   const { empresas } = useEmpresasRepresentadas();
   const createMut = useCreateOrcamento();
   const statusMut = useUpdateOrcamentoStatus();

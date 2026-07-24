@@ -33,6 +33,11 @@ export const useAuditableEntity = <T extends { id: string; deleted_at?: string |
   const { toast } = useToast();
   const { tableName, entityName, validateBeforeDelete } = options;
 
+  // Hook genérico por design: aceita qualquer nome de tabela em runtime, o que o
+  // client tipado do Supabase não consegue expressar (.from() exige union literal).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const table = tableName as any;
+
   console.log(`[${entityName}] Hook auditável inicializado para tabela: ${tableName}`);
 
   const fetchActive = useCallback(async () => {
@@ -40,10 +45,9 @@ export const useAuditableEntity = <T extends { id: string; deleted_at?: string |
       setLoading(true);
       setError(null);
       console.log(`[${entityName}] Buscando registros ativos...`);
-      
-      // Usar any para evitar erro de tipo específico do Supabase
+
       const { data, error } = await supabase
-        .from(tableName)
+        .from(table)
         .select('*')
         .is('deleted_at', null)
         .order('created_at', { ascending: false });
@@ -54,7 +58,7 @@ export const useAuditableEntity = <T extends { id: string; deleted_at?: string |
       }
 
       console.log(`[${entityName}] ${data?.length || 0} registros ativos encontrados`);
-      setEntities(data as T[]);
+      setEntities(data as unknown as T[]);
     } catch (err) {
       const message = err instanceof Error ? err.message : `Erro ao carregar ${entityName.toLowerCase()}`;
       setError(message);
@@ -73,10 +77,9 @@ export const useAuditableEntity = <T extends { id: string; deleted_at?: string |
       setLoading(true);
       setError(null);
       console.log(`[${entityName}] Buscando registros arquivados...`);
-      
-      // Usar any para evitar erro de tipo específico do Supabase
+
       const { data, error } = await supabase
-        .from(tableName)
+        .from(table)
         .select('*')
         .not('deleted_at', 'is', null)
         .order('deleted_at', { ascending: false });
@@ -87,7 +90,7 @@ export const useAuditableEntity = <T extends { id: string; deleted_at?: string |
       }
 
       console.log(`[${entityName}] ${data?.length || 0} registros arquivados encontrados`);
-      setEntities(data as T[]);
+      setEntities(data as unknown as T[]);
     } catch (err) {
       const message = err instanceof Error ? err.message : `Erro ao carregar ${entityName.toLowerCase()} arquivados`;
       setError(message);
@@ -106,10 +109,9 @@ export const useAuditableEntity = <T extends { id: string; deleted_at?: string |
       setLoading(true);
       setError(null);
       console.log(`[${entityName}] Buscando todos os registros...`);
-      
-      // Usar any para evitar erro de tipo específico do Supabase
+
       const { data, error } = await supabase
-        .from(tableName)
+        .from(table)
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -119,7 +121,7 @@ export const useAuditableEntity = <T extends { id: string; deleted_at?: string |
       }
 
       console.log(`[${entityName}] ${data?.length || 0} registros totais encontrados`);
-      setEntities(data as T[]);
+      setEntities(data as unknown as T[]);
     } catch (err) {
       const message = err instanceof Error ? err.message : `Erro ao carregar todos os ${entityName.toLowerCase()}`;
       setError(message);
@@ -136,7 +138,7 @@ export const useAuditableEntity = <T extends { id: string; deleted_at?: string |
   const softDelete = useCallback(async (id: string, entityData?: T): Promise<boolean> => {
     try {
       console.log(`[${entityName}] Iniciando soft delete para ID:`, id);
-      
+
       // Validação customizada se fornecida
       if (validateBeforeDelete) {
         const canDelete = await validateBeforeDelete(id);
@@ -158,40 +160,6 @@ export const useAuditableEntity = <T extends { id: string; deleted_at?: string |
         variant: "destructive",
       });
       return false;
-      const { error } = await supabase.rpc('soft_delete_with_audit', {
-        p_tabela_nome: tableName,
-        p_registro_id: id,
-        p_dados_antigos: entityData ? JSON.stringify(entityData) : null
-      });
-
-      if (error) {
-        console.error(`[${entityName}] Erro no soft delete:`, error);
-        
-        if (error.message.includes('possui vínculos') || error.message.includes('foreign key')) {
-          toast({
-            title: "Operação não permitida",
-            description: `Não é possível arquivar este ${entityName.toLowerCase()} pois possui vínculos com outros dados.`,
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Erro ao arquivar",
-            description: error.message,
-            variant: "destructive",
-          });
-        }
-        return false;
-      }
-
-      console.log(`[${entityName}] Soft delete realizado com sucesso`);
-      toast({
-        title: "Sucesso",
-        description: `${entityName} arquivado com sucesso!`,
-      });
-
-      // Recarregar dados ativos
-      await fetchActive();
-      return true;
     } catch (err) {
       console.error(`[${entityName}] Erro inesperado no soft delete:`, err);
       toast({
@@ -206,10 +174,9 @@ export const useAuditableEntity = <T extends { id: string; deleted_at?: string |
   const restore = useCallback(async (id: string): Promise<boolean> => {
     try {
       console.log(`[${entityName}] Restaurando registro ID:`, id);
-      
-      // Usar any para evitar erro de tipo específico do Supabase
+
       const { error } = await supabase
-        .from(tableName)
+        .from(table)
         .update({ deleted_at: null })
         .eq('id', id);
 

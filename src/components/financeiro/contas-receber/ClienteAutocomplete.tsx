@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Check, ChevronsUpDown, Building2, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useClientes } from '@/hooks/useClientes';
+import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
 
 interface ClienteAutocompleteProps {
   value?: string | null;
@@ -31,7 +32,8 @@ export const ClienteAutocomplete: React.FC<ClienteAutocompleteProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const { clientes, loading } = useClientes();
+  const { data: empresaId } = useEmpresaAtual();
+  const { clientes, loading } = useClientes(empresaId ?? null);
 
   const isPJ = (c: any) => c.tipo === 'J' || c.tipo_pessoa === 'PJ';
 
