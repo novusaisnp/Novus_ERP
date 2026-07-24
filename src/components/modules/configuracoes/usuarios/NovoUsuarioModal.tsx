@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase as _supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,9 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, User, Briefcase } from 'lucide-react';
 import { toast } from 'sonner';
 import { sociosRepresentantesService } from '@/services/sociosRepresentantesService';
+import { usuarioService } from '@/services/usuarioService';
 import { usePerfis } from '@/hooks/usePerfis';
-
-const supabase: any = _supabase;
 
 type Origem = 'COLABORADOR' | 'SOCIO';
 
@@ -32,30 +30,14 @@ const NovoUsuarioModal: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
 
   const { data: empresaId } = useQuery({
     queryKey: ['user-empresa-id'],
-    queryFn: async () => {
-      const { data } = await supabase.rpc('get_user_empresa_id');
-      return (data as string | null) ?? null;
-    },
+    queryFn: usuarioService.getEmpresaIdAtual,
     enabled: open,
   });
 
   const { data: colaboradores = [] } = useQuery({
     queryKey: ['colaboradores-disponiveis', empresaId],
     enabled: open && origem === 'COLABORADOR' && !!empresaId,
-    queryFn: async () => {
-      const { data: colabs } = await supabase
-        .from('colaboradores')
-        .select('id, nome, cpf, email')
-        .eq('ativo', true)
-        .is('deleted_at', null)
-        .order('nome');
-      const { data: usados } = await supabase
-        .from('usuarios')
-        .select('colaborador_id')
-        .not('colaborador_id', 'is', null);
-      const usedIds = new Set((usados || []).map((u: any) => u.colaborador_id));
-      return (colabs || []).filter((c: any) => !usedIds.has(c.id));
-    },
+    queryFn: usuarioService.listColaboradoresDisponiveis,
   });
 
   const { data: socios = [] } = useQuery({
@@ -110,12 +92,10 @@ const NovoUsuarioModal: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
       else payload.socio_id = pessoaId;
 
       // user_id fica NULL até a pessoa aceitar o convite / fazer signup.
-      const { data: created, error } = await supabase
-        .from('usuarios')
-        .insert(payload)
-        .select('id')
-        .single();
-      if (error) {
+      let created: { id: string };
+      try {
+        created = await usuarioService.criarUsuarioPendente(payload);
+      } catch (error: any) {
         if (error.code === '23505') throw new Error('Esta pessoa já está vinculada a um usuário.');
         if (error.code === '23503') throw new Error('Referência inválida (empresa, perfil ou pessoa).');
         if (error.code === '42501') throw new Error('Sem permissão. Apenas administradores podem criar usuários.');
@@ -126,9 +106,8 @@ const NovoUsuarioModal: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
 
       // Dispara convite via edge function (não bloqueia a criação em caso de falha)
       try {
-        const { data: inviteData, error: inviteError } = await supabase.functions.invoke(
-          'enviar-convite-usuario',
-          { body: { usuario_id: created?.id, email, nome } },
+        const { data: inviteData, error: inviteError } = await usuarioService.enviarConvite(
+          { usuario_id: created?.id, email, nome },
         );
         if (inviteError) throw inviteError;
         if (inviteData?.invited) {

@@ -7,10 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useFiscalDocumento, useFiscalEventos } from "@/hooks/fiscal/useFiscalDocumento";
 import { useFiscalDocumentoRealtime } from "@/hooks/fiscal/useFiscalDocumentoRealtime";
-import { getFiscalSignedUrl } from "@/services/fiscal/emissaoService";
+import { getFiscalSignedUrl, getDanfeMockEnrichmentData } from "@/services/fiscal/emissaoService";
 import { buildDanfeMockHtml, buildNFeMockXml, type DanfeMockData } from "@/utils/danfeMock";
 import EventosTimeline from "./EventosTimeline";
 import CancelarNFeDialog from "./CancelarNFeDialog";
@@ -78,46 +77,23 @@ const DetalheNFeDrawer = ({ open, onOpenChange, documentoId }: DetalheNFeDrawerP
     let naturezaOperacao: string | null = null;
 
     try {
-      if (d.empresa_representada_id) {
-        const { data: emp } = await supabase
-          .from('empresas_representadas')
-          .select('razao_social, nome_fantasia, cnpj, inscricao_estadual, telefone, logradouro, numero, complemento, bairro, cidade, estado, cep')
-          .eq('id', d.empresa_representada_id)
-          .maybeSingle();
-        if (emp) emitente = emp as DanfeMockData['emitente'];
-      }
-      if (d.venda_id) {
-        const { data: venda } = await supabase
-          .from('vendas')
-          .select('cliente_id, natureza_operacao, observacoes')
-          .eq('id', d.venda_id)
-          .maybeSingle();
-        naturezaOperacao = (venda as { natureza_operacao?: string | null } | null)?.natureza_operacao ?? null;
-        const clienteId = (venda as { cliente_id?: string | null } | null)?.cliente_id;
-        if (clienteId) {
-          const { data: cli } = await supabase
-            .from('clientes')
-            .select('nome, razao_social, tipo_pessoa, cnpj, cpf, inscricao_estadual, email, telefone, logradouro, numero, complemento, bairro, cidade, estado, cep')
-            .eq('id', clienteId)
-            .maybeSingle();
-          if (cli) destinatario = cli as DanfeMockData['destinatario'];
-        }
-        const { data: rows } = await supabase
-          .from('itens_venda')
-          .select('descricao, quantidade, unidade, preco_unitario, valor_total_item, ordem')
-          .eq('venda_id', d.venda_id)
-          .order('ordem', { ascending: true });
-        itens = (rows ?? []).map((r, i) => ({
-          codigo: String(i + 1).padStart(3, '0'),
-          descricao: (r as { descricao?: string | null }).descricao ?? '',
-          quantidade: (r as { quantidade?: number | null }).quantidade ?? 0,
-          unidade: (r as { unidade?: string | null }).unidade ?? 'UN',
-          preco_unitario: (r as { preco_unitario?: number | null }).preco_unitario ?? 0,
-          valor_total: (r as { valor_total_item?: number | null }).valor_total_item ?? 0,
-          ncm: '00000000',
-          cfop: '5102',
-        }));
-      }
+      const enrichment = await getDanfeMockEnrichmentData({
+        empresaRepresentadaId: d.empresa_representada_id,
+        vendaId: d.venda_id,
+      });
+      emitente = enrichment.emitente as DanfeMockData['emitente'];
+      destinatario = enrichment.destinatario as DanfeMockData['destinatario'];
+      naturezaOperacao = enrichment.naturezaOperacao;
+      itens = enrichment.itens.map((r, i) => ({
+        codigo: String(i + 1).padStart(3, '0'),
+        descricao: r.descricao ?? '',
+        quantidade: r.quantidade ?? 0,
+        unidade: r.unidade ?? 'UN',
+        preco_unitario: r.preco_unitario ?? 0,
+        valor_total: r.valor_total_item ?? 0,
+        ncm: '00000000',
+        cfop: '5102',
+      }));
     } catch (err) {
       console.warn('[DANFE mock] falha ao enriquecer dados:', err);
     }

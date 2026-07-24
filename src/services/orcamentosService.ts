@@ -305,3 +305,37 @@ export const duplicarOrcamento = async (id: string): Promise<Orcamento> => {
     })),
   });
 };
+
+export interface ConverterOrcamentoRpcErro {
+  codigo: string;
+  categoria?: string;
+  mensagem: string;
+  campo?: string;
+}
+
+export interface ConverterOrcamentoRpcResult {
+  ok: boolean;
+  venda_id?: string;
+  replay?: boolean;
+  avisos?: ConverterOrcamentoRpcErro[];
+  erros?: ConverterOrcamentoRpcErro[];
+}
+
+export const converterOrcamentoEmVenda = async (payload: {
+  orcamento_id: string;
+  pagamento: {
+    modalidade_id: string;
+    valor_bruto: number;
+    qtd_parcelas: number;
+    parcelamento: { dias_primeira: number; intervalo_dias: number };
+  };
+}): Promise<{ data: ConverterOrcamentoRpcResult | null; error: { message: string } | null }> => {
+  const { data, error } = await (supabase.rpc as unknown as (
+    fn: string,
+    args: Record<string, unknown>,
+  ) => Promise<{ data: unknown; error: { message: string } | null }>)(
+    'converter_orcamento_em_venda',
+    { p_payload: payload },
+  );
+  return { data: error ? null : (data as ConverterOrcamentoRpcResult), error };
+};

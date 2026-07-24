@@ -14,8 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 
-import { supabase as _supabase } from '@/integrations/supabase/client';
-const supabase: any = _supabase;
+import { listarContasBancariasAtivasComAgenciaBanco } from '@/services/contaBancariaService';
 import { movimentacoesService } from '@/services/movimentacoesService';
 import { qk } from '@/lib/queryKeys';
 import { TituloFinanceiro, LiquidacaoTitulo, FormaPagamento } from '@/types/movimentacoesFinanceiras';
@@ -48,27 +47,9 @@ export const LiquidacaoTituloModal = ({
   });
 
   // Buscar contas bancárias
-  const { data: contasBancarias = [], isLoading: loadingContas } = useQuery<any[]>({
+  const { data: contasBancarias = [], isLoading: loadingContas } = useQuery({
     queryKey: ['contas-bancarias-ativas'],
-    queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from('contas_bancarias')
-        .select(`
-          id,
-          cpf_cnpj_titular,
-          numero_conta,
-          digito,
-          agencia_id,
-          agencias_bancarias!inner(
-            numero_agencia,
-            bancos!inner(nome, codigo)
-          )
-        `)
-        .eq('ativo', true);
-
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: listarContasBancariasAtivasComAgenciaBanco,
   });
 
   // Mutation para liquidar título
@@ -264,7 +245,7 @@ export const LiquidacaoTituloModal = ({
                     <SelectValue placeholder="Selecione uma conta" />
                   </SelectTrigger>
                   <SelectContent>
-                    {contasBancarias.map((conta: any) => (
+                    {contasBancarias.map((conta) => (
                       <SelectItem key={conta.id} value={conta.id}>
                         {conta.agencias_bancarias?.bancos?.nome} - 
                         Ag: {conta.agencias_bancarias?.numero_agencia} - 

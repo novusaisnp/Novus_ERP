@@ -10,13 +10,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { CreditCard, Ban, Loader2, Plus, X } from 'lucide-react';
-import { supabase as _supabase } from '@/integrations/supabase/client';
+import { clienteService } from '@/services/clienteService';
 import { useClientePolitica } from '@/hooks/useClientePolitica';
 import { usePagamentoModalidades } from '@/hooks/usePagamentoCatalogo';
 import { limiteDisponivel, type ClientePoliticaStatus } from '@/types/clientePolitica';
 import { cn } from '@/lib/utils';
-
-const supabase: any = _supabase;
 
 interface Props {
   clienteId: string;
@@ -52,8 +50,8 @@ export const CreditoPagamentoSection: React.FC<Props> = ({
   useEffect(() => {
     let ativo = true;
     (async () => {
-      const { data } = await supabase.from('clientes').select('empresa_representada_id').eq('id', clienteId).maybeSingle();
-      if (ativo) setEmpresaId(data?.empresa_representada_id ?? null);
+      const empresaRepresentadaId = await clienteService.getEmpresaIdDoCliente(clienteId);
+      if (ativo) setEmpresaId(empresaRepresentadaId);
     })();
     return () => { ativo = false; };
   }, [clienteId]);

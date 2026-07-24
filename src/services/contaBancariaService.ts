@@ -82,6 +82,42 @@ export const listarContasBancariasParaSelecao = async (): Promise<ContaBancariaO
   return data ?? [];
 };
 
+export interface ContaBancariaComAgenciaBanco {
+  id: string;
+  cpf_cnpj_titular: string | null;
+  numero_conta: string | null;
+  digito: string | null;
+  agencia_id: string | null;
+  agencias_bancarias: {
+    numero_agencia: string | null;
+    bancos: { nome: string | null; codigo: string | null } | null;
+  } | null;
+}
+
+export const listarContasBancariasAtivasComAgenciaBanco = async (): Promise<ContaBancariaComAgenciaBanco[]> => {
+  const { data, error } = await supabase
+    .from('contas_bancarias')
+    .select(`
+      id,
+      cpf_cnpj_titular,
+      numero_conta,
+      digito,
+      agencia_id,
+      agencias_bancarias!inner(
+        numero_agencia,
+        bancos!inner(nome, codigo)
+      )
+    `)
+    .eq('ativo', true);
+
+  if (error) {
+    console.error('[ContaBancariaService] Erro ao listar contas com agência/banco:', error);
+    throw new Error(error.message);
+  }
+
+  return (data ?? []) as unknown as ContaBancariaComAgenciaBanco[];
+};
+
 export const criarContaBancaria = async (input: ContaBancariaInput): Promise<ContaBancaria> => {
   console.log('[ContaBancariaService] Criando conta bancária:', input);
 

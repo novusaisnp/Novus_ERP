@@ -37,6 +37,16 @@ export interface SupabaseCliente {
 }
 
 export const clienteService = {
+  async getEmpresaIdDoCliente(clienteId: string): Promise<string | null> {
+    const { data, error } = await supabase
+      .from('clientes')
+      .select('empresa_representada_id')
+      .eq('id', clienteId)
+      .maybeSingle();
+    if (error) throw error;
+    return data?.empresa_representada_id ?? null;
+  },
+
   async fetchClientes(empresaRepresentadaId: string) { // <--- PARÂMETRO ADICIONADO
     if (!empresaRepresentadaId) {
       console.error('Erro: empresaRepresentadaId é obrigatório para fetchClientes.');

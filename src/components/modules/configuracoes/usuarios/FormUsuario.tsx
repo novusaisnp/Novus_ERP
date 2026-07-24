@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { usuarioService } from '@/services/usuarioService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
@@ -19,60 +19,10 @@ import type { Perfil } from '@/types/empresa';
 // Este é o user_id do auth.users para o selftnt@gmail.com
 const SUPERUSER_AUTH_UID = 'ba754ef3-c5e8-432d-b6bc-6448eb36b6b1';
 
-interface UsuarioRow {
-  id: string;
-  user_id: string;
-  empresa_representada_id: string | null;
-  ativo: boolean | null;
-  nome?: string | null;
-  email?: string | null;
-  perfil_id?: string | null;
-  role?: string | null;
-  pessoa_tipo?: 'COLABORADOR' | 'SOCIO' | null;
-  pessoa_pendente?: boolean | null;
-  colaborador_id?: string | null;
-  socio_id?: string | null;
-  pessoa_nome?: string | null;
-}
-
-async function fetchUsuarios(): Promise<UsuarioRow[]> {
-  const { data: usuariosRaw, error } = await supabase
-    .from('usuarios')
-    .select('id, user_id, empresa_representada_id, ativo, nome, email, perfil_id, pessoa_tipo, pessoa_pendente, colaborador_id, socio_id');
-  if (error) {
-    console.error('[FormUsuario] erro ao carregar usuários:', error);
-    return [];
-  }
-
-  // Filtra o superusuário imediatamente após a busca inicial
-  const usuarios = (usuariosRaw || []).filter(u => u.user_id !== SUPERUSER_AUTH_UID);
-
-  const colabIds = usuarios.map((u: any) => u.colaborador_id).filter(Boolean);
-  const socioIds = usuarios.map((u: any) => u.socio_id).filter(Boolean);
-  const colabMap: Record<string, string> = {};
-  const socioMap: Record<string, string> = {};
-
-  if (colabIds.length) {
-    const { data } = await supabase.from('colaboradores').select('id, nome').in('id', colabIds);
-    (data || []).forEach((c: any) => { colabMap[c.id] = c.nome; });
-  }
-  if (socioIds.length) {
-    const { data } = await supabase.from('socios_representantes').select('id, nome').in('id', socioIds);
-    (data || []).forEach((s: any) => { socioMap[s.id] = s.nome; });
-  }
-
-  const userIds = usuarios.map((u: any) => u.user_id).filter(Boolean);
-  const roles: Record<string, string> = {};
-  if (userIds.length) {
-    const { data: rolesData } = await supabase.from('user_roles').select('user_id, role').in('user_id', userIds);
-    (rolesData || []).forEach((r: any) => { roles[r.user_id] = r.role; });
-  }
-
-  return usuarios.map((u: any) => ({
-    ...u,
-    role: roles[u.user_id] || '-',
-    pessoa_nome: u.colaborador_id ? colabMap[u.colaborador_id] : u.socio_id ? socioMap[u.socio_id] : null,
-  }));
+async function fetchUsuarios() {
+  const usuarios = await usuarioService.fetchUsuariosComPessoa();
+  // Filtra o superusuário da lista exibida neste modal
+  return usuarios.filter((u) => u.user_id !== SUPERUSER_AUTH_UID);
 }
 
 const ConfiguracoesUsuarios: React.FC = () => {
@@ -87,10 +37,7 @@ const ConfiguracoesUsuarios: React.FC = () => {
   });
 
   const toggleAtivo = useMutation({
-    mutationFn: async ({ id, ativo }: { id: string; ativo: boolean }) => {
-      const { error } = await supabase.from('usuarios').update({ ativo, updated_at: new Date().toISOString() }).eq('id', id);
-      if (error) throw error;
-    },
+    mutationFn: ({ id, ativo }: { id: string; ativo: boolean }) => usuarioService.toggleAtivo(id, ativo),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['config-usuarios'] });
       toast({ title: 'Status atualizado' });
@@ -99,10 +46,7 @@ const ConfiguracoesUsuarios: React.FC = () => {
   });
 
   const setPerfilUsuario = useMutation({
-    mutationFn: async ({ id, perfil_id }: { id: string; perfil_id: string | null }) => {
-      const { error } = await supabase.from('usuarios').update({ perfil_id, updated_at: new Date().toISOString() }).eq('id', id);
-      if (error) throw error;
-    },
+    mutationFn: ({ id, perfil_id }: { id: string; perfil_id: string | null }) => usuarioService.atualizarPerfilUsuario(id, perfil_id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['config-usuarios'] });
       toast({ title: 'Perfil de acesso atualizado' });

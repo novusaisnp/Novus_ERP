@@ -11,20 +11,9 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { supabase as _supabase } from '@/integrations/supabase/client';
-const supabase: any = _supabase;
+import { auditTrailService, type AuditEntry } from '@/services/auditTrailService';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-
-interface AuditEntry {
-  id: string;
-  operacao: string; // Changed from union type to string to match DB response
-  dados_antigos: any;
-  dados_novos: any;
-  created_at: string;
-  origem: string;
-  usuario_id: string;
-}
 
 interface AuditTrailProps {
   tableName: string;
@@ -62,18 +51,8 @@ export const AuditTrail = ({ tableName, recordId, entityName }: AuditTrailProps)
   const fetchAuditTrail = async () => {
     try {
       setLoading(true);
-
-      const { data, error } = await (supabase as any).rpc('get_audit_trail', {
-        p_tabela_nome: tableName,
-        p_registro_id: recordId,
-      });
-
-      if (error) {
-        console.error(`[AuditTrail] Erro ao buscar auditoria:`, error);
-        return;
-      }
-
-      setAuditEntries((data as any as AuditEntry[]) || []);
+      const data = await auditTrailService.fetchAuditTrail(tableName, recordId);
+      setAuditEntries(data);
     } catch (err) {
       console.error(`[AuditTrail] Erro inesperado:`, err);
     } finally {

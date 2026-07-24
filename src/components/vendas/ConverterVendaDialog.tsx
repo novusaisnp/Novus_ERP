@@ -22,29 +22,17 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 import { usePagamentoModalidades } from '@/hooks/usePagamentoCatalogo';
-import type { Orcamento } from '@/services/orcamentosService';
+import {
+  converterOrcamentoEmVenda,
+  type Orcamento,
+  type ConverterOrcamentoRpcErro as RpcErro,
+} from '@/services/orcamentosService';
 
 interface Props {
   orcamento: Orcamento | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}
-
-interface RpcErro {
-  codigo: string;
-  categoria?: string;
-  mensagem: string;
-  campo?: string;
-}
-
-interface RpcResult {
-  ok: boolean;
-  venda_id?: string;
-  replay?: boolean;
-  avisos?: RpcErro[];
-  erros?: RpcErro[];
 }
 
 const FRIENDLY_CODES: Record<string, string> = {
@@ -131,13 +119,7 @@ export const ConverterVendaDialog: React.FC<Props> = ({ orcamento, open, onOpenC
           },
         },
       };
-      const { data, error } = await (supabase.rpc as unknown as (
-        fn: string,
-        args: Record<string, unknown>,
-      ) => Promise<{ data: unknown; error: { message: string } | null }>)(
-        'converter_orcamento_em_venda',
-        { p_payload: payload },
-      );
+      const { data, error } = await converterOrcamentoEmVenda(payload);
 
       if (import.meta.env.DEV) {
         console.log('[converter_orcamento_em_venda]', { data, error });
@@ -163,7 +145,7 @@ export const ConverterVendaDialog: React.FC<Props> = ({ orcamento, open, onOpenC
         return;
       }
 
-      const result = data as unknown as RpcResult;
+      const result = data;
       if (!result?.ok) {
         setErros(result?.erros ?? [{ codigo: 'ERRO', mensagem: 'Falha desconhecida.' }]);
         toast.error('Conversão não concluída.');

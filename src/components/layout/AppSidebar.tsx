@@ -6,7 +6,6 @@ import { useSidebar } from "@/components/ui/sidebar";
 import { SidebarMenuItem } from './sidebar/SidebarMenuItem';
 import { SidebarMenuGroup } from './sidebar/SidebarMenuGroup';
 import { sidebarItems } from './sidebar/sidebarConfig';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 console.log('[Sidebar] Inicializando AppSidebar com padrão das imagens 2 e 3');

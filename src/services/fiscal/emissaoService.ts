@@ -67,3 +67,67 @@ export const enviarCartaCorrecao = (input: CartaCorrecaoInput) =>
 
 export const getFiscalSignedUrl = (bucket: string, path: string) =>
   invokeOrThrow<{ url: string; expires_in: number }>('fiscal-signed-url', { bucket, path });
+
+export interface DanfeMockEnrichmentData {
+  emitente: Record<string, unknown>;
+  destinatario: Record<string, unknown>;
+  itens: Array<{
+    descricao: string | null;
+    quantidade: number | null;
+    unidade: string | null;
+    preco_unitario: number | null;
+    valor_total_item: number | null;
+  }>;
+  naturezaOperacao: string | null;
+}
+
+/**
+ * Busca dados de empresa/cliente/itens para enriquecer o DANFE mock exibido
+ * em modo simulação (sem validade fiscal). Usado por DetalheNFeDrawer.
+ */
+export async function getDanfeMockEnrichmentData(params: {
+  empresaRepresentadaId?: string | null;
+  vendaId?: string | null;
+}): Promise<DanfeMockEnrichmentData> {
+  const result: DanfeMockEnrichmentData = {
+    emitente: {},
+    destinatario: {},
+    itens: [],
+    naturezaOperacao: null,
+  };
+
+  if (params.empresaRepresentadaId) {
+    const { data: emp } = await supabase
+      .from('empresas_representadas')
+      .select('razao_social, nome_fantasia, cnpj, inscricao_estadual, telefone, logradouro, numero, complemento, bairro, cidade, estado, cep')
+      .eq('id', params.empresaRepresentadaId)
+      .maybeSingle();
+    if (emp) result.emitente = emp;
+  }
+
+  if (params.vendaId) {
+    const { data: venda } = await supabase
+      .from('vendas')
+      .select('cliente_id, natureza_operacao, observacoes')
+      .eq('id', params.vendaId)
+      .maybeSingle();
+    result.naturezaOperacao = venda?.natureza_operacao ?? null;
+    const clienteId = venda?.cliente_id;
+    if (clienteId) {
+      const { data: cli } = await supabase
+        .from('clientes')
+        .select('nome, razao_social, tipo_pessoa, cnpj, cpf, inscricao_estadual, email, telefone, logradouro, numero, complemento, bairro, cidade, estado, cep')
+        .eq('id', clienteId)
+        .maybeSingle();
+      if (cli) result.destinatario = cli;
+    }
+    const { data: rows } = await supabase
+      .from('itens_venda')
+      .select('descricao, quantidade, unidade, preco_unitario, valor_total_item, ordem')
+      .eq('venda_id', params.vendaId)
+      .order('ordem', { ascending: true });
+    result.itens = rows ?? [];
+  }
+
+  return result;
+}

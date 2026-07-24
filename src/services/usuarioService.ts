@@ -32,7 +32,62 @@ export interface UsuarioComPessoa {
   pessoa_nome?: string | null;
 }
 
+export interface ColaboradorDisponivel {
+  id: string;
+  nome: string;
+  cpf: string | null;
+  email: string | null;
+}
+
+export interface NovoUsuarioPendenteInput {
+  empresa_representada_id: string;
+  nome: string;
+  email: string;
+  perfil_id: string;
+  pessoa_tipo: 'COLABORADOR' | 'SOCIO';
+  pessoa_pendente: true;
+  colaborador_id?: string;
+  socio_id?: string;
+  ativo: true;
+  updated_at: string;
+}
+
 export const usuarioService = {
+  async getEmpresaIdAtual(): Promise<string | null> {
+    const { data, error } = await supabase.rpc('get_user_empresa_id');
+    if (error) throw error;
+    return (data as string | null) ?? null;
+  },
+
+  async listColaboradoresDisponiveis(): Promise<ColaboradorDisponivel[]> {
+    const { data: colabs } = await supabase
+      .from('colaboradores')
+      .select('id, nome, cpf, email')
+      .eq('ativo', true)
+      .is('deleted_at', null)
+      .order('nome');
+    const { data: usados } = await supabase
+      .from('usuarios')
+      .select('colaborador_id')
+      .not('colaborador_id', 'is', null);
+    const usedIds = new Set((usados ?? []).map((u) => u.colaborador_id));
+    return (colabs ?? []).filter((c) => !usedIds.has(c.id));
+  },
+
+  async criarUsuarioPendente(payload: NovoUsuarioPendenteInput): Promise<{ id: string }> {
+    const { data, error } = await supabase
+      .from('usuarios')
+      .insert(payload)
+      .select('id')
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async enviarConvite(params: { usuario_id?: string; email: string; nome: string }) {
+    return supabase.functions.invoke('enviar-convite-usuario', { body: params });
+  },
+
   /**
    * Lista usuários com o vínculo de pessoa (colaborador/sócio) e role resolvidos.
    * Usado na tela de Configurações > Usuários (vínculo pessoa_tipo/colaborador_id/socio_id).
