@@ -9,23 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Wrench, Plus, Search, Edit, Trash2 } from 'lucide-react';
-import { supabase as _supabase } from '@/integrations/supabase/client';
-const supabase: any = _supabase;
+import { servicoService, type Servico, type ClassificacaoOption as Option } from '@/services/servicoService';
 import { useToast } from '@/hooks/use-toast';
-
-interface Servico {
-  id: string;
-  nome: string;
-  descricao?: string | null;
-  preco: number | null;
-  ativo: boolean;
-  plano_conta_receita_id?: string | null;
-  centro_custo_id?: string | null;
-  natureza_receita_id?: string | null;
-  created_at: string;
-}
-
-interface Option { id: string; codigo?: string | null; nome: string; }
 
 const NONE = '__none__';
 
@@ -56,14 +41,8 @@ const Servicos: React.FC = () => {
 
   const fetchServicos = async () => {
     try {
-      const { data, error } = await supabase
-        .from('servicos')
-        .select('*')
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setServicos(data || []);
+      const data = await servicoService.listServicos();
+      setServicos(data);
     } catch (error) {
       console.error('Erro ao buscar serviços:', error);
       toast({ title: 'Erro', description: 'Não foi possível carregar os serviços.', variant: 'destructive' });
@@ -74,32 +53,10 @@ const Servicos: React.FC = () => {
 
   const fetchClassificacoes = async () => {
     try {
-      const [pc, cc, nr] = await Promise.all([
-        supabase
-          .from('plano_contas')
-          .select('id, codigo, nome, tipo, aceita_lancamento, ativo')
-          .eq('tipo', 'RECEITA')
-          .eq('aceita_lancamento', true)
-          .eq('ativo', true)
-          .order('codigo', { ascending: true }),
-        supabase
-          .from('centros_custo')
-          .select('id, codigo, nome, ativo')
-          .eq('ativo', true)
-          .order('codigo', { ascending: true }),
-        supabase
-          .from('naturezas_receita')
-          .select('id, codigo, nome, ativo')
-          .eq('ativo', true)
-          .is('deleted_at', null)
-          .order('codigo', { ascending: true }),
-      ]);
-      if (pc.error) throw pc.error;
-      if (cc.error) throw cc.error;
-      if (nr.error) throw nr.error;
-      setPlanoContas(pc.data || []);
-      setCentrosCusto(cc.data || []);
-      setNaturezasReceita(nr.data || []);
+      const { planoContas, centrosCusto, naturezasReceita } = await servicoService.listClassificacoesContabeis();
+      setPlanoContas(planoContas);
+      setCentrosCusto(centrosCusto);
+      setNaturezasReceita(naturezasReceita);
     } catch (error) {
       console.error('Erro ao carregar classificações contábeis:', error);
     }
@@ -108,7 +65,7 @@ const Servicos: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const serviceData: Record<string, unknown> = {
+      const serviceData = {
         nome: formData.nome,
         descricao: formData.descricao || null,
         preco: formData.preco ? parseFloat(formData.preco) : null,
@@ -118,12 +75,10 @@ const Servicos: React.FC = () => {
       };
 
       if (editingServico) {
-        const { error } = await supabase.from('servicos').update(serviceData).eq('id', editingServico.id);
-        if (error) throw error;
+        await servicoService.atualizarServico(editingServico.id, serviceData);
         toast({ title: 'Sucesso', description: 'Serviço atualizado com sucesso!' });
       } else {
-        const { error } = await supabase.from('servicos').insert([serviceData]);
-        if (error) throw error;
+        await servicoService.criarServico(serviceData);
         toast({ title: 'Sucesso', description: 'Serviço criado com sucesso!' });
       }
 
@@ -151,8 +106,7 @@ const Servicos: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      const { error } = await supabase.from('servicos').update({ deleted_at: new Date().toISOString() }).eq('id', id);
-      if (error) throw error;
+      await servicoService.excluirServico(id);
       toast({ title: 'Sucesso', description: 'Serviço excluído com sucesso!' });
       fetchServicos();
     } catch (error) {

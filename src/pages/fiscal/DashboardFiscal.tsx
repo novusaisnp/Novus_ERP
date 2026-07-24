@@ -7,34 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { supabase } from "@/integrations/supabase/client";
-
-interface MetricRow {
-  dia: string;
-  provider: string;
-  status: string;
-  total: number;
-  valor_total: number;
-  latencia_media_s: number | null;
-}
-
-interface DocEmProc {
-  id: string;
-  numero: number | null;
-  serie: number | null;
-  status: string;
-  data_emissao: string | null;
-  provider: string | null;
-  venda_id: string | null;
-}
-interface AlertaAtivo {
-  id: string;
-  kind: string;
-  severity: string;
-  reason: string;
-  payload: Record<string, unknown> | null;
-  created_at: string;
-}
+import {
+  fiscalDashboardService,
+  type MetricRow,
+  type DocEmProc,
+  type AlertaAtivo,
+} from "@/services/fiscal/fiscalDashboardService";
 
 const currency = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -43,34 +21,13 @@ const DashboardFiscal = () => {
   const { data: metrics = [] } = useQuery<MetricRow[]>({
     queryKey: ['fiscal-metrics-daily'],
     staleTime: 60_000,
-    queryFn: async () => {
-      const desde = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString().slice(0, 10);
-      const { data, error } = await supabase
-        .from('fiscal_metrics_daily')
-        .select('dia, provider, status, total, valor_total, latencia_media_s')
-        .gte('dia', desde)
-        .order('dia', { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as MetricRow[];
-    },
+    queryFn: fiscalDashboardService.getMetricasDiarias,
   });
 
   const { data: processando = [] } = useQuery<DocEmProc[]>({
     queryKey: ['fiscal-processando'],
     refetchInterval: 30_000,
-    queryFn: async () => {
-      const limite = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-      const { data, error } = await supabase
-        .from('fiscal_documentos_eletronicos')
-        .select('id, numero, serie, status, data_emissao, provider, venda_id')
-        .in('status', ['processando', 'EM_PROCESSAMENTO'])
-        .lt('created_at', limite)
-        .is('deleted_at', null)
-        .order('created_at', { ascending: true })
-        .limit(50);
-      if (error) throw error;
-      return (data ?? []) as DocEmProc[];
-    },
+    queryFn: fiscalDashboardService.listDocumentosEmProcessamento,
   });
 
   const kpis = useMemo(() => {
@@ -89,17 +46,7 @@ const DashboardFiscal = () => {
   const { data: alertasAtivos = [], refetch: refetchAlertas } = useQuery<AlertaAtivo[]>({
     queryKey: ['fiscal-alertas-ativos'],
     refetchInterval: 60_000,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('report_ops_alerts')
-        .select('id, kind, severity, reason, payload, created_at')
-        .is('resolved_at', null)
-        .like('kind', 'fiscal_%')
-        .order('created_at', { ascending: false })
-        .limit(50);
-      if (error) throw error;
-      return (data ?? []) as AlertaAtivo[];
-    },
+    queryFn: fiscalDashboardService.listAlertasFiscaisAtivos,
   });
 
   const reprocessar = async (doc: DocEmProc) => {
@@ -109,10 +56,7 @@ const DashboardFiscal = () => {
     }
     setReprocessando(doc.id);
     try {
-      const { data, error } = await supabase.functions.invoke('fiscal-emitir-nfe', {
-        body: { vendaId: doc.venda_id },
-      });
-      if (error) throw error;
+      const data = await fiscalDashboardService.reprocessarEmissao(doc.venda_id);
       toast.success(`Reprocessamento disparado (${data?.status ?? 'ok'}).`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Falha ao reprocessar.';
@@ -126,12 +70,7 @@ const DashboardFiscal = () => {
     const vendaId = smokeVendaId.trim();
     setSmokeRunning(true);
     try {
-      const { data, error } = await supabase.functions.invoke('fiscal-smoke-run', {
-        body: vendaId ? { vendaId } : {},
-      });
-      if (error) throw error;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const d = data as any;
+      const d = await fiscalDashboardService.rodarSmoke(vendaId || undefined);
       if (!d?.ok) {
         const first = d?.results?.[0];
         toast.error(`Smoke falhou (${d?.step ?? '?'}): ${first?.error ?? 'erro desconhecido'}`);

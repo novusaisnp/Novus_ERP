@@ -60,6 +60,28 @@ export const listarContasBancarias = async (filtros?: ContaBancariaFilters): Pro
   return data as ContaBancaria[] || [];
 };
 
+export interface ContaBancariaOpcaoSelecao {
+  id: string;
+  descricao: string | null;
+  numero_conta: string | null;
+  nome_titular: string | null;
+}
+
+export const listarContasBancariasParaSelecao = async (): Promise<ContaBancariaOpcaoSelecao[]> => {
+  const { data, error } = await supabase
+    .from('contas_bancarias')
+    .select('id, descricao, numero_conta, nome_titular')
+    .is('deleted_at', null)
+    .order('descricao');
+
+  if (error) {
+    console.error('[ContaBancariaService] Erro ao listar contas para seleção:', error);
+    throw new Error(error.message);
+  }
+
+  return data ?? [];
+};
+
 export const criarContaBancaria = async (input: ContaBancariaInput): Promise<ContaBancaria> => {
   console.log('[ContaBancariaService] Criando conta bancária:', input);
 

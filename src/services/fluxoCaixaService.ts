@@ -10,6 +10,15 @@ import {
   TipoFluxo
 } from '@/types/fluxoCaixa';
 
+export interface FluxoCompetenciaLinha {
+  ano_mes: string;
+  receita_prevista: number;
+  receita_realizada: number;
+  despesa_prevista: number;
+  despesa_realizada: number;
+  saldo_competencia: number;
+}
+
 export class FluxoCaixaService {
   static async getFluxoCaixa(filtros: FluxoCaixaFiltros = {}): Promise<FluxoCaixaItem[]> {
     
@@ -373,6 +382,23 @@ export class FluxoCaixaService {
       console.error('[FluxoCaixa] Erro ao calcular estatísticas:', error);
       throw error;
     }
+  }
+
+  static async getFluxoCompetencia(params: {
+    dataInicio: string;
+    dataFim: string;
+    empresaId?: string | null;
+  }): Promise<FluxoCompetenciaLinha[]> {
+    const { data, error } = await supabase.rpc('relatorio_fluxo_competencia', {
+      p_data_ini: params.dataInicio,
+      p_data_fim: params.dataFim,
+      p_empresa_id: params.empresaId ?? null,
+    });
+    if (error) {
+      console.error('[FluxoCaixa] Erro ao buscar fluxo por competência:', error);
+      throw error;
+    }
+    return (data as FluxoCompetenciaLinha[]) ?? [];
   }
 
   private static calcularSaldoProjetado(movimentacoes: FluxoCaixaItem[]): number {

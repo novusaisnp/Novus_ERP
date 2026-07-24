@@ -8,18 +8,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line,
 } from 'recharts';
-import { supabase } from '@/integrations/supabase/client';
+import { FluxoCaixaService, type FluxoCompetenciaLinha } from '@/services/fluxoCaixaService';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-
-interface LinhaRelatorio {
-  ano_mes: string;
-  receita_prevista: number;
-  receita_realizada: number;
-  despesa_prevista: number;
-  despesa_realizada: number;
-  saldo_competencia: number;
-}
 
 const brl = (v: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
@@ -31,17 +22,9 @@ export default function FluxoCompetenciaPage() {
   );
   const [dataFim, setDataFim] = useState<string>(format(endOfMonth(hoje), 'yyyy-MM-dd'));
 
-  const { data, isLoading, error, refetch } = useQuery<LinhaRelatorio[]>({
+  const { data, isLoading, error, refetch } = useQuery<FluxoCompetenciaLinha[]>({
     queryKey: ['fluxo-competencia', dataIni, dataFim],
-    queryFn: async () => {
-      const { data, error } = await (supabase.rpc as any)('relatorio_fluxo_competencia', {
-        p_data_ini: dataIni,
-        p_data_fim: dataFim,
-        p_empresa_id: null,
-      });
-      if (error) throw error;
-      return (data as LinhaRelatorio[]) ?? [];
-    },
+    queryFn: () => FluxoCaixaService.getFluxoCompetencia({ dataInicio: dataIni, dataFim }),
     staleTime: 5 * 60 * 1000,
   });
 

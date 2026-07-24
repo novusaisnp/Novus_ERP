@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { listarContasBancariasParaSelecao } from "@/services/contaBancariaService";
 import { useImportarExtrato } from "@/hooks/conciliacao/useConciliacao";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,15 +19,7 @@ export default function ImportarExtratoPage() {
 
   const { data: contas } = useQuery({
     queryKey: ["contas-bancarias-ativas"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("contas_bancarias")
-        .select("id, descricao, numero_conta, nome_titular")
-        .is("deleted_at", null)
-        .order("descricao");
-      if (error) throw error;
-      return data ?? [];
-    },
+    queryFn: listarContasBancariasParaSelecao,
   });
 
   const canSubmit = !!file && !!contaId && !importar.isPending;
