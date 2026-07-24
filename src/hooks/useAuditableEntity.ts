@@ -159,7 +159,6 @@ export const useAuditableEntity = <T extends { id: string; deleted_at?: string |
         variant: "destructive",
       });
       return false;
-      // eslint-disable-next-line no-unreachable
       const { error } = await (supabase as any).rpc('soft_delete_with_audit', {
         p_tabela_nome: tableName,
         p_registro_id: id,

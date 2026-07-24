@@ -86,7 +86,7 @@ export const ProdutoFornecedorList: React.FC<ProdutoFornecedorListProps> = ({
       fornecedor_nome: fornecedorSelecionado?.razaoSocial || fornecedorSelecionado?.nomeFantasia,
     };
 
-    let novosFornecedores = [...fornecedores];
+    const novosFornecedores = [...fornecedores];
     
     if (editingIndex !== null) {
       novosFornecedores[editingIndex] = fornecedorData;

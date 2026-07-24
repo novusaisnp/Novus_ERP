@@ -92,17 +92,6 @@ export const useModalidadeCaixas = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const getQuery = (apenasAtivos = false) => useQuery({
-    queryKey: ['modalidade-caixas', apenasAtivos],
-    queryFn: () => modalidadeCaixasService.getAll(apenasAtivos),
-  });
-
-  const searchQuery = (termo: string, apenasAtivos = false) => useQuery({
-    queryKey: ['modalidade-caixas-search', termo, apenasAtivos],
-    queryFn: () => modalidadeCaixasService.search(termo, apenasAtivos),
-    enabled: termo.length > 0,
-  });
-
   const createMutation = useMutation({
     mutationFn: modalidadeCaixasService.create,
     onSuccess: () => {
@@ -153,8 +142,6 @@ export const useModalidadeCaixas = () => {
   });
 
   return {
-    getQuery,
-    searchQuery,
     create: createMutation.mutate,
     update: updateMutation.mutate,
     delete: deleteMutation.mutate,

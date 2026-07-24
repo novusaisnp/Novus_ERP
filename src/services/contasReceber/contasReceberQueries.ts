@@ -60,7 +60,7 @@ const selectComRelacionamentos = `
 `;
 
 export const buildContasReceberQuery = (filtros: ContaReceberFilters = {}) => {
-  let query = supabase
+  const query = supabase
     .from('contas_receber')
     .select(selectComRelacionamentos)
     .order('data_vencimento', { ascending: false });
@@ -78,7 +78,7 @@ export const getContaReceberByIdQuery = (id: string) => {
 };
 
 export const getEstatisticasQuery = (filtros: ContaReceberFilters = {}) => {
-  let query = supabase
+  const query = supabase
     .from('contas_receber')
     .select('status, valor_original, valor_recebido, data_vencimento');
   return aplicarFiltrosComuns(query, filtros);

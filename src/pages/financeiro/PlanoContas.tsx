@@ -57,23 +57,18 @@ const PlanoContas = () => {
 
 
   const handleSubmit = async (data: PlanoContasInput): Promise<void> => {
-    try {
-      const dataWithParent = { ...data, id_pai: parentId || data.id_pai };
-      
-      if (editingConta) {
-        await updateConta({ id: editingConta.id, data: dataWithParent });
-      } else {
-        await createConta(dataWithParent);
-      }
-      
-      // Só fechar o modal após sucesso confirmado
-      setIsModalOpen(false);
-      setParentId(undefined);
-      setEditingConta(undefined);
-    } catch (error) {
-      // O erro já foi tratado pelo hook, propagar para manter o modal aberto
-      throw error;
+    const dataWithParent = { ...data, id_pai: parentId || data.id_pai };
+
+    if (editingConta) {
+      await updateConta({ id: editingConta.id, data: dataWithParent });
+    } else {
+      await createConta(dataWithParent);
     }
+
+    // Só fechar o modal após sucesso confirmado (erro propaga naturalmente e mantém o modal aberto)
+    setIsModalOpen(false);
+    setParentId(undefined);
+    setEditingConta(undefined);
   };
 
   const handleCloseModal = () => {

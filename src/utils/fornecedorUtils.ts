@@ -135,7 +135,7 @@ export const fornecedorUtils = {
       soma += parseInt(cpfLimpo[i]) * (10 - i);
     }
     let resto = 11 - (soma % 11);
-    let dv1 = resto < 2 ? 0 : resto;
+    const dv1 = resto < 2 ? 0 : resto;
     
     // Calcula o segundo dígito verificador
     soma = 0;
@@ -143,7 +143,7 @@ export const fornecedorUtils = {
       soma += parseInt(cpfLimpo[i]) * (11 - i);
     }
     resto = 11 - (soma % 11);
-    let dv2 = resto < 2 ? 0 : resto;
+    const dv2 = resto < 2 ? 0 : resto;
     
     // Verifica se os dígitos verificadores estão corretos
     return parseInt(cpfLimpo[9]) === dv1 && parseInt(cpfLimpo[10]) === dv2;

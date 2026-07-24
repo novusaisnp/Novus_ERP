@@ -152,14 +152,14 @@ async function reprocessCliente(supabase: any, syncLog: any, payload: any) {
   
   switch (syncLog.operation_type) {
     case 'insert':
-    case 'sync':
+    case 'sync': {
       // Verificar se cliente já existe
       const { data: existingCliente } = await supabase
         .from('clientes')
         .select('id')
         .or(`cpf_cnpj.eq.${data.cpf_cnpj},external_id.eq.${data.id}`)
         .maybeSingle();
-      
+
       if (existingCliente) {
         // Se já existe, fazer update
         return await supabase
@@ -172,14 +172,15 @@ async function reprocessCliente(supabase: any, syncLog: any, payload: any) {
           .select()
           .single();
       }
-      
+
       // Se não existe, inserir
       return await supabase
         .from('clientes')
         .insert(mapClienteData(data, payload.source_system))
         .select()
         .single();
-        
+    }
+
     case 'update':
       return await supabase
         .from('clientes')

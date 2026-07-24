@@ -149,7 +149,7 @@ export const AgenciasModal: React.FC<AgenciasModalProps> = ({
     
     if (value.length <= 11) {
       if (value.length <= 2) {
-        value = value;
+        // mantém sem formatação
       } else if (value.length <= 6) {
         value = `(${value.slice(0, 2)}) ${value.slice(2)}`;
       } else if (value.length <= 10) {

@@ -81,7 +81,6 @@ const FormDepartamento: React.FC<FormDepartamentoProps> = ({
       if (success) {
         onOpenChange(false);
         onSuccess?.();
-      } else {
       }
     } catch (error) {
       console.error('[Departamentos] Erro não tratado no handleSubmit:', error);

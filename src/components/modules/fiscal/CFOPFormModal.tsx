@@ -54,7 +54,6 @@ export const CFOPFormModal: React.FC<Props> = ({ open, onOpenChange, cfop, mode 
     e.preventDefault();
     if (readOnly) return;
     if (!/^[0-9]{4}$/.test(form.codigo)) {
-      // eslint-disable-next-line no-alert
       alert('Código CFOP deve ter 4 dígitos numéricos.');
       return;
     }

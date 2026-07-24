@@ -9,7 +9,6 @@ import {
   arquivarBanco,
   restaurarBanco,
   obterEstatisticasBancos,
-  buscarBancoPorCodigo,
 } from '@/services/bancoService';
 import { BancoInput } from '@/types/banco';
 
@@ -126,14 +125,6 @@ export const useBancos = (filtros?: {
     },
   });
 
-  // Query para buscar banco por código na API
-  const buscarPorCodigoQuery = (codigo: string) =>
-    useQuery({
-      queryKey: ['banco-api', codigo],
-      queryFn: () => buscarBancoPorCodigo(codigo),
-      enabled: false, // Executar apenas quando solicitado
-    });
-
   return {
     bancos,
     estatisticas,
@@ -148,6 +139,5 @@ export const useBancos = (filtros?: {
     isUpdating: atualizarMutation.isPending,
     isArchiving: arquivarMutation.isPending,
     isRestoring: restaurarMutation.isPending,
-    buscarPorCodigoQuery,
   };
 };
