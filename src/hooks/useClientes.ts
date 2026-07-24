@@ -1,14 +1,19 @@
-
+// FILE NAME: useClientes.ts
+// FILE CONTENT: 
 import { useState, useEffect } from 'react';
-import { Cliente } from '@/types/cliente';
 import { clienteService } from '@/services/clienteService';
+import { Cliente } from '@/types/cliente';
+import { useToast } from '@/components/ui/use-toast';
 import { clienteUtils } from '@/utils/clienteUtils';
-import { useToast } from '@/hooks/use-toast';
 
-export const useClientes = () => {
+// Recebe o ID da empresa como parâmetro
+export const useClientes = (empresaRepresentadaId: string | null) => { // <--- PARÂMETRO ADICIONADO
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+
+  // Usar o empresaRepresentadaId passado como parâmetro
+  const currentEmpresaId = empresaRepresentadaId;
 
   const handleError = (error: any, defaultMessage: string) => {
     console.error('Erro:', error);
@@ -28,9 +33,14 @@ export const useClientes = () => {
   };
 
   const loadClientes = async () => {
+    if (!currentEmpresaId) { // <--- VERIFICA SE O ID DA EMPRESA EXISTE
+      console.warn('empresaRepresentadaId não disponível. Não foi possível carregar clientes.');
+      setClientes([]);
+      return;
+    }
     setLoading(true);
     try {
-      const data = await clienteService.fetchClientes();
+      const data = await clienteService.fetchClientes(currentEmpresaId); // <--- PASSA O ID DA EMPRESA
       const clientesFormatados = (data as any[]).map(clienteUtils.transformSupabaseToCliente);
       setClientes(clientesFormatados);
     } catch (error) {
@@ -41,6 +51,15 @@ export const useClientes = () => {
   };
 
   const saveCliente = async (clienteData: Cliente) => {
+    if (!currentEmpresaId) { // <--- VERIFICA SE O ID DA EMPRESA EXISTE
+      toast({
+        title: "Erro",
+        description: "ID da empresa não disponível. Não foi possível salvar o cliente.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
     setLoading(true);
     try {
       const validation = clienteUtils.validateCliente(clienteData);
@@ -55,10 +74,10 @@ export const useClientes = () => {
       }
 
       if (clienteData.id) {
-        await clienteService.updateCliente(clienteData.id, clienteData);
+        await clienteService.updateCliente(clienteData.id, clienteData, currentEmpresaId); // <--- PASSA O ID DA EMPRESA
         handleSuccess("Cliente atualizado com sucesso!");
       } else {
-        await clienteService.createCliente(clienteData);
+        await clienteService.createCliente(clienteData, currentEmpresaId); // <--- PASSA O ID DA EMPRESA
         handleSuccess("Cliente criado com sucesso!");
       }
 
@@ -81,10 +100,18 @@ export const useClientes = () => {
       });
       return false;
     }
+    if (!currentEmpresaId) { // <--- VERIFICA SE O ID DA EMPRESA EXISTE
+      toast({
+        title: "Erro",
+        description: "ID da empresa não disponível. Não foi possível excluir o cliente.",
+        variant: "destructive"
+      });
+      return false;
+    }
 
     setLoading(true);
     try {
-      await clienteService.deleteCliente(id);
+      await clienteService.deleteCliente(id, currentEmpresaId); // <--- PASSA O ID DA EMPRESA
       await loadClientes();
       handleSuccess("Cliente excluído com sucesso!");
       return true;
@@ -97,8 +124,10 @@ export const useClientes = () => {
   };
 
   useEffect(() => {
-    loadClientes();
-  }, []);
+    if (currentEmpresaId) { // <--- CARREGA CLIENTES APENAS SE O ID DA EMPRESA FOR VÁLIDO
+      loadClientes();
+    }
+  }, [currentEmpresaId]); // <--- RECARREGA QUANDO O ID DA EMPRESA MUDA
 
   return {
     clientes,

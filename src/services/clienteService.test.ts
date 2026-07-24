@@ -55,12 +55,13 @@ describe('clienteService.fetchClientes', () => {
       mock._calls.push({ table: t, op: 'from' });
       const chain: any = {
         select: () => chain,
+        eq: () => chain,
         order: () => Promise.resolve({ data: list, error: null }),
       };
       return chain;
     });
 
-    const res = await clienteService.fetchClientes();
+    const res = await clienteService.fetchClientes('empresa-1');
     expect(res).toEqual(list);
   });
 
@@ -68,11 +69,16 @@ describe('clienteService.fetchClientes', () => {
     vi.spyOn(mock, 'from').mockImplementationOnce(() => {
       const chain: any = {
         select: () => chain,
+        eq: () => chain,
         order: () => Promise.resolve({ data: null, error: { message: 'x' } }),
       };
       return chain;
     });
-    await expect(clienteService.fetchClientes()).rejects.toThrow(/Não foi possível/);
+    await expect(clienteService.fetchClientes('empresa-1')).rejects.toThrow(/Não foi possível/);
+  });
+
+  it('lança erro quando empresaRepresentadaId não é fornecido', async () => {
+    await expect(clienteService.fetchClientes('')).rejects.toThrow(/ID da empresa/);
   });
 });
 
@@ -93,9 +99,10 @@ describe('clienteService.createCliente payload shape', () => {
       return chain;
     });
 
-    const res = await clienteService.createCliente(cliente);
+    const res = await clienteService.createCliente(cliente, 'empresa-1');
     expect(res).toEqual({ id: 'new-id' });
     expect(capturedPayload).toMatchObject({
+      empresa_representada_id: 'empresa-1',
       nome: 'ACME',
       apelido: 'AC',
       tipo: 'J',
@@ -127,32 +134,39 @@ describe('clienteService.createCliente payload shape', () => {
         }),
       }),
     }));
-    await expect(clienteService.createCliente(cliente)).rejects.toMatchObject({ code: '23505' });
+    await expect(clienteService.createCliente(cliente, 'empresa-1')).rejects.toMatchObject({ code: '23505' });
   });
 });
 
 describe('clienteService.updateCliente', () => {
-  it('chama update().eq(id) com payload correto', async () => {
+  it('chama update().eq(id).eq(empresa) com payload correto', async () => {
     let capturedPayload: any = null;
     let capturedId: any = null;
+    let capturedEmpresaId: any = null;
     vi.spyOn(mock, 'from').mockImplementationOnce(() => ({
       update: (p: any) => {
         capturedPayload = p;
         return {
-          eq: (_c: string, v: string) => {
-            capturedId = v;
+          eq: (_c1: string, v1: string) => {
+            capturedId = v1;
             return {
-              select: () => ({
-                single: () => Promise.resolve({ data: { id: v }, error: null }),
-              }),
+              eq: (_c2: string, v2: string) => {
+                capturedEmpresaId = v2;
+                return {
+                  select: () => ({
+                    single: () => Promise.resolve({ data: { id: v1 }, error: null }),
+                  }),
+                };
+              },
             };
           },
         };
       },
     }));
 
-    const res = await clienteService.updateCliente('c-1', cliente);
+    const res = await clienteService.updateCliente('c-1', cliente, 'empresa-1');
     expect(capturedId).toBe('c-1');
+    expect(capturedEmpresaId).toBe('empresa-1');
     expect(capturedPayload.nome).toBe('ACME');
     expect(capturedPayload.cpf_cnpj).toBe('11222333000181');
     expect(res).toEqual({ id: 'c-1' });
@@ -160,26 +174,39 @@ describe('clienteService.updateCliente', () => {
 });
 
 describe('clienteService.deleteCliente', () => {
-  it('chama delete().eq(id) e resolve', async () => {
+  it('chama delete().eq(id).eq(empresa) e resolve', async () => {
     let capturedId: any = null;
+    let capturedEmpresaId: any = null;
     vi.spyOn(mock, 'from').mockImplementationOnce(() => ({
       delete: () => ({
-        eq: (_c: string, v: string) => {
-          capturedId = v;
-          return Promise.resolve({ data: null, error: null });
+        eq: (_c1: string, v1: string) => {
+          capturedId = v1;
+          return {
+            eq: (_c2: string, v2: string) => {
+              capturedEmpresaId = v2;
+              return Promise.resolve({ data: null, error: null });
+            },
+          };
         },
       }),
     }));
-    await expect(clienteService.deleteCliente('c-2')).resolves.toBeUndefined();
+    await expect(clienteService.deleteCliente('c-2', 'empresa-1')).resolves.toBe(true);
     expect(capturedId).toBe('c-2');
+    expect(capturedEmpresaId).toBe('empresa-1');
   });
 
   it('lança erro quando Supabase falha', async () => {
     vi.spyOn(mock, 'from').mockImplementationOnce(() => ({
       delete: () => ({
-        eq: () => Promise.resolve({ data: null, error: { message: 'FK' } }),
+        eq: () => ({
+          eq: () => Promise.resolve({ data: null, error: { message: 'FK' } }),
+        }),
       }),
     }));
-    await expect(clienteService.deleteCliente('c-3')).rejects.toThrow(/Não foi possível/);
+    await expect(clienteService.deleteCliente('c-3', 'empresa-1')).rejects.toMatchObject({ message: 'FK' });
+  });
+
+  it('lança erro quando empresaRepresentadaId não é fornecido', async () => {
+    await expect(clienteService.deleteCliente('c-4', '')).rejects.toThrow(/ID da empresa/);
   });
 });

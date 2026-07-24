@@ -1,0 +1,219 @@
+# Panorama Detalhado do Projeto Novus ERP
+
+## 1. Histórico e Contexto Geral
+
+O projeto Novus ERP foi iniciado com a ferramenta Lovable e, posteriormente, migrado para o ambiente de desenvolvimento VS Code, com o código-fonte gerenciado via GitHub e o backend hospedado no Supabase. Esta configuração atual (VS Code, GitHub, Supabase) é a base para o desenvolvimento contínuo.
+
+## 2. Arquitetura e Tecnologias Chave
+
+O Novus ERP é uma aplicação robusta, construída com uma arquitetura em camadas bem definida, utilizando tecnologias modernas para garantir escalabilidade, segurança e performance.
+
+### 2.1. Visão Geral da Arquitetura em Camadas
+
+A arquitetura do Novus ERP segue um padrão de camadas, onde cada uma tem responsabilidades específicas, garantindo modularidade e manutenibilidade:
+┌──────────────────────────────────────────────────────────────────────┐ │ UI (React 18 + Vite 5 + TS strict + shadcn/ui + Tailwind tokens) │ │ src/pages/* (70 rotas) │ │ src/components/* (11 domínios + ui/ shadcn) │ └──────────────────────────────────────────────────────────────────────┘ │ TanStack Query v5 · React Hook Form + Zod ▼ ┌──────────────────────────────────────────────────────────────────────┐ │ HOOKS (src/hooks/) — 66 arquivos │ │ useAuditableEntity, useVendas, useConciliacao, useEstoque, … │ └──────────────────────────────────────────────────────────────────────┘ │ chama serviço tipado ▼ ┌──────────────────────────────────────────────────────────────────────┐ │ SERVICES (src/services/) — 51 arquivos │ │ CRUD + regras + soft-delete + auditoria + dependenciasService │ └──────────────────────────────────────────────────────────────────────┘ │ supabase-js typed client (Database) ▼ ┌──────────────────────────────────────────────────────────────────────┐ │ BACKEND (Supabase gerenciado — Lovable Cloud) │ │ Postgres 15 · RLS · Triggers · 51 RPCs · MVs │ │ Auth (JWT) · Storage · Realtime │ │ 13 Edge Functions Deno │ └──────────────────────────────────────────────────────────────────────┘ │ ▼ APIs externas: BrasilAPI / ViaCEP · @react-email · Provider e-mail (Noop atual)
+
+### 2.2. Árvore de Arquivos do Frontend (`src/`)
+
+A estrutura de diretórios do frontend (`src/`) é organizada para facilitar a localização e manutenção do código:
+src/ ├── App.tsx / main.tsx / App.css / index.css ├── contexts/ (Contextos React, como AuthContext.tsx) ├── integrations/supabase/ (Arquivos gerados automaticamente pelo Supabase CLI: client.ts, types.ts com 89 tabelas tipadas) ├── lib/ (Utilitários e constantes: bankingErrors.ts, featureFlags.ts, queryKeys.ts, statusMappers.ts, utils.ts) ├── data/ (Constantes de dados: estados, formas de atuação, etc.) ├── types/ (28 arquivos de tipos TypeScript por domínio: agencia, banco, cliente, estoque, fiscal, vendas, etc.) ├── hooks/ (66 arquivos + subpastas, agrupados por funcionalidade: conciliacao/, estoque/, etc.) ├── services/ (51 arquivos + subpastas, mapeados 1:1 com o backend: contasPagar/, contasReceber/, fiscal/, etc.) ├── utils/ (Regras puras e utilitários: parcelamento, csvExport, currencyUtils, relatoriosAgg, authUtils, produtoUtils) ├── workers/ (Web Workers, como relatoriosWorker.ts) ├── docs/examples/ (Templates de exemplo: new-auditable-entity) ├── tests/ (Testes Vitest para fluxos críticos, parcelamento, classificação, etc.) ├── test/setup.ts ├── assets/ (Recursos estáticos: login-hero.png.asset.json) ├── pages/ (70 rotas da aplicação, organizadas por módulo) └── components/ (Componentes React, organizados por domínio e incluindo shadcn/ui)
+
+### 2.3. Rotas / Páginas (Mapa Completo)
+
+O roteador central (`src/App.tsx`) gerencia todas as rotas, com proteção via `<ProtectedRoute>` (JWT) e `<AdminRoute>` para funcionalidades administrativas.
+
+| Módulo | Rota | Página |
+|---|---|---|
+| — | `/login` | `Login.tsx` |
+| — | `/` (index) | `Dashboard.tsx` |
+| Cadastros | `/cadastros/clientes` `.../fornecedores` `.../servicos` | 3 páginas |
+| Estoque | `/estoque/{produtos,categorias,localizacoes,unidades-medida,tamanhos,movimentacoes,inventario,kardex/:produtoId,relatorios,relatorios/{giro,curva-abc,posicao,parados,ruptura}}` | 13 páginas |
+| Vendas | `/vendas/{pedidos,orcamentos,contratos,relatorios}` (+ redirect `/contratos/*`) | 4 páginas |
+| Gestão Bancária | `/gestao-bancaria/{bancos,agencias,contas-bancarias,movimentacoes-bancarias, conciliacao,conciliacao/importar,conciliacao/regras,conciliacao/relatorios,conciliacao/:extratoId}` | 9 páginas |
+| Financeiro | `/financeiro/{contas-receber,contas-pagar,movimentacoes,fluxo-caixa,fluxo-competencia,centros-custo,plano-contas,config-basicas,relatorios}` | 9 páginas |
+| Fiscal | `/fiscal/{notas-fiscais,sped,tributos}` | 3 páginas (CRUD, sem emissão real) |
+| RH | `/rh/{colaboradores,cargos,departamentos,folha/{folha-pagamento,vencimentos-padrao,descontos-padrao,beneficios-vinculados,integracao-ponto},registros-ponto,relatorios}` | 10 páginas |
+| Integração | `/integracao/sincronizacao` | `SyncDashboard.tsx` |
+| Configurações | `/configuracoes/{empresas,usuarios,sistema,perfil,webhooks,relatorios-ops}` | 6 páginas |
+| Fallback | `*` | 404 inline |
+
+### 2.4. Componentes (por domínio)
+
+Os componentes são organizados por domínio e incluem os componentes de UI do shadcn:
+src/components/ ├── auth/ (ProtectedRoute, AdminRoute + tests) ├── configuracoes/ (CentroCustoModal, RegraClassificacaoModal, │ RotateSecretDialog, TestSignatureDialog, │ WebhookConfigModal, CentroCustoCard/EmptyState) ├── contratos/ (ContratoFormModal) ├── financeiro/ {bancos, config-basicas, contas-pagar, │ contas-receber, fluxo-caixa, movimentacoes} ├── gestao-bancaria/ {agencias, bancos, contas-bancarias, │ movimentacoes-bancarias} ├── layout/ (AppHeader, AppLayout, AppSidebar, BrandFooter, │ header/UserDropdown, sidebar/* + tests) ├── modules/ (Cargos, DescontosPadrao, FormCargo/Depto/Desconto/Vencimento, │ VencimentosPadrao, clientes, configuracoes/{empresas,usuarios}, │ fiscal, rh) ├── relatorios/ (AggregatedTable, ComparisonToggle, DeltaBadge, │ DrillFilterBadge, ExportMenu, GroupBySelect, │ InsightsBanner, PerfOverlay, PresetsMenu, │ ScheduleList, ScheduleModal, tests, │ ops/{AlertsDrawer, KpiCards, OpsFilters, │ RunsFailuresTable}) ├── shared/ (CepInput, CnpjLookupInput, ConfirmDeleteWithDeps, │ CpfInput, PlanoContaCombobox) ├── vendas/ (CatalogoItemPicker, ConverterVendaDialog, │ GerarTitulosButton, OrcamentoAcoesMenu, │ OrcamentoViewDialog, VendaFormModal, │ VendaPagamentoSection) └── ui/ (shadcn: ~45 primitives + sidebar/ + tests)
+
+### 2.5. Hooks (66) — Agrupamento Funcional
+
+| Grupo | Hooks |
+|---|---|
+| Cadastro / Domínio | useClientes, useClientePolitica, useFornecedores, useEmpresasRepresentadas, useEmpresaResponsavel, useEmpresaLogoUrl, useEmpresasLogosMap, useSociosRepresentantes, useSetores |
+| Estoque | useProdutos, useCategorias, useLocalizacoes, useTamanhos, useUnidadesMedida, estoque/{useEstoque, useKardex, useRelatoriosEstoque, useEmpresaAtual} |
+| Vendas / Orçamento | useVendas, useOrcamentos, useCatalogoOrcamento, usePagamentoCatalogo, useVendaPagamento, useGerarContasReceber |
+| Contratos | useContratos |
+| Gestão Bancária | useBancos, useAgencias, useContasBancarias, useMovimentacoesBancarias, useMovimentacoesCompletas |
+| Conciliação | conciliacao/useConciliacao |
+| Financeiro | useContasPagar, useContasPagarForm, useContasReceber, useMovimentacoesFinanceiras, useFluxoCaixa, useFluxoCaixaExport, usePlanoContas, useCentrosCusto, useAuditableCentrosCusto, useConfigBasicas, useContaContabilSearch, useRegrasClassificacao, useVencimentosPadrao, useDescontosPadrao |
+| Fiscal | useFiscal |
+| RH | useColaboradores, useColaboradorFormValidation, useCargos, useDepartamentos |
+| Ops / Relatórios | useOpsAlerts, useOpsFilters, useReportPresets, useReportRunKpis, useReportSchedules, useReportWorker, useSyncHealth, useSyncLogs, useSyncStatus |
+| Integrações externas | useCep, useCnpjLookup |
+| Auth / Governança | useAuthenticationState, useMeuPerfil, useUsuarios, useUsuarioErrorHandler, usePerfis, useEmpresaLogoUrl |
+| Genéricos | useAuditableEntity, useCheckDependencias, use-mobile, use-toast |
+
+### 2.6. Services (51) — Mapa 1:1 com Backend
+
+`agenciaService` · `auditableCentroCustoService` · `bancoService` · `cargoService` · `categoriaService` · `centroCustoService` · `classificacaoReceita/` · `clientePoliticaService` · `clienteService` · `cnpjApi` · `colaboradorService` · `conciliacao/` · `configBasicasService` · `contaBancariaService` · `contasPagar/` + `contasPagarService` · `contasReceber/` + `contasReceberService` · `contratosService` · `departamentoService` · **`dependenciasService`** · `descontoPadraoService` · `empresaResponsavelService` · `empresasRepresentadasService` · `estoque/` · `fiscal/` + `fiscalService` · `fluxoCaixaService` · `fornecedorService` · `localizacaoService` · `movimentacoesBancariasService` · `movimentacoesService` · `opsAlertsService` · `opsAuditService` · `orcamentosService` · `pagamentoCatalogoService` · `planoContasService` · `produtoService` · `reportRunOpsService` · `reportSchedulesService` · `setorService` · `sociosRepresentantesService` · `syncService` · `tamanhoService` · `unidadeMedidaService` · `usuarioService` · `vencimentoPadraoService` · `vendaPagamentoService` · `vendasService` · `webhookConfigService`.
+
+## 3. Banco de Dados (PostgreSQL 15)
+
+O banco de dados PostgreSQL 15 é o coração do sistema, utilizando recursos avançados para segurança e performance.
+
+### 3.1. Tabelas (89)
+
+As tabelas são organizadas por domínio:
+
+*   **Domínio Comercial (Vendas):** `vendas`, `itens_venda`, `venda_pagamento`, `venda_pagamento_parcelas`, `venda_parcela_classificacao_receita`, `orcamentos_venda`, `orcamentos_venda_itens`, `contratos`.
+*   **Cadastros:** `clientes`, `cliente_politica_pagamento`, `cliente_modalidades_bloqueadas`, `fornecedores`, `servicos`, `empresas_representadas`, `empresa_responsavel`, `socios_representantes`, `setores_empresa`.
+*   **Estoque:** `produtos`, `categorias_produtos`, `localizacoes_estoque`, `unidades_medida`, `tamanhos_produtos`, `estoque_movimentacoes`, `estoque_saldos`, `estoque_inventarios`, `estoque_inventario_itens`, `lotes_movimentacoes`, `produto_fornecedores`, `historico_estoque_movimentacoes`, views `vw_estoque_posicao_localizacao`, `vw_estoque_ruptura`.
+*   **Financeiro:** `contas_pagar`, `contas_receber`, `rateios_contas_pagar`, `rateios_contas_receber`, `liquidacoes_titulos`, `liquidacoes_multiplas`, `documentos_titulos_financeiros`, `plano_contas`, `centros_custo`, `naturezas_pagamento`, `naturezas_receita`, `vencimentos_padrao`, `descontos_padrao`, `regras_classificacao_receita`, `natureza_operacao`, `natureza_caixas`, `modalidade_caixas`, `modalidades_pagamento`, `modalidade_api_vinculo`, `planos_pagamento`, `historico_movimentacoes_financeiras`.
+*   **Gestão Bancária / Conciliação:** `bancos`, `agencias_bancarias`, `contas_bancarias`, `movimentacoes_bancarias`, `documentos_movimentacoes_bancarias`, `historico_movimentacoes_bancarias`, `banco_extratos_importados`, `banco_movimentacoes_extrato`, `banco_regras_conciliacao`, `banco_conciliacao_log`.
+*   **RH:** `colaboradores`, `cargos`, `departamentos`, `folha_pagamento`, `beneficios_vinculados`, `registros_ponto`, `integracoes_ponto`.
+*   **Fiscal:** `fiscal_configuracoes`, `fiscal_documentos_eletronicos`, `fiscal_documentos_eletronicos_itens`, `fiscal_eventos`, `fiscal_sped_arquivos`, `configuracoes_fiscais`, `tributos`, `cfop`, `ncm`.
+*   **Governança / Segurança:** `user_roles` (enum `app_role`), `usuarios`, `perfis`, `perfis_acesso`, `entidade_dependencias`.
+*   **Ops / Relatórios / Integração:** `report_schedules`, `report_schedule_runs`, `report_ops_alerts`, `report_ops_audit`, views `v_report_run_kpis_24h`, `v_report_run_failures_by_reason_24h`, `webhook_configs`, `webhook_deliveries`, `sync_logs`, `sync_queue`.
+
+### 3.2. Segurança do Banco de Dados
+
+*   **RLS (Row Level Security):** 333 policies RLS ativas, garantindo que 100% das tabelas públicas tenham RLS habilitada.
+*   **`GRANT` explícito:** Todas as tabelas possuem `GRANT` explícito para controle de acesso.
+*   **`user_roles`:** As roles são isoladas em `user_roles` e nunca em `profiles`, seguindo o princípio de segurança.
+
+### 3.3. Funções PL/pgSQL (51) — Por Finalidade
+
+| Categoria | Funções |
+|---|---|
+| Governança / Acesso | `has_role`, `user_has_access_to_empresa`, `get_user_empresa_id`, `protect_perfis_sistema` |
+| Vendas → Financeiro | `converter_orcamento_em_venda`, `gerar_contas_receber_da_venda`, `validar_pagamento_venda`, `snapshot_classificacao_venda`, `bloquear_edicao_orcamento_convertido`, `resolver_classificacao_receita`, `validar_classificacao_categoria` |
+| Estoque | `baixar_estoque_venda`, `estornar_estoque_venda`, `validar_saldo_estoque`, `recalc_saldo_estoque`, `trg_estoque_mov_recalc`, `trg_estoque_mov_validar_saldo`, `registrar_historico_estoque`, `fn_kardex_produto`, `fn_curva_abc`, `fn_refresh_mv_curva_abc`, `fn_relatorio_giro`, `fn_produtos_parados`, `conciliar_inventario` |
+| Bancário | `atualizar_saldo_conta_movimentacao`, `validar_transferencia_movimentacao`, `registrar_historico_movimentacao`, `transferencia_bancaria_atomica`, `criar_lancamento_do_extrato` (×2 overloads), `confirmar_match`, `desfazer_conciliacao`, `sugerir_matches_extrato`, `reverter_extrato`, `trg_extrato_marcar_conciliado` |
+| Financeiro / MVs | `materializar_recorrencias`, `relatorio_fluxo_competencia`, `refresh_mv_fluxo_competencia`, `periodicidade_meses` |
+| Ops / Auditoria | `get_audit_trail`, `check_dependencias`, `regenerar_entidade_dependencias` |
+| Utilitárias | `update_updated_at_column` |
+| Rollout webhook v1→v2 | `check_v2_readiness`, `promote_to_dual`, `promote_to_v2_only`, `rollback_to_dual`, `rollback_to_v1`, `precheck_source_system_nome_consistency` |
+
+### 3.4. Triggers (83)
+
+As 83 triggers cobrem diversas funcionalidades, incluindo: `updated_at`, auditoria de estoque/bancário, saldo automático, validação de transferência, proteção de perfis de sistema, snapshot de classificação em vendas, conciliação de extrato e bloqueio de orçamento convertido.
+
+## 4. Edge Functions (13, Deno)
+
+As 13 Edge Functions (Deno) são funções serverless que executam lógica de negócio específica:
+
+| Função | Papel | Notas |
+|---|---|---|
+| `run-report-schedules` | Execução agendada + export server (CSV/PDF/XLSX) + retenção | consome `_shared/report-export/*` |
+| `resign-report-run` | Reassina URL expirada de artefato | inclui audit |
+| `prune-report-artifacts` | Poda > 30d + cron | idempotente |
+| `evaluate-ops-alerts` | Avalia thresholds → cria alertas | dedupe via `idx_report_ops_alerts_open_dedupe` |
+| `job-recorrencias` | Materializa parcelas recorrentes | `verify_jwt=false` (job) |
+| `data-validator` | Valida payloads externos | usado por webhooks |
+| `sync-webhook` | Ingestão webhook v1/v2 | assinatura dual |
+| `retry-failed-syncs` | Reprocessa filas com falha | idempotência |
+| `enviar-convite-usuario` | Onboarding | usa `_shared/transactional-email-templates` |
+| `banco-parse-extrato` | Parse OFX/CSV → linhas extrato | Bankfeed conciliação |
+| `health-check` | Endpoint saúde | |
+| `e2e-reset` | Reset de tenant E2E | Playwright |
+| `e2e-set-venda-status` | Set status forçado | Playwright |
+
+**`_shared/`:** Contém módulos compartilhados como `delivery/{DeliveryProvider, EmailProvider, NoopProvider, resolveProvider}` (atualmente `DELIVERY_PROVIDER=noop`), `report-export/{branding, errorCodes, exportCsvServer, exportPdfServer, exportXlsxServer, limits, retention, validateViewState}`, `transactional-email-templates/{registry, report-scheduled-delivery}`.
+
+## 5. Fluxos de Dados e Integrações
+
+O sistema possui fluxos de dados bem definidos e integrações com APIs externas.
+
+### 5.1. Fluxos Internos Críticos
+
+*   **Orçamento → Venda:** `converter_orcamento_em_venda`.
+*   **Venda → Contas a Receber:** `gerar_contas_receber_da_venda`.
+*   **Venda → Estoque:** `baixar_estoque_venda` (via trigger).
+*   **Liquidação → Movimentações Bancárias:** `atualizar_saldo_conta_movimentacao`.
+*   **Extrato Bancário → Conciliação:** `sugerir_matches_extrato`, `confirmar_match`.
+*   **Recorrências:** `materializar_recorrencias` (Edge Function).
+*   **Relatórios Ops:** `report_schedule_runs.artifact_path` para Storage com retenção de 30 dias.
+*   **Multi-tenant:** `user_has_access_to_empresa()` para RLS em todas as tabelas.
+
+### 5.2. APIs Externas
+
+*   **BrasilAPI:** Lookup CNPJ (`useCnpjLookup`).
+*   **ViaCEP:** Lookup CEP (`useCep`).
+*   **@react-email/components:** Templates para e-mails transacionais.
+*   **DeliveryProvider real:** (Atualmente `noop` em produção, sem envio real de e-mails).
+
+## 6. Qualidade de Código e Testes
+
+O projeto adota práticas rigorosas de qualidade e possui uma suíte de testes abrangente.
+
+*   **Typecheck:** `bunx tsgo --noEmit` com 0 erros.
+*   **Testes Unitários/Integração (Vitest):** 143/143 testes passando, cobrindo fluxos críticos, classificação, parcelamento, componentes de relatórios, etc.
+*   **Testes Deno:** 55/55 testes passando para Edge Functions (retenção, resign, run-report, etc.).
+*   **Testes E2E (Playwright):** 5 fluxos críticos (login, venda→liquidação, conciliação, produto/estoque, regras de conciliação) consolidados e prontos para CI.
+
+## 7. Estado Operacional e Performance
+
+O sistema está estruturalmente saudável e com boa performance.
+
+*   **Observabilidade:** KPIs 24h, alertas e drawer de alertas operacionais implementados (P5).
+*   **Auditoria:** Auditoria imutável (`report_ops_audit`, histórico bancário e de estoque) implementada (P5).
+*   **Governança de Artefatos:** Reassinatura de URLs e badges de status implementados (P6).
+*   **Retenção:** Política de retenção de 30 dias para artefatos de relatório com cron (P7).
+*   **Performance:**
+    *   Baseline estabelecido (P8).
+    *   Gate anti over-indexing aplicado (P8.2).
+    *   Runbook de performance (`RUNBOOK_P8_PERFORMANCE.md`) disponível.
+    *   Máximo tempo de execução de query crítica: 40 ms.
+    *   Zero `Seq Scan` em tabelas > 10k linhas.
+*   **DB Health:** Instância Supabase saudável (memória 61%, disco 15%, 9/60 conexões, 0 restarts).
+
+## 8. Riscos Remanescentes e Próximos Passos
+
+Apesar da robustez, existem áreas que requerem atenção ou desenvolvimento futuro.
+
+### 8.1. Riscos Remanescentes
+
+1.  **DELIVERY_PROVIDER=noop:** E-mails de relatório não são entregues em produção.
+2.  **Módulo Fiscal:** Atualmente apenas CRUD; **sem emissão real de NF-e/SPED** (integração SEFAZ pendente).
+3.  **Conciliação Bancária Automatizada:** Motor de sugestões existe, mas a confirmação ainda é manual.
+4.  **`user_roles`:** Sem UI dedicada; atribuição via SQL (risco operacional).
+5.  **Playwright:** Não executável no sandbox; depende de ambiente CI.
+6.  **Snapshot #5 produtivo:** Baseline de performance P8 foi sobre seed; snapshot com tráfego real ainda pendente.
+7.  **UI Fiscal:** As abas "Emitir", "Consultar" e "Relatórios" em `/fiscal/notas-fiscais` e as abas em `/fiscal/sped` ainda são placeholders ("Funcionalidade em desenvolvimento"). O `DashboardFiscal` existe, mas está em uma rota separada (`/fiscal/dashboard`) e protegida por `AdminRoute`.
+8.  **Alertas Fiscais:** As 4 regras existem no código, mas o cron do `evaluate-ops-alerts` não está agendado, ou seja, não são disparadas automaticamente.
+9.  **Banco de Dados Fiscal:** Zero documentos e eventos fiscais registrados, indicando que o fluxo mock nunca foi exercitado contra o banco real.
+
+### 8.2. Próximos Passos (Foco em UI Visível e Funcionalidade Fiscal)
+
+1.  **Substituir Stubs da UI Fiscal (`/fiscal/notas-fiscais`):**
+    *   Aba Dashboard: Consumir `fiscal_metrics_daily` e listar últimas notas.
+    *   Aba Emitir: Listar vendas faturadas sem NF-e e integrar `EmitirNFeDialog`.
+    *   Aba Consultar: Grid com filtros sobre `fiscal_documentos_eletronicos` e `DetalheNFeDrawer`.
+    *   Aba Relatórios: Manter placeholder ou remover.
+2.  **Consolidar o Dashboard Fiscal:** Mover o conteúdo do `DashboardFiscal` para a aba "Dashboard" de `/fiscal/notas-fiscais` e remover a rota `/fiscal/dashboard`.
+3.  **Popular o Banco com Dados Fiscais (Smoke Automatizado):** Criar uma Edge Function agendada (`fiscal-mock-populator`) para chamar `fiscal-smoke-run` e popular os KPIs.
+4.  **Agendar `evaluate-ops-alerts`:** Criar migration para agendar o cron da Edge Function `evaluate-ops-alerts` para que as regras fiscais sejam avaliadas automaticamente.
+5.  **Reescrever `SPED.tsx`:** Marcar honestamente como "aguardando provedor" em vez de "em desenvolvimento".
+6.  **Verificação Visual:** Capturar screenshots da UI Fiscal antes e depois das mudanças para validação.
+
+## 9. Referências da Documentação Original
+
+*   `AUDITORIA_TOMOGRAFICA_NOVUS_ERP.md`: Raio-X completo do sistema.
+*   `RUNBOOK_P8_PERFORMANCE.md`: Operação contínua do banco Postgres/Supabase.
+*   `RUNBOOK_P7_RETENTION.md`: Retenção de artefatos de relatórios.
+*   `RUNBOOK_P5.md`: Pipeline de agendamento de relatórios.
+*   `P8_SPRINT_CLOSEOUT.md`: Validação final dos critérios de performance.
+*   `P8_OPTIMIZATION.md`: Otimização orientada a evidência (indexação).
+*   `P8_BASELINE.md`: Baseline de performance (snapshot inicial).
+*   `P12_ESTOQUE.md`: Implementação completa do Módulo de Estoque.
+*   `DIAGNOSTICO_FISCAL_REAL.md`: Diagnóstico inicial do Módulo Fiscal.
+*   `DIAGNOSTICO_FISCAL_CORRIGIDO.md`: Diagnóstico corrigido do Módulo Fiscal com foco na UI.
+*   `DOCUMENTACAO_COMPLETA_NOVUS_ERP.md`: Documentação detalhada de tabelas, serviços, componentes, hooks e tipos.
+*   `_Relatrio_de_Contexto_e_Roadmap_de_Desenvo.rtf`: Relatório de contexto e roadmap de desenvolvimento.

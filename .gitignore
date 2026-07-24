@@ -11,6 +11,7 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
 
 # Editor directories and files
 .vscode/*
@@ -27,3 +28,9 @@ dist-ssr
 e2e/.auth/
 playwright-report/
 test-results/
+
+# Separate nested Git repo (own remote/history) — do not track inside novusai-erp
+finance-harmonizer/
+
+# Supabase CLI local cache/state (machine-specific, not project source)
+supabase/.temp/
