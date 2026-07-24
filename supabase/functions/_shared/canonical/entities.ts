@@ -165,6 +165,36 @@ export const contratoCanonicalSchema = contratoCanonicalObjectSchema.superRefine
   }
 });
 
+// -------------------- Liquidação de Título (Porta 2) --------------------
+// O evento "isso foi pago" — desacoplado de como o título nasceu (Venda,
+// Contrato, ou lançamento direto). Tabela real: liquidacoes_titulos.
+// Ver docs/CONTRATOS_CANONICOS_ERP.md §2 (Porta 2) e §5 (Vínculo Usuário).
+export const multiBaixaCanonicalSchema = z.object({
+  conta_bancaria_id: z.string().uuid(),
+  valor: z.coerce.number().positive('valor da baixa deve ser maior que zero'),
+  observacoes: z.string().optional().nullable(),
+});
+
+export const liquidacaoCanonicalObjectSchema = z.object({
+  titulo_id: z.string().uuid(),
+  tipo_titulo: z.enum(['CONTAS_PAGAR', 'CONTAS_RECEBER']),
+  valor_pago: z.coerce.number().positive('valor_pago deve ser maior que zero'),
+  data_pagamento: z.string().refine(v => !isNaN(Date.parse(v)), 'data_pagamento inválida'),
+  forma_pagamento: z.enum(['DINHEIRO', 'TRANSFERENCIA', 'BOLETO', 'CARTAO_CREDITO', 'CARTAO_DEBITO', 'PIX', 'CHEQUE', 'DEPOSITO']),
+  conta_bancaria_id: z.string().uuid().optional().nullable(),
+  observacoes: z.string().optional().nullable(),
+  multi_baixa: z.array(multiBaixaCanonicalSchema).optional(),
+}).merge(origemEnvelopeSchema);
+
+export const liquidacaoCanonicalSchema = liquidacaoCanonicalObjectSchema.superRefine((l, ctx) => {
+  if (l.multi_baixa && l.multi_baixa.length > 0) {
+    const soma = l.multi_baixa.reduce((acc, b) => acc + b.valor, 0);
+    if (Math.abs(soma - l.valor_pago) > 0.01) {
+      ctx.addIssue({ code: 'custom', path: ['multi_baixa'], message: `soma das baixas (${soma}) diverge do valor_pago (${l.valor_pago})` });
+    }
+  }
+});
+
 // Schemas completos (com regras cruzadas) — usados para validar inserts.
 export const canonicalSchemas = {
   clientes: clienteCanonicalSchema,
@@ -173,6 +203,7 @@ export const canonicalSchemas = {
   contratos: contratoCanonicalSchema,
   contas_receber: contaReceberCanonicalSchema,
   estoque_movimentacoes: estoqueMovimentacaoCanonicalSchema,
+  liquidacoes_titulos: liquidacaoCanonicalSchema,
 } as const;
 
 // Schemas-objeto puros (sem regras cruzadas) — usados via `.partial()` para
@@ -184,6 +215,7 @@ export const canonicalObjectSchemas = {
   contratos: contratoCanonicalObjectSchema,
   contas_receber: contaReceberCanonicalObjectSchema,
   estoque_movimentacoes: estoqueMovimentacaoCanonicalObjectSchema,
+  liquidacoes_titulos: liquidacaoCanonicalObjectSchema,
 } as const;
 
 export type CanonicalTable = keyof typeof canonicalSchemas;

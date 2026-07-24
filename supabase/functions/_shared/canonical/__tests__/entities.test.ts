@@ -6,6 +6,7 @@ import {
   contaReceberCanonicalSchema,
   contratoCanonicalSchema,
   estoqueMovimentacaoCanonicalSchema,
+  liquidacaoCanonicalSchema,
 } from '../entities.ts';
 
 const EMPRESA = '00000000-0000-0000-0000-000000000010';
@@ -119,6 +120,34 @@ Deno.test('estoqueMovimentacaoCanonicalSchema exige origem e destino em TRANSFER
     tipo: 'TRANSFERENCIA',
     quantidade: 5,
     localizacao_origem_id: '00000000-0000-0000-0000-000000000300',
+  });
+  assertEquals(result.success, false);
+});
+
+Deno.test('liquidacaoCanonicalSchema aceita baixa simples ligada a um título de venda', () => {
+  const result = liquidacaoCanonicalSchema.safeParse({
+    titulo_id: '00000000-0000-0000-0000-000000000500',
+    tipo_titulo: 'CONTAS_RECEBER',
+    valor_pago: 87.50,
+    data_pagamento: '2026-07-24',
+    forma_pagamento: 'PIX',
+    origem_sistema: 'pdv-loja-01',
+    idempotency_key: 'pdv-loja-01:cupom:CF-000482:liquidacao',
+  });
+  assertEquals(result.success, true);
+});
+
+Deno.test('liquidacaoCanonicalSchema rejeita multi_baixa cuja soma diverge de valor_pago', () => {
+  const result = liquidacaoCanonicalSchema.safeParse({
+    titulo_id: '00000000-0000-0000-0000-000000000500',
+    tipo_titulo: 'CONTAS_RECEBER',
+    valor_pago: 100,
+    data_pagamento: '2026-07-24',
+    forma_pagamento: 'CARTAO_CREDITO',
+    multi_baixa: [
+      { conta_bancaria_id: '00000000-0000-0000-0000-000000000600', valor: 40 },
+      { conta_bancaria_id: '00000000-0000-0000-0000-000000000601', valor: 40 },
+    ],
   });
   assertEquals(result.success, false);
 });
