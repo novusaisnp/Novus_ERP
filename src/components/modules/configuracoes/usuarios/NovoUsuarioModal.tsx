@@ -9,10 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, User, Briefcase } from 'lucide-react';
 import { toast } from 'sonner';
 import { sociosRepresentantesService } from '@/services/sociosRepresentantesService';
-import { usuarioService } from '@/services/usuarioService';
+import { usuarioService, type ColaboradorDisponivel, type NovoUsuarioPendenteInput } from '@/services/usuarioService';
 import { usePerfis } from '@/hooks/usePerfis';
+import type { SocioRepresentante } from '@/types/socios';
 
 type Origem = 'COLABORADOR' | 'SOCIO';
+type Pessoa = ColaboradorDisponivel | SocioRepresentante;
 
 interface Props {
   open: boolean;
@@ -55,9 +57,9 @@ const NovoUsuarioModal: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
     }
   }, [open]);
 
-  const pessoaSelecionada = useMemo(() => {
-    if (origem === 'COLABORADOR') return colaboradores.find((c: any) => c.id === pessoaId);
-    return socios.find((s: any) => s.id === pessoaId);
+  const pessoaSelecionada: Pessoa | undefined = useMemo(() => {
+    if (origem === 'COLABORADOR') return colaboradores.find((c) => c.id === pessoaId);
+    return socios.find((s) => s.id === pessoaId);
   }, [origem, pessoaId, colaboradores, socios]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -70,15 +72,15 @@ const NovoUsuarioModal: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
       toast.error('Selecione o perfil de acesso');
       return;
     }
-    const nome = (pessoaSelecionada as any).nome;
-    const email = (pessoaSelecionada as any).email;
+    const nome = pessoaSelecionada.nome;
+    const email = pessoaSelecionada.email;
     if (!email) {
       toast.error('A pessoa selecionada precisa ter e-mail cadastrado');
       return;
     }
     setSaving(true);
     try {
-      const payload: any = {
+      const payload: NovoUsuarioPendenteInput = {
         empresa_representada_id: empresaId,
         nome,
         email,
@@ -87,18 +89,18 @@ const NovoUsuarioModal: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
         pessoa_pendente: true,
         ativo: true,
         updated_at: new Date().toISOString(),
+        ...(origem === 'COLABORADOR' ? { colaborador_id: pessoaId } : { socio_id: pessoaId }),
       };
-      if (origem === 'COLABORADOR') payload.colaborador_id = pessoaId;
-      else payload.socio_id = pessoaId;
 
       // user_id fica NULL até a pessoa aceitar o convite / fazer signup.
       let created: { id: string };
       try {
         created = await usuarioService.criarUsuarioPendente(payload);
-      } catch (error: any) {
-        if (error.code === '23505') throw new Error('Esta pessoa já está vinculada a um usuário.');
-        if (error.code === '23503') throw new Error('Referência inválida (empresa, perfil ou pessoa).');
-        if (error.code === '42501') throw new Error('Sem permissão. Apenas administradores podem criar usuários.');
+      } catch (error) {
+        const code = (error as { code?: string }).code;
+        if (code === '23505') throw new Error('Esta pessoa já está vinculada a um usuário.');
+        if (code === '23503') throw new Error('Referência inválida (empresa, perfil ou pessoa).');
+        if (code === '42501') throw new Error('Sem permissão. Apenas administradores podem criar usuários.');
         throw error;
       }
 
@@ -115,22 +117,23 @@ const NovoUsuarioModal: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
         } else {
           toast.success('Usuário criado. Convite pendente: ' + (inviteData?.message || 'envio manual necessário.'));
         }
-      } catch (inviteErr: any) {
+      } catch (inviteErr) {
         console.error('[NovoUsuario] Falha ao enviar convite:', inviteErr);
-        toast.warning('Usuário criado, porém falhou ao enviar convite: ' + (inviteErr?.message || 'erro desconhecido'));
+        const msg = inviteErr instanceof Error ? inviteErr.message : 'erro desconhecido';
+        toast.warning('Usuário criado, porém falhou ao enviar convite: ' + msg);
       }
 
       onCreated();
       onOpenChange(false);
 
-    } catch (err: any) {
-      toast.error(err?.message || 'Falha ao criar usuário');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Falha ao criar usuário');
     } finally {
       setSaving(false);
     }
   };
 
-  const lista: any[] = origem === 'COLABORADOR' ? colaboradores : socios;
+  const lista: Pessoa[] = origem === 'COLABORADOR' ? colaboradores : socios;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -160,7 +163,7 @@ const NovoUsuarioModal: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
                 <SelectValue placeholder={lista.length ? 'Selecione' : 'Nenhuma pessoa disponível'} />
               </SelectTrigger>
               <SelectContent>
-                {lista.map((p: any) => (
+                {lista.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.nome} {p.email ? `— ${p.email}` : ''}
                   </SelectItem>
@@ -174,9 +177,9 @@ const NovoUsuarioModal: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
 
           {pessoaSelecionada && (
             <div className="rounded-md border p-3 bg-muted/30 text-sm space-y-1">
-              <div><strong>Nome:</strong> {(pessoaSelecionada as any).nome}</div>
-              <div><strong>Email:</strong> {(pessoaSelecionada as any).email || <span className="text-destructive">não informado</span>}</div>
-              {(pessoaSelecionada as any).cpf && <div><strong>CPF:</strong> {(pessoaSelecionada as any).cpf}</div>}
+              <div><strong>Nome:</strong> {pessoaSelecionada.nome}</div>
+              <div><strong>Email:</strong> {pessoaSelecionada.email || <span className="text-destructive">não informado</span>}</div>
+              {pessoaSelecionada.cpf && <div><strong>CPF:</strong> {pessoaSelecionada.cpf}</div>}
             </div>
           )}
 
@@ -194,7 +197,7 @@ const NovoUsuarioModal: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
             </div>
             <div>
               <Label>Role</Label>
-              <Select value={role} onValueChange={(v) => setRole(v as any)}>
+              <Select value={role} onValueChange={(v) => setRole(v as 'admin' | 'moderator' | 'user')}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="user">Usuário</SelectItem>

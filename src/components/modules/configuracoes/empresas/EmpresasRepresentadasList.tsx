@@ -21,8 +21,8 @@ import { CepInput } from '@/components/shared/CepInput';
 
 interface Props {
   empresas: EmpresaRepresentada[];
-  onSave: (e: EmpresaRepresentada) => Promise<any> | any;
-  onDelete: (id: string) => Promise<any> | any;
+  onSave: (e: EmpresaRepresentada) => Promise<unknown> | unknown;
+  onDelete: (id: string) => Promise<unknown> | unknown;
   saving?: boolean;
 }
 
@@ -91,12 +91,35 @@ const empty = (): FormState => ({
 });
 
 
+interface EmpresaConfiguracoes {
+  razao_social?: string;
+  nome_fantasia?: string;
+  inscricao_estadual?: string;
+  inscricao_municipal?: string;
+  tipo_empresa?: string;
+  regime_tributario?: string;
+  perfil_tributario?: string;
+  cnae_principal?: string;
+  natureza_juridica?: string;
+  data_abertura?: string;
+  contador_nome?: string;
+  contador_crc?: string;
+  contador_email?: string;
+  observacoes?: string;
+  tipo_vinculo?: string;
+  cnpj_matriz?: string;
+  logo_path?: string;
+  cert_path?: string;
+  cert_filename?: string;
+  cert_uploaded_at?: string;
+}
+
 const onlyDigits = (v: string) => (v || '').replace(/\D/g, '');
 const isValidCnpj = (v: string) => onlyDigits(v).length === 14;
 
 const fromEmpresa = (e?: EmpresaRepresentada | null): FormState => {
   if (!e) return empty();
-  const c: any = e.configuracoes || {};
+  const c = (e.configuracoes || {}) as EmpresaConfiguracoes;
   return {
     ...empty(),
     id: e.id,
@@ -160,7 +183,7 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
     setForm(initial);
     lastCnpjRef.current = '';
     autoVinculoRef.current = '';
-    folderKeyRef.current = editing?.id || (crypto as any).randomUUID?.() || `${Date.now()}`;
+    folderKeyRef.current = editing?.id || crypto.randomUUID?.() || `${Date.now()}`;
     // carrega preview do logo se existir
     if (initial.logo_path) {
       empresasRepresentadasService.getSignedUrl('empresa-logos', initial.logo_path).then(setLogoPreviewUrl);
@@ -172,8 +195,9 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
   const setField = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((p) => ({ ...p, [k]: v }));
 
-  const humanizeStorageError = (err: any): string => {
-    const raw = err?.message || err?.error || String(err || '');
+  const humanizeStorageError = (err: unknown): string => {
+    const e = err as { message?: string; error?: string } | null | undefined;
+    const raw = e?.message || e?.error || String(err || '');
     const lower = raw.toLowerCase();
     if (lower.includes('bucket') && lower.includes('not found')) {
       return 'Bucket de armazenamento não encontrado. Contate o administrador.';
@@ -207,7 +231,7 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
       const url = await empresasRepresentadasService.getSignedUrl('empresa-logos', path);
       setLogoPreviewUrl(url);
       toast.success('Logo enviada com sucesso');
-    } catch (err: any) {
+    } catch (err) {
       console.error('[EmpresaLogo] upload falhou:', err);
       toast.error(`Falha ao enviar logo: ${humanizeStorageError(err)}`);
     } finally {
@@ -234,7 +258,7 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
       const now = new Date().toISOString();
       setForm((p) => ({ ...p, cert_path: path, cert_filename: filename, cert_uploaded_at: now }));
       toast.success('Certificado digital enviado com sucesso');
-    } catch (err: any) {
+    } catch (err) {
       console.error('[EmpresaCert] upload falhou:', err);
       toast.error(`Falha ao enviar certificado: ${humanizeStorageError(err)}`);
     } finally {
@@ -349,7 +373,7 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
   };
 
   const getVinculo = (e: EmpresaRepresentada): Exclude<TipoVinculo, ''> | null => {
-    const c: any = e.configuracoes || {};
+    const c = (e.configuracoes || {}) as EmpresaConfiguracoes;
     const v = (c.tipo_vinculo || '') as TipoVinculo;
     return v ? (v as Exclude<TipoVinculo, ''>) : null;
   };
