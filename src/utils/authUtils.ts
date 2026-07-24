@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-export const checkHasRole = async (userId: string, role: 'admin' | 'moderator' | 'user'): Promise<boolean> => {
+export const checkHasRole = async (userId: string, role: 'admin' | 'gerente' | 'operador' | 'visualizador'): Promise<boolean> => {
   const { data, error } = await supabase.rpc('has_role', {
     _user_id: userId,
     _role: role,

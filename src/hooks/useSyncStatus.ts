@@ -9,7 +9,6 @@ interface SyncStatus {
   error: number;
   pending: number;
   lastSync?: string;
-  avgExecutionTime?: number;
 }
 
 interface SyncStatusPeriod {
@@ -23,17 +22,23 @@ interface SyncStatusPeriod {
   }>;
 }
 
-type SyncLogStatus = 'success' | 'error' | 'pending';
+type DbSyncLogStatus = 'PENDENTE' | 'PROCESSANDO' | 'SUCESSO' | 'ERRO' | 'IGNORADO';
+type SyncLogBucket = 'success' | 'error' | 'pending';
 
 interface SyncLogRow {
-  status: SyncLogStatus;
+  status: DbSyncLogStatus;
   created_at: string;
-  execution_time_ms: number | null;
 }
 
-type CountsByStatus = Record<SyncLogStatus, number>;
+type CountsByStatus = Record<SyncLogBucket, number>;
 
 const emptyCounts = (): CountsByStatus => ({ success: 0, error: 0, pending: 0 });
+
+const toBucket = (status: DbSyncLogStatus): SyncLogBucket => {
+  if (status === 'SUCESSO') return 'success';
+  if (status === 'ERRO') return 'error';
+  return 'pending'; // PENDENTE, PROCESSANDO, IGNORADO
+};
 
 export const useSyncStatus = () => {
   const [syncStatus, setSyncStatus] = useState<SyncStatusPeriod>({
@@ -52,7 +57,7 @@ export const useSyncStatus = () => {
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { data: last24hData, error: error24h } = await supabase
         .from('sync_logs')
-        .select('status, created_at, execution_time_ms')
+        .select('status, created_at')
         .gte('created_at', twentyFourHoursAgo);
 
       if (error24h) throw error24h;
@@ -61,7 +66,7 @@ export const useSyncStatus = () => {
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
       const { data: last7dData, error: error7d } = await supabase
         .from('sync_logs')
-        .select('status, created_at, execution_time_ms')
+        .select('status, created_at')
         .gte('created_at', sevenDaysAgo);
 
       if (error7d) throw error7d;
@@ -72,23 +77,14 @@ export const useSyncStatus = () => {
       // Processar dados das últimas 24h
       const stats24h = rows24h.reduce((acc, log) => {
         acc.total++;
-        acc[log.status]++;
+        acc[toBucket(log.status)]++;
         return acc;
       }, { total: 0, ...emptyCounts() });
-
-      // Calcular tempo médio de execução (24h)
-      const executionTimes = rows24h
-        .filter((log) => log.execution_time_ms)
-        .map((log) => log.execution_time_ms as number);
-
-      const avgExecutionTime = executionTimes.length > 0
-        ? Math.round(executionTimes.reduce((sum, time) => sum + time, 0) / executionTimes.length)
-        : 0;
 
       // Processar dados dos últimos 7 dias
       const stats7d = rows7d.reduce((acc, log) => {
         acc.total++;
-        acc[log.status]++;
+        acc[toBucket(log.status)]++;
         return acc;
       }, { total: 0, ...emptyCounts() });
 
@@ -104,7 +100,7 @@ export const useSyncStatus = () => {
         });
 
         const hourStats = hourData.reduce((acc, log) => {
-          acc[log.status]++;
+          acc[toBucket(log.status)]++;
           return acc;
         }, emptyCounts());
 
@@ -117,7 +113,7 @@ export const useSyncStatus = () => {
       const lastSync = rows24h[0]?.created_at;
 
       setSyncStatus({
-        last24h: { ...stats24h, lastSync, avgExecutionTime },
+        last24h: { ...stats24h, lastSync },
         last7d: { ...stats7d, lastSync },
         chartData
       });

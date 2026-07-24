@@ -13,7 +13,6 @@ import {
   Clock, 
   Activity,
   AlertTriangle,
-  TrendingUp,
   Database
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -141,7 +140,7 @@ const SyncDashboard: React.FC = () => {
 
         <TabsContent value="24h" className="space-y-4">
           {/* Métricas das Últimas 24h */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total</CardTitle>
@@ -194,21 +193,6 @@ const SyncDashboard: React.FC = () => {
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Em processamento
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Tempo Médio</CardTitle>
-                <TrendingUp className="h-4 w-4 text-blue-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">
-                  {syncStatus.last24h.avgExecutionTime || 0}ms
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Processamento
                 </p>
               </CardContent>
             </Card>
