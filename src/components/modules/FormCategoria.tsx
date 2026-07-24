@@ -87,11 +87,11 @@ export const FormCategoria: React.FC<FormCategoriaProps> = ({
       form.reset({
         nome: categoria.nome,
         descricao: categoria.descricao || '',
-        ativo: (categoria as any).ativo ?? true,
-        plano_conta_receita_id: (categoria as any).plano_conta_receita_id ?? null,
-        centro_custo_id: (categoria as any).centro_custo_id ?? null,
-        plano_conta_despesa_id: (categoria as any).plano_conta_despesa_id ?? null,
-        centro_custo_despesa_id: (categoria as any).centro_custo_despesa_id ?? null,
+        ativo: categoria.ativo ?? true,
+        plano_conta_receita_id: categoria.plano_conta_receita_id ?? null,
+        centro_custo_id: categoria.centro_custo_id ?? null,
+        plano_conta_despesa_id: categoria.plano_conta_despesa_id ?? null,
+        centro_custo_despesa_id: categoria.centro_custo_despesa_id ?? null,
       });
     } else {
       form.reset({
@@ -211,7 +211,7 @@ export const FormCategoria: React.FC<FormCategoriaProps> = ({
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="__none__">Nenhum</SelectItem>
-                        {centrosCusto.map((cc: any) => (
+                        {centrosCusto.map((cc) => (
                           <SelectItem key={cc.id} value={cc.id}>
                             {cc.codigo ? `${cc.codigo} — ` : ''}{cc.nome}
                           </SelectItem>
@@ -267,7 +267,7 @@ export const FormCategoria: React.FC<FormCategoriaProps> = ({
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="__none__">Nenhum</SelectItem>
-                        {centrosCusto.map((cc: any) => (
+                        {centrosCusto.map((cc) => (
                           <SelectItem key={cc.id} value={cc.id}>
                             {cc.codigo ? `${cc.codigo} — ` : ''}{cc.nome}
                           </SelectItem>

@@ -103,7 +103,7 @@ export const ColaboradorFormModal: React.FC<ColaboradorFormModalProps> = ({
     }
   }, [open, colaborador]);
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: keyof Colaborador, value: unknown) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -149,7 +149,7 @@ export const ColaboradorFormModal: React.FC<ColaboradorFormModalProps> = ({
         nomeCompleto: formData.nomeCompleto!,
         dataNascimento: formData.dataNascimento!,
         cpf: formData.cpf!,
-        regimeContratacao: formData.regimeContratacao! as any,
+        regimeContratacao: formData.regimeContratacao!,
         dataAdmissao: formData.dataAdmissao!,
         situacao: formData.situacao!,
         empresaRepresentadaId: formData.empresaRepresentadaId!,
@@ -175,7 +175,7 @@ export const ColaboradorFormModal: React.FC<ColaboradorFormModalProps> = ({
     return date.toISOString().split('T')[0];
   };
 
-  const handleDateChange = (field: string, value: string) => {
+  const handleDateChange = (field: keyof Colaborador, value: string) => {
     if (value) {
       handleInputChange(field, new Date(value + 'T00:00:00'));
     }
@@ -397,7 +397,7 @@ export const ColaboradorFormModal: React.FC<ColaboradorFormModalProps> = ({
                   >
                     <SelectTrigger><SelectValue placeholder="Selecione o cargo" /></SelectTrigger>
                     <SelectContent>
-                      {cargos.map((c: any) => (
+                      {cargos.map((c) => (
                         <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
                       ))}
                     </SelectContent>
@@ -411,7 +411,7 @@ export const ColaboradorFormModal: React.FC<ColaboradorFormModalProps> = ({
                   >
                     <SelectTrigger><SelectValue placeholder="Selecione o departamento" /></SelectTrigger>
                     <SelectContent>
-                      {departamentos.map((d: any) => (
+                      {departamentos.map((d) => (
                         <SelectItem key={d.id} value={d.id}>{d.nome}</SelectItem>
                       ))}
                     </SelectContent>
@@ -420,12 +420,12 @@ export const ColaboradorFormModal: React.FC<ColaboradorFormModalProps> = ({
                 <div>
                   <Label htmlFor="setorId">Setor</Label>
                   <Select
-                    value={(formData as any).setorId || ''}
-                    onValueChange={(value) => handleInputChange('setorId' as any, value)}
+                    value={formData.setorId || ''}
+                    onValueChange={(value) => handleInputChange('setorId', value)}
                   >
                     <SelectTrigger><SelectValue placeholder="Selecione o setor" /></SelectTrigger>
                     <SelectContent>
-                      {setores.map((s: any) => (
+                      {setores.map((s) => (
                         <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
                       ))}
                     </SelectContent>

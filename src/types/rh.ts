@@ -18,6 +18,7 @@ export interface Colaborador {
   emailCorporativo?: string;
   cargoId?: string;
   departamentoId?: string;
+  setorId?: string;
   regimeContratacao: 'CLT' | 'PJ' | 'ESTAGIO' | 'TERCEIRIZADO';
   dataAdmissao: Date;
   dataDemissao?: Date;
@@ -48,8 +49,8 @@ export interface Colaborador {
   };
   pontoControle?: {
     matriculaPonto?: string;
-    historicoFerias?: any[];
-    afastamentos?: any[];
+    historicoFerias?: unknown[];
+    afastamentos?: unknown[];
   };
   compliance: {
     aceiteLgpd: boolean;
@@ -122,7 +123,7 @@ export interface DescontoPadrao {
   tipo: 'FIXO' | 'PERCENTUAL' | 'TABELA';
   valor?: number;
   percentual?: number;
-  tabelaProgressiva?: any;
+  tabelaProgressiva?: unknown;
   ativo: boolean;
   createdAt?: Date;
   updatedAt?: Date;
@@ -146,11 +147,11 @@ export interface IntegracaoPonto {
   id?: string;
   nome: string;
   tipo: 'API' | 'UPLOAD';
-  configuracao: any;
+  configuracao: unknown;
   urlApi?: string;
   tokenApi?: string;
   formatoArquivo?: 'CSV' | 'XLSX';
-  mapeamentoCampos?: any;
+  mapeamentoCampos?: unknown;
   ativo: boolean;
   createdAt?: Date;
   updatedAt?: Date;
@@ -179,7 +180,7 @@ export interface SupabaseColaborador {
   data_nascimento: string;
   cpf: string;
   rg?: string;
-  endereco?: any;
+  endereco?: unknown;
   telefone?: string;
   email?: string;
   cargo_id?: string;

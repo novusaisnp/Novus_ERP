@@ -26,7 +26,7 @@ function toDbPayload(c: Colaborador, empresaId: string | null) {
     email_corporativo: c.emailCorporativo || null,
     cargo_id: c.cargoId || null,
     departamento_id: c.departamentoId || null,
-    setor_id: (c as any).setorId || null,
+    setor_id: c.setorId || null,
     tipo_contrato: c.tipoContrato || null,
     regime_trabalho: c.regimeTrabalho || null,
     data_admissao: c.dataAdmissao ? c.dataAdmissao.toISOString().split('T')[0] : null,
