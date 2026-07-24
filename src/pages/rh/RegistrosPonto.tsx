@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase as _supabase } from '@/integrations/supabase/client';
 import { colaboradorService } from '@/services/colaboradorService';
+import { registrosPontoService } from '@/services/registrosPontoService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,20 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Clock } from 'lucide-react';
-
-const supabase: any = _supabase;
-
-interface Registro {
-  id: string;
-  colaborador_id: string;
-  data_registro: string;
-  entrada_1: string | null;
-  saida_1: string | null;
-  entrada_2: string | null;
-  saida_2: string | null;
-  total_horas: number | null;
-  status: string | null;
-}
 
 const fmtTime = (t: string | null) => t ? t.slice(0, 5) : '—';
 
@@ -36,17 +22,9 @@ const RegistrosPonto: React.FC = () => {
     queryFn: colaboradorService.fetchColaboradores,
   });
 
-  const { data: registros = [], isLoading, error } = useQuery<Registro[]>({
+  const { data: registros = [], isLoading, error } = useQuery({
     queryKey: ['registros_ponto'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('registros_ponto')
-        .select('*')
-        .order('data_registro', { ascending: false })
-        .limit(500);
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: registrosPontoService.listRegistros,
   });
 
   const colaboradorMap = useMemo(() => {

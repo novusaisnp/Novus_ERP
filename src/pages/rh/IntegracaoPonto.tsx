@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase as _supabase } from '@/integrations/supabase/client';
+import { integracaoPontoService, type IntegracaoPonto } from '@/services/integracaoPontoService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,38 +14,21 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Plus, Link2, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 
-const supabase: any = _supabase;
-
-interface Integracao {
-  id: string;
-  nome: string;
-  tipo: string | null;
-  endpoint: string | null;
-  token_autenticacao: string | null;
-  configuracoes: any;
-  ativo: boolean | null;
-  ultima_sincronizacao: string | null;
-}
-
 const empty = { id: '', nome: '', tipo: '', endpoint: '', token_autenticacao: '', configuracoes: '{}', ativo: true };
 
-const IntegracaoPonto: React.FC = () => {
+const IntegracaoPontoPage: React.FC = () => {
   const qc = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<Integracao | null>(null);
+  const [editing, setEditing] = useState<IntegracaoPonto | null>(null);
   const [form, setForm] = useState({ ...empty });
 
-  const { data: integracoes = [], isLoading, error } = useQuery<Integracao[]>({
+  const { data: integracoes = [], isLoading, error } = useQuery({
     queryKey: ['integracoes_ponto'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('integracoes_ponto').select('*').order('nome');
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: integracaoPontoService.listIntegracoes,
   });
 
   const openNew = () => { setEditing(null); setForm({ ...empty }); setModalOpen(true); };
-  const openEdit = (i: Integracao) => {
+  const openEdit = (i: IntegracaoPonto) => {
     setEditing(i);
     setForm({
       id: i.id,
@@ -61,12 +44,10 @@ const IntegracaoPonto: React.FC = () => {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      let cfg: any = null;
+      let cfg: unknown = null;
       try { cfg = form.configuracoes ? JSON.parse(form.configuracoes) : null; }
       catch { throw new Error('Configurações devem ser JSON válido'); }
-      const { data: empresaId } = await supabase.rpc('get_user_empresa_id');
-      if (!empresaId && !editing) throw new Error('Empresa não encontrada');
-      const payload: any = {
+      const payload = {
         nome: form.nome,
         tipo: form.tipo || null,
         endpoint: form.endpoint || null,
@@ -75,12 +56,9 @@ const IntegracaoPonto: React.FC = () => {
         ativo: form.ativo,
       };
       if (editing) {
-        const { error } = await supabase.from('integracoes_ponto').update(payload).eq('id', editing.id);
-        if (error) throw error;
+        await integracaoPontoService.atualizarIntegracao(editing.id, payload);
       } else {
-        payload.empresa_representada_id = empresaId;
-        const { error } = await supabase.from('integracoes_ponto').insert(payload);
-        if (error) throw error;
+        await integracaoPontoService.criarIntegracao(payload);
       }
     },
     onSuccess: () => {
@@ -180,4 +158,4 @@ const IntegracaoPonto: React.FC = () => {
   );
 };
 
-export default IntegracaoPonto;
+export default IntegracaoPontoPage;

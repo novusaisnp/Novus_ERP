@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase as _supabase } from '@/integrations/supabase/client';
 import { colaboradorService } from '@/services/colaboradorService';
+import { beneficioVinculadoService, type Beneficio } from '@/services/beneficioVinculadoService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,23 +14,6 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
 import { Plus, Gift, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-
-const supabase: any = _supabase;
-
-interface Beneficio {
-  id: string;
-  colaborador_id: string;
-  nome: string;
-  tipo: string | null;
-  valor: number | null;
-  percentual: number | null;
-  desconta_folha: boolean | null;
-  empresa_paga: boolean | null;
-  inicio_vigencia: string | null;
-  fim_vigencia: string | null;
-  ativo: boolean | null;
-  observacoes: string | null;
-}
 
 const empty = {
   id: '',
@@ -60,16 +43,9 @@ const BeneficiosVinculados: React.FC = () => {
     queryFn: colaboradorService.fetchColaboradores,
   });
 
-  const { data: beneficios = [], isLoading, error } = useQuery<Beneficio[]>({
+  const { data: beneficios = [], isLoading, error } = useQuery({
     queryKey: ['beneficios_vinculados'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('beneficios_vinculados')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: beneficioVinculadoService.listBeneficios,
   });
 
   const colaboradorMap = useMemo(() => {
@@ -107,9 +83,7 @@ const BeneficiosVinculados: React.FC = () => {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const { data: empresaId } = await supabase.rpc('get_user_empresa_id');
-      if (!empresaId && !editing) throw new Error('Empresa não encontrada');
-      const payload: any = {
+      const payload = {
         colaborador_id: form.colaborador_id,
         nome: form.nome,
         tipo: form.tipo || null,
@@ -123,12 +97,9 @@ const BeneficiosVinculados: React.FC = () => {
         observacoes: form.observacoes || null,
       };
       if (editing) {
-        const { error } = await supabase.from('beneficios_vinculados').update(payload).eq('id', editing.id);
-        if (error) throw error;
+        await beneficioVinculadoService.atualizarBeneficio(editing.id, payload);
       } else {
-        payload.empresa_representada_id = empresaId;
-        const { error } = await supabase.from('beneficios_vinculados').insert(payload);
-        if (error) throw error;
+        await beneficioVinculadoService.criarBeneficio(payload);
       }
     },
     onSuccess: () => {
@@ -140,10 +111,7 @@ const BeneficiosVinculados: React.FC = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from('beneficios_vinculados').delete().eq('id', id);
-      if (error) throw error;
-    },
+    mutationFn: (id: string) => beneficioVinculadoService.excluirBeneficio(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['beneficios_vinculados'] });
       toast.success('Benefício excluído');

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase as _supabase } from '@/integrations/supabase/client';
 import { colaboradorService } from '@/services/colaboradorService';
+import { folhaPagamentoService } from '@/services/folhaPagamentoService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,20 +12,6 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Plus, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
-
-const supabase: any = _supabase;
-
-interface FolhaRow {
-  id: string;
-  colaborador_id: string;
-  competencia: string;
-  salario_base: number;
-  total_vencimentos: number | null;
-  total_descontos: number | null;
-  salario_liquido: number | null;
-  status: string | null;
-  data_pagamento: string | null;
-}
 
 const formatCurrency = (v: number | null | undefined) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
@@ -53,16 +39,9 @@ const FolhaPagamento: React.FC = () => {
     queryFn: colaboradorService.fetchColaboradores,
   });
 
-  const { data: folhas = [], isLoading, error } = useQuery<FolhaRow[]>({
+  const { data: folhas = [], isLoading, error } = useQuery({
     queryKey: ['folha_pagamento'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('folha_pagamento')
-        .select('*')
-        .order('competencia', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: folhaPagamentoService.listFolhas,
   });
 
   const colaboradorMap = useMemo(() => {
@@ -78,25 +57,18 @@ const FolhaPagamento: React.FC = () => {
   });
 
   const createMutation = useMutation({
-    mutationFn: async () => {
-      const { data: empresaId } = await supabase.rpc('get_user_empresa_id');
-      if (!empresaId) throw new Error('Empresa não encontrada');
-      const payload = {
-        empresa_representada_id: empresaId,
-        colaborador_id: form.colaborador_id,
-        competencia: form.competencia + '-01',
-        salario_base: Number(form.salario_base) || 0,
-        total_vencimentos: form.total_vencimentos ? Number(form.total_vencimentos) : null,
-        total_descontos: form.total_descontos ? Number(form.total_descontos) : null,
-        inss: form.inss ? Number(form.inss) : null,
-        irrf: form.irrf ? Number(form.irrf) : null,
-        fgts: form.fgts ? Number(form.fgts) : null,
-        status: form.status,
-        observacoes: form.observacoes || null,
-      };
-      const { error } = await supabase.from('folha_pagamento').insert(payload);
-      if (error) throw error;
-    },
+    mutationFn: () => folhaPagamentoService.criarFolha({
+      colaborador_id: form.colaborador_id,
+      competencia: form.competencia + '-01',
+      salario_base: Number(form.salario_base) || 0,
+      total_vencimentos: form.total_vencimentos ? Number(form.total_vencimentos) : null,
+      total_descontos: form.total_descontos ? Number(form.total_descontos) : null,
+      inss: form.inss ? Number(form.inss) : null,
+      irrf: form.irrf ? Number(form.irrf) : null,
+      fgts: form.fgts ? Number(form.fgts) : null,
+      status: form.status,
+      observacoes: form.observacoes || null,
+    }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['folha_pagamento'] });
       toast.success('Registro de folha criado');
