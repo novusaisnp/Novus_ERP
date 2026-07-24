@@ -5,6 +5,7 @@ import {
   vendaCanonicalSchema,
   contaReceberCanonicalSchema,
   contratoCanonicalSchema,
+  estoqueMovimentacaoCanonicalSchema,
 } from '../entities.ts';
 
 const EMPRESA = '00000000-0000-0000-0000-000000000010';
@@ -86,6 +87,38 @@ Deno.test('contaReceberCanonicalSchema rejeita vencimento anterior à emissão',
     valor_original: 100,
     data_emissao: '2026-08-01',
     data_vencimento: '2026-07-01',
+  });
+  assertEquals(result.success, false);
+});
+
+Deno.test('estoqueMovimentacaoCanonicalSchema exige localização de origem em SAIDA', () => {
+  const bad = estoqueMovimentacaoCanonicalSchema.safeParse({
+    empresa_representada_id: EMPRESA,
+    produto_id: '00000000-0000-0000-0000-000000000200',
+    tipo: 'SAIDA',
+    quantidade: 5,
+  });
+  assertEquals(bad.success, false);
+
+  const ok = estoqueMovimentacaoCanonicalSchema.safeParse({
+    empresa_representada_id: EMPRESA,
+    produto_id: '00000000-0000-0000-0000-000000000200',
+    tipo: 'SAIDA',
+    quantidade: 5,
+    localizacao_origem_id: '00000000-0000-0000-0000-000000000300',
+    venda_id: '00000000-0000-0000-0000-000000000400',
+    origem_sistema: 'pdv-loja-01',
+  });
+  assertEquals(ok.success, true);
+});
+
+Deno.test('estoqueMovimentacaoCanonicalSchema exige origem e destino em TRANSFERENCIA', () => {
+  const result = estoqueMovimentacaoCanonicalSchema.safeParse({
+    empresa_representada_id: EMPRESA,
+    produto_id: '00000000-0000-0000-0000-000000000200',
+    tipo: 'TRANSFERENCIA',
+    quantidade: 5,
+    localizacao_origem_id: '00000000-0000-0000-0000-000000000300',
   });
   assertEquals(result.success, false);
 });

@@ -116,6 +116,36 @@ export const contaReceberCanonicalSchema = contaReceberCanonicalObjectSchema.sup
   }
 });
 
+// -------------------- Estoque: Movimentação --------------------
+// A entidade mais crítica para um satélite tipo PDV: toda venda de balcão
+// deve gerar uma movimentação de saída correspondente. `venda_id` já existe
+// na tabela (rastreabilidade nativa), mas o envelope de origem
+// (origem_sistema/idempotency_key) ainda não — mesma nota de Cliente/Produto.
+export const estoqueMovimentacaoCanonicalObjectSchema = z.object({
+  empresa_representada_id: z.string().uuid(),
+  produto_id: z.string().uuid(),
+  tipo: z.enum(['ENTRADA', 'SAIDA', 'TRANSFERENCIA', 'AJUSTE_POSITIVO', 'AJUSTE_NEGATIVO', 'INVENTARIO']),
+  quantidade: z.coerce.number().positive('quantidade deve ser maior que zero'),
+  custo_unitario: z.coerce.number().nonnegative().optional().nullable(),
+  localizacao_origem_id: z.string().uuid().optional().nullable(),
+  localizacao_destino_id: z.string().uuid().optional().nullable(),
+  documento_ref: z.string().optional().nullable(),
+  venda_id: z.string().uuid().optional().nullable(),
+  observacoes: z.string().optional().nullable(),
+}).merge(origemEnvelopeSchema);
+
+export const estoqueMovimentacaoCanonicalSchema = estoqueMovimentacaoCanonicalObjectSchema.superRefine((m, ctx) => {
+  if (m.tipo === 'TRANSFERENCIA' && (!m.localizacao_origem_id || !m.localizacao_destino_id)) {
+    ctx.addIssue({ code: 'custom', path: ['localizacao_destino_id'], message: 'transferência exige localização de origem e de destino' });
+  }
+  if ((m.tipo === 'SAIDA' || m.tipo === 'AJUSTE_NEGATIVO') && !m.localizacao_origem_id) {
+    ctx.addIssue({ code: 'custom', path: ['localizacao_origem_id'], message: `${m.tipo.toLowerCase()} exige localização de origem` });
+  }
+  if ((m.tipo === 'ENTRADA' || m.tipo === 'AJUSTE_POSITIVO') && !m.localizacao_destino_id) {
+    ctx.addIssue({ code: 'custom', path: ['localizacao_destino_id'], message: `${m.tipo.toLowerCase()} exige localização de destino` });
+  }
+});
+
 // -------------------- Contrato --------------------
 export const contratoCanonicalObjectSchema = z.object({
   empresa_representada_id: z.string().uuid(),
@@ -142,6 +172,7 @@ export const canonicalSchemas = {
   vendas: vendaCanonicalSchema,
   contratos: contratoCanonicalSchema,
   contas_receber: contaReceberCanonicalSchema,
+  estoque_movimentacoes: estoqueMovimentacaoCanonicalSchema,
 } as const;
 
 // Schemas-objeto puros (sem regras cruzadas) — usados via `.partial()` para
@@ -152,6 +183,7 @@ export const canonicalObjectSchemas = {
   vendas: vendaCanonicalObjectSchema,
   contratos: contratoCanonicalObjectSchema,
   contas_receber: contaReceberCanonicalObjectSchema,
+  estoque_movimentacoes: estoqueMovimentacaoCanonicalObjectSchema,
 } as const;
 
 export type CanonicalTable = keyof typeof canonicalSchemas;

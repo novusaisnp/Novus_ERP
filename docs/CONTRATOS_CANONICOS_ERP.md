@@ -67,7 +67,27 @@ Cada entidade tem dois schemas exportados:
 ### ContaReceber
 `empresa_representada_id`, `descricao`, `valor_original` (> 0), `data_vencimento` (obrigatórios) · `numero_documento`, `cliente_id`, `data_emissao`, `venda_id`, `venda_pagamento_id`, `venda_pagamento_parcela_id` (opcionais) · `status` (enum, default `PENDENTE`) · regra cruzada: `data_vencimento` não pode ser anterior a `data_emissao` · + envelope de origem (único que já persiste tudo hoje).
 
-## 5. Exemplo — mapeando um PDV para o contrato canônico de Venda
+### Estoque — Movimentação (`estoque_movimentacoes`)
+A entidade **mais crítica para um PDV**: toda venda de balcão precisa gerar uma saída de estoque correspondente (a tabela já tem `venda_id` para essa rastreabilidade nativa). `empresa_representada_id`, `produto_id`, `tipo` (enum `ENTRADA`|`SAIDA`|`TRANSFERENCIA`|`AJUSTE_POSITIVO`|`AJUSTE_NEGATIVO`|`INVENTARIO`), `quantidade` (> 0) obrigatórios · `custo_unitario`, `localizacao_origem_id`, `localizacao_destino_id`, `documento_ref`, `venda_id`, `observacoes` opcionais · regras cruzadas: `TRANSFERENCIA` exige origem e destino; `SAIDA`/`AJUSTE_NEGATIVO` exigem origem; `ENTRADA`/`AJUSTE_POSITIVO` exigem destino · + envelope de origem (ainda não persistido no banco — Fase 1b).
+
+Tabelas relacionadas já mapeadas mas ainda **fora** do contrato canônico (Fase 3): `estoque_saldos` (view/cache de saldo, não deveria ser escrita diretamente por satélites — é derivada das movimentações) e `estoque_inventarios`/`estoque_inventario_itens` (contagem física, fluxo interno, menor prioridade para ingestão externa).
+
+### Fiscal — natureza diferente (não é um contrato de ingestão)
+`fiscal_documentos_eletronicos` (tabela real; NFe/NFCe emitidas) **não** é algo que um sistema satélite escreve — é gerado pelo próprio NOVUS via SEFAZ (edge functions `fiscal-emitir-nfe`/`fiscal-cancelar-nfe`/`fiscal-cce-nfe`) a partir de uma Venda já existente. Campos: `empresa_representada_id`, `venda_id`, `numero`, `serie`, `status`, `chave_acesso`, `protocolo_autorizacao`, `xml_url`, `danfe_url`, `pdf_danfe_url`, `data_emissao`, `valor_total`, `provider`, `ambiente`, `tentativas`.
+
+Para um satélite como o PDV, a integração com Fiscal é de **leitura**, não de escrita: o PDV envia a Venda (contrato acima) e depois consulta `fiscal_documentos_eletronicos` (ou assina o realtime, já implementado em `useFiscalDocumentoRealtime`) para obter `danfe_url`/`pdf_danfe_url` e imprimir o cupom fiscal. Não faz sentido — e seria arriscado — expor este contrato como algo que satélites podem inserir/alterar diretamente; por isso ele **não** entra em `canonicalSchemas` como entidade de ingestão.
+
+## 5. Vínculo Usuário ↔ Pessoa (Colaborador / Sócio / Representante Legal)
+
+Regra de negócio real e **já aplicada por constraint no banco** (`usuarios_pessoa_xor_chk`, migração `20260710232918`): todo registro em `public.usuarios` deve ter `pessoa_pendente = true` **ou** exatamente um vínculo consistente — `pessoa_tipo = 'COLABORADOR'` com `colaborador_id` preenchido (e `socio_id` nulo), **ou** `pessoa_tipo = 'SOCIO'` com `socio_id` preenchido (e `colaborador_id` nulo). `socios_representantes` cobre tanto Sócio quanto Representante Legal e Procurador via seu campo `tipo`.
+
+Ou seja: **não existe usuário "solto"** no NOVUS — todo usuário representa uma pessoa física já cadastrada como colaborador ou sócio/representante da empresa representada. Isso vale tanto para criação via UI quanto, no futuro, para qualquer provisionamento de usuário disparado por um módulo satélite (ex.: um sistema escolar que precise criar acesso para um funcionário) — o satélite (ou seu adaptador, Fase 2) precisa resolver ou criar o Colaborador/Sócio correspondente **antes** de criar o Usuário, nunca pular essa etapa.
+
+**Achado durante esta auditoria (2026-07-24):** a versão local de `NovoUsuarioModal.tsx` (parte das ~10 dias de edições não sincronizadas, ver histórico do commit `477d2b0`) tinha sido reduzida a um formulário simples de nome+e-mail que **não** definia `pessoa_tipo`/`colaborador_id`/`socio_id`/`pessoa_pendente` — violando a constraint acima em toda tentativa de criação de usuário. Corrigido no commit `7ef432d`, restaurando a versão real do histórico do GitHub (exige selecionar um Colaborador ou Sócio/Representante existente, ainda não vinculado a outro usuário, mais um Perfil de Acesso, e convida a pessoa por e-mail via `enviar-convite-usuario` em vez de criar a conta Auth diretamente).
+
+Este contrato ainda não tem um schema Zod formal em `_shared/canonical/` (é aplicado hoje só pela constraint do banco + pela UI) — formalizá-lo como `usuarioCanonicalSchema` é candidato para a Fase 3, junto com Estoque/RH restantes.
+
+## 6. Exemplo — mapeando um PDV para o contrato canônico de Venda (Vendas + Estoque)
 
 Um PDV fala sua própria língua. Exemplo de payload que ele poderia enviar (formato hipotético, ilustrativo):
 
@@ -103,12 +123,12 @@ O adaptador do PDV (Fase 2, ainda não implementado) traduziria isso para o cont
 }
 ```
 
-Só depois desse mapeamento o payload passa pela validação (`data-validator` / `vendaCanonicalSchema`) e segue para `sync-webhook`.
+Só depois desse mapeamento o payload passa pela validação (`data-validator` / `vendaCanonicalSchema`) e segue para `sync-webhook`. Na prática, esse mesmo cupom também deveria gerar uma movimentação de estoque `SAIDA` por item vendido (contrato de `estoque_movimentacoes`, §4), vinculada ao `venda_id` resultante — o adaptador do PDV precisa emitir os dois eventos, não só a Venda.
 
-## 6. Roadmap
+## 7. Roadmap
 
-1. **Fase 1 (concluída 2026-07-24):** contratos canônicos formalizados como schemas Zod (`_shared/canonical/`), `data-validator` reescrito para validar contra eles (substituindo regras hardcoded), cobertura estendida de 4 para 5 tabelas (+ `produtos`), testes Deno adicionados.
-2. **Fase 1b:** migração estendendo o envelope de rastreabilidade (`origem_sistema`, `origem_canal`, `externo_id`, `idempotency_key`, `hash_payload`) para `clientes`, `produtos` e `contratos`, hoje sem essas colunas — para paridade com `contas_receber`.
-3. **Fase 2:** camada de adaptadores por `source_system` — configurável (reaproveitando o padrão de "Regras de Classificação de Receita" já existente no app: regras de mapeamento configuráveis, não código novo por integração), traduzindo o formato de cada satélite para o contrato canônico antes da validação.
-4. **Fase 3:** estender `data-validator`/contratos canônicos para as tabelas restantes (Estoque/movimentações, ContasPagar, RH) conforme os satélites forem sendo conectados.
+1. **Fase 1 (concluída 2026-07-24):** contratos canônicos formalizados como schemas Zod (`_shared/canonical/`), `data-validator` reescrito para validar contra eles (substituindo regras hardcoded), cobertura estendida de 4 para 6 tabelas (`clientes`, `produtos`, `vendas`, `contratos`, `contas_receber`, `estoque_movimentacoes`), testes Deno adicionados. Também nesta fase: corrigido bug real em `NovoUsuarioModal.tsx` que violava a constraint de vínculo Usuário↔Pessoa (§5), e documentada a natureza "somente leitura para satélites" do Fiscal (§4).
+2. **Fase 1b:** migração estendendo o envelope de rastreabilidade (`origem_sistema`, `origem_canal`, `externo_id`, `idempotency_key`, `hash_payload`) para `clientes`, `produtos`, `contratos` e `estoque_movimentacoes`, hoje sem essas colunas — para paridade com `contas_receber`.
+3. **Fase 2:** camada de adaptadores por `source_system` — configurável (reaproveitando o padrão de "Regras de Classificação de Receita" já existente no app: regras de mapeamento configuráveis, não código novo por integração), traduzindo o formato de cada satélite para o contrato canônico antes da validação. Precisa cobrir eventos compostos (ex.: 1 cupom de PDV → 1 Venda + N movimentações de Estoque).
+4. **Fase 3:** formalizar `usuarioCanonicalSchema` (vínculo Colaborador/Sócio, §5) em `_shared/canonical/`, hoje só aplicado via constraint de banco; estender cobertura às tabelas restantes (ContasPagar, RH/Colaboradores) conforme os satélites forem sendo conectados.
 5. **Fase 4:** observabilidade multi-origem no `SyncDashboard` — saúde e volume por `source_system`, não só por webhook.
