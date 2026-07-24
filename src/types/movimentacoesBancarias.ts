@@ -13,12 +13,7 @@ export type TipoLote =
 
 export type StatusLote = 'PROCESSANDO' | 'FINALIZADO' | 'CANCELADO';
 
-export type TipoOperacaoHistorico = 
-  | 'CRIACAO' 
-  | 'EDICAO' 
-  | 'ESTORNO' 
-  | 'CONCILIACAO' 
-  | 'EXCLUSAO';
+export type AcaoHistorico = 'INSERT' | 'UPDATE' | 'DELETE';
 
 export interface MovimentacaoBancaria {
   id: string;
@@ -127,15 +122,14 @@ export interface DocumentoMovimentacao {
 
 export interface HistoricoMovimentacao {
   id: string;
+  empresa_representada_id: string;
   movimentacao_id: string;
-  tipo_operacao: TipoOperacaoHistorico;
-  dados_anteriores?: any;
-  dados_novos?: any;
-  observacoes?: string;
+  conta_bancaria_id?: string;
+  acao: AcaoHistorico;
+  dados_anteriores?: Record<string, unknown> | null;
+  dados_novos?: Record<string, unknown> | null;
   usuario_id?: string;
-  usuario_nome?: string;
   ip_origem?: string;
-  data_operacao: string;
   created_at: string;
 }
 

@@ -14,6 +14,7 @@ import {
   WebhookConfig,
   WebhookConfigInput,
   WebhookConfigInputSchema,
+  WebhookEvento,
   WEBHOOK_EVENTOS,
   generateSecretToken,
 } from '@/types/webhookConfig';
@@ -44,9 +45,9 @@ export const WebhookConfigModal: React.FC<Props> = ({
       nome: initial?.nome ?? '',
       descricao: initial?.descricao ?? '',
       url_destino: initial?.url_destino ?? 'https://',
-      metodo: (initial?.metodo as any) ?? 'POST',
+      metodo: (initial?.metodo as 'POST' | 'PUT') ?? 'POST',
       secret_token: initial?.secret_token ?? '',
-      eventos: (initial?.eventos as any) ?? [],
+      eventos: initial?.eventos ?? [],
       max_tentativas: initial?.max_tentativas ?? 5,
       timeout_segundos: initial?.timeout_segundos ?? 10,
       ativo: initial?.ativo ?? true,
@@ -68,11 +69,11 @@ export const WebhookConfigModal: React.FC<Props> = ({
   const eventosSelecionados = form.watch('eventos') ?? [];
   const secretValue = form.watch('secret_token') ?? '';
 
-  const toggleEvento = (ev: string) => {
+  const toggleEvento = (ev: WebhookEvento) => {
     const set = new Set(eventosSelecionados);
-    if (set.has(ev as any)) set.delete(ev as any);
-    else set.add(ev as any);
-    form.setValue('eventos', Array.from(set) as any, { shouldValidate: true });
+    if (set.has(ev)) set.delete(ev);
+    else set.add(ev);
+    form.setValue('eventos', Array.from(set), { shouldValidate: true });
   };
 
   const submit = async (values: WebhookConfigInput) => {
@@ -119,7 +120,7 @@ export const WebhookConfigModal: React.FC<Props> = ({
               <Label>Método</Label>
               <Select
                 value={form.watch('metodo')}
-                onValueChange={(v) => form.setValue('metodo', v as any, { shouldValidate: true })}
+                onValueChange={(v) => form.setValue('metodo', v as 'POST' | 'PUT', { shouldValidate: true })}
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -149,7 +150,7 @@ export const WebhookConfigModal: React.FC<Props> = ({
               {WEBHOOK_EVENTOS.map((ev) => (
                 <label key={ev} className="flex items-center gap-2 text-sm cursor-pointer">
                   <Checkbox
-                    checked={eventosSelecionados.includes(ev as any)}
+                    checked={eventosSelecionados.includes(ev)}
                     onCheckedChange={() => toggleEvento(ev)}
                   />
                   <span className="font-mono">{ev}</span>

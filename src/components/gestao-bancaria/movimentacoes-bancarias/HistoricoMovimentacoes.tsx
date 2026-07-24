@@ -17,8 +17,17 @@ interface Props {
 
 const CAMPOS_IGNORADOS = new Set(['created_at', 'updated_at']);
 
-const computarDiff = (anteriores: any, novos: any): Array<{ campo: string; de: any; para: any }> => {
-  const diffs: Array<{ campo: string; de: any; para: any }> = [];
+interface DiffEntry {
+  campo: string;
+  de: unknown;
+  para: unknown;
+}
+
+const computarDiff = (
+  anteriores: Record<string, unknown> | null | undefined,
+  novos: Record<string, unknown> | null | undefined,
+): DiffEntry[] => {
+  const diffs: DiffEntry[] = [];
   const chaves = new Set([
     ...Object.keys(anteriores || {}),
     ...Object.keys(novos || {}),
@@ -34,7 +43,7 @@ const computarDiff = (anteriores: any, novos: any): Array<{ campo: string; de: a
   return diffs;
 };
 
-const formatValor = (v: any) => {
+const formatValor = (v: unknown) => {
   if (v === null || v === undefined || v === '') return '—';
   if (typeof v === 'object') return JSON.stringify(v);
   return String(v);
@@ -105,7 +114,7 @@ export function HistoricoMovimentacoes({ movimentacoes }: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {historico.map((h: any) => {
+              {historico.map((h) => {
                 const diffs = h.acao === 'UPDATE'
                   ? computarDiff(h.dados_anteriores, h.dados_novos)
                   : [];
