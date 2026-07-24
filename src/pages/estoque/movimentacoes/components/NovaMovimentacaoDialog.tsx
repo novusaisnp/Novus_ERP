@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { supabase } from '@/integrations/supabase/client';
+import { estoqueService } from '@/services/estoque/estoqueService';
 import { useCriarMovimentacao } from '@/hooks/estoque/useEstoque';
 import { useToast } from '@/hooks/use-toast';
 import type { EstoqueMovimentacaoTipo } from '@/types/estoque';
@@ -35,29 +35,12 @@ export const NovaMovimentacaoDialog: React.FC<Props> = ({ empresaId, open, onClo
 
   const { data: produtos = [] } = useQuery({
     queryKey: ['produtos-select', empresaId],
-    queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from('produtos')
-        .select('id, nome, codigo')
-        .eq('empresa_representada_id', empresaId)
-        .is('deleted_at', null)
-        .eq('ativo', true)
-        .order('nome');
-      return (data ?? []) as { id: string; nome: string; codigo: string | null }[];
-    },
+    queryFn: () => estoqueService.listProdutosParaSelecao(empresaId, { apenasAtivos: true }),
   });
 
   const { data: locs = [] } = useQuery({
     queryKey: ['locs-select', empresaId],
-    queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from('localizacoes_estoque')
-        .select('id, nome')
-        .eq('empresa_representada_id', empresaId)
-        .eq('ativo', true)
-        .order('nome');
-      return (data ?? []) as { id: string; nome: string }[];
-    },
+    queryFn: () => estoqueService.listLocalizacoes(empresaId, { apenasAtivas: true }),
   });
 
   const reset = () => {

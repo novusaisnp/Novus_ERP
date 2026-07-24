@@ -9,7 +9,6 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { ArrowLeft, CheckCircle2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useInventarioItens, useConciliarInventario } from '@/hooks/estoque/useEstoque';
 import { estoqueService } from '@/services/estoque/estoqueService';
 import { useToast } from '@/hooks/use-toast';
@@ -28,14 +27,7 @@ export const ConciliacaoView: React.FC<Props> = ({ inventarioId, onVoltar }) => 
 
   const { data: inv } = useQuery({
     queryKey: ['inventario', inventarioId],
-    queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from('estoque_inventarios')
-        .select('*')
-        .eq('id', inventarioId)
-        .single();
-      return data;
-    },
+    queryFn: () => estoqueService.getInventarioById(inventarioId),
   });
 
   const { data: produtosMap = {} } = useQuery({
@@ -43,12 +35,9 @@ export const ConciliacaoView: React.FC<Props> = ({ inventarioId, onVoltar }) => 
     enabled: itens.length > 0,
     queryFn: async () => {
       const ids = itens.map((i) => i.produto_id);
-      const { data } = await (supabase as any)
-        .from('produtos')
-        .select('id, nome, codigo')
-        .in('id', ids);
+      const produtos = await estoqueService.getProdutosBasicoPorIds(ids);
       const map: Record<string, { nome: string; codigo: string | null }> = {};
-      (data ?? []).forEach((p: any) => { map[p.id] = { nome: p.nome, codigo: p.codigo }; });
+      produtos.forEach((p) => { map[p.id] = { nome: p.nome, codigo: p.codigo }; });
       return map;
     },
   });

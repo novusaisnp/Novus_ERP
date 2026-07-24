@@ -10,7 +10,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { ArrowLeft, Download, ScrollText } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { estoqueService } from '@/services/estoque/estoqueService';
 import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
 import { useKardex } from '@/hooks/estoque/useKardex';
 import {
@@ -40,48 +40,13 @@ const KardexPage: React.FC = () => {
   const { data: produto } = useQuery({
     queryKey: ['produto-kardex', produtoId],
     enabled: !!produtoId,
-    queryFn: async () => {
-      const { data, error } = await (supabase as unknown as {
-        from: (t: string) => {
-          select: (c: string) => {
-            eq: (k: string, v: string) => {
-              maybeSingle: () => Promise<{
-                data: { id: string; nome: string; codigo: string | null } | null;
-                error: unknown;
-              }>;
-            };
-          };
-        };
-      })
-        .from('produtos')
-        .select('id, nome, codigo')
-        .eq('id', produtoId)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => estoqueService.getProdutoBasico(produtoId),
   });
 
   const { data: localizacoes = [] } = useQuery({
     queryKey: ['locs-kardex', empresaId],
     enabled: !!empresaId,
-    queryFn: async () => {
-      const { data, error } = await (supabase as unknown as {
-        from: (t: string) => {
-          select: (c: string) => {
-            eq: (k: string, v: string) => Promise<{
-              data: Array<{ id: string; nome: string }> | null;
-              error: unknown;
-            }>;
-          };
-        };
-      })
-        .from('localizacoes_estoque')
-        .select('id, nome')
-        .eq('empresa_representada_id', empresaId as string);
-      if (error) throw error;
-      return data ?? [];
-    },
+    queryFn: () => estoqueService.listLocalizacoes(empresaId as string),
   });
 
   const kardexParams = useMemo(() => {

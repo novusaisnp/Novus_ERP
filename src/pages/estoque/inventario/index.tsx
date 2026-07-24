@@ -8,7 +8,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { ClipboardList, Plus, Eye } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { estoqueService } from '@/services/estoque/estoqueService';
 import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
 import { useInventarios } from '@/hooks/estoque/useEstoque';
 import { NovoInventarioDialog } from './components/NovoInventarioDialog';
@@ -32,12 +32,9 @@ const Inventario: React.FC = () => {
     queryKey: ['locs-map', empresaId],
     enabled: !!empresaId,
     queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from('localizacoes_estoque')
-        .select('id, nome')
-        .eq('empresa_representada_id', empresaId);
+      const locs = await estoqueService.listLocalizacoes(empresaId as string);
       const map: Record<string, string> = {};
-      (data ?? []).forEach((l: any) => { map[l.id] = l.nome; });
+      locs.forEach((l) => { map[l.id] = l.nome; });
       return map;
     },
   });

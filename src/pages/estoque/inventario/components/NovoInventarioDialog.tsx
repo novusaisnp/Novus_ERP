@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { supabase } from '@/integrations/supabase/client';
+import { estoqueService } from '@/services/estoque/estoqueService';
 import { useCriarInventario } from '@/hooks/estoque/useEstoque';
 import { useToast } from '@/hooks/use-toast';
 
@@ -26,15 +26,7 @@ export const NovoInventarioDialog: React.FC<Props> = ({ empresaId, open, onClose
 
   const { data: locs = [] } = useQuery({
     queryKey: ['locs-select', empresaId],
-    queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from('localizacoes_estoque')
-        .select('id, nome')
-        .eq('empresa_representada_id', empresaId)
-        .eq('ativo', true)
-        .order('nome');
-      return (data ?? []) as { id: string; nome: string }[];
-    },
+    queryFn: () => estoqueService.listLocalizacoes(empresaId, { apenasAtivas: true }),
   });
 
   const handleSubmit = async () => {

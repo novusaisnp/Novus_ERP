@@ -20,7 +20,72 @@ export interface NovaMovimentacaoInput {
   observacoes?: string | null;
 }
 
+export interface ProdutoBasico {
+  id: string;
+  nome: string;
+  codigo: string | null;
+}
+
+export interface LocalizacaoEstoque {
+  id: string;
+  nome: string;
+}
+
 export const estoqueService = {
+  // -------------------- Lookups (produtos/localizações) --------------------
+  async listLocalizacoes(empresa_id: string, opts?: { apenasAtivas?: boolean }): Promise<LocalizacaoEstoque[]> {
+    let q = supabase
+      .from('localizacoes_estoque')
+      .select('id, nome')
+      .eq('empresa_representada_id', empresa_id);
+    if (opts?.apenasAtivas) q = q.eq('ativo', true);
+    const { data, error } = await q.order('nome');
+    if (error) throw error;
+    return data ?? [];
+  },
+
+  async listProdutosParaSelecao(empresa_id: string, opts?: { apenasAtivos?: boolean }): Promise<ProdutoBasico[]> {
+    let q = supabase
+      .from('produtos')
+      .select('id, nome, codigo')
+      .eq('empresa_representada_id', empresa_id)
+      .is('deleted_at', null);
+    if (opts?.apenasAtivos) q = q.eq('ativo', true);
+    const { data, error } = await q.order('nome');
+    if (error) throw error;
+    return data ?? [];
+  },
+
+  async getProdutoBasico(produto_id: string): Promise<ProdutoBasico | null> {
+    const { data, error } = await supabase
+      .from('produtos')
+      .select('id, nome, codigo')
+      .eq('id', produto_id)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+
+  async getProdutosBasicoPorIds(ids: string[]): Promise<ProdutoBasico[]> {
+    if (ids.length === 0) return [];
+    const { data, error } = await supabase
+      .from('produtos')
+      .select('id, nome, codigo')
+      .in('id', ids);
+    if (error) throw error;
+    return data ?? [];
+  },
+
+  async getInventarioById(inventario_id: string): Promise<EstoqueInventario | null> {
+    const { data, error } = await supabase
+      .from('estoque_inventarios')
+      .select('*')
+      .eq('id', inventario_id)
+      .maybeSingle();
+    if (error) throw error;
+    return data as EstoqueInventario | null;
+  },
+
   async listMovimentacoes(filtros?: {
     empresa_id?: string;
     produto_id?: string;

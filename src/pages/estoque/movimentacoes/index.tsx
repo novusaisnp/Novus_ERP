@@ -10,7 +10,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { ArrowLeftRight, Plus, Search, ScrollText } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { estoqueService } from '@/services/estoque/estoqueService';
 import { useMovimentacoes } from '@/hooks/estoque/useEstoque';
 import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
 import { NovaMovimentacaoDialog } from './components/NovaMovimentacaoDialog';
@@ -46,13 +46,9 @@ const MovimentacoesEstoque: React.FC = () => {
     queryKey: ['produtos-map', empresaId],
     enabled: !!empresaId,
     queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from('produtos')
-        .select('id, nome, codigo')
-        .eq('empresa_representada_id', empresaId)
-        .is('deleted_at', null);
+      const produtos = await estoqueService.listProdutosParaSelecao(empresaId as string);
       const map: Record<string, { nome: string; codigo: string | null }> = {};
-      (data ?? []).forEach((p: any) => { map[p.id] = { nome: p.nome, codigo: p.codigo }; });
+      produtos.forEach((p) => { map[p.id] = { nome: p.nome, codigo: p.codigo }; });
       return map;
     },
   });
@@ -61,12 +57,9 @@ const MovimentacoesEstoque: React.FC = () => {
     queryKey: ['locs-map', empresaId],
     enabled: !!empresaId,
     queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from('localizacoes_estoque')
-        .select('id, nome')
-        .eq('empresa_representada_id', empresaId);
+      const locs = await estoqueService.listLocalizacoes(empresaId as string);
       const map: Record<string, string> = {};
-      (data ?? []).forEach((l: any) => { map[l.id] = l.nome; });
+      locs.forEach((l) => { map[l.id] = l.nome; });
       return map;
     },
   });
