@@ -51,7 +51,7 @@ export const useBancos = (filtros?: {
         description: 'Banco criado com sucesso!',
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       console.error('[Bancos] Erro ao criar banco:', error);
       toast({
         title: 'Erro',
@@ -73,7 +73,7 @@ export const useBancos = (filtros?: {
         description: 'Banco atualizado com sucesso!',
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       console.error('[Bancos] Erro ao atualizar banco:', error);
       toast({
         title: 'Erro',
@@ -94,7 +94,7 @@ export const useBancos = (filtros?: {
         description: 'Banco arquivado com sucesso!',
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       console.error('[Bancos] Erro ao arquivar banco:', error);
       toast({
         title: 'Erro',
@@ -115,7 +115,7 @@ export const useBancos = (filtros?: {
         description: 'Banco restaurado com sucesso!',
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       console.error('[Bancos] Erro ao restaurar banco:', error);
       toast({
         title: 'Erro',

@@ -45,7 +45,7 @@ export const useAgencias = (filtros?: AgenciaFilters) => {
         description: 'Agência criada com sucesso!',
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       console.error('[Agencias] Erro ao criar agência:', error);
       toast({
         title: 'Erro',
@@ -67,7 +67,7 @@ export const useAgencias = (filtros?: AgenciaFilters) => {
         description: 'Agência atualizada com sucesso!',
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       console.error('[Agencias] Erro ao atualizar agência:', error);
       toast({
         title: 'Erro',
@@ -88,7 +88,7 @@ export const useAgencias = (filtros?: AgenciaFilters) => {
         description: 'Agência arquivada com sucesso!',
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       console.error('[Agencias] Erro ao arquivar agência:', error);
       toast({
         title: 'Erro',
@@ -109,7 +109,7 @@ export const useAgencias = (filtros?: AgenciaFilters) => {
         description: 'Agência restaurada com sucesso!',
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       console.error('[Agencias] Erro ao restaurar agência:', error);
       toast({
         title: 'Erro',

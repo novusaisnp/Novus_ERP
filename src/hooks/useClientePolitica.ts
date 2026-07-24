@@ -25,8 +25,8 @@ export function useClientePolitica(clienteId?: string) {
       ]);
       setPolitica(p);
       setModalidadesBloqueadas(mb);
-    } catch (e: any) {
-      toast({ title: 'Erro', description: e.message, variant: 'destructive' });
+    } catch (e) {
+      toast({ title: 'Erro', description: e instanceof Error ? e.message : String(e), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -41,8 +41,8 @@ export function useClientePolitica(clienteId?: string) {
       setPolitica(saved);
       toast({ title: 'Política salva', description: 'Política de pagamento atualizada.' });
       return true;
-    } catch (e: any) {
-      toast({ title: 'Erro ao salvar', description: e.message, variant: 'destructive' });
+    } catch (e) {
+      toast({ title: 'Erro ao salvar', description: e instanceof Error ? e.message : String(e), variant: 'destructive' });
       return false;
     } finally {
       setSaving(false);
@@ -64,8 +64,8 @@ export function useClientePolitica(clienteId?: string) {
       });
       await load();
       return true;
-    } catch (e: any) {
-      toast({ title: 'Erro', description: e.message, variant: 'destructive' });
+    } catch (e) {
+      toast({ title: 'Erro', description: e instanceof Error ? e.message : String(e), variant: 'destructive' });
       return false;
     }
   }, [clienteId, load, toast]);
@@ -76,8 +76,8 @@ export function useClientePolitica(clienteId?: string) {
       await clientePoliticaService.removeModalidadeBloqueada(clienteId, modalidadeId);
       await load();
       return true;
-    } catch (e: any) {
-      toast({ title: 'Erro', description: e.message, variant: 'destructive' });
+    } catch (e) {
+      toast({ title: 'Erro', description: e instanceof Error ? e.message : String(e), variant: 'destructive' });
       return false;
     }
   }, [clienteId, load, toast]);

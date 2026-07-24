@@ -21,7 +21,7 @@ export const useWebhookConfigs = (empresaId: string | null | undefined) => {
       invalidate();
       toast.success('Webhook criado');
     },
-    onError: (e: any) => toast.error(e?.message || 'Falha ao criar webhook'),
+    onError: (e: Error) => toast.error(e.message || 'Falha ao criar webhook'),
   });
 
   const updateMutation = useMutation({
@@ -31,7 +31,7 @@ export const useWebhookConfigs = (empresaId: string | null | undefined) => {
       invalidate();
       toast.success('Webhook atualizado');
     },
-    onError: (e: any) => toast.error(e?.message || 'Falha ao atualizar webhook'),
+    onError: (e: Error) => toast.error(e.message || 'Falha ao atualizar webhook'),
   });
 
   const toggleMutation = useMutation({
@@ -43,7 +43,7 @@ export const useWebhookConfigs = (empresaId: string | null | undefined) => {
       invalidate();
       toast.success(vars.ativo ? 'Webhook ativado' : 'Webhook inativado');
     },
-    onError: (e: any) => toast.error(e?.message || 'Falha ao alternar status'),
+    onError: (e: Error) => toast.error(e.message || 'Falha ao alternar status'),
   });
 
   const rotateSecretMutation = useMutation({
@@ -52,7 +52,7 @@ export const useWebhookConfigs = (empresaId: string | null | undefined) => {
       invalidate();
       toast.success('Secret rotacionado');
     },
-    onError: (e: any) => toast.error(e?.message || 'Falha ao rotacionar secret'),
+    onError: (e: Error) => toast.error(e.message || 'Falha ao rotacionar secret'),
   });
 
   return {

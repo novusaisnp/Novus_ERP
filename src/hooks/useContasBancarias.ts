@@ -44,7 +44,7 @@ export const useContasBancarias = (filtros?: ContaBancariaFilters) => {
         description: 'Conta bancária criada com sucesso!',
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       console.error('[ContasBancarias] Erro ao criar conta bancária:', error);
       toast({
         title: 'Erro',
@@ -66,7 +66,7 @@ export const useContasBancarias = (filtros?: ContaBancariaFilters) => {
         description: 'Conta bancária atualizada com sucesso!',
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       console.error('[ContasBancarias] Erro ao atualizar conta bancária:', error);
       toast({
         title: 'Erro',
@@ -87,7 +87,7 @@ export const useContasBancarias = (filtros?: ContaBancariaFilters) => {
         description: 'Conta bancária arquivada com sucesso!',
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       console.error('[ContasBancarias] Erro ao arquivar conta bancária:', error);
       toast({
         title: 'Erro',
@@ -108,7 +108,7 @@ export const useContasBancarias = (filtros?: ContaBancariaFilters) => {
         description: 'Conta bancária restaurada com sucesso!',
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       console.error('[ContasBancarias] Erro ao restaurar conta bancária:', error);
       toast({
         title: 'Erro',
