@@ -1231,9 +1231,13 @@ export type Database = {
           agencia_id: string | null
           ativo: boolean | null
           banco_id: string | null
+          configuracoes: Json | null
+          conta_cofre: boolean
           cor: string | null
           cpf_cnpj_titular: string | null
           created_at: string
+          data_abertura: string
+          data_encerramento: string | null
           data_saldo_inicial: string | null
           deleted_at: string | null
           descricao: string | null
@@ -1242,12 +1246,15 @@ export type Database = {
           icone: string | null
           id: string
           limite_cheque_especial: number | null
+          limite_credito: number | null
           nome_titular: string | null
           numero_conta: string
+          observacoes: string | null
           permite_transferencia: boolean | null
           principal: boolean | null
           saldo_atual: number | null
           saldo_inicial: number | null
+          status: string
           tipo_conta: string | null
           updated_at: string
         }
@@ -1255,9 +1262,13 @@ export type Database = {
           agencia_id?: string | null
           ativo?: boolean | null
           banco_id?: string | null
+          configuracoes?: Json | null
+          conta_cofre?: boolean
           cor?: string | null
           cpf_cnpj_titular?: string | null
           created_at?: string
+          data_abertura?: string
+          data_encerramento?: string | null
           data_saldo_inicial?: string | null
           deleted_at?: string | null
           descricao?: string | null
@@ -1266,12 +1277,15 @@ export type Database = {
           icone?: string | null
           id?: string
           limite_cheque_especial?: number | null
+          limite_credito?: number | null
           nome_titular?: string | null
           numero_conta: string
+          observacoes?: string | null
           permite_transferencia?: boolean | null
           principal?: boolean | null
           saldo_atual?: number | null
           saldo_inicial?: number | null
+          status?: string
           tipo_conta?: string | null
           updated_at?: string
         }
@@ -1279,9 +1293,13 @@ export type Database = {
           agencia_id?: string | null
           ativo?: boolean | null
           banco_id?: string | null
+          configuracoes?: Json | null
+          conta_cofre?: boolean
           cor?: string | null
           cpf_cnpj_titular?: string | null
           created_at?: string
+          data_abertura?: string
+          data_encerramento?: string | null
           data_saldo_inicial?: string | null
           deleted_at?: string | null
           descricao?: string | null
@@ -1290,12 +1308,15 @@ export type Database = {
           icone?: string | null
           id?: string
           limite_cheque_especial?: number | null
+          limite_credito?: number | null
           nome_titular?: string | null
           numero_conta?: string
+          observacoes?: string | null
           permite_transferencia?: boolean | null
           principal?: boolean | null
           saldo_atual?: number | null
           saldo_inicial?: number | null
+          status?: string
           tipo_conta?: string | null
           updated_at?: string
         }

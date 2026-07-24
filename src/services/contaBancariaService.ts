@@ -1,24 +1,65 @@
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { ContaBancaria, ContaBancariaInput, ContaBancariaFilters, ContaBancariaEstatisticas } from '@/types/contaBancaria';
+
+type ContaBancariaUpdate = Database['public']['Tables']['contas_bancarias']['Update'];
 
 console.log('[ContaBancariaService] Serviço de contas bancárias carregado');
 
+const CONTA_SELECT = `
+  *,
+  agencia:agencias_bancarias(
+    numero_agencia,
+    descricao,
+    banco:bancos(
+      codigo,
+      nome
+    )
+  )
+`;
+
+// A tabela usa nome_titular/digito/descricao; a UI (anterior ao redesenho de
+// Gestão Bancária) usa titular/digito_verificador/descricao_conta. Mapeamos aqui
+// em vez de renomear a tela inteira.
+const mapRowToConta = (row: Record<string, unknown>): ContaBancaria => ({
+  id: row.id as string,
+  agencia_id: row.agencia_id as string | null,
+  numero_conta: row.numero_conta as string,
+  digito_verificador: (row.digito as string | null) ?? '',
+  tipo_conta: (row.tipo_conta as string | null) ?? '',
+  titular: (row.nome_titular as string | null) ?? '',
+  cpf_cnpj_titular: (row.cpf_cnpj_titular as string | null) ?? '',
+  descricao_conta: row.descricao as string | null,
+  saldo_inicial: Number(row.saldo_inicial ?? 0),
+  saldo_atual: Number(row.saldo_atual ?? 0),
+  limite_credito: row.limite_credito as number | null,
+  limite_disponivel: null,
+  data_abertura: row.data_abertura as string,
+  data_encerramento: row.data_encerramento as string | null,
+  status: row.status as string,
+  conta_cofre: Boolean(row.conta_cofre),
+  configuracoes: row.configuracoes,
+  observacoes: row.observacoes as string | null,
+  ativo: Boolean(row.ativo),
+  created_at: row.created_at as string,
+  updated_at: row.updated_at as string,
+  deleted_at: row.deleted_at as string | null,
+  agencia: row.agencia as ContaBancaria['agencia'],
+});
+
+const getEmpresaIdAtual = async (): Promise<string> => {
+  const { data, error } = await supabase.rpc('get_user_empresa_id');
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('Empresa não identificada para o usuário atual.');
+  return data;
+};
+
 export const listarContasBancarias = async (filtros?: ContaBancariaFilters): Promise<ContaBancaria[]> => {
   console.log('[ContaBancariaService] Listando contas bancárias com filtros:', filtros);
-  
+
   let query = supabase
     .from('contas_bancarias')
-    .select(`
-      *,
-      agencia:agencias_bancarias(
-        numero_agencia,
-        descricao,
-        banco:bancos(
-          codigo,
-          nome
-        )
-      )
-    `)
+    .select(CONTA_SELECT)
     .order('created_at', { ascending: false });
 
   if (!filtros?.incluir_arquivadas) {
@@ -30,7 +71,7 @@ export const listarContasBancarias = async (filtros?: ContaBancariaFilters): Pro
   }
 
   if (filtros?.titular) {
-    query = query.ilike('titular', `%${filtros.titular}%`);
+    query = query.ilike('nome_titular', `%${filtros.titular}%`);
   }
 
   if (filtros?.tipo_conta && filtros.tipo_conta !== 'all') {
@@ -57,7 +98,7 @@ export const listarContasBancarias = async (filtros?: ContaBancariaFilters): Pro
   }
 
   console.log('[ContaBancariaService] Contas bancárias listadas:', data?.length);
-  return data as ContaBancaria[] || [];
+  return (data ?? []).map((row) => mapRowToConta(row as unknown as Record<string, unknown>));
 };
 
 export interface ContaBancariaOpcaoSelecao {
@@ -121,33 +162,37 @@ export const listarContasBancariasAtivasComAgenciaBanco = async (): Promise<Cont
 export const criarContaBancaria = async (input: ContaBancariaInput): Promise<ContaBancaria> => {
   console.log('[ContaBancariaService] Criando conta bancária:', input);
 
+  const empresaId = await getEmpresaIdAtual();
+
   const contaData = {
-    ...input,
+    empresa_representada_id: empresaId,
+    numero_conta: input.numero_conta,
+    digito: input.digito_verificador,
+    tipo_conta: input.tipo_conta,
+    nome_titular: input.titular,
+    cpf_cnpj_titular: input.cpf_cnpj_titular,
+    descricao: input.descricao_conta,
+    saldo_inicial: input.saldo_inicial,
     saldo_atual: input.saldo_inicial,
+    limite_credito: input.limite_credito,
+    data_abertura: input.data_abertura,
+    data_encerramento: input.data_encerramento,
     status: input.status || 'ATIVA',
     configuracoes: input.configuracoes || {
       enviar_alertas: true,
       controlar_limite: true,
       permitir_saldo_negativo: false
     },
+    observacoes: input.observacoes,
+    conta_cofre: input.conta_cofre,
     // Para contas cofre, agencia_id pode ser null
-    agencia_id: input.conta_cofre ? null : input.agencia_id
+    agencia_id: input.conta_cofre ? null : input.agencia_id,
   };
 
   const { data, error } = await supabase
     .from('contas_bancarias')
     .insert(contaData)
-    .select(`
-      *,
-      agencia:agencias_bancarias(
-        numero_agencia,
-        descricao,
-        banco:bancos(
-          codigo,
-          nome
-        )
-      )
-    `)
+    .select(CONTA_SELECT)
     .single();
 
   if (error) {
@@ -156,7 +201,7 @@ export const criarContaBancaria = async (input: ContaBancariaInput): Promise<Con
   }
 
   console.log('[ContaBancariaService] Conta bancária criada:', data.id);
-  return data as ContaBancaria;
+  return mapRowToConta(data as unknown as Record<string, unknown>);
 };
 
 export const atualizarContaBancaria = async (id: string, input: Partial<ContaBancariaInput>): Promise<ContaBancaria> => {
@@ -169,11 +214,24 @@ export const atualizarContaBancaria = async (id: string, input: Partial<ContaBan
     }
   }
 
+  const updateData: ContaBancariaUpdate = {};
+  if (input.numero_conta !== undefined) updateData.numero_conta = input.numero_conta;
+  if (input.digito_verificador !== undefined) updateData.digito = input.digito_verificador;
+  if (input.tipo_conta !== undefined) updateData.tipo_conta = input.tipo_conta;
+  if (input.titular !== undefined) updateData.nome_titular = input.titular;
+  if (input.cpf_cnpj_titular !== undefined) updateData.cpf_cnpj_titular = input.cpf_cnpj_titular;
+  if (input.descricao_conta !== undefined) updateData.descricao = input.descricao_conta;
+  if (input.saldo_inicial !== undefined) updateData.saldo_inicial = input.saldo_inicial;
+  if (input.limite_credito !== undefined) updateData.limite_credito = input.limite_credito;
+  if (input.data_abertura !== undefined) updateData.data_abertura = input.data_abertura;
+  if (input.data_encerramento !== undefined) updateData.data_encerramento = input.data_encerramento;
+  if (input.status !== undefined) updateData.status = input.status;
+  if (input.configuracoes !== undefined) updateData.configuracoes = input.configuracoes;
+  if (input.observacoes !== undefined) updateData.observacoes = input.observacoes;
+  if (input.conta_cofre !== undefined) updateData.conta_cofre = input.conta_cofre;
+
   // Ajustar agencia_id para contas cofre
-  const updateData: Record<string, any> = {
-    ...input,
-    agencia_id: input.conta_cofre ? null : input.agencia_id,
-  };
+  updateData.agencia_id = input.conta_cofre ? null : input.agencia_id;
 
   // Se saldo_inicial foi editado, ajustar saldo_atual pela diferença
   // (o trigger só recalcula quando há movimentação; ajuste manual não dispara)
@@ -201,17 +259,7 @@ export const atualizarContaBancaria = async (id: string, input: Partial<ContaBan
     .from('contas_bancarias')
     .update(updateData)
     .eq('id', id)
-    .select(`
-      *,
-      agencia:agencias_bancarias(
-        numero_agencia,
-        descricao,
-        banco:bancos(
-          codigo,
-          nome
-        )
-      )
-    `)
+    .select(CONTA_SELECT)
     .single();
 
   if (error) {
@@ -220,7 +268,7 @@ export const atualizarContaBancaria = async (id: string, input: Partial<ContaBan
   }
 
   console.log('[ContaBancariaService] Conta bancária atualizada:', data.id);
-  return data as ContaBancaria;
+  return mapRowToConta(data as unknown as Record<string, unknown>);
 };
 
 export const arquivarContaBancaria = async (id: string): Promise<void> => {
@@ -228,7 +276,7 @@ export const arquivarContaBancaria = async (id: string): Promise<void> => {
 
   const { error } = await supabase
     .from('contas_bancarias')
-    .update({ 
+    .update({
       deleted_at: new Date().toISOString(),
       status: 'INATIVA'
     })
@@ -247,7 +295,7 @@ export const restaurarContaBancaria = async (id: string): Promise<void> => {
 
   const { error } = await supabase
     .from('contas_bancarias')
-    .update({ 
+    .update({
       deleted_at: null,
       status: 'ATIVA'
     })
