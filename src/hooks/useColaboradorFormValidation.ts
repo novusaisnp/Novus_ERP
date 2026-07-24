@@ -19,6 +19,12 @@ interface FormData {
   empresaRepresentadaId: string;
 }
 
+// form.watch() entrega um deep-partial (RHF não tipa o callback como Partial<T> simples,
+// os campos aninhados de endereco também ficam opcionais enquanto o usuário digita).
+type WatchedFormData = Partial<Omit<FormData, 'endereco'>> & {
+  endereco?: Partial<FormData['endereco']>;
+};
+
 export const useColaboradorFormValidation = (form: UseFormReturn<FormData>) => {
   const [isFormValid, setIsFormValid] = useState(false);
 
@@ -33,7 +39,7 @@ export const useColaboradorFormValidation = (form: UseFormReturn<FormData>) => {
     return () => subscription.unsubscribe();
   }, [form]);
 
-  const validateEssentialFields = (values: Partial<FormData>): boolean => {
+  const validateEssentialFields = (values: WatchedFormData): boolean => {
     // Nome Completo (mínimo 3 caracteres)
     if (!values.nomeCompleto || values.nomeCompleto.trim().length < 3) {
       return false;

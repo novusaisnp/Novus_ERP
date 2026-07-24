@@ -100,7 +100,7 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
               ),
               data_emissao: conta.data_emissao,
               data_vencimento: conta.data_vencimento,
-              situacao: dbStatusPagarToUi(conta.status ?? conta.situacao) as StatusTitulo,
+              situacao: dbStatusPagarToUi(conta.status) as StatusTitulo,
 
               observacoes: conta.observacoes,
               created_at: conta.created_at,
@@ -177,13 +177,11 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
               valor_original: Number(conta.valor_original),
               valor_pago: conta.valor_recebido != null
                 ? Number(conta.valor_recebido)
-                : conta.valor_pago != null
-                ? Number(conta.valor_pago)
                 : undefined,
               data_emissao: conta.data_emissao,
               data_vencimento: conta.data_vencimento,
-              data_pagamento: conta.data_recebimento ?? conta.data_pagamento,
-              situacao: dbStatusReceberToUi(conta.status ?? conta.situacao) as StatusTitulo,
+              data_pagamento: conta.data_recebimento ?? undefined,
+              situacao: dbStatusReceberToUi(conta.status) as StatusTitulo,
 
               observacoes: conta.observacoes,
               created_at: conta.created_at,
