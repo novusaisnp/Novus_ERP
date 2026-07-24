@@ -1,164 +1,235 @@
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { supabase } from '@/integrations/supabase/client';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { useQueryClient } from '@tanstack/react-query';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2, User, Briefcase } from 'lucide-react';
+import { toast } from 'sonner';
+import { sociosRepresentantesService } from '@/services/sociosRepresentantesService';
+import { usePerfis } from '@/hooks/usePerfis';
 
-const formSchema = z.object({
-  nomeCompleto: z.string().min(1, 'Nome completo é obrigatório'),
-  email: z.string().email('E-mail inválido'),
-});
+const supabase: any = _supabase;
 
-type NovoUsuarioFormValues = z.infer<typeof formSchema>;
+type Origem = 'COLABORADOR' | 'SOCIO';
 
-interface NovoUsuarioModalProps {
+interface Props {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChange: (o: boolean) => void;
   onCreated: () => void;
 }
 
-const NovoUsuarioModal: React.FC<NovoUsuarioModalProps> = ({ open, onOpenChange, onCreated }) => {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const form = useForm<NovoUsuarioFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      nomeCompleto: '',
-      email: '',
+const NovoUsuarioModal: React.FC<Props> = ({ open, onOpenChange, onCreated }) => {
+  const { perfis } = usePerfis();
+  const [origem, setOrigem] = useState<Origem>('COLABORADOR');
+  const [pessoaId, setPessoaId] = useState<string>('');
+  const [perfilId, setPerfilId] = useState<string>('');
+  const [role, setRole] = useState<'admin' | 'moderator' | 'user'>('user');
+  const [saving, setSaving] = useState(false);
+
+  const { data: empresaId } = useQuery({
+    queryKey: ['user-empresa-id'],
+    queryFn: async () => {
+      const { data } = await supabase.rpc('get_user_empresa_id');
+      return (data as string | null) ?? null;
+    },
+    enabled: open,
+  });
+
+  const { data: colaboradores = [] } = useQuery({
+    queryKey: ['colaboradores-disponiveis', empresaId],
+    enabled: open && origem === 'COLABORADOR' && !!empresaId,
+    queryFn: async () => {
+      const { data: colabs } = await supabase
+        .from('colaboradores')
+        .select('id, nome, cpf, email')
+        .eq('ativo', true)
+        .is('deleted_at', null)
+        .order('nome');
+      const { data: usados } = await supabase
+        .from('usuarios')
+        .select('colaborador_id')
+        .not('colaborador_id', 'is', null);
+      const usedIds = new Set((usados || []).map((u: any) => u.colaborador_id));
+      return (colabs || []).filter((c: any) => !usedIds.has(c.id));
     },
   });
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { data: socios = [] } = useQuery({
+    queryKey: ['socios-disponiveis', empresaId],
+    enabled: open && origem === 'SOCIO' && !!empresaId,
+    queryFn: () => sociosRepresentantesService.listAvailableForUser(empresaId!),
+  });
 
-  const onSubmit = async (values: NovoUsuarioFormValues) => {
-    setIsSubmitting(true);
+  useEffect(() => {
+    if (open) {
+      setOrigem('COLABORADOR');
+      setPessoaId('');
+      setPerfilId('');
+      setRole('user');
+    }
+  }, [open]);
+
+  const pessoaSelecionada = useMemo(() => {
+    if (origem === 'COLABORADOR') return colaboradores.find((c: any) => c.id === pessoaId);
+    return socios.find((s: any) => s.id === pessoaId);
+  }, [origem, pessoaId, colaboradores, socios]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pessoaSelecionada || !empresaId) {
+      toast.error('Selecione a pessoa');
+      return;
+    }
+    if (!perfilId) {
+      toast.error('Selecione o perfil de acesso');
+      return;
+    }
+    const nome = (pessoaSelecionada as any).nome;
+    const email = (pessoaSelecionada as any).email;
+    if (!email) {
+      toast.error('A pessoa selecionada precisa ter e-mail cadastrado');
+      return;
+    }
+    setSaving(true);
     try {
-      // 1. Criar usuário no Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: values.email,
-        email_confirm: true, // Confirma o e-mail automaticamente
-        password: Math.random().toString(36).slice(-8), // Senha temporária aleatória
-        user_metadata: { full_name: values.nomeCompleto },
-      });
-
-      if (authError) {
-        throw new Error(authError.message);
-      }
-
-      if (!authData.user) {
-        throw new Error('Usuário não retornado após criação no Auth.');
-      }
-
-      const newAuthUserId = authData.user.id;
-
-      // 2. Enviar e-mail de redefinição de senha para o novo usuário
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(values.email, {
-        redirectTo: `${window.location.origin}/reset-password`, // Redireciona para a página de redefinição de senha do seu app
-      });
-
-      if (resetError) {
-        // Se o envio do e-mail de redefinição falhar, ainda assim o usuário foi criado.
-        // Podemos logar o erro, mas não necessariamente reverter a criação do usuário no Auth.
-        console.error('Erro ao enviar e-mail de redefinição de senha:', resetError.message);
-        toast({
-          title: 'Atenção',
-          description: `Usuário ${values.email} criado, mas houve um erro ao enviar o e-mail de redefinição de senha. Por favor, solicite a redefinição manualmente.`,
-          variant: 'destructive',
-          duration: 8000,
-        });
-      } else {
-        toast({
-          title: 'Sucesso',
-          description: `Usuário ${values.email} criado. Um e-mail de redefinição de senha foi enviado.`,
-        });
-      }
-
-      // 3. Criar registro na tabela public.usuarios
-      const { error: userTableError } = await supabase.from('usuarios').insert({
-        user_id: newAuthUserId,
-        nome: values.nomeCompleto,
-        email: values.email,
+      const payload: any = {
+        empresa_representada_id: empresaId,
+        nome,
+        email,
+        perfil_id: perfilId,
+        pessoa_tipo: origem,
+        pessoa_pendente: true,
         ativo: true,
-        empresa_representada_id: null, // Pode ser preenchido posteriormente ou via RLS
-      });
+        updated_at: new Date().toISOString(),
+      };
+      if (origem === 'COLABORADOR') payload.colaborador_id = pessoaId;
+      else payload.socio_id = pessoaId;
 
-      if (userTableError) {
-        // Se falhar a inserção na tabela public.usuarios, tentar deletar o usuário do Auth para manter a consistência
-        console.error('Erro ao inserir usuário na tabela public.usuarios:', userTableError.message);
-        await supabase.auth.admin.deleteUser(newAuthUserId); // Tenta reverter a criação no Auth
-        throw new Error(`Erro ao finalizar criação do usuário. O usuário no Auth foi revertido. Detalhes: ${userTableError.message}`);
+      // user_id fica NULL até a pessoa aceitar o convite / fazer signup.
+      const { data: created, error } = await supabase
+        .from('usuarios')
+        .insert(payload)
+        .select('id')
+        .single();
+      if (error) {
+        if (error.code === '23505') throw new Error('Esta pessoa já está vinculada a um usuário.');
+        if (error.code === '23503') throw new Error('Referência inválida (empresa, perfil ou pessoa).');
+        if (error.code === '42501') throw new Error('Sem permissão. Apenas administradores podem criar usuários.');
+        throw error;
       }
 
-      form.reset();
+      void role;
+
+      // Dispara convite via edge function (não bloqueia a criação em caso de falha)
+      try {
+        const { data: inviteData, error: inviteError } = await supabase.functions.invoke(
+          'enviar-convite-usuario',
+          { body: { usuario_id: created?.id, email, nome } },
+        );
+        if (inviteError) throw inviteError;
+        if (inviteData?.invited) {
+          toast.success('Usuário criado e convite enviado por e-mail.');
+        } else {
+          toast.success('Usuário criado. Convite pendente: ' + (inviteData?.message || 'envio manual necessário.'));
+        }
+      } catch (inviteErr: any) {
+        console.error('[NovoUsuario] Falha ao enviar convite:', inviteErr);
+        toast.warning('Usuário criado, porém falhou ao enviar convite: ' + (inviteErr?.message || 'erro desconhecido'));
+      }
+
+      onCreated();
       onOpenChange(false);
-      onCreated(); // Notifica o componente pai para recarregar a lista
-    } catch (error: any) {
-      console.error('Erro completo na criação do usuário:', error);
-      toast({
-        title: 'Erro',
-        description: error.message || 'Falha ao criar usuário. Verifique os logs.',
-        variant: 'destructive',
-      });
+
+    } catch (err: any) {
+      toast.error(err?.message || 'Falha ao criar usuário');
     } finally {
-      setIsSubmitting(false);
+      setSaving(false);
     }
   };
 
+  const lista: any[] = origem === 'COLABORADOR' ? colaboradores : socios;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Novo Usuário</DialogTitle>
-          <DialogDescription>
-            Crie um novo usuário para o sistema. Um e-mail de redefinição de senha será enviado automaticamente.
-          </DialogDescription>
         </DialogHeader>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="nomeCompleto" className="text-right">
-              Nome completo
-            </Label>
-            <Input
-              id="nomeCompleto"
-              {...form.register('nomeCompleto')}
-              className="col-span-3"
-              disabled={isSubmitting}
-            />
-            {form.formState.errors.nomeCompleto && (
-              <p className="col-span-4 text-right text-sm text-red-500">{form.formState.errors.nomeCompleto.message}</p>
-            )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label>Origem da pessoa</Label>
+            <RadioGroup value={origem} onValueChange={(v) => { setOrigem(v as Origem); setPessoaId(''); }} className="grid grid-cols-2 gap-2">
+              <label className="flex items-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-muted/50">
+                <RadioGroupItem value="COLABORADOR" />
+                <Briefcase className="w-4 h-4" /> Colaborador
+              </label>
+              <label className="flex items-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-muted/50">
+                <RadioGroupItem value="SOCIO" />
+                <User className="w-4 h-4" /> Sócio / Representante
+              </label>
+            </RadioGroup>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="email" className="text-right">
-              E-mail
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              {...form.register('email')}
-              className="col-span-3"
-              disabled={isSubmitting}
-            />
-            {form.formState.errors.email && (
-              <p className="col-span-4 text-right text-sm text-red-500">{form.formState.errors.email.message}</p>
-            )}
+
+          <div>
+            <Label>Pessoa *</Label>
+            <Select value={pessoaId} onValueChange={setPessoaId}>
+              <SelectTrigger>
+                <SelectValue placeholder={lista.length ? 'Selecione' : 'Nenhuma pessoa disponível'} />
+              </SelectTrigger>
+              <SelectContent>
+                {lista.map((p: any) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.nome} {p.email ? `— ${p.email}` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground mt-1">
+              Só aparecem pessoas ativas ainda não vinculadas a outro usuário.
+            </p>
           </div>
+
+          {pessoaSelecionada && (
+            <div className="rounded-md border p-3 bg-muted/30 text-sm space-y-1">
+              <div><strong>Nome:</strong> {(pessoaSelecionada as any).nome}</div>
+              <div><strong>Email:</strong> {(pessoaSelecionada as any).email || <span className="text-destructive">não informado</span>}</div>
+              {(pessoaSelecionada as any).cpf && <div><strong>CPF:</strong> {(pessoaSelecionada as any).cpf}</div>}
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Perfil de Acesso *</Label>
+              <Select value={perfilId} onValueChange={setPerfilId}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  {perfis.filter((p) => p.ativo).map((p) => (
+                    <SelectItem key={p.id} value={p.id!}>{p.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Role</Label>
+              <Select value={role} onValueChange={(v) => setRole(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="user">Usuário</SelectItem>
+                  <SelectItem value="moderator">Moderador</SelectItem>
+                  <SelectItem value="admin">Administrador</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           <DialogFooter>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Criando...' : 'Criar Usuário'}
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
+            <Button type="submit" disabled={saving}>
+              {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}Criar Usuário
             </Button>
           </DialogFooter>
         </form>
