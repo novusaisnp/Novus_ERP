@@ -74,7 +74,7 @@ export const useDepartamentos = () => {
       if (error instanceof Error) {
         errorMessage = error.message;
       } else if (typeof error === 'object' && error !== null) {
-        const errorObj = error as any;
+        const errorObj = error as { message?: string; details?: string };
         if (errorObj.message) {
           errorMessage = errorObj.message;
         } else if (errorObj.details) {
@@ -116,7 +116,7 @@ export const useDepartamentos = () => {
       if (error instanceof Error) {
         errorMessage = error.message;
       } else if (typeof error === 'object' && error !== null) {
-        const errorObj = error as any;
+        const errorObj = error as { message?: string; details?: string };
         if (errorObj.message) {
           errorMessage = errorObj.message;
         }

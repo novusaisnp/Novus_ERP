@@ -20,7 +20,7 @@ export const useVendas = (filtros: VendaFiltros = {}) => {
       invalidate();
       toast({ title: 'Venda salva com sucesso' });
     },
-    onError: (e: any) =>
+    onError: (e: Error) =>
       toast({ title: 'Erro', description: e?.message || 'Falha ao salvar venda', variant: 'destructive' }),
   });
 
@@ -30,7 +30,7 @@ export const useVendas = (filtros: VendaFiltros = {}) => {
       invalidate();
       toast({ title: 'Venda excluída' });
     },
-    onError: (e: any) =>
+    onError: (e: Error) =>
       toast({ title: 'Erro', description: e?.message || 'Falha ao excluir', variant: 'destructive' }),
   });
 
@@ -40,7 +40,7 @@ export const useVendas = (filtros: VendaFiltros = {}) => {
       invalidate();
       toast({ title: 'Venda cancelada' });
     },
-    onError: (e: any) =>
+    onError: (e: Error) =>
       toast({ title: 'Erro', description: e?.message || 'Falha ao cancelar', variant: 'destructive' }),
   });
 

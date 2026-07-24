@@ -14,7 +14,7 @@ interface SyncLog {
   processed_at?: string;
   execution_time_ms?: number;
   error_message?: string;
-  data_payload?: any;
+  data_payload?: unknown;
 }
 
 export const useSyncLogs = (limit: number = 20) => {
@@ -34,9 +34,9 @@ export const useSyncLogs = (limit: number = 20) => {
 
       if (error) throw error;
       
-      setLogs((data as any as SyncLog[]) || []);
-      
-    } catch (error: any) {
+      setLogs((data as unknown as SyncLog[]) || []);
+
+    } catch (error) {
       console.error('Erro ao buscar logs de sincronização:', error);
       toast({
         title: "Erro",

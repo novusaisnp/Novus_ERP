@@ -19,21 +19,21 @@ interface FormData {
   empresaRepresentadaId: string;
 }
 
-export const useColaboradorFormValidation = (form: UseFormReturn<any>) => {
+export const useColaboradorFormValidation = (form: UseFormReturn<FormData>) => {
   const [isFormValid, setIsFormValid] = useState(false);
 
   useEffect(() => {
     const subscription = form.watch((values) => {
-      
+
       const isValid = validateEssentialFields(values);
       setIsFormValid(isValid);
-      
+
     });
 
     return () => subscription.unsubscribe();
   }, [form]);
 
-  const validateEssentialFields = (values: any): boolean => {
+  const validateEssentialFields = (values: Partial<FormData>): boolean => {
     // Nome Completo (mínimo 3 caracteres)
     if (!values.nomeCompleto || values.nomeCompleto.trim().length < 3) {
       return false;

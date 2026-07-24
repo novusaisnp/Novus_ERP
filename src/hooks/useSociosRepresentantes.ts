@@ -20,7 +20,7 @@ export const useSociosRepresentantes = (empresaId?: string) => {
       qc.invalidateQueries({ queryKey: ['socios-disponiveis'] });
       toast.success('Sócio/representante salvo');
     },
-    onError: (e: any) => toast.error(e?.message || 'Falha ao salvar'),
+    onError: (e: Error) => toast.error(e.message || 'Falha ao salvar'),
   });
 
   const deleteMutation = useMutation({
@@ -29,7 +29,7 @@ export const useSociosRepresentantes = (empresaId?: string) => {
       qc.invalidateQueries({ queryKey: ['socios-representantes', empresaId] });
       toast.success('Removido');
     },
-    onError: (e: any) => toast.error(e?.message || 'Falha ao remover'),
+    onError: (e: Error) => toast.error(e.message || 'Falha ao remover'),
   });
 
   return {

@@ -20,7 +20,7 @@ export const useContratos = (filtros: ContratoFiltros = {}) => {
       invalidate();
       toast({ title: 'Contrato salvo com sucesso' });
     },
-    onError: (e: any) =>
+    onError: (e: Error) =>
       toast({ title: 'Erro', description: e?.message || 'Falha ao salvar contrato', variant: 'destructive' }),
   });
 
@@ -30,7 +30,7 @@ export const useContratos = (filtros: ContratoFiltros = {}) => {
       invalidate();
       toast({ title: 'Contrato excluído' });
     },
-    onError: (e: any) =>
+    onError: (e: Error) =>
       toast({ title: 'Erro', description: e?.message || 'Falha ao excluir', variant: 'destructive' }),
   });
 

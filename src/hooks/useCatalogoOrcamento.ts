@@ -31,7 +31,7 @@ export const useCatalogoProdutos = (empresaId?: string) =>
         .order('nome')
         .limit(500);
       if (error) throw error;
-      return (data ?? []).map((p: any) => ({
+      return (data ?? []).map((p) => ({
         id: p.id,
         codigo: p.codigo,
         nome: p.nome,
@@ -57,7 +57,7 @@ export const useCatalogoServicos = (empresaId?: string) =>
         .order('nome')
         .limit(500);
       if (error) throw error;
-      return (data ?? []).map((s: any) => ({
+      return (data ?? []).map((s) => ({
         id: s.id,
         codigo: s.codigo,
         nome: s.nome,

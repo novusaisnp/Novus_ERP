@@ -10,8 +10,8 @@ export interface EmpresaResponsavel {
   telefone?: string | null;
   endereco?: string | null;
   logo_url?: string | null;
-  configuracoes?: Record<string, any> | null;
-  [key: string]: any;
+  configuracoes?: Record<string, unknown> | null;
+  [key: string]: unknown;
 }
 
 export const useEmpresaResponsavel = () => {
@@ -36,7 +36,7 @@ export const useEmpresaResponsavel = () => {
       qc.invalidateQueries({ queryKey: ['empresa-responsavel'] });
       toast.success('Empresa salva com sucesso');
     },
-    onError: (e: any) => {
+    onError: (e: Error) => {
       console.error('[EmpresaResponsavel] erro ao salvar');
       toast.error(e?.message || 'Falha ao salvar empresa');
     },

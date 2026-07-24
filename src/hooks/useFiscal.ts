@@ -77,8 +77,10 @@ export const useCreateConfiguracaoFiscal = () => {
   });
 };
 
+type ApiError = { message?: string; error_description?: string; code?: string };
+
 // ===== CFOP mutations (admin only via RLS) =====
-const mapCFOPError = (err: any): string => {
+const mapCFOPError = (err: ApiError): string => {
   const msg = String(err?.message || err?.error_description || '');
   const code = err?.code;
   if (code === '42501' || /permission denied|violates row-level security/i.test(msg)) {
@@ -127,7 +129,7 @@ export const useToggleCFOPAtivo = () => {
 };
 
 // ===== NCM mutations (admin only via RLS) =====
-const mapNCMError = (err: any): string => {
+const mapNCMError = (err: ApiError): string => {
   const msg = String(err?.message || err?.error_description || '');
   const code = err?.code;
   if (code === '42501' || /permission denied|violates row-level security/i.test(msg)) {
