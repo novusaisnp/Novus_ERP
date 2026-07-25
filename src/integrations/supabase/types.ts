@@ -3928,7 +3928,9 @@ export type Database = {
       modalidade_api_vinculo: {
         Row: {
           ativo: boolean
+          codigo_externo: string | null
           created_at: string
+          deleted_at: string | null
           descricao: string | null
           empresa_representada_id: string
           endpoint: string | null
@@ -3940,7 +3942,9 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          codigo_externo?: string | null
           created_at?: string
+          deleted_at?: string | null
           descricao?: string | null
           empresa_representada_id: string
           endpoint?: string | null
@@ -3952,7 +3956,9 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          codigo_externo?: string | null
           created_at?: string
+          deleted_at?: string | null
           descricao?: string | null
           empresa_representada_id?: string
           endpoint?: string | null

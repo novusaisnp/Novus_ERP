@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import type { 
-  NaturezaCaixa, 
+import type {
+  NaturezaCaixa,
   NaturezaCaixaInput,
   ModalidadeCaixa,
   ModalidadeCaixaInput,
@@ -11,6 +11,13 @@ import type {
   ModalidadeAPIVinculoInput
 } from '@/types/configBasicas';
 
+const getEmpresaIdAtual = async (): Promise<string> => {
+  const { data, error } = await supabase.rpc('get_user_empresa_id');
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('Empresa não identificada para o usuário atual.');
+  return data;
+};
+
 
 // ==================== NATUREZA CAIXAS ====================
 
@@ -19,7 +26,6 @@ export const naturezaCaixasService = {
     const { data, error } = await supabase
       .from('natureza_caixas')
       .select('*')
-      .is('deleted_at', null)
       .order('nome');
 
     if (error) {
@@ -31,9 +37,10 @@ export const naturezaCaixasService = {
   },
 
   async create(input: NaturezaCaixaInput): Promise<NaturezaCaixa> {
+    const empresaId = await getEmpresaIdAtual();
     const { data, error } = await supabase
       .from('natureza_caixas')
-      .insert([input])
+      .insert([{ ...input, empresa_representada_id: empresaId }])
       .select()
       .single();
 
@@ -64,7 +71,7 @@ export const naturezaCaixasService = {
   async delete(id: string): Promise<void> {
     const { error } = await supabase
       .from('natureza_caixas')
-      .update({ deleted_at: new Date().toISOString() })
+      .update({ ativo: false })
       .eq('id', id);
 
     if (error) {
@@ -80,8 +87,7 @@ export const modalidadeCaixasService = {
   async getAll(apenasAtivos = false): Promise<ModalidadeCaixa[]> {
     let query = supabase
       .from('modalidade_caixas')
-      .select('*')
-      .is('deleted_at', null);
+      .select('*');
 
     if (apenasAtivos) {
       query = query.eq('ativo', true);
@@ -101,7 +107,6 @@ export const modalidadeCaixasService = {
     let query = supabase
       .from('modalidade_caixas')
       .select('*')
-      .is('deleted_at', null)
       .ilike('nome', `%${termo}%`);
 
     if (apenasAtivos) {
@@ -119,9 +124,10 @@ export const modalidadeCaixasService = {
   },
 
   async create(input: ModalidadeCaixaInput): Promise<ModalidadeCaixa> {
+    const empresaId = await getEmpresaIdAtual();
     const { data, error } = await supabase
       .from('modalidade_caixas')
-      .insert([input])
+      .insert([{ ...input, empresa_representada_id: empresaId }])
       .select()
       .single();
 
@@ -152,7 +158,7 @@ export const modalidadeCaixasService = {
   async delete(id: string): Promise<void> {
     const { error } = await supabase
       .from('modalidade_caixas')
-      .update({ deleted_at: new Date().toISOString() })
+      .update({ ativo: false })
       .eq('id', id);
 
     if (error) {
@@ -181,9 +187,10 @@ export const planosPagamentoService = {
   },
 
   async create(input: PlanoPagamentoInput): Promise<PlanoPagamento> {
+    const empresaId = await getEmpresaIdAtual();
     const { data, error } = await supabase
       .from('planos_pagamento')
-      .insert([input])
+      .insert([{ ...input, empresa_representada_id: empresaId }])
       .select()
       .single();
 
@@ -243,9 +250,10 @@ export const modalidadeAPIVinculoService = {
   },
 
   async create(input: ModalidadeAPIVinculoInput): Promise<ModalidadeAPIVinculo> {
+    const empresaId = await getEmpresaIdAtual();
     const { data, error } = await supabase
       .from('modalidade_api_vinculo')
-      .insert([input])
+      .insert([{ ...input, empresa_representada_id: empresaId }])
       .select()
       .single();
 

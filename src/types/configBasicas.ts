@@ -1,56 +1,57 @@
 
 // Types para o submódulo de Configurações Básicas de Pagamentos
 
+// NaturezaCaixa/ModalidadeCaixa não modelam mais comportamento de PDV/caixa (troco,
+// baixa automática, pagamento online) — essa tabela foi redesenhada para
+// classificação contábil (centro de custo / plano de contas). Nenhuma tela usa mais
+// naturezaCaixasService/modalidadeCaixasService hoje (usePagamentoCatalogo os
+// substituiu); os tipos aqui só existem para o service continuar compilando.
 export interface NaturezaCaixa {
   id: string;
   nome: string;
-  sigla: string;
-  baixa: boolean;
-  gera_troco: boolean;
-  informa_valor_pago: boolean;
-  baixa_pendente: boolean;
-  pagamento_online: boolean;
-  conta_convenio: boolean;
-  mostra_troco: boolean;
-  forma_nota_fiscal: boolean;
+  codigo?: string | null;
+  descricao?: string | null;
+  tipo?: string | null;
+  centro_custo_id?: string | null;
+  plano_conta_id?: string | null;
+  permite_estorno: boolean;
+  requer_documento: boolean;
+  ordem: number;
   ativo: boolean;
   created_at: string;
   updated_at: string;
-  deleted_at?: string | null;
 }
 
 export interface NaturezaCaixaInput {
   nome: string;
-  sigla: string;
-  baixa: boolean;
-  gera_troco: boolean;
-  informa_valor_pago: boolean;
-  baixa_pendente: boolean;
-  pagamento_online: boolean;
-  conta_convenio: boolean;
-  mostra_troco: boolean;
-  forma_nota_fiscal: boolean;
-  ativo: boolean;
+  codigo?: string | null;
+  descricao?: string | null;
+  tipo?: string | null;
+  centro_custo_id?: string | null;
+  plano_conta_id?: string | null;
+  permite_estorno?: boolean;
+  requer_documento?: boolean;
+  ordem?: number;
+  ativo?: boolean;
 }
 
 export interface ModalidadeCaixa {
   id: string;
   nome: string;
-  sigla: string;
+  descricao?: string | null;
+  tipo?: string | null;
+  ordem: number;
   ativo: boolean;
-  indica_boleto: boolean;
-  indica_cartao_credito: boolean;
   created_at: string;
   updated_at: string;
-  deleted_at?: string | null;
 }
 
 export interface ModalidadeCaixaInput {
   nome: string;
-  sigla: string;
-  ativo: boolean;
-  indica_boleto: boolean;
-  indica_cartao_credito: boolean;
+  descricao?: string | null;
+  tipo?: string | null;
+  ordem?: number;
+  ativo?: boolean;
 }
 
 export interface PlanoPagamento {

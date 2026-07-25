@@ -19,6 +19,13 @@ interface ModalidadeCaixaModalProps {
   isLoading: boolean;
 }
 
+const emptyForm: ModalidadeCaixaInput = {
+  nome: '',
+  descricao: '',
+  tipo: '',
+  ativo: true,
+};
+
 export const ModalidadeCaixaModal: React.FC<ModalidadeCaixaModalProps> = ({
   isOpen,
   onClose,
@@ -27,13 +34,7 @@ export const ModalidadeCaixaModal: React.FC<ModalidadeCaixaModalProps> = ({
   isLoading
 }) => {
   const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<ModalidadeCaixaInput>({
-    defaultValues: {
-      nome: '',
-      sigla: '',
-      ativo: true,
-      indica_boleto: false,
-      indica_cartao_credito: false,
-    }
+    defaultValues: emptyForm,
   });
 
   React.useEffect(() => {
@@ -41,19 +42,12 @@ export const ModalidadeCaixaModal: React.FC<ModalidadeCaixaModalProps> = ({
       console.log('[ModalidadeCaixaModal] Carregando dados para edição:', modalidade.id);
       reset({
         nome: modalidade.nome,
-        sigla: modalidade.sigla,
+        descricao: modalidade.descricao ?? '',
+        tipo: modalidade.tipo ?? '',
         ativo: modalidade.ativo,
-        indica_boleto: modalidade.indica_boleto,
-        indica_cartao_credito: modalidade.indica_cartao_credito,
       });
     } else {
-      reset({
-        nome: '',
-        sigla: '',
-        ativo: true,
-        indica_boleto: false,
-        indica_cartao_credito: false,
-      });
+      reset(emptyForm);
     }
   }, [modalidade, reset]);
 
@@ -88,51 +82,33 @@ export const ModalidadeCaixaModal: React.FC<ModalidadeCaixaModalProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="sigla">Sigla *</Label>
+              <Label htmlFor="tipo">Tipo</Label>
               <Input
-                id="sigla"
-                {...register('sigla', { 
-                  required: 'Sigla é obrigatória',
-                  maxLength: { value: 5, message: 'Máximo 5 caracteres' }
-                })}
-                placeholder="Até 5 caracteres"
-                maxLength={5}
+                id="tipo"
+                {...register('tipo')}
+                placeholder="Ex.: DINHEIRO, CARTAO, PIX"
               />
-              {errors.sigla && (
-                <span className="text-sm text-destructive">{errors.sigla.message}</span>
-              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="descricao">Descrição</Label>
+              <Input
+                id="descricao"
+                {...register('descricao')}
+                placeholder="Descrição opcional"
+              />
             </div>
           </div>
 
           <Separator />
 
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="ativo" className="text-sm">Ativo</Label>
-              <Switch
-                id="ativo"
-                checked={watchedValues.ativo}
-                onCheckedChange={(checked) => setValue('ativo', checked)}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <Label htmlFor="indica_boleto" className="text-sm">Indica se é boleto</Label>
-              <Switch
-                id="indica_boleto"
-                checked={watchedValues.indica_boleto}
-                onCheckedChange={(checked) => setValue('indica_boleto', checked)}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <Label htmlFor="indica_cartao_credito" className="text-sm">Indica se é cartão de crédito</Label>
-              <Switch
-                id="indica_cartao_credito"
-                checked={watchedValues.indica_cartao_credito}
-                onCheckedChange={(checked) => setValue('indica_cartao_credito', checked)}
-              />
-            </div>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="ativo" className="text-sm">Ativo</Label>
+            <Switch
+              id="ativo"
+              checked={watchedValues.ativo}
+              onCheckedChange={(checked) => setValue('ativo', checked)}
+            />
           </div>
 
           <DialogFooter>

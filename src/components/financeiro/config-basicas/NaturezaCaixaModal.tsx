@@ -19,6 +19,16 @@ interface NaturezaCaixaModalProps {
   isLoading: boolean;
 }
 
+const emptyForm: NaturezaCaixaInput = {
+  nome: '',
+  codigo: '',
+  descricao: '',
+  tipo: '',
+  permite_estorno: false,
+  requer_documento: false,
+  ativo: true,
+};
+
 export const NaturezaCaixaModal: React.FC<NaturezaCaixaModalProps> = ({
   isOpen,
   onClose,
@@ -27,19 +37,7 @@ export const NaturezaCaixaModal: React.FC<NaturezaCaixaModalProps> = ({
   isLoading
 }) => {
   const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<NaturezaCaixaInput>({
-    defaultValues: {
-      nome: '',
-      sigla: '',
-      baixa: false,
-      gera_troco: false,
-      informa_valor_pago: false,
-      baixa_pendente: false,
-      pagamento_online: false,
-      conta_convenio: false,
-      mostra_troco: false,
-      forma_nota_fiscal: false,
-      ativo: true,
-    }
+    defaultValues: emptyForm,
   });
 
   React.useEffect(() => {
@@ -47,31 +45,15 @@ export const NaturezaCaixaModal: React.FC<NaturezaCaixaModalProps> = ({
       console.log('[NaturezaCaixaModal] Carregando dados para edição:', natureza.id);
       reset({
         nome: natureza.nome,
-        sigla: natureza.sigla,
-        baixa: natureza.baixa,
-        gera_troco: natureza.gera_troco,
-        informa_valor_pago: natureza.informa_valor_pago,
-        baixa_pendente: natureza.baixa_pendente,
-        pagamento_online: natureza.pagamento_online,
-        conta_convenio: natureza.conta_convenio,
-        mostra_troco: natureza.mostra_troco,
-        forma_nota_fiscal: natureza.forma_nota_fiscal,
+        codigo: natureza.codigo ?? '',
+        descricao: natureza.descricao ?? '',
+        tipo: natureza.tipo ?? '',
+        permite_estorno: natureza.permite_estorno,
+        requer_documento: natureza.requer_documento,
         ativo: natureza.ativo,
       });
     } else {
-      reset({
-        nome: '',
-        sigla: '',
-        baixa: false,
-        gera_troco: false,
-        informa_valor_pago: false,
-        baixa_pendente: false,
-        pagamento_online: false,
-        conta_convenio: false,
-        mostra_troco: false,
-        forma_nota_fiscal: false,
-        ativo: true,
-      });
+      reset(emptyForm);
     }
   }, [natureza, reset]);
 
@@ -106,97 +88,54 @@ export const NaturezaCaixaModal: React.FC<NaturezaCaixaModalProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="sigla">Sigla *</Label>
+              <Label htmlFor="codigo">Código</Label>
               <Input
-                id="sigla"
-                {...register('sigla', { 
-                  required: 'Sigla é obrigatória',
-                  maxLength: { value: 5, message: 'Máximo 5 caracteres' }
-                })}
-                placeholder="Até 5 caracteres"
-                maxLength={5}
+                id="codigo"
+                {...register('codigo')}
+                placeholder="Código interno"
               />
-              {errors.sigla && (
-                <span className="text-sm text-destructive">{errors.sigla.message}</span>
-              )}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="descricao">Descrição</Label>
+            <Input
+              id="descricao"
+              {...register('descricao')}
+              placeholder="Descrição opcional"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tipo">Tipo</Label>
+            <Input
+              id="tipo"
+              {...register('tipo')}
+              placeholder="Classificação da natureza"
+            />
           </div>
 
           <Separator />
 
           <div className="space-y-4">
-            <h4 className="font-medium">Configurações Operacionais</h4>
-            
+            <h4 className="font-medium">Configurações</h4>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center justify-between">
-                <Label htmlFor="baixa" className="text-sm">Baixa</Label>
+                <Label htmlFor="permite_estorno" className="text-sm">Permite Estorno</Label>
                 <Switch
-                  id="baixa"
-                  checked={watchedValues.baixa}
-                  onCheckedChange={(checked) => setValue('baixa', checked)}
+                  id="permite_estorno"
+                  checked={watchedValues.permite_estorno}
+                  onCheckedChange={(checked) => setValue('permite_estorno', checked)}
                 />
               </div>
 
               <div className="flex items-center justify-between">
-                <Label htmlFor="gera_troco" className="text-sm">Gera Troco</Label>
+                <Label htmlFor="requer_documento" className="text-sm">Requer Documento</Label>
                 <Switch
-                  id="gera_troco"
-                  checked={watchedValues.gera_troco}
-                  onCheckedChange={(checked) => setValue('gera_troco', checked)}
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <Label htmlFor="informa_valor_pago" className="text-sm">Informa Valor Pago</Label>
-                <Switch
-                  id="informa_valor_pago"
-                  checked={watchedValues.informa_valor_pago}
-                  onCheckedChange={(checked) => setValue('informa_valor_pago', checked)}
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <Label htmlFor="baixa_pendente" className="text-sm">Baixa Pendente</Label>
-                <Switch
-                  id="baixa_pendente"
-                  checked={watchedValues.baixa_pendente}
-                  onCheckedChange={(checked) => setValue('baixa_pendente', checked)}
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <Label htmlFor="pagamento_online" className="text-sm">Pagamento Online</Label>
-                <Switch
-                  id="pagamento_online"
-                  checked={watchedValues.pagamento_online}
-                  onCheckedChange={(checked) => setValue('pagamento_online', checked)}
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <Label htmlFor="conta_convenio" className="text-sm">Conta Convênio</Label>
-                <Switch
-                  id="conta_convenio"
-                  checked={watchedValues.conta_convenio}
-                  onCheckedChange={(checked) => setValue('conta_convenio', checked)}
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <Label htmlFor="mostra_troco" className="text-sm">Mostra Troco</Label>
-                <Switch
-                  id="mostra_troco"
-                  checked={watchedValues.mostra_troco}
-                  onCheckedChange={(checked) => setValue('mostra_troco', checked)}
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <Label htmlFor="forma_nota_fiscal" className="text-sm">Força Nota Fiscal</Label>
-                <Switch
-                  id="forma_nota_fiscal"
-                  checked={watchedValues.forma_nota_fiscal}
-                  onCheckedChange={(checked) => setValue('forma_nota_fiscal', checked)}
+                  id="requer_documento"
+                  checked={watchedValues.requer_documento}
+                  onCheckedChange={(checked) => setValue('requer_documento', checked)}
                 />
               </div>
             </div>

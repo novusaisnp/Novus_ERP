@@ -3,6 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { uiStatusPagarToDb } from '@/lib/statusMappers';
 import type { ContaPagarInput } from '@/types/contasPagar';
 
+const getEmpresaIdAtual = async (): Promise<string> => {
+  const { data, error } = await supabase.rpc('get_user_empresa_id');
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('Empresa não identificada para o usuário atual.');
+  return data;
+};
+
 // Monta payload apenas com colunas que realmente existem em public.contas_pagar.
 const buildPayload = (input: ContaPagarInput) => {
   // 'UNICA' é sinônimo de "sem recorrência" na UI; DB só aceita periodicidades reais
@@ -29,9 +36,10 @@ const buildPayload = (input: ContaPagarInput) => {
 };
 
 export const createContaPagar = async (input: ContaPagarInput) => {
+  const empresaId = await getEmpresaIdAtual();
   const { data: contaData, error: contaError } = await supabase
     .from('contas_pagar')
-    .insert([buildPayload(input)])
+    .insert([{ ...buildPayload(input), empresa_representada_id: empresaId }])
     .select('id')
     .single();
 
@@ -45,11 +53,12 @@ export const createContaPagar = async (input: ContaPagarInput) => {
     
     const rateiosData = input.rateios.map(rateio => ({
       conta_pagar_id: contaData.id,
+      empresa_representada_id: empresaId,
       plano_conta_id: rateio.plano_conta_id,
       centro_custo_id: rateio.centro_custo_id || null,
       valor: rateio.valor,
       percentual: rateio.percentual,
-      descricao: rateio.descricao || null,
+      observacoes: rateio.descricao || null,
     }));
 
     const { error: rateiosError } = await supabase
@@ -85,6 +94,7 @@ export const createContaPagar = async (input: ContaPagarInput) => {
 };
 
 export const updateContaPagar = async (id: string, input: ContaPagarInput) => {
+  const empresaId = await getEmpresaIdAtual();
   const { error: contaError } = await supabase
     .from('contas_pagar')
     .update(buildPayload(input))
@@ -113,11 +123,12 @@ export const updateContaPagar = async (id: string, input: ContaPagarInput) => {
     
     const rateiosData = input.rateios.map(rateio => ({
       conta_pagar_id: id,
+      empresa_representada_id: empresaId,
       plano_conta_id: rateio.plano_conta_id,
       centro_custo_id: rateio.centro_custo_id || null,
       valor: rateio.valor,
       percentual: rateio.percentual,
-      descricao: rateio.descricao || null,
+      observacoes: rateio.descricao || null,
     }));
 
     const { error: rateiosError } = await supabase
