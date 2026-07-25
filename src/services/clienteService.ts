@@ -1,5 +1,5 @@
 // FILE NAME: clienteService.ts
-// FILE CONTENT: 
+// FILE CONTENT:
 import { supabase } from '@/integrations/supabase/client';
 import { Cliente } from '@/types/cliente';
 
@@ -25,7 +25,7 @@ export interface SupabaseCliente {
   atividade_principal?: string | null;
   contato_empresa?: Record<string, unknown>;
   contatos?: unknown[];
-  documentos?: unknown[]; // <--- VERIFIQUE O TIPO DESTA COLUNA NO DB (TEXT ou JSONB para base64)
+  documentos?: unknown[];
   emails?: string[];
   telefones?: string[];
   dados_pessoais?: Record<string, unknown>;
@@ -35,6 +35,83 @@ export interface SupabaseCliente {
   created_at: string;
   updated_at?: string | null;
 }
+
+// As colunas endereco/qualificacao_fiscal/dados_pessoais/contato_empresa/contatos/
+// documentos/emails/telefones existem no banco como text (guardam JSON serializado),
+// não como jsonb nativo — precisam de stringify/parse explícitos neste service.
+const parseJsonField = <T>(raw: string | null | undefined, fallback: T): T => {
+  if (!raw) return fallback;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+};
+
+const stringifyJsonField = (value: unknown): string | null =>
+  value === undefined || value === null ? null : JSON.stringify(value);
+
+const parseRow = (row: Record<string, unknown>): SupabaseCliente => ({
+  id: row.id as string,
+  empresa_representada_id: row.empresa_representada_id as string,
+  nome: row.nome as string,
+  apelido: row.apelido as string | null,
+  email: row.email as string | null,
+  telefone: row.telefone as string | null,
+  cpf_cnpj: row.cpf_cnpj as string | null,
+  tipo: row.tipo as string,
+  rg: row.rg as string | null,
+  data_nascimento: row.data_nascimento as string | null,
+  endereco: parseJsonField(row.endereco as string | null, undefined),
+  qualificacao_fiscal: parseJsonField(row.qualificacao_fiscal as string | null, undefined),
+  nome_fantasia: row.nome_fantasia as string | null,
+  cnae: row.cnae as string | null,
+  site: row.site as string | null,
+  forma_atuacao: row.forma_atuacao as string | null,
+  data_fundacao: row.data_fundacao as string | null,
+  atividade_principal: row.atividade_principal as string | null,
+  contato_empresa: parseJsonField(row.contato_empresa as string | null, undefined),
+  contatos: parseJsonField(row.contatos as string | null, []),
+  documentos: parseJsonField(row.documentos as string | null, []),
+  emails: parseJsonField(row.emails as string | null, undefined),
+  telefones: parseJsonField(row.telefones as string | null, undefined),
+  dados_pessoais: parseJsonField(row.dados_pessoais as string | null, undefined),
+  setor_id: row.setor_id as string | null,
+  ativo: Boolean(row.ativo),
+  created_at: row.created_at as string,
+  updated_at: row.updated_at as string | null,
+});
+
+const buildDataToSave = (clienteData: Cliente, empresaRepresentadaId: string) => ({
+  empresa_representada_id: empresaRepresentadaId,
+  nome: clienteData.nome,
+  apelido: clienteData.apelido || null,
+  email: clienteData.emails?.[0] || null,
+  telefone: clienteData.telefones?.[0] || null,
+  cpf_cnpj: clienteData.cpfCnpj || null,
+  tipo: clienteData.tipo,
+  rg: clienteData.rg || null,
+  data_nascimento: clienteData.dataNascimento || null,
+  endereco: stringifyJsonField(clienteData.endereco),
+  qualificacao_fiscal: stringifyJsonField(clienteData.qualificacaoFiscal),
+  emails: stringifyJsonField(clienteData.emails || []),
+  telefones: stringifyJsonField(clienteData.telefones || []),
+  dados_pessoais: stringifyJsonField(clienteData.dadosPessoais || {}),
+  documentos: stringifyJsonField(clienteData.documentos || []),
+  contatos: stringifyJsonField(clienteData.contatos || []),
+  // Campos específicos para PJ
+  nome_fantasia: clienteData.dadosEmpresa?.nomeFantasia || null,
+  cnae: clienteData.dadosEmpresa?.cnae || null,
+  site: clienteData.dadosEmpresa?.site || null,
+  forma_atuacao: clienteData.dadosEmpresa?.formaAtuacao || null,
+  data_fundacao: clienteData.dadosEmpresa?.dataFundacao || null,
+  atividade_principal: clienteData.dadosEmpresa?.atividadePrincipal || null,
+  contato_empresa: stringifyJsonField(clienteData.dadosEmpresa?.contatoEmpresa || null),
+  // Campo setor para integração CRM
+  setor_id: clienteData.setorId || null,
+  ativo: clienteData.ativo !== false,
+  updated_at: new Date().toISOString(),
+});
 
 export const clienteService = {
   async getEmpresaIdDoCliente(clienteId: string): Promise<string | null> {
@@ -47,7 +124,7 @@ export const clienteService = {
     return data?.empresa_representada_id ?? null;
   },
 
-  async fetchClientes(empresaRepresentadaId: string) { // <--- PARÂMETRO ADICIONADO
+  async fetchClientes(empresaRepresentadaId: string): Promise<SupabaseCliente[]> { // <--- PARÂMETRO ADICIONADO
     if (!empresaRepresentadaId) {
       console.error('Erro: empresaRepresentadaId é obrigatório para fetchClientes.');
       throw new Error('ID da empresa não fornecido.');
@@ -63,40 +140,11 @@ export const clienteService = {
       throw new Error('Não foi possível carregar os clientes.');
     }
 
-    return data || [];
+    return (data || []).map((row) => parseRow(row as unknown as Record<string, unknown>));
   },
 
-  async createCliente(clienteData: Cliente, empresaRepresentadaId: string) { // <--- PARÂMETRO ADICIONADO
-    const dataToSave = {
-      empresa_representada_id: empresaRepresentadaId, // <--- ADICIONADO: ESSENCIAL
-      nome: clienteData.nome,
-      apelido: clienteData.apelido || null,
-      email: clienteData.emails?.[0] || null,
-      telefone: clienteData.telefones?.[0] || null,
-      cpf_cnpj: clienteData.cpfCnpj || null,
-      tipo: clienteData.tipo,
-      rg: clienteData.rg || null,
-      data_nascimento: clienteData.dataNascimento || null,
-      endereco: clienteData.endereco || null,
-      qualificacao_fiscal: clienteData.qualificacaoFiscal || {},
-      emails: clienteData.emails || [],
-      telefones: clienteData.telefones || [],
-      dados_pessoais: clienteData.dadosPessoais || {},
-      documentos: clienteData.documentos || [], // <--- VERIFIQUE O TIPO DA COLUNA NO DB
-      contatos: JSON.parse(JSON.stringify(clienteData.contatos || [])),
-      // Campos específicos para PJ
-      nome_fantasia: clienteData.dadosEmpresa?.nomeFantasia || null,
-      cnae: clienteData.dadosEmpresa?.cnae || null,
-      site: clienteData.dadosEmpresa?.site || null,
-      forma_atuacao: clienteData.dadosEmpresa?.formaAtuacao || null,
-      data_fundacao: clienteData.dadosEmpresa?.dataFundacao || null,
-      atividade_principal: clienteData.dadosEmpresa?.atividadePrincipal || null,
-      contato_empresa: clienteData.dadosEmpresa?.contatoEmpresa || null,
-      // Campo setor para integração CRM
-      setor_id: clienteData.setorId || null,
-      ativo: clienteData.ativo !== false,
-      updated_at: new Date().toISOString()
-    };
+  async createCliente(clienteData: Cliente, empresaRepresentadaId: string): Promise<SupabaseCliente> { // <--- PARÂMETRO ADICIONADO
+    const dataToSave = buildDataToSave(clienteData, empresaRepresentadaId);
 
     const { data, error } = await supabase
       .from('clientes')
@@ -109,40 +157,11 @@ export const clienteService = {
       throw error;
     }
 
-    return data;
+    return parseRow(data as unknown as Record<string, unknown>);
   },
 
-  async updateCliente(id: string, clienteData: Cliente, empresaRepresentadaId: string) { // <--- PARÂMETRO ADICIONADO
-    const dataToSave = {
-      empresa_representada_id: empresaRepresentadaId, // <--- ADICIONADO: ESSENCIAL
-      nome: clienteData.nome,
-      apelido: clienteData.apelido || null,
-      email: clienteData.emails?.[0] || null,
-      telefone: clienteData.telefones?.[0] || null,
-      cpf_cnpj: clienteData.cpfCnpj || null,
-      tipo: clienteData.tipo,
-      rg: clienteData.rg || null,
-      data_nascimento: clienteData.dataNascimento || null,
-      endereco: clienteData.endereco || null,
-      qualificacao_fiscal: clienteData.qualificacaoFiscal || {},
-      emails: clienteData.emails || [],
-      telefones: clienteData.telefones || [],
-      dados_pessoais: clienteData.dadosPessoais || {},
-      documentos: clienteData.documentos || [], // <--- VERIFIQUE O TIPO DA COLUNA NO DB
-      contatos: JSON.parse(JSON.stringify(clienteData.contatos || [])),
-      // Campos específicos para PJ
-      nome_fantasia: clienteData.dadosEmpresa?.nomeFantasia || null,
-      cnae: clienteData.dadosEmpresa?.cnae || null,
-      site: clienteData.dadosEmpresa?.site || null,
-      forma_atuacao: clienteData.dadosEmpresa?.formaAtuacao || null,
-      data_fundacao: clienteData.dadosEmpresa?.dataFundacao || null,
-      atividade_principal: clienteData.dadosEmpresa?.atividadePrincipal || null,
-      contato_empresa: clienteData.dadosEmpresa?.contatoEmpresa || null,
-      // Campo setor para integração CRM
-      setor_id: clienteData.setorId || null,
-      ativo: clienteData.ativo !== false,
-      updated_at: new Date().toISOString()
-    };
+  async updateCliente(id: string, clienteData: Cliente, empresaRepresentadaId: string): Promise<SupabaseCliente> { // <--- PARÂMETRO ADICIONADO
+    const dataToSave = buildDataToSave(clienteData, empresaRepresentadaId);
 
     const { data, error } = await supabase
       .from('clientes')
@@ -157,7 +176,7 @@ export const clienteService = {
       throw error;
     }
 
-    return data;
+    return parseRow(data as unknown as Record<string, unknown>);
   },
 
   async deleteCliente(id: string, empresaRepresentadaId: string) { // <--- PARÂMETRO ADICIONADO

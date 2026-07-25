@@ -44,8 +44,8 @@ export const clienteUtils = {
         descricao: (item as any).setor.descricao
       } : undefined,
       setorId: item.setor_id || undefined,
-      contatos: Array.isArray(item.contatos) ? item.contatos : [],
-      documentos: Array.isArray(item.documentos) ? item.documentos : [],
+      contatos: (Array.isArray(item.contatos) ? item.contatos : []) as Cliente['contatos'],
+      documentos: (Array.isArray(item.documentos) ? item.documentos : []) as Cliente['documentos'],
       ativo: item.ativo !== false,
       createdAt: new Date(item.created_at),
       updatedAt: item.updated_at ? new Date(item.updated_at) : undefined

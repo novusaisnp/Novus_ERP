@@ -892,20 +892,33 @@ export type Database = {
       }
       clientes: {
         Row: {
+          apelido: string | null
+          atividade_principal: string | null
           ativo: boolean
           bairro: string | null
           celular: string | null
           cep: string | null
           cidade: string | null
+          cnae: string | null
           cnpj: string | null
           complemento: string | null
+          contato_empresa: string | null
+          contatos: string | null
           cpf: string | null
+          cpf_cnpj: string | null
           created_at: string
+          dados_pessoais: string | null
+          data_fundacao: string | null
+          data_nascimento: string | null
           deleted_at: string | null
+          documentos: string | null
           email: string | null
           email_secundario: string | null
+          emails: string | null
           empresa_representada_id: string
+          endereco: string | null
           estado: string | null
+          forma_atuacao: string | null
           id: string
           inscricao_estadual: string | null
           inscricao_municipal: string | null
@@ -915,30 +928,48 @@ export type Database = {
           nome_fantasia: string | null
           numero: string | null
           observacoes: string | null
+          qualificacao_fiscal: string | null
           razao_social: string | null
           rg: string | null
+          setor_id: string | null
+          site: string | null
           telefone: string | null
           telefone_secundario: string | null
+          telefones: string | null
+          tipo: string | null
           tipo_pessoa: string | null
           updated_at: string
           website: string | null
           whatsapp: string | null
         }
         Insert: {
+          apelido?: string | null
+          atividade_principal?: string | null
           ativo?: boolean
           bairro?: string | null
           celular?: string | null
           cep?: string | null
           cidade?: string | null
+          cnae?: string | null
           cnpj?: string | null
           complemento?: string | null
+          contato_empresa?: string | null
+          contatos?: string | null
           cpf?: string | null
+          cpf_cnpj?: string | null
           created_at?: string
+          dados_pessoais?: string | null
+          data_fundacao?: string | null
+          data_nascimento?: string | null
           deleted_at?: string | null
+          documentos?: string | null
           email?: string | null
           email_secundario?: string | null
+          emails?: string | null
           empresa_representada_id: string
+          endereco?: string | null
           estado?: string | null
+          forma_atuacao?: string | null
           id?: string
           inscricao_estadual?: string | null
           inscricao_municipal?: string | null
@@ -948,30 +979,48 @@ export type Database = {
           nome_fantasia?: string | null
           numero?: string | null
           observacoes?: string | null
+          qualificacao_fiscal?: string | null
           razao_social?: string | null
           rg?: string | null
+          setor_id?: string | null
+          site?: string | null
           telefone?: string | null
           telefone_secundario?: string | null
+          telefones?: string | null
+          tipo?: string | null
           tipo_pessoa?: string | null
           updated_at?: string
           website?: string | null
           whatsapp?: string | null
         }
         Update: {
+          apelido?: string | null
+          atividade_principal?: string | null
           ativo?: boolean
           bairro?: string | null
           celular?: string | null
           cep?: string | null
           cidade?: string | null
+          cnae?: string | null
           cnpj?: string | null
           complemento?: string | null
+          contato_empresa?: string | null
+          contatos?: string | null
           cpf?: string | null
+          cpf_cnpj?: string | null
           created_at?: string
+          dados_pessoais?: string | null
+          data_fundacao?: string | null
+          data_nascimento?: string | null
           deleted_at?: string | null
+          documentos?: string | null
           email?: string | null
           email_secundario?: string | null
+          emails?: string | null
           empresa_representada_id?: string
+          endereco?: string | null
           estado?: string | null
+          forma_atuacao?: string | null
           id?: string
           inscricao_estadual?: string | null
           inscricao_municipal?: string | null
@@ -981,10 +1030,15 @@ export type Database = {
           nome_fantasia?: string | null
           numero?: string | null
           observacoes?: string | null
+          qualificacao_fiscal?: string | null
           razao_social?: string | null
           rg?: string | null
+          setor_id?: string | null
+          site?: string | null
           telefone?: string | null
           telefone_secundario?: string | null
+          telefones?: string | null
+          tipo?: string | null
           tipo_pessoa?: string | null
           updated_at?: string
           website?: string | null

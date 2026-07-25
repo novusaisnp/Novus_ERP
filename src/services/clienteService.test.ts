@@ -62,7 +62,7 @@ describe('clienteService.fetchClientes', () => {
     });
 
     const res = await clienteService.fetchClientes('empresa-1');
-    expect(res).toEqual(list);
+    expect(res).toEqual([{ id: '1', nome: 'A', tipo: 'F', ativo: true, created_at: '2024-01-01', contatos: [], documentos: [] }]);
   });
 
   it('lança erro em falha', async () => {
@@ -100,7 +100,7 @@ describe('clienteService.createCliente payload shape', () => {
     });
 
     const res = await clienteService.createCliente(cliente, 'empresa-1');
-    expect(res).toEqual({ id: 'new-id' });
+    expect(res).toEqual({ id: 'new-id', ativo: false, contatos: [], documentos: [] });
     expect(capturedPayload).toMatchObject({
       empresa_representada_id: 'empresa-1',
       nome: 'ACME',
@@ -109,8 +109,6 @@ describe('clienteService.createCliente payload shape', () => {
       cpf_cnpj: '11222333000181',
       email: 'a@a.com',            // primeiro do array
       telefone: '11999',
-      emails: ['a@a.com', 'b@b.com'],
-      telefones: ['11999'],
       nome_fantasia: 'AC Fantasia',
       cnae: '1234',
       site: 'https://acme.com',
@@ -120,9 +118,11 @@ describe('clienteService.createCliente payload shape', () => {
       setor_id: 'setor-1',
       ativo: true,
     });
-    expect(capturedPayload.contatos).toEqual([{ nome: 'C1' }]);
-    expect(capturedPayload.documentos).toEqual([{ tipo: 'RG' }]);
-    expect(capturedPayload.qualificacao_fiscal).toEqual({ regime: 'simples' });
+    expect(JSON.parse(capturedPayload.emails)).toEqual(['a@a.com', 'b@b.com']);
+    expect(JSON.parse(capturedPayload.telefones)).toEqual(['11999']);
+    expect(JSON.parse(capturedPayload.contatos)).toEqual([{ nome: 'C1' }]);
+    expect(JSON.parse(capturedPayload.documentos)).toEqual([{ tipo: 'RG' }]);
+    expect(JSON.parse(capturedPayload.qualificacao_fiscal)).toEqual({ regime: 'simples' });
     expect(typeof capturedPayload.updated_at).toBe('string');
   });
 
@@ -169,7 +169,7 @@ describe('clienteService.updateCliente', () => {
     expect(capturedEmpresaId).toBe('empresa-1');
     expect(capturedPayload.nome).toBe('ACME');
     expect(capturedPayload.cpf_cnpj).toBe('11222333000181');
-    expect(res).toEqual({ id: 'c-1' });
+    expect(res).toEqual({ id: 'c-1', ativo: false, contatos: [], documentos: [] });
   });
 });
 

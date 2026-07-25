@@ -99,6 +99,7 @@ describe('clienteUtils.transformSupabaseToCliente', () => {
   it('faz round-trip com colunas JSON populadas', () => {
     const item: SupabaseCliente = {
       id: 'c1',
+      empresa_representada_id: 'empresa-1',
       nome: 'ACME',
       apelido: 'AC',
       email: 'a@a.com',
