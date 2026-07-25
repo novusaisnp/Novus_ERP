@@ -1,27 +1,40 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Agencia, AgenciaInput, AgenciaFilters, AgenciaStats, SupabaseAgencia } from '@/types/agencia';
+import type { Database } from '@/integrations/supabase/types';
+import { Agencia, AgenciaInput, AgenciaFilters, AgenciaStats } from '@/types/agencia';
 
 console.log('[AgenciaService] Serviço de agências carregado');
 
-const mapSupabaseAgencia = (data: SupabaseAgencia): Agencia => ({
-  id: data.id,
-  banco_id: data.banco_id,
-  numero_agencia: data.numero_agencia,
-  descricao: data.descricao,
-  endereco: data.endereco || {},
-  telefone: data.telefone || undefined,
-  ativo: data.ativo,
-  deleted_at: data.deleted_at || undefined,
-  created_at: data.created_at,
-  updated_at: data.updated_at,
-  banco: data.bancos ? {
-    id: data.bancos.id,
-    codigo: data.bancos.codigo,
-    nome: data.bancos.nome,
-    sigla: data.bancos.sigla || undefined,
-  } : undefined,
-});
+// A tabela guarda numero_agencia/descricao (colunas restauradas em 20260725130000);
+// o mapeamento existe para isolar o resto do service do formato bruto da linha.
+const mapSupabaseAgencia = (data: Record<string, unknown>): Agencia => {
+  const bancos = data.bancos as { id: string; codigo: string | null; nome: string; sigla: string | null } | null;
+  return {
+    id: data.id as string,
+    banco_id: data.banco_id as string,
+    numero_agencia: (data.numero_agencia as string | null) ?? '',
+    descricao: (data.descricao as string | null) ?? '',
+    endereco: (data.endereco as Agencia['endereco']) ?? {},
+    telefone: (data.telefone as string | null) ?? undefined,
+    ativo: Boolean(data.ativo),
+    deleted_at: (data.deleted_at as string | null) ?? undefined,
+    created_at: data.created_at as string,
+    updated_at: data.updated_at as string,
+    banco: bancos ? {
+      id: bancos.id,
+      codigo: bancos.codigo ?? '',
+      nome: bancos.nome,
+      sigla: bancos.sigla ?? undefined,
+    } : undefined,
+  };
+};
+
+const getEmpresaIdAtual = async (): Promise<string> => {
+  const { data, error } = await supabase.rpc('get_user_empresa_id');
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('Empresa não identificada para o usuário atual.');
+  return data;
+};
 
 export const listarAgencias = async (filtros?: AgenciaFilters): Promise<Agencia[]> => {
   console.log('[AgenciaService] Listando agências com filtros:', filtros);
@@ -65,7 +78,7 @@ export const listarAgencias = async (filtros?: AgenciaFilters): Promise<Agencia[
   }
 
   console.log('[AgenciaService] Agências carregadas:', data?.length);
-  return (data || []).map(mapSupabaseAgencia);
+  return (data || []).map((row) => mapSupabaseAgencia(row as unknown as Record<string, unknown>));
 };
 
 export const criarAgencia = async (input: AgenciaInput): Promise<Agencia> => {
@@ -86,10 +99,14 @@ export const criarAgencia = async (input: AgenciaInput): Promise<Agencia> => {
     throw new Error('Não é possível vincular agência a um banco inativo');
   }
 
+  const empresaId = await getEmpresaIdAtual();
+
   const { data, error } = await supabase
     .from('agencias_bancarias')
     .insert({
+      empresa_representada_id: empresaId,
       banco_id: input.banco_id,
+      numero: input.numero_agencia,
       numero_agencia: input.numero_agencia,
       descricao: input.descricao,
       endereco: input.endereco || {},
@@ -116,7 +133,7 @@ export const criarAgencia = async (input: AgenciaInput): Promise<Agencia> => {
   }
 
   console.log('[AgenciaService] Agência criada:', data.id);
-  return mapSupabaseAgencia(data);
+  return mapSupabaseAgencia(data as unknown as Record<string, unknown>);
 };
 
 export const atualizarAgencia = async (id: string, input: Partial<AgenciaInput>): Promise<Agencia> => {
@@ -139,10 +156,13 @@ export const atualizarAgencia = async (id: string, input: Partial<AgenciaInput>)
     }
   }
 
-  const updateData: any = {};
-  
+  const updateData: Database['public']['Tables']['agencias_bancarias']['Update'] = {};
+
   if (input.banco_id) updateData.banco_id = input.banco_id;
-  if (input.numero_agencia) updateData.numero_agencia = input.numero_agencia;
+  if (input.numero_agencia) {
+    updateData.numero_agencia = input.numero_agencia;
+    updateData.numero = input.numero_agencia;
+  }
   if (input.descricao) updateData.descricao = input.descricao;
   if (input.endereco !== undefined) updateData.endereco = input.endereco;
   if (input.telefone !== undefined) updateData.telefone = input.telefone;
@@ -172,7 +192,7 @@ export const atualizarAgencia = async (id: string, input: Partial<AgenciaInput>)
   }
 
   console.log('[AgenciaService] Agência atualizada:', data.id);
-  return mapSupabaseAgencia(data);
+  return mapSupabaseAgencia(data as unknown as Record<string, unknown>);
 };
 
 export const arquivarAgencia = async (id: string): Promise<void> => {
@@ -254,5 +274,5 @@ export const buscarAgenciasPorBanco = async (bancoId: string): Promise<Agencia[]
   }
 
   console.log('[AgenciaService] Agências encontradas:', data?.length);
-  return (data || []).map(mapSupabaseAgencia);
+  return (data || []).map((row) => mapSupabaseAgencia(row as unknown as Record<string, unknown>));
 };

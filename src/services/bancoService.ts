@@ -1,6 +1,14 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { SupabaseBanco, Banco, BancoInput, BancoBrasilAPI } from '@/types/banco';
+
+const getEmpresaIdAtual = async (): Promise<string> => {
+  const { data, error } = await supabase.rpc('get_user_empresa_id');
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('Empresa não identificada para o usuário atual.');
+  return data;
+};
 
 console.log('[Bancos] Service carregado');
 
@@ -145,9 +153,12 @@ export const criarBanco = async (input: BancoInput): Promise<Banco> => {
   try {
     console.log('[Bancos] Criando banco:', input);
 
+    const empresaId = await getEmpresaIdAtual();
+
     const { data, error } = await supabase
       .from('bancos')
       .insert([{
+        empresa_representada_id: empresaId,
         codigo: input.codigo,
         nome: input.nome,
         sigla: input.sigla || null,
@@ -176,7 +187,7 @@ export const atualizarBanco = async (id: string, input: Partial<BancoInput>): Pr
   try {
     console.log('[Bancos] Atualizando banco:', id, input);
 
-    const updateData: any = {
+    const updateData: Database['public']['Tables']['bancos']['Update'] = {
       ...input,
       sigla: input.sigla || null,
     };

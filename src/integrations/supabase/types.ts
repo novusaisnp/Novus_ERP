@@ -19,13 +19,16 @@ export type Database = {
           ativo: boolean | null
           banco_id: string
           created_at: string
+          deleted_at: string | null
+          descricao: string | null
           digito: string | null
           email: string | null
           empresa_representada_id: string
-          endereco: string | null
+          endereco: Json | null
           id: string
           nome: string | null
           numero: string
+          numero_agencia: string | null
           telefone: string | null
           updated_at: string
         }
@@ -33,13 +36,16 @@ export type Database = {
           ativo?: boolean | null
           banco_id: string
           created_at?: string
+          deleted_at?: string | null
+          descricao?: string | null
           digito?: string | null
           email?: string | null
           empresa_representada_id: string
-          endereco?: string | null
+          endereco?: Json | null
           id?: string
           nome?: string | null
           numero: string
+          numero_agencia?: string | null
           telefone?: string | null
           updated_at?: string
         }
@@ -47,13 +53,16 @@ export type Database = {
           ativo?: boolean | null
           banco_id?: string
           created_at?: string
+          deleted_at?: string | null
+          descricao?: string | null
           digito?: string | null
           email?: string | null
           empresa_representada_id?: string
-          endereco?: string | null
+          endereco?: Json | null
           id?: string
           nome?: string | null
           numero?: string
+          numero_agencia?: string | null
           telefone?: string | null
           updated_at?: string
         }
@@ -412,6 +421,8 @@ export type Database = {
           logo_url: string | null
           nome: string
           nome_curto: string | null
+          pais: string
+          sigla: string | null
           site: string | null
           updated_at: string
         }
@@ -426,6 +437,8 @@ export type Database = {
           logo_url?: string | null
           nome: string
           nome_curto?: string | null
+          pais?: string
+          sigla?: string | null
           site?: string | null
           updated_at?: string
         }
@@ -440,6 +453,8 @@ export type Database = {
           logo_url?: string | null
           nome?: string
           nome_curto?: string | null
+          pais?: string
+          sigla?: string | null
           site?: string | null
           updated_at?: string
         }
