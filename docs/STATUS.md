@@ -5,26 +5,25 @@ trabalho relevante — se estiver desatualizado, ele apodrece como `SYSTEM_AUDIT
 já apodreceram. Leia primeiro [`../CLAUDE.md`](../CLAUDE.md) para contexto de padrões estáveis;
 este arquivo é sobre o que está pendente **agora**.
 
-## 🔴 Ação pendente crítica
+## ✅ Correção de segurança implantada (2026-07-26)
 
-**Correção de vazamento entre empresas commitada, mas NÃO implantada em produção.**
+**Vazamento entre empresas em `sync-webhook`/`retry-failed-syncs` — corrigido e em produção.**
 
-- Commit: `83d639a` (branch `main`, já no GitHub).
-- O quê: `supabase/functions/sync-webhook/index.ts` (endpoint real de ingestão de satélites,
-  autenticado por HMAC por empresa) e `supabase/functions/retry-failed-syncs/index.ts` faziam
-  busca/gravação de `clientes`/`vendas`/`contratos`/`contas_receber` **sem filtrar por
-  `empresa_representada_id`**. Duas empresas com CPF ou número de documento/venda/contrato
-  coincidentes podiam ter uma sobrescrevendo o registro da outra via webhook assinado.
-- Corrigido no código: toda busca e toda escrita nos dois arquivos agora está escopada por
-  empresa. Ver mensagem do commit `83d639a` para detalhe completo.
-- **Falta**: `git push` não implanta edge functions. É preciso rodar, manualmente e com
-  confirmação do usuário (ação em sistema ao vivo):
-  ```
-  supabase functions deploy sync-webhook
-  supabase functions deploy retry-failed-syncs
-  ```
+- Commit: `83d639a` (código). Deploy: `supabase functions deploy sync-webhook` e
+  `supabase functions deploy retry-failed-syncs`, ambos confirmados no projeto real
+  (`lrkebsznehpuascgqbri`) em 2026-07-26. Smoke check pós-deploy: `OPTIONS` em
+  `https://lrkebsznehpuascgqbri.supabase.co/functions/v1/sync-webhook` → `200 OK`.
+- O que era: `sync-webhook` (endpoint real de ingestão de satélites, autenticado por HMAC por
+  empresa) e `retry-failed-syncs` faziam busca/gravação de
+  `clientes`/`vendas`/`contratos`/`contas_receber` **sem filtrar por `empresa_representada_id`**.
+  Duas empresas com CPF ou número de documento/venda/contrato coincidentes podiam ter uma
+  sobrescrevendo o registro da outra via webhook assinado. Detalhe completo na mensagem do commit
+  `83d639a`.
 - Sem cobertura de typecheck/teste automatizado nesses arquivos (ver `CLAUDE.md` — pontos cegos
-  conhecidos). Verificado só por leitura cuidadosa + `eslint` limpo.
+  conhecidos). Verificado por leitura cuidadosa + `eslint` limpo + smoke check manual pós-deploy —
+  não há teste automatizado de regressão para isso ainda. Se algo relacionado a ingestão de
+  satélite se comportar estranho, comece por aqui.
+- **Sem ação pendente crítica no momento.**
 
 ## Saúde técnica (verificado ao vivo em 2026-07-26, não de memória)
 
@@ -60,7 +59,7 @@ e não é seguro/rápido corrigir na hora, ele é anotado aqui com endereço exa
 vez de esquecido. **Vazamento real (isolamento) é corrigido assim que identificado, não adiado —
 essa é a regra desde 2026-07-25.**
 
-- ✅ Resolvido em código, deploy pendente: ver seção "Ação pendente crítica" acima.
+- ✅ Resolvido em código e implantado: ver seção acima.
 - Nenhum outro item aberto no momento desta atualização.
 
 ## Decisões de identidade visual/UX em aberto
