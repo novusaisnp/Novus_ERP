@@ -1,5 +1,10 @@
 # Welcome to your Lovable project
 
+## Comece por aqui
+
+- **Contexto e padrões do projeto:** [`CLAUDE.md`](./CLAUDE.md)
+- **Estado atual e pendências (inclusive ações críticas):** [`docs/STATUS.md`](./docs/STATUS.md)
+
 ## Project info
 
 **URL**: https://lovable.dev/projects/fa228a7b-84a2-46ec-a4ba-ea16c3c3e172

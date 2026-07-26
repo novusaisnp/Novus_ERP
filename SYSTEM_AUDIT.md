@@ -1,3 +1,7 @@
+> ⚠️ **DESATUALIZADO.** Este documento é de 2026-07-13 e não reflete o estado real do projeto
+> (schema, typecheck, arquitetura mudaram bastante desde então). Não confie nele sem
+> re-verificar contra o código. Estado atual: [`docs/STATUS.md`](./docs/STATUS.md).
+
 # SYSTEM AUDIT — NOVUS ERP Modular
 
 **Data:** 2026-07-13

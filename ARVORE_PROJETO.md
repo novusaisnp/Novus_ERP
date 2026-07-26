@@ -1,3 +1,7 @@
+> ⚠️ **DESATUALIZADO.** Gerado em 2026-07-11, várias tabelas/arquivos mudaram desde então
+> (rebuild de schema em 2026-07-10, migrações subsequentes, novos services). Não confie nele
+> sem re-verificar. Estado atual: [`docs/STATUS.md`](./docs/STATUS.md).
+
 # Árvore do Projeto — NOVUS ERP MODULAR
 
 _Gerado em 2026-07-11T01:57:06Z — exclui `node_modules`, `dist`, `.git`, `coverage`._
