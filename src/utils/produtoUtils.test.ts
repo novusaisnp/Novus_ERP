@@ -106,7 +106,7 @@ describe('produtoUtils.transformSupabaseToProduto', () => {
   });
 
   it('aplica defaults quando campos ausentes', () => {
-    const p = produtoUtils.transformSupabaseToProduto({ id: 'p2', nome: 'Y' } as any);
+    const p = produtoUtils.transformSupabaseToProduto({ id: 'p2', nome: 'Y' } as unknown as SupabaseProduto);
     expect(p.descricao).toBe('');
     expect(p.preco_venda).toBe(0);
     expect(p.estoque_atual).toBe(0);
@@ -116,7 +116,7 @@ describe('produtoUtils.transformSupabaseToProduto', () => {
   });
 
   it('mantém ativo=false explícito', () => {
-    const p = produtoUtils.transformSupabaseToProduto({ id: 'p3', nome: 'Z', ativo: false } as any);
+    const p = produtoUtils.transformSupabaseToProduto({ id: 'p3', nome: 'Z', ativo: false } as unknown as SupabaseProduto);
     expect(p.ativo).toBe(false);
   });
 });

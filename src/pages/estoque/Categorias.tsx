@@ -21,7 +21,7 @@ import {
   useUpdateCategoria,
   useDeleteCategoria,
 } from '@/hooks/useCategorias';
-import type { Categoria } from '@/services/categoriaService';
+import type { Categoria, CategoriaInsert } from '@/services/categoriaService';
 
 const Categorias: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -67,7 +67,7 @@ const Categorias: React.FC = () => {
     }
   };
 
-  const handleFormSubmit = (data: any) => {
+  const handleFormSubmit = (data: CategoriaInsert) => {
     if (selectedCategoria) {
       console.log('[Categorias] Atualizando categoria:', selectedCategoria.id);
       updateMutation.mutate({
@@ -144,17 +144,16 @@ const Categorias: React.FC = () => {
                 </TableRow>
               ) : (
                 filteredCategorias.map((categoria) => {
-                  const c = categoria as any;
-                  const temReceita = !!c.plano_conta_receita_id;
-                  const temDespesa = !!c.plano_conta_despesa_id;
+                  const temReceita = !!categoria.plano_conta_receita_id;
+                  const temDespesa = !!categoria.plano_conta_despesa_id;
                   const completa = temReceita && temDespesa;
                   return (
                     <TableRow key={categoria.id}>
                       <TableCell className="font-medium">{categoria.nome}</TableCell>
                       <TableCell>{categoria.descricao || '-'}</TableCell>
                       <TableCell>
-                        <Badge variant={c.ativo ? 'default' : 'secondary'}>
-                          {c.ativo ? 'Ativa' : 'Rascunho'}
+                        <Badge variant={categoria.ativo ? 'default' : 'secondary'}>
+                          {categoria.ativo ? 'Ativa' : 'Rascunho'}
                         </Badge>
                       </TableCell>
                       <TableCell>

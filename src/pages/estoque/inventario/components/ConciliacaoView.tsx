@@ -55,8 +55,9 @@ export const ConciliacaoView: React.FC<Props> = ({ inventarioId, onVoltar }) => 
     try {
       await estoqueService.atualizarContagem(itemId, n);
       qc.invalidateQueries({ queryKey: ['estoque', 'inventario-itens', inventarioId] });
-    } catch (e: any) {
-      toast({ title: 'Erro ao salvar contagem', description: e?.message, variant: 'destructive' });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : undefined;
+      toast({ title: 'Erro ao salvar contagem', description: message, variant: 'destructive' });
     }
   };
 
@@ -69,8 +70,9 @@ export const ConciliacaoView: React.FC<Props> = ({ inventarioId, onVoltar }) => 
       });
       qc.invalidateQueries({ queryKey: ['estoque'] });
       onVoltar();
-    } catch (e: any) {
-      toast({ title: 'Erro ao conciliar', description: e?.message, variant: 'destructive' });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : undefined;
+      toast({ title: 'Erro ao conciliar', description: message, variant: 'destructive' });
     }
   };
 

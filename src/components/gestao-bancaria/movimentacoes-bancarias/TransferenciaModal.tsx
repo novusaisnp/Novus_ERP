@@ -10,13 +10,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { useMovimentacoesBancarias } from '@/hooks/useMovimentacoesBancarias';
 import { TransferenciaBancaria } from '@/types/movimentacoesBancarias';
+import type { ContaBancaria } from '@/types/contaBancaria';
 import { ArrowRightLeft, ArrowRight } from 'lucide-react';
 import { currencyUtils } from '@/utils/currencyUtils';
 
 interface ContaOption {
   value: string;
   label: string;
-  conta: any;
+  conta: ContaBancaria;
 }
 
 interface TransferenciaModalProps {
@@ -70,7 +71,8 @@ export function TransferenciaModal({
     }
     // Bloqueio de saldo insuficiente quando a conta origem não permite negativo
     const origem = contasOptions.find((c) => c.value === formData.conta_origem_id);
-    const permitirNegativo = origem?.conta?.configuracoes?.permitir_saldo_negativo === true;
+    const origemConfig = origem?.conta?.configuracoes as { permitir_saldo_negativo?: boolean } | null | undefined;
+    const permitirNegativo = origemConfig?.permitir_saldo_negativo === true;
     if (origem && !permitirNegativo && formData.valor > Number(origem.conta.saldo_atual ?? 0)) {
       toast.error('Saldo insuficiente na conta de origem para esta transferência.');
       return;
@@ -99,7 +101,7 @@ export function TransferenciaModal({
     onClose();
   };
 
-  const updateFormData = (field: keyof TransferenciaBancaria, value: any) => {
+  const updateFormData = (field: keyof TransferenciaBancaria, value: TransferenciaBancaria[keyof TransferenciaBancaria]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,

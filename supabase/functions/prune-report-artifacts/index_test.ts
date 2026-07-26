@@ -1,6 +1,7 @@
 // P7.1 — Testes Deno para prune-report-artifacts.
 // Cobre: elegível, não-elegível, idempotência, storage 404, falha DB.
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2.110.2";
 import { pruneOnce } from "./index.ts";
 
 interface RunRow {
@@ -21,8 +22,7 @@ interface StorageBehavior {
 function buildMock(rows: RunRow[], storage: StorageBehavior, opts: { dbFail?: Set<string> } = {}) {
   const state = { rows };
 
-  // deno-lint-ignore no-explicit-any
-  const from = (table: string): any => {
+  const from = (table: string) => {
     if (table !== "report_schedule_runs") throw new Error("unexpected table " + table);
     // select builder
     const selectBuilder = () => {
@@ -73,11 +73,10 @@ function buildMock(rows: RunRow[], storage: StorageBehavior, opts: { dbFail?: Se
     };
   };
 
-  // deno-lint-ignore no-explicit-any
-  const admin: any = {
+  const admin = {
     from,
     storage: { from: (_b: string) => storage },
-  };
+  } as unknown as SupabaseClient;
   return { admin, state };
 }
 

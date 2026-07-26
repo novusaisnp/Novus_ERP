@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import type { Database } from '@/integrations/supabase/types';
+import type { Database, Json } from '@/integrations/supabase/types';
 import { ContaBancaria, ContaBancariaInput, ContaBancariaFilters, ContaBancariaEstatisticas } from '@/types/contaBancaria';
 
 type ContaBancariaUpdate = Database['public']['Tables']['contas_bancarias']['Update'];
@@ -38,7 +38,7 @@ const mapRowToConta = (row: Record<string, unknown>): ContaBancaria => ({
   data_encerramento: row.data_encerramento as string | null,
   status: row.status as string,
   conta_cofre: Boolean(row.conta_cofre),
-  configuracoes: row.configuracoes,
+  configuracoes: row.configuracoes as ContaBancaria['configuracoes'],
   observacoes: row.observacoes as string | null,
   ativo: Boolean(row.ativo),
   created_at: row.created_at as string,
@@ -178,11 +178,11 @@ export const criarContaBancaria = async (input: ContaBancariaInput): Promise<Con
     data_abertura: input.data_abertura,
     data_encerramento: input.data_encerramento,
     status: input.status || 'ATIVA',
-    configuracoes: input.configuracoes || {
+    configuracoes: (input.configuracoes || {
       enviar_alertas: true,
       controlar_limite: true,
       permitir_saldo_negativo: false
-    },
+    }) as unknown as Json,
     observacoes: input.observacoes,
     conta_cofre: input.conta_cofre,
     // Para contas cofre, agencia_id pode ser null
@@ -226,7 +226,7 @@ export const atualizarContaBancaria = async (id: string, input: Partial<ContaBan
   if (input.data_abertura !== undefined) updateData.data_abertura = input.data_abertura;
   if (input.data_encerramento !== undefined) updateData.data_encerramento = input.data_encerramento;
   if (input.status !== undefined) updateData.status = input.status;
-  if (input.configuracoes !== undefined) updateData.configuracoes = input.configuracoes;
+  if (input.configuracoes !== undefined) updateData.configuracoes = input.configuracoes as unknown as Json;
   if (input.observacoes !== undefined) updateData.observacoes = input.observacoes;
   if (input.conta_cofre !== undefined) updateData.conta_cofre = input.conta_cofre;
 

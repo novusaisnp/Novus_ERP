@@ -1,8 +1,9 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { uiStatusPagarToDb } from '@/lib/statusMappers';
+import type { ContaPagarFilters } from '@/types/contasPagar';
 
-export const buildContasPagarQuery = (filtros: any = {}) => {
+export const buildContasPagarQuery = (filtros: ContaPagarFilters = {}) => {
   
   let query = supabase
     .from('contas_pagar')
@@ -124,7 +125,7 @@ export const getContaPagarByIdQuery = (id: string) => {
     .single();
 };
 
-export const getEstatisticasQuery = (filtros: any = {}) => {
+export const getEstatisticasQuery = (filtros: ContaPagarFilters = {}) => {
   
   let query = supabase
     .from('contas_pagar')

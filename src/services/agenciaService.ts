@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import type { Database } from '@/integrations/supabase/types';
+import type { Database, Json } from '@/integrations/supabase/types';
 import { Agencia, AgenciaInput, AgenciaFilters, AgenciaStats } from '@/types/agencia';
 
 console.log('[AgenciaService] Serviço de agências carregado');
@@ -109,7 +109,7 @@ export const criarAgencia = async (input: AgenciaInput): Promise<Agencia> => {
       numero: input.numero_agencia,
       numero_agencia: input.numero_agencia,
       descricao: input.descricao,
-      endereco: input.endereco || {},
+      endereco: (input.endereco || {}) as unknown as Json,
       telefone: input.telefone,
       ativo: input.ativo !== undefined ? input.ativo : true,
     })
@@ -164,7 +164,7 @@ export const atualizarAgencia = async (id: string, input: Partial<AgenciaInput>)
     updateData.numero = input.numero_agencia;
   }
   if (input.descricao) updateData.descricao = input.descricao;
-  if (input.endereco !== undefined) updateData.endereco = input.endereco;
+  if (input.endereco !== undefined) updateData.endereco = input.endereco as unknown as Json;
   if (input.telefone !== undefined) updateData.telefone = input.telefone;
   if (input.ativo !== undefined) updateData.ativo = input.ativo;
 

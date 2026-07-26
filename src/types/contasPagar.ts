@@ -123,8 +123,8 @@ export interface SupabaseContaPagar {
   data_competencia: string | null;
   situacao: string;
   observacoes: string | null;
-  anexos: any;
-  tags: any;
+  anexos: unknown;
+  tags: unknown;
   periodicidade: string | null;
   recorrente: boolean;
   conta_origem_id: string | null;

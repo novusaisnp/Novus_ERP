@@ -19,12 +19,17 @@ function parseHexColor(hex: string | null | undefined): [number, number, number]
 }
 
 export async function exportPdfServer(input: PdfExportInput): Promise<Uint8Array> {
-  // deno-lint-ignore no-explicit-any
-  const jspdfMod: any = await import("npm:jspdf@2.5.2");
-  // deno-lint-ignore no-explicit-any
-  const autotableMod: any = await import("npm:jspdf-autotable@3.8.4");
-  const jsPDF = jspdfMod.jsPDF ?? jspdfMod.default;
-  const autoTable = autotableMod.default ?? autotableMod;
+  interface JsPdfInstance {
+    setFontSize: (n: number) => void;
+    setTextColor: (...args: number[]) => void;
+    text: (text: string, x: number, y: number) => void;
+    addImage: (uri: string, ext: string, x: number, y: number, w: number, h: number) => void;
+    output: (type: string) => unknown;
+  }
+  const jspdfMod = (await import("npm:jspdf@2.5.2")) as Record<string, unknown>;
+  const autotableMod = (await import("npm:jspdf-autotable@3.8.4")) as Record<string, unknown>;
+  const jsPDF = (jspdfMod.jsPDF ?? jspdfMod.default) as new (opts: unknown) => JsPdfInstance;
+  const autoTable = (autotableMod.default ?? autotableMod) as (doc: unknown, opts: unknown) => void;
 
   const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
   const branding = input.branding ?? null;

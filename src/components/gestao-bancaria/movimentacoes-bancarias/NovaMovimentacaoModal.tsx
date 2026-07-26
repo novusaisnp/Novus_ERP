@@ -14,7 +14,7 @@ import { ArrowDownLeft, ArrowUpRight, Settings } from 'lucide-react';
 interface ContaOption {
   value: string;
   label: string;
-  conta: any;
+  conta: unknown;
 }
 
 interface NovaMovimentacaoModalProps {
@@ -107,7 +107,7 @@ export function NovaMovimentacaoModal({
     onClose();
   };
 
-  const updateFormData = (field: keyof MovimentacaoBancariaInput, value: any) => {
+  const updateFormData = (field: keyof MovimentacaoBancariaInput, value: MovimentacaoBancariaInput[keyof MovimentacaoBancariaInput]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,

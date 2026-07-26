@@ -5,7 +5,7 @@ export interface EnderecoAgencia {
   cidade?: string;
   estado?: string;
   cep?: string;
-  [key: string]: any; // Index signature para compatibilidade com Json
+  [key: string]: unknown; // Index signature para compatibilidade com Json
 }
 
 export interface Agencia {
@@ -41,7 +41,7 @@ export interface SupabaseAgencia {
   banco_id: string;
   numero_agencia: string;
   descricao: string;
-  endereco: any;
+  endereco: unknown;
   telefone: string | null;
   ativo: boolean;
   deleted_at: string | null;

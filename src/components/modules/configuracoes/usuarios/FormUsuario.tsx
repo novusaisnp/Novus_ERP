@@ -42,7 +42,7 @@ const ConfiguracoesUsuarios: React.FC = () => {
       qc.invalidateQueries({ queryKey: ['config-usuarios'] });
       toast({ title: 'Status atualizado' });
     },
-    onError: (e: any) => toast({ title: 'Erro', description: e?.message || 'Falha', variant: 'destructive' }),
+    onError: (e: Error) => toast({ title: 'Erro', description: e?.message || 'Falha', variant: 'destructive' }),
   });
 
   const setPerfilUsuario = useMutation({
@@ -51,7 +51,7 @@ const ConfiguracoesUsuarios: React.FC = () => {
       qc.invalidateQueries({ queryKey: ['config-usuarios'] });
       toast({ title: 'Perfil de acesso atualizado' });
     },
-    onError: (e: any) => toast({ title: 'Erro', description: e?.message || 'Falha', variant: 'destructive' }),
+    onError: (e: Error) => toast({ title: 'Erro', description: e?.message || 'Falha', variant: 'destructive' }),
   });
 
   const ativos = usuarios.filter((u) => u.ativo).length;

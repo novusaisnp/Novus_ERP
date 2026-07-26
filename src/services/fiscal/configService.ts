@@ -18,18 +18,18 @@ export const fetchConfiguracoesFiscais = async (): Promise<ConfiguracaoFiscal[]>
   
   if (!data) return [];
   
-  return data.map((item: any) => ({
+  return data.map((item) => ({
     id: item.id,
     empresaRepresentadaId: item.empresa_representada_id,
-    ambiente: item.ambiente,
+    ambiente: item.ambiente as ConfiguracaoFiscal['ambiente'],
     certificadoDigital: item.certificado_digital,
     senhaCertificado: item.senha_certificado,
-    regimeTributario: item.regime_tributario,
-    aliquotaIcmsPadrao: parseFloat(item.aliquota_icms_padrao || '0'),
-    aliquotaIpiPadrao: parseFloat(item.aliquota_ipi_padrao || '0'),
-    aliquotaPisPadrao: parseFloat(item.aliquota_pis_padrao || '0'),
-    aliquotaCofinsPadrao: parseFloat(item.aliquota_cofins_padrao || '0'),
-    aliquotaIssPadrao: parseFloat(item.aliquota_iss_padrao || '0'),
+    regimeTributario: item.regime_tributario as ConfiguracaoFiscal['regimeTributario'],
+    aliquotaIcmsPadrao: Number(item.aliquota_icms_padrao || 0),
+    aliquotaIpiPadrao: Number(item.aliquota_ipi_padrao || 0),
+    aliquotaPisPadrao: Number(item.aliquota_pis_padrao || 0),
+    aliquotaCofinsPadrao: Number(item.aliquota_cofins_padrao || 0),
+    aliquotaIssPadrao: Number(item.aliquota_iss_padrao || 0),
     serieNfe: item.serie_nfe,
     numeroUltimoNfe: item.numero_ultimo_nfe,
     serieNfce: item.serie_nfce,
@@ -73,19 +73,19 @@ export const createConfiguracaoFiscal = async (config: Omit<ConfiguracaoFiscal, 
     throw new Error('Nenhum dados retornado após inserção');
   }
   
-  const item = data as any;
+  const item = data;
   return {
     id: item.id,
     empresaRepresentadaId: item.empresa_representada_id,
-    ambiente: item.ambiente,
+    ambiente: item.ambiente as ConfiguracaoFiscal['ambiente'],
     certificadoDigital: item.certificado_digital,
     senhaCertificado: item.senha_certificado,
-    regimeTributario: item.regime_tributario,
-    aliquotaIcmsPadrao: parseFloat(item.aliquota_icms_padrao || '0'),
-    aliquotaIpiPadrao: parseFloat(item.aliquota_ipi_padrao || '0'),
-    aliquotaPisPadrao: parseFloat(item.aliquota_pis_padrao || '0'),
-    aliquotaCofinsPadrao: parseFloat(item.aliquota_cofins_padrao || '0'),
-    aliquotaIssPadrao: parseFloat(item.aliquota_iss_padrao || '0'),
+    regimeTributario: item.regime_tributario as ConfiguracaoFiscal['regimeTributario'],
+    aliquotaIcmsPadrao: Number(item.aliquota_icms_padrao || 0),
+    aliquotaIpiPadrao: Number(item.aliquota_ipi_padrao || 0),
+    aliquotaPisPadrao: Number(item.aliquota_pis_padrao || 0),
+    aliquotaCofinsPadrao: Number(item.aliquota_cofins_padrao || 0),
+    aliquotaIssPadrao: Number(item.aliquota_iss_padrao || 0),
     serieNfe: item.serie_nfe,
     numeroUltimoNfe: item.numero_ultimo_nfe,
     serieNfce: item.serie_nfce,

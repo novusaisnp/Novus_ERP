@@ -71,7 +71,7 @@ const Contratos: React.FC = () => {
               <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="__ALL__">Todos</SelectItem>
-                {(clientes as any[]).filter((c) => c.id).map((c: any) => (
+                {clientes.filter((c) => c.id).map((c) => (
                   <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
                 ))}
               </SelectContent>

@@ -1,3 +1,9 @@
+export interface ConfiguracoesContaBancaria {
+  enviar_alertas?: boolean;
+  controlar_limite?: boolean;
+  permitir_saldo_negativo?: boolean;
+  [key: string]: unknown;
+}
 
 export interface ContaBancaria {
   id: string;
@@ -16,7 +22,7 @@ export interface ContaBancaria {
   data_encerramento?: string | null;
   status: string;
   conta_cofre: boolean;
-  configuracoes?: any | null; // Mudança para aceitar Json do Supabase
+  configuracoes?: ConfiguracoesContaBancaria | null; // Mudança para aceitar Json do Supabase
   observacoes?: string | null;
   ativo: boolean;
   created_at: string;
@@ -48,7 +54,7 @@ export interface ContaBancariaInput {
   data_encerramento?: string | null;
   status?: string;
   conta_cofre: boolean;
-  configuracoes?: any | null; // Mudança para aceitar Json do Supabase
+  configuracoes?: ConfiguracoesContaBancaria | null; // Mudança para aceitar Json do Supabase
   observacoes?: string | null;
 }
 

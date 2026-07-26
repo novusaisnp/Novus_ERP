@@ -1,15 +1,13 @@
 // Registry de templates transacionais.
 // P4.2C: registrado como dormente. Ativação real só com domínio validado + EmailProvider habilitado.
 
-// deno-lint-ignore no-explicit-any
-export type TemplateComponent = (props: any) => unknown;
+export type TemplateComponent = (props: Record<string, unknown>) => unknown;
 
 export interface TemplateEntry {
   component: TemplateComponent;
   subject: string;
   displayName?: string;
-  // deno-lint-ignore no-explicit-any
-  previewData?: Record<string, any>;
+  previewData?: Record<string, unknown>;
 }
 
 import { template as reportScheduledDelivery } from "./report-scheduled-delivery.tsx";
