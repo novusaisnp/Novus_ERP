@@ -11,7 +11,7 @@ export const sociosRepresentantesService = {
       .is('deleted_at', null)
       .order('nome');
     if (error) throw error;
-    return data || [];
+    return (data || []) as unknown as SocioRepresentante[];
   },
 
   async listAvailableForUser(empresaId: string): Promise<SocioRepresentante[]> {
@@ -28,7 +28,7 @@ export const sociosRepresentantesService = {
       .select('socio_id')
       .not('socio_id', 'is', null);
     const usedIds = new Set((linked || []).map((u: any) => u.socio_id));
-    return (socios || []).filter((s: any) => !usedIds.has(s.id));
+    return ((socios || []).filter((s: any) => !usedIds.has(s.id))) as unknown as SocioRepresentante[];
   },
 
   async save(input: SocioRepresentante): Promise<SocioRepresentante> {
@@ -53,7 +53,7 @@ export const sociosRepresentantesService = {
         .select('*')
         .single();
       if (error) throw error;
-      return data;
+      return data as unknown as SocioRepresentante;
     }
     const { data, error } = await supabase
       .from('socios_representantes')
@@ -61,7 +61,7 @@ export const sociosRepresentantesService = {
       .select('*')
       .single();
     if (error) throw error;
-    return data;
+    return data as unknown as SocioRepresentante;
   },
 
   async softDelete(id: string): Promise<void> {

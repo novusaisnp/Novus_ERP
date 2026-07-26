@@ -126,7 +126,7 @@ export const usuarioService = {
       ...u,
       role: roles[u.user_id] || '-',
       pessoa_nome: u.colaborador_id ? colabMap[u.colaborador_id] : u.socio_id ? socioMap[u.socio_id] : null,
-    }));
+    })) as unknown as UsuarioComPessoa[];
   },
 
   async toggleAtivo(id: string, ativo: boolean): Promise<void> {
@@ -211,13 +211,11 @@ export const usuarioService = {
   async createUsuario(usuarioData: Usuario) {
     const dataToSave = {
       empresa_representada_id: usuarioData.empresaRepresentadaId,
-      nome_completo: usuarioData.nomeCompleto,
-      cpf: usuarioData.cpf,
+      nome: usuarioData.nomeCompleto,
       email: usuarioData.email,
       perfil_id: usuarioData.perfilId,
       colaborador_id: usuarioData.colaboradorId || null,
       ativo: usuarioData.ativo,
-      ultimo_login: usuarioData.ultimoLogin?.toISOString(),
       updated_at: new Date().toISOString()
     };
 
@@ -238,13 +236,11 @@ export const usuarioService = {
   async updateUsuario(id: string, usuarioData: Usuario) {
     const dataToSave = {
       empresa_representada_id: usuarioData.empresaRepresentadaId,
-      nome_completo: usuarioData.nomeCompleto,
-      cpf: usuarioData.cpf,
+      nome: usuarioData.nomeCompleto,
       email: usuarioData.email,
       perfil_id: usuarioData.perfilId,
       colaborador_id: usuarioData.colaboradorId || null,
       ativo: usuarioData.ativo,
-      ultimo_login: usuarioData.ultimoLogin?.toISOString(),
       updated_at: new Date().toISOString()
     };
 

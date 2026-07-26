@@ -2,6 +2,13 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Departamento } from '@/types/rh';
 
+const getEmpresaIdAtual = async (): Promise<string> => {
+  const { data, error } = await supabase.rpc('get_user_empresa_id');
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('Empresa não identificada para o usuário atual.');
+  return data;
+};
+
 export const departamentoService = {
   async fetchDepartamentos() {
     const { data, error } = await supabase
@@ -19,8 +26,10 @@ export const departamentoService = {
   },
 
   async createDepartamento(departamentoData: Departamento) {
-    
+    const empresaId = await getEmpresaIdAtual();
+
     const dataToSave = {
+      empresa_representada_id: empresaId,
       nome: departamentoData.nome,
       descricao: departamentoData.descricao || null,
       responsavel_id: (departamentoData as any).responsavelId || null,

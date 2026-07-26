@@ -1925,6 +1925,7 @@ export type Database = {
       descontos_padrao: {
         Row: {
           ativo: boolean
+          codigo: string | null
           created_at: string
           descricao: string | null
           empresa_representada_id: string
@@ -1934,12 +1935,14 @@ export type Database = {
           ordem: number
           percentual: number | null
           referencia: string | null
+          tabela_progressiva: Json | null
           tipo: string | null
           updated_at: string
           valor: number | null
         }
         Insert: {
           ativo?: boolean
+          codigo?: string | null
           created_at?: string
           descricao?: string | null
           empresa_representada_id: string
@@ -1949,12 +1952,14 @@ export type Database = {
           ordem?: number
           percentual?: number | null
           referencia?: string | null
+          tabela_progressiva?: Json | null
           tipo?: string | null
           updated_at?: string
           valor?: number | null
         }
         Update: {
           ativo?: boolean
+          codigo?: string | null
           created_at?: string
           descricao?: string | null
           empresa_representada_id?: string
@@ -1964,6 +1969,7 @@ export type Database = {
           ordem?: number
           percentual?: number | null
           referencia?: string | null
+          tabela_progressiva?: Json | null
           tipo?: string | null
           updated_at?: string
           valor?: number | null

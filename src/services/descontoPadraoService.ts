@@ -1,6 +1,14 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { DescontoPadrao } from '@/types/rh';
+
+const getEmpresaIdAtual = async (): Promise<string> => {
+  const { data, error } = await supabase.rpc('get_user_empresa_id');
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('Empresa não identificada para o usuário atual.');
+  return data;
+};
 
 export const descontoPadraoService = {
   async fetchDescontos() {
@@ -22,14 +30,17 @@ export const descontoPadraoService = {
 
   async createDesconto(descontoData: DescontoPadrao) {
     console.log('[DescontosPadrao] Criando desconto padrão:', descontoData.codigo);
-    
+    const empresaId = await getEmpresaIdAtual();
+
     const dataToSave = {
+      empresa_representada_id: empresaId,
       codigo: descontoData.codigo,
+      nome: descontoData.descricao,
       descricao: descontoData.descricao,
       tipo: descontoData.tipo,
       valor: descontoData.valor || 0,
       percentual: descontoData.percentual || 0,
-      tabela_progressiva: descontoData.tabelaProgressiva || null,
+      tabela_progressiva: (descontoData.tabelaProgressiva ?? null) as Json,
       ativo: descontoData.ativo,
       updated_at: new Date().toISOString()
     };
@@ -54,11 +65,12 @@ export const descontoPadraoService = {
     
     const dataToSave = {
       codigo: descontoData.codigo,
+      nome: descontoData.descricao,
       descricao: descontoData.descricao,
       tipo: descontoData.tipo,
       valor: descontoData.valor || 0,
       percentual: descontoData.percentual || 0,
-      tabela_progressiva: descontoData.tabelaProgressiva || null,
+      tabela_progressiva: (descontoData.tabelaProgressiva ?? null) as Json,
       ativo: descontoData.ativo,
       updated_at: new Date().toISOString()
     };

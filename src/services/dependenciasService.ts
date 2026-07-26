@@ -12,6 +12,6 @@ export const dependenciasService = {
       console.error('[dependenciasService] Erro em check_dependencias:', error);
       throw error;
     }
-    return data as CheckDependenciasResult;
+    return data as unknown as CheckDependenciasResult;
   },
 };

@@ -1,6 +1,13 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Setor } from '@/types/setor';
 
+const getEmpresaIdAtual = async (): Promise<string> => {
+  const { data, error } = await supabase.rpc('get_user_empresa_id');
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('Empresa não identificada para o usuário atual.');
+  return data;
+};
+
 export const setorService = {
   async fetchSetores(): Promise<Setor[]> {
     const { data, error } = await supabase
@@ -27,9 +34,11 @@ export const setorService = {
   },
 
   async createSetor(setorData: Omit<Setor, 'id' | 'created_at' | 'updated_at'>): Promise<Setor> {
+    const empresaId = await getEmpresaIdAtual();
     const { data, error } = await supabase
       .from('setores_empresa')
       .insert({
+        empresa_representada_id: empresaId,
         nome: setorData.nome || setorData.codigo,
         descricao: setorData.descricao ?? null,
         departamento_id: setorData.departamento_id ?? null,
