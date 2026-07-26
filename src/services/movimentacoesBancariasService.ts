@@ -13,6 +13,8 @@ import {
   TipoMovimentacao,
 } from '@/types/movimentacoesBancarias';
 
+type TransferenciaExtras = { natureza_id?: string; plano_conta_id?: string; centro_custo_id?: string };
+
 /**
  * [LOTE 3D] Estratégia futura de atomicidade de saldo (NÃO implementada neste lote):
  *   - Envolver INSERT em `movimentacoes_bancarias` + recálculo de `saldo_atual`
@@ -307,7 +309,7 @@ export const realizarTransferenciaBancaria = async (
       throw new BankingError('TRANSFERENCIA_INVALIDA', 'Ambas as contas devem estar ativas', { contaId: c.id });
     }
   }
-  const origem = contas.find((c: any) => c.id === transferencia.conta_origem_id);
+  const origem = contas.find((c) => c.id === transferencia.conta_origem_id);
   const origemConfiguracoes = origem?.configuracoes as { permitir_saldo_negativo?: boolean } | undefined;
   const permitirNegativo = origemConfiguracoes?.permitir_saldo_negativo === true;
   if (!permitirNegativo && Number(origem?.saldo_atual ?? 0) < transferencia.valor) {
@@ -332,9 +334,11 @@ export const realizarTransferenciaBancaria = async (
     p_data_lancamento: transferencia.data_movimentacao,
     p_descricao: transferencia.descricao,
     p_lote_descricao: `Transferência: ${transferencia.descricao}`,
-    p_natureza_id: (transferencia as any).natureza_id ?? null,
-    p_plano_conta_id: (transferencia as any).plano_conta_id ?? null,
-    p_centro_custo_id: (transferencia as any).centro_custo_id ?? null,
+    // Campos opcionais fora de TransferenciaBancaria — nenhum chamador real os popula hoje
+    // (TransferenciaModal.tsx não os usa), mantidos aqui por compatibilidade com a RPC.
+    p_natureza_id: (transferencia as TransferenciaExtras).natureza_id ?? null,
+    p_plano_conta_id: (transferencia as TransferenciaExtras).plano_conta_id ?? null,
+    p_centro_custo_id: (transferencia as TransferenciaExtras).centro_custo_id ?? null,
   });
 
   if (error) {

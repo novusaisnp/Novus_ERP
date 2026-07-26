@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import type { EmpresaRepresentada } from '@/hooks/useEmpresasRepresentadas';
 
 
@@ -8,13 +9,13 @@ const REAL_COLUMNS = [
   'cidade', 'estado', 'cep', 'ativo',
 ] as const;
 
-function buildPayload(input: EmpresaRepresentada & Record<string, any>) {
+function buildPayload(input: EmpresaRepresentada & Record<string, unknown>) {
   const incomingConfig =
     input.configuracoes && typeof input.configuracoes === 'object'
-      ? { ...(input.configuracoes as Record<string, any>) }
+      ? { ...(input.configuracoes as Record<string, unknown>) }
       : {};
 
-  const extras: Record<string, any> = {};
+  const extras: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(input)) {
     if (k === 'id' || k === 'configuracoes' || k === 'created_at' || k === 'updated_at') continue;
     if ((REAL_COLUMNS as readonly string[]).includes(k)) continue;
@@ -35,15 +36,15 @@ function buildPayload(input: EmpresaRepresentada & Record<string, any>) {
     estado: input.estado || null,
     cep: input.cep || null,
     ativo: input.ativo ?? true,
-    configuracoes,
+    configuracoes: configuracoes as Json,
     updated_at: new Date().toISOString(),
   };
 }
 
-function hydrate(row: any): EmpresaRepresentada {
-  if (!row) return row;
+function hydrate(row: Record<string, unknown> | null): EmpresaRepresentada {
+  if (!row) return row as unknown as EmpresaRepresentada;
   const c = (row.configuracoes && typeof row.configuracoes === 'object') ? row.configuracoes : {};
-  return { ...c, ...row, configuracoes: c };
+  return { ...c, ...row, configuracoes: c } as unknown as EmpresaRepresentada;
 }
 
 export const empresasRepresentadasService = {

@@ -46,7 +46,7 @@ const FolhaPagamento: React.FC = () => {
 
   const colaboradorMap = useMemo(() => {
     const m: Record<string, string> = {};
-    (colaboradores as any[]).forEach((c) => { m[c.id] = c.nome; });
+    colaboradores.forEach((c) => { m[c.id] = c.nome; });
     return m;
   }, [colaboradores]);
 
@@ -75,7 +75,7 @@ const FolhaPagamento: React.FC = () => {
       setModalOpen(false);
       setForm({ colaborador_id: '', competencia: '', salario_base: '', total_vencimentos: '', total_descontos: '', inss: '', irrf: '', fgts: '', status: 'PENDENTE', observacoes: '' });
     },
-    onError: (e: any) => toast.error('Erro ao criar folha: ' + e.message),
+    onError: (e: Error) => toast.error('Erro ao criar folha: ' + e.message),
   });
 
   return (
@@ -96,7 +96,7 @@ const FolhaPagamento: React.FC = () => {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
-                {(colaboradores as any[]).map((c) => (
+                {colaboradores.map((c) => (
                   <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
                 ))}
               </SelectContent>
@@ -161,7 +161,7 @@ const FolhaPagamento: React.FC = () => {
               <Select value={form.colaborador_id} onValueChange={(v) => setForm({ ...form, colaborador_id: v })}>
                 <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>
-                  {(colaboradores as any[]).map((c) => (
+                  {colaboradores.map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
                   ))}
                 </SelectContent>

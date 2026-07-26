@@ -74,8 +74,8 @@ export interface HistoricoMovimentacao {
   titulo_id: string;
   tipo_titulo: TipoTitulo;
   tipo_movimentacao: TipoMovimentacao;
-  dados_anteriores?: any;
-  dados_novos?: any;
+  dados_anteriores?: unknown;
+  dados_novos?: unknown;
   valor_movimentado?: number;
   data_movimentacao: string;
   usuario_id: string;
@@ -116,8 +116,8 @@ export interface PermissoesMovimentacao {
 export interface EdicaoTitulo {
   titulo_id: string;
   tipo_titulo: TipoTitulo;
-  dados_atuais: any;
-  dados_novos: any;
+  dados_atuais: unknown;
+  dados_novos: unknown;
   motivo_edicao?: string;
 }
 

@@ -119,9 +119,9 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
               >
                 <SelectTrigger data-testid="venda-cliente-select"><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
                 <SelectContent>
-                  {(clientes as any[])
+                  {clientes
                     .filter((c) => c.id && (c.ativo ?? true))
-                    .map((c: any) => (
+                    .map((c) => (
                       <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
                     ))}
                 </SelectContent>
@@ -161,7 +161,7 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
               >
                 <SelectTrigger><SelectValue placeholder="Selecione um plano" /></SelectTrigger>
                 <SelectContent>
-                  {(planos as any[]).filter((p) => p.id).map((p: any) => (
+                  {planos.filter((p) => p.id).map((p) => (
                     <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
                   ))}
                 </SelectContent>

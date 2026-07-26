@@ -16,8 +16,8 @@ Object.defineProperty(window, "matchMedia", {
 
 // Polyfills necessários para componentes Radix (Select, Tabs, Popover) em jsdom
 if (typeof window !== "undefined") {
-  if (!(window as any).ResizeObserver) {
-    (window as any).ResizeObserver = class {
+  if (!window.ResizeObserver) {
+    window.ResizeObserver = class {
       observe() {}
       unobserve() {}
       disconnect() {}
@@ -29,7 +29,7 @@ if (typeof window !== "undefined") {
   if (!Element.prototype.releasePointerCapture) {
     Element.prototype.releasePointerCapture = () => {};
   }
-  if (!(Element.prototype as any).scrollIntoView) {
-    (Element.prototype as any).scrollIntoView = () => {};
+  if (!Element.prototype.scrollIntoView) {
+    Element.prototype.scrollIntoView = () => {};
   }
 }

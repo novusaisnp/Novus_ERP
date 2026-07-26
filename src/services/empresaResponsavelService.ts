@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import type { EmpresaResponsavel } from '@/hooks/useEmpresaResponsavel';
 
 
@@ -9,13 +10,13 @@ const REAL_COLUMNS = ['nome', 'cnpj', 'email', 'telefone', 'endereco', 'logo_url
  * Monta o payload separando colunas reais das que devem ir para o jsonb `configuracoes`.
  * Qualquer campo não listado em REAL_COLUMNS é preservado dentro de configuracoes.
  */
-function buildPayload(input: EmpresaResponsavel & Record<string, any>) {
+function buildPayload(input: EmpresaResponsavel & Record<string, unknown>) {
   const incomingConfig =
     input.configuracoes && typeof input.configuracoes === 'object'
-      ? { ...(input.configuracoes as Record<string, any>) }
+      ? { ...(input.configuracoes as Record<string, unknown>) }
       : {};
 
-  const extras: Record<string, any> = {};
+  const extras: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(input)) {
     if (k === 'id' || k === 'configuracoes' || k === 'created_at' || k === 'updated_at') continue;
     if ((REAL_COLUMNS as readonly string[]).includes(k)) continue;
@@ -33,16 +34,16 @@ function buildPayload(input: EmpresaResponsavel & Record<string, any>) {
     telefone: input.telefone || null,
     endereco: input.endereco || null,
     logo_url: input.logo_url || null,
-    configuracoes,
+    configuracoes: configuracoes as Json,
     updated_at: new Date().toISOString(),
   };
 }
 
 /** Achata `configuracoes` sobre o objeto principal para o formulário. */
-function hydrate(row: any): EmpresaResponsavel {
-  if (!row) return row;
+function hydrate(row: Record<string, unknown> | null): EmpresaResponsavel {
+  if (!row) return row as unknown as EmpresaResponsavel;
   const c = (row.configuracoes && typeof row.configuracoes === 'object') ? row.configuracoes : {};
-  return { ...c, ...row, configuracoes: c };
+  return { ...c, ...row, configuracoes: c } as unknown as EmpresaResponsavel;
 }
 
 async function getExistingEmpresaId(): Promise<string | null> {

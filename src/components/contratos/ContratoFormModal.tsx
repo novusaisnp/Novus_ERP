@@ -73,7 +73,7 @@ export const ContratoFormModal: React.FC<Props> = ({ open, onOpenChange, contrat
               <Select value={form.cliente_id || ''} onValueChange={(v) => setField('cliente_id', v)}>
                 <SelectTrigger><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
                 <SelectContent>
-                  {(clientes as any[]).filter((c) => c.id && (c.ativo ?? true)).map((c: any) => (
+                  {clientes.filter((c) => c.id && (c.ativo ?? true)).map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
                   ))}
                 </SelectContent>
@@ -120,7 +120,7 @@ export const ContratoFormModal: React.FC<Props> = ({ open, onOpenChange, contrat
               >
                 <SelectTrigger><SelectValue placeholder="Selecione um plano" /></SelectTrigger>
                 <SelectContent>
-                  {(planos as any[]).filter((p) => p.id).map((p: any) => (
+                  {planos.filter((p) => p.id).map((p) => (
                     <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
                   ))}
                 </SelectContent>

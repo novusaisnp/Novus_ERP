@@ -1,11 +1,31 @@
 import { supabase } from '@/integrations/supabase/client';
-import type { 
+import type { Json } from '@/integrations/supabase/types';
+import type {
   TituloFinanceiro,
   LiquidacaoTitulo,
   EdicaoTitulo,
   CancelamentoTitulo,
   HistoricoMovimentacao
 } from '@/types/movimentacoesFinanceiras';
+
+export interface RateioTitulo {
+  id: string;
+  valor: number;
+  descricao?: string | null;
+  plano_conta?: { id: string; codigo: string; nome: string } | null;
+  centro_custo?: { id: string; codigo: string; nome: string } | null;
+}
+
+export interface DocumentoTitulo {
+  id: string;
+  nome_original: string;
+  tipo_arquivo?: string | null;
+  categoria?: string | null;
+  descricao?: string | null;
+  tamanho_bytes?: number | null;
+  upload_usuario_id?: string | null;
+  created_at: string;
+}
 
 const getEmpresaIdAtual = async (): Promise<string> => {
   const { data, error } = await supabase.rpc('get_user_empresa_id');
@@ -241,7 +261,7 @@ export const movimentacoesService = {
   },
 
   // Buscar rateios do título
-  async getRateiosTitulo(tituloId: string, tipoTitulo: string): Promise<any[]> {
+  async getRateiosTitulo(tituloId: string, tipoTitulo: string): Promise<RateioTitulo[]> {
 
     try {
       if (tipoTitulo === 'CONTAS_PAGAR') {
@@ -261,7 +281,7 @@ export const movimentacoesService = {
           throw error;
         }
         
-        return data || [];
+        return (data || []) as unknown as RateioTitulo[];
       }
 
       // Para contas a receber, por enquanto retorna array vazio
@@ -274,7 +294,7 @@ export const movimentacoesService = {
   },
 
   // Buscar documentos do título
-  async getDocumentosTitulo(tituloId: string, tipoTitulo: string): Promise<any[]> {
+  async getDocumentosTitulo(tituloId: string, tipoTitulo: string): Promise<DocumentoTitulo[]> {
 
     try {
       const { data, error } = await supabase
@@ -286,7 +306,7 @@ export const movimentacoesService = {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      return (data || []) as unknown as DocumentoTitulo[];
     } catch (error) {
       console.error('[MovimentacoesService] Erro ao buscar documentos:', error);
       throw new Error(`Erro ao buscar documentos: ${error.message}`);
@@ -359,8 +379,8 @@ export const movimentacoesService = {
     titulo_id: string;
     tipo_titulo: string;
     tipo_operacao: string;
-    dados_anteriores?: any;
-    dados_novos?: any;
+    dados_anteriores?: unknown;
+    dados_novos?: unknown;
     valor_movimentado?: number;
     observacoes?: string;
   }): Promise<void> {
@@ -378,8 +398,8 @@ export const movimentacoesService = {
         titulo_id: dados.titulo_id,
         tipo_titulo: dados.tipo_titulo,
         tipo_operacao: dados.tipo_operacao,
-        dados_anteriores: dados.dados_anteriores,
-        dados_novos: dados.dados_novos,
+        dados_anteriores: dados.dados_anteriores as Json,
+        dados_novos: dados.dados_novos as Json,
         valor_movimentado: dados.valor_movimentado,
         usuario_id: user?.id,
         usuario_nome: user?.email,
