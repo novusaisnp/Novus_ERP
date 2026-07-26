@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -58,7 +58,7 @@ const FormDepartamento: React.FC<FormDepartamentoProps> = ({
       form.reset({
         nome: departamento?.nome || '',
         descricao: departamento?.descricao || '',
-        responsavelId: (departamento as any)?.responsavelId || '',
+        responsavelId: departamento?.responsavelId || '',
       });
     } else {
       form.reset({ nome: '', descricao: '', responsavelId: '' });
@@ -71,7 +71,7 @@ const FormDepartamento: React.FC<FormDepartamentoProps> = ({
       nome: data.nome.trim(),
       descricao: data.descricao?.trim() || undefined,
       ativo: departamento?.ativo ?? true,
-      ...({ responsavelId: data.responsavelId || undefined } as any),
+      responsavelId: data.responsavelId || undefined,
     };
 
 
@@ -107,7 +107,10 @@ const FormDepartamento: React.FC<FormDepartamentoProps> = ({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <FormDepartamentoFields form={form as any} loading={loading} />
+            <FormDepartamentoFields
+              form={form as unknown as UseFormReturn<{ nome: string; descricao?: string; responsavelId?: string }>}
+              loading={loading}
+            />
 
             <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 pt-4">
               <Button

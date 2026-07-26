@@ -102,7 +102,7 @@ const Webhooks: React.FC = () => {
             onChange={(e) => setBusca(e.target.value)}
             className="md:col-span-2"
           />
-          <Select value={statusFiltro} onValueChange={(v) => setStatusFiltro(v as any)}>
+          <Select value={statusFiltro} onValueChange={(v) => setStatusFiltro(v as 'todos' | 'ativo' | 'inativo')}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos os status</SelectItem>
@@ -194,7 +194,7 @@ const Webhooks: React.FC = () => {
         <WebhookConfigModal
           open={modalOpen}
           onOpenChange={setModalOpen}
-          empresas={empresas as any}
+          empresas={empresas as Array<{ id: string; nome: string }>}
           empresaFixaId={empresaFixaId}
           initial={editing}
           onSubmit={handleSubmit}
@@ -208,8 +208,7 @@ const Webhooks: React.FC = () => {
           onOpenChange={(v) => !v && setRotateFor(null)}
           webhookNome={rotateFor.nome}
           onConfirm={async () => {
-            const r = await rotateSecret(rotateFor.id);
-            return r as any;
+            return await rotateSecret(rotateFor.id);
           }}
         />
       )}

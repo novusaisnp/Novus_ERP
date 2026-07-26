@@ -12,12 +12,12 @@ export interface SupabaseFornecedor {
   cpf?: string;
   email?: string;
   telefone?: string;
-  endereco?: any;
-  qualificacao_fiscal?: any;
+  endereco?: unknown;
+  qualificacao_fiscal?: unknown;
   ativo: boolean;
   created_at: string;
   updated_at?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export const fornecedorService = {

@@ -83,8 +83,8 @@ export const FormDepartamentoFields: React.FC<FormDepartamentoFieldsProps> = ({ 
               </FormControl>
               <SelectContent>
                 {colaboradores
-                  .filter((c: any) => c.ativo !== false)
-                  .map((c: any) => (
+                  .filter((c) => c.ativo !== false)
+                  .map((c) => (
                     <SelectItem key={c.id} value={c.id}>
                       {c.nome}
                     </SelectItem>

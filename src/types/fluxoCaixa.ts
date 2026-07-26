@@ -13,8 +13,8 @@ export interface FluxoCaixaItem {
   tipo_fluxo: TipoFluxo;
   conta_bancaria?: {
     id: string;
-    titular: string;
-    numero_conta: string;
+    titular?: string;
+    numero_conta?: string;
   } | null;
   plano_conta?: {
     id: string;
@@ -88,8 +88,8 @@ export interface FluxoCaixaGraficoData {
 export interface FluxoCaixaDrillDown {
   titulo: FluxoCaixaItem;
   detalhes: {
-    historico_movimentacoes: any[];
-    documentos_anexos: any[];
-    dados_originais: any;
+    historico_movimentacoes: unknown[];
+    documentos_anexos: unknown[];
+    dados_originais: unknown;
   };
 }

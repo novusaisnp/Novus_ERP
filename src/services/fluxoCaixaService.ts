@@ -89,7 +89,6 @@ export class FluxoCaixaService {
       }
 
       // Liquidações múltiplas: schema simplificado — não usadas como movimentação direta
-      const liquidacoesMultiplas: any[] = [];
 
       // Transformar dados unificados
       const movimentacoes: FluxoCaixaItem[] = [];
@@ -107,7 +106,7 @@ export class FluxoCaixaService {
           status: liquidacao ? 'REALIZADO' : 'PREVISTO',
           tipo_fluxo: 'OPERACIONAL',
           conta_bancaria: liquidacao?.conta_bancaria_id
-            ? ({ id: liquidacao.conta_bancaria_id } as any)
+            ? { id: liquidacao.conta_bancaria_id }
             : undefined,
           plano_conta: conta.plano_conta,
           centro_custo: conta.centro_custo,
@@ -133,7 +132,7 @@ export class FluxoCaixaService {
           status: liquidacao ? 'REALIZADO' : 'PREVISTO',
           tipo_fluxo: 'OPERACIONAL',
           conta_bancaria: liquidacao?.conta_bancaria_id
-            ? ({ id: liquidacao.conta_bancaria_id } as any)
+            ? { id: liquidacao.conta_bancaria_id }
             : undefined,
           titulo_origem: {
             id: conta.id,

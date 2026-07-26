@@ -13,7 +13,7 @@ import { CepInput } from '@/components/shared/CepInput';
 
 interface Props {
   empresa?: EmpresaResponsavel | null;
-  onSave: (empresa: EmpresaResponsavel) => Promise<any> | any;
+  onSave: (empresa: EmpresaResponsavel) => Promise<unknown> | unknown;
   saving?: boolean;
 }
 
@@ -56,7 +56,7 @@ const empty = (): FormState => ({
 
 const fromEmpresa = (e?: EmpresaResponsavel | null): FormState => {
   if (!e) return empty();
-  const c: any = e.configuracoes || {};
+  const c = (e.configuracoes || {}) as Record<string, string>;
   return {
     ...empty(),
     id: e.id,

@@ -162,7 +162,7 @@ export const syncService = {
     return await response.json();
   },
 
-  async validateClienteSync(clienteData: any): Promise<boolean> {
+  async validateClienteSync(clienteData: Record<string, unknown>): Promise<boolean> {
     if (!clienteData.nome || !clienteData.tipo) return false;
     if (clienteData.tipo === 'J' && !clienteData.cnpj) return false;
     if (clienteData.tipo === 'F' && !clienteData.cpf) return false;
@@ -183,7 +183,7 @@ export const syncService = {
       throw new Error('Dados do cliente inválidos para sincronização');
     }
 
-    const results: Array<{ system: string; status: string; result?: any; error?: string }> = [];
+    const results: Array<{ system: string; status: string; result?: unknown; error?: string }> = [];
     for (const t of targets) {
       try {
         const result = await this.sendToExternalSystem({
@@ -193,8 +193,9 @@ export const syncService = {
           data: { event: 'sync', table: 'clientes', data: cliente },
         });
         results.push({ system: t.systemUrl, status: 'success', result });
-      } catch (err: any) {
-        results.push({ system: t.systemUrl, status: 'error', error: err.message });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        results.push({ system: t.systemUrl, status: 'error', error: message });
       }
     }
     return results;

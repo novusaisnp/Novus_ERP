@@ -1,5 +1,46 @@
 import type { ContaReceber, ContaReceberInput, ContaReceberStatus } from '@/types/contasReceber';
 
+// Linha crua vinda do Supabase (com embeds opcionais de cliente/rateios) — nomes de
+// coluna reais, tipos permissivos porque nem todo select traz todos os campos.
+interface ContaReceberRow {
+  [key: string]: unknown;
+  id: string;
+  empresa_representada_id?: string;
+  numero_documento?: string | null;
+  descricao?: string;
+  cliente_id?: string | null;
+  valor_original: number | string;
+  valor_recebido?: number | string | null;
+  valor_desconto?: number | string | null;
+  valor_juros?: number | string | null;
+  valor_multa?: number | string | null;
+  data_emissao?: string | null;
+  data_vencimento: string;
+  data_recebimento?: string | null;
+  status?: string;
+  plano_conta_id?: string | null;
+  centro_custo_id?: string | null;
+  natureza_id?: string | null;
+  plano_pagamento_id?: string | null;
+  numero_parcela?: number | null;
+  total_parcelas?: number | null;
+  observacoes?: string | null;
+  deleted_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  venda_id?: string | null;
+  venda_pagamento_id?: string | null;
+  venda_pagamento_parcela_id?: string | null;
+  origem_canal?: string | null;
+  origem_sistema?: string | null;
+  externo_id?: string | null;
+  idempotency_key?: string | null;
+  hash_payload?: string | null;
+  created_by?: string | null;
+  cliente?: { id: string; nome: string; cnpj?: string | null; cpf?: string | null } | null;
+  rateios?: unknown;
+}
+
 const STATUS_VALIDO: ContaReceberStatus[] = ['PENDENTE', 'RECEBIDO', 'PARCIAL', 'VENCIDO', 'CANCELADO'];
 
 // Aceita valores legados vindos da UI ("ABERTA", "RECEBIDA", etc.)
@@ -22,7 +63,7 @@ export const normalizarStatus = (raw: unknown): ContaReceberStatus => {
   return (LEGACY_STATUS_MAP[up] || (STATUS_VALIDO.includes(up as ContaReceberStatus) ? (up as ContaReceberStatus) : 'PENDENTE'));
 };
 
-export const transformFromSupabase = (data: any): ContaReceber => {
+export const transformFromSupabase = (data: ContaReceberRow): ContaReceber => {
   const status = normalizarStatus(data.status);
   const valorRecebido = data.valor_recebido != null ? Number(data.valor_recebido) : null;
   return {
@@ -77,7 +118,7 @@ export const transformFromSupabase = (data: any): ContaReceber => {
       : null,
 
     rateios: Array.isArray(data.rateios)
-      ? data.rateios.map((r: any) => ({
+      ? (data.rateios as Array<Record<string, unknown>>).map((r) => ({
           id: r.id,
           plano_conta_id: r.plano_conta_id ?? null,
           centro_custo_id: r.centro_custo_id ?? null,
@@ -86,21 +127,23 @@ export const transformFromSupabase = (data: any): ContaReceber => {
           observacoes: r.observacoes ?? null,
           plano_conta: r.plano_conta ?? undefined,
           centro_custo: r.centro_custo ?? undefined,
-        }))
+        })) as unknown as ContaReceber['rateios']
       : [],
   };
 };
 
-export const transformToSupabase = (input: ContaReceberInput & Record<string, any>) => {
-  // Aceita tanto o schema novo quanto os campos legados enviados por telas antigas.
-  const status = normalizarStatus(input.status ?? input.situacao);
+export const transformToSupabase = (input: ContaReceberInput) => {
+  // Aceita tanto o schema novo quanto os campos legados enviados por telas antigas
+  // (situacao/valor_pago/data_pagamento não fazem parte de ContaReceberInput).
+  const legacy = input as ContaReceberInput & { situacao?: string; valor_pago?: number; data_pagamento?: string };
+  const status = normalizarStatus(input.status ?? legacy.situacao);
   const valorRecebido =
     input.valor_recebido != null
       ? Number(input.valor_recebido)
-      : input.valor_pago != null
-      ? Number(input.valor_pago)
+      : legacy.valor_pago != null
+      ? Number(legacy.valor_pago)
       : null;
-  const dataRecebimento = input.data_recebimento ?? input.data_pagamento ?? null;
+  const dataRecebimento = input.data_recebimento ?? legacy.data_pagamento ?? null;
 
   const rawPeriod = (input.periodicidade ?? null) as string | null;
   const periodicidade = rawPeriod && rawPeriod !== 'UNICA' ? rawPeriod : null;

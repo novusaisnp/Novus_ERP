@@ -2,19 +2,33 @@
 import type { ContaPagar, RateioContaPagar, SupabaseContaPagar } from '@/types/contasPagar';
 import { dbStatusPagarToUi, uiStatusPagarToDb } from '@/lib/statusMappers';
 
+// Linha crua vinda do Supabase (com embeds opcionais de fornecedor/plano_conta/
+// centro_custo/rateios) — tipos permissivos porque nem todo select traz tudo.
+type ContaPagarRow = Record<string, unknown>;
 
-export const transformFromSupabase = (item: any): ContaPagar => {
-  
+interface RateioContaPagarRow {
+  id: unknown;
+  plano_conta_id: unknown;
+  centro_custo_id: unknown;
+  valor: unknown;
+  percentual: unknown;
+  descricao: unknown;
+  plano_contas?: { id: unknown; codigo: unknown; nome: unknown; tipo: unknown } | null;
+  centros_custo?: { id: unknown; nome: unknown; codigo: unknown } | null;
+}
+
+export const transformFromSupabase = (item: ContaPagarRow): ContaPagar => {
+
   // Transformar rateios se existirem
   let rateios: RateioContaPagar[] = [];
-  
+
   if (item.rateios_contas_pagar && Array.isArray(item.rateios_contas_pagar)) {
-    rateios = item.rateios_contas_pagar.map((rateio: any) => ({
+    rateios = (item.rateios_contas_pagar as RateioContaPagarRow[]).map((rateio) => ({
       id: rateio.id,
       plano_conta_id: rateio.plano_conta_id,
       centro_custo_id: rateio.centro_custo_id,
-      valor: parseFloat(rateio.valor) || 0,
-      percentual: parseFloat(rateio.percentual) || 0,
+      valor: parseFloat(String(rateio.valor)) || 0,
+      percentual: parseFloat(String(rateio.percentual)) || 0,
       descricao: rateio.descricao ?? null,
       plano_conta: rateio.plano_contas ? {
         id: rateio.plano_contas.id,
@@ -27,14 +41,18 @@ export const transformFromSupabase = (item: any): ContaPagar => {
         nome: rateio.centros_custo.nome,
         codigo: rateio.centros_custo.codigo,
       } : undefined,
-    }));
+    })) as unknown as RateioContaPagar[];
   }
-  
 
-  const valorOriginal = parseFloat(item.valor_original) || 0;
-  const valorPago = parseFloat(item.valor_pago) || 0;
+
+  const fornecedorRow = item.fornecedores as Record<string, unknown> | null | undefined;
+  const planoContaRow = item.plano_contas as Record<string, unknown> | null | undefined;
+  const centroCustoRow = item.centros_custo as Record<string, unknown> | null | undefined;
+
+  const valorOriginal = parseFloat(String(item.valor_original)) || 0;
+  const valorPago = parseFloat(String(item.valor_pago)) || 0;
   const valorAtual = item.valor_atual != null
-    ? parseFloat(item.valor_atual) || 0
+    ? parseFloat(String(item.valor_atual)) || 0
     : Math.max(valorOriginal - valorPago, 0);
 
   return {
@@ -65,26 +83,26 @@ export const transformFromSupabase = (item: any): ContaPagar => {
 
     rateios: rateios,
     // Relacionamentos
-    fornecedor: item.fornecedores ? {
-      id: item.fornecedores.id,
-      razao_social: item.fornecedores.razao_social,
-      nome_fantasia: item.fornecedores.nome_fantasia,
+    fornecedor: fornecedorRow ? {
+      id: fornecedorRow.id,
+      razao_social: fornecedorRow.razao_social,
+      nome_fantasia: fornecedorRow.nome_fantasia,
     } : undefined,
-    plano_conta: item.plano_contas ? {
-      id: item.plano_contas.id,
-      codigo: item.plano_contas.codigo,
-      nome: item.plano_contas.nome,
-      tipo: item.plano_contas.tipo,
+    plano_conta: planoContaRow ? {
+      id: planoContaRow.id,
+      codigo: planoContaRow.codigo,
+      nome: planoContaRow.nome,
+      tipo: planoContaRow.tipo,
     } : undefined,
-    centro_custo: item.centros_custo ? {
-      id: item.centros_custo.id,
-      nome: item.centros_custo.nome,
-      codigo: item.centros_custo.codigo,
+    centro_custo: centroCustoRow ? {
+      id: centroCustoRow.id,
+      nome: centroCustoRow.nome,
+      codigo: centroCustoRow.codigo,
     } : undefined,
-  };
+  } as unknown as ContaPagar;
 };
 
-export const transformToSupabase = (input: any): SupabaseContaPagar => {
+export const transformToSupabase = (input: Record<string, unknown>): SupabaseContaPagar => {
   
   return {
     id: input.id,
@@ -111,5 +129,5 @@ export const transformToSupabase = (input: any): SupabaseContaPagar => {
     ativo: input.ativo !== false,
     created_at: input.created_at || new Date().toISOString(),
     updated_at: new Date().toISOString(),
-  };
+  } as unknown as SupabaseContaPagar;
 };

@@ -204,15 +204,15 @@ export const FormFornecedor: React.FC<FormFornecedorProps> = ({
     }
   };
 
-  const handleFieldChange = (field: string, value: any) => {
+  const handleFieldChange = (field: string, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleNestedFieldChange = (parent: string, field: string, value: any) => {
+  const handleNestedFieldChange = (parent: string, field: string, value: unknown) => {
     setFormData(prev => ({
       ...prev,
       [parent]: {
-        ...prev[parent as keyof Fornecedor] as any,
+        ...(prev[parent as keyof Fornecedor] as Record<string, unknown>),
         [field]: value
       }
     }));
