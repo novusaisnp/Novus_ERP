@@ -32,20 +32,17 @@ este arquivo é sobre o que está pendente **agora**.
   foram todos corrigidos).
 - `npm run test -- --run`: **357/357 passando** (45 arquivos de teste).
 - `npm run build`: passa.
-- Lint `@typescript-eslint/no-explicit-any`: **116 ocorrências restantes** (começou em 1222;
-  191 no início de 2026-07-26, 75 removidas num único push de commits nesse dia). Não bloqueia
-  `ci:gate`, é limpeza em andamento, sem urgência funcional. Próximos arquivos por volume (rode
-  `npx eslint . --format json` para atualizar antes de continuar): `src/pages/rh/FolhaPagamento.tsx`,
-  `src/components/vendas/VendaFormModal.tsx`, `src/components/contratos/ContratoFormModal.tsx`,
-  `src/services/empresaResponsavelService.ts`, `src/services/empresasRepresentadasService.ts`,
-  `src/services/movimentacoesService.ts`, `src/services/movimentacoesBancariasService.ts`,
-  `src/test/setup.ts`, `src/types/movimentacoesFinanceiras.ts` (a maioria dos arquivos restantes
-  tem só 2-4 ocorrências cada, espalhados por ~40 arquivos).
-  Metodologia: um arquivo por vez, `typecheck` + suíte completa antes de cada commit, preferir
-  remover cast desnecessário a inventar tipo novo, usar `unknown`/`Record<string, unknown>` para
-  payload genuinamente dinâmico (JSONB, dado de satélite). Achados reais corrigidos de passagem
-  nesse push: `Departamento` (types/rh.ts) não tinha `responsavelId` apesar de ser campo usado de
-  verdade — adicionado ao tipo.
+- Lint `@typescript-eslint/no-explicit-any`: **✅ ZERO ocorrências em todo o repositório**
+  (começou a sessão em 1222; concluído em 2026-07-26 num único dia de trabalho, ~15 commits).
+  `npx eslint . --format json` confirma 0. Esta frente está **fechada** — não é mais um item de
+  backlog. Metodologia usada (documentada para o caso de o lint voltar a crescer): um arquivo por
+  vez, `typecheck` + suíte completa antes de cada commit; preferir remover cast desnecessário a
+  inventar tipo novo; `unknown`/`Record<string, unknown>` para payload genuinamente dinâmico
+  (JSONB, dado de satélite); um único cast documentado `as unknown as TargetType` no retorno
+  quando o shape de embed do Supabase é imprevisível demais para tipar campo a campo (padrão
+  usado em ~10 services). Achados reais corrigidos de passagem: `Departamento` (types/rh.ts) não
+  tinha `responsavelId` apesar de ser campo usado de verdade; `fiscal/configService.ts` usava
+  `parseFloat` em colunas que já são `number` (nunca fazia sentido, mascarado pelo `any`).
 
 ## Riscos arquiteturais registrados (não são bugs — decisões conscientes a revisitar)
 
@@ -96,9 +93,10 @@ registradas:
 - Próxima decisão do usuário, ainda não tomada: escolher o tom dominante (sóbrio/corporativo tipo
   Protheus vs. colorido/energético tipo o mockup) antes de qualquer implementação visual.
 
-## Próxima frente funcional (ainda não decidida — pausada em favor do lint)
+## Próxima frente funcional (a decidir agora — lint concluído, fundação 100% consistente)
 
-Opções já mapeadas, nenhuma escolhida ainda:
+A limpeza de lint que estava bloqueando esta decisão terminou em 2026-07-26 (ver acima). Opções
+já mapeadas, nenhuma escolhida ainda:
 
 1. Porta 3 — autorização de crédito/inadimplência (`verificar_autorizacao_venda`, ver
    `docs/CONTRATOS_CANONICOS_ERP.md` §6) — menor escopo, gera valor mesmo sem satélite conectado.
@@ -106,6 +104,5 @@ Opções já mapeadas, nenhuma escolhida ainda:
 3. Camada de adaptador por `source_system` (Fase 2 do roadmap, §10) — melhor construir depois de
    ter um caso real de satélite pra validar contra, risco de abstração errada se feito cedo demais.
 4. Protótipo de satélite real (o mais concreto para provar o modelo ponta a ponta, maior esforço).
-
-Decisão de 2026-07-25: terminar a limpeza de lint primeiro, manter a fundação 100% consistente
-antes de abrir frente nova.
+5. Identidade visual estática (ver seção acima) — decisão de tom dominante ainda pendente do
+   usuário, separada das frentes funcionais 1-4.
