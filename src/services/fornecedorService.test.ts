@@ -8,7 +8,7 @@ import { fornecedorService } from './fornecedorService';
 import { supabase } from '@/integrations/supabase/client';
 import type { Fornecedor } from '@/types/fornecedor';
 
-const mock = supabase as any;
+const mock = supabase as unknown as { from: ReturnType<typeof vi.fn>; rpc: ReturnType<typeof vi.fn> };
 
 const pj: Fornecedor = {
   tipo_pessoa: 'PJ',
@@ -21,11 +21,11 @@ const pj: Fornecedor = {
   contato_principal: { nome: 'X', cargo: 'Y' },
   email: 'a@a.com',
   telefone: '11999',
-  telefones: ['11999'],
+  telefones: [{ numero: '11999', tipo: 'celular' }],
   endereco: { uf: 'SP' },
-  dados_bancarios: { banco: 'BB' },
+  dados_bancarios: { banco: 'BB', agencia: '0001', conta: '12345-6', tipo_conta: 'corrente' },
   ativo: true,
-} as any;
+};
 
 const pf: Fornecedor = {
   tipo_pessoa: 'PF',
@@ -35,7 +35,7 @@ const pf: Fornecedor = {
   rg: '123',
   email: '',
   ativo: true,
-} as any;
+};
 
 beforeEach(() => {
   mock.from.mockReset();
@@ -55,7 +55,7 @@ describe('fornecedorService.transformToSupabaseFormat (PJ)', () => {
       cpf: null,
       email: 'a@a.com',
       telefone: '11999',
-      telefones: ['11999'],
+      telefones: [{ numero: '11999', tipo: 'celular' }],
       ativo: true,
     });
     expect(p.data_fundacao).toBe('2020-01-15');
@@ -95,9 +95,9 @@ describe('fornecedorService CRUD', () => {
   });
 
   it('createFornecedor envia payload transformado', async () => {
-    let captured: any = null;
+    let captured: Record<string, unknown> = {};
     mock.from.mockImplementationOnce(() => ({
-      insert: (p: any) => {
+      insert: (p: Record<string, unknown>) => {
         captured = p;
         return { select: () => ({ single: () => Promise.resolve({ data: { id: 'new' }, error: null }) }) };
       },
@@ -110,7 +110,7 @@ describe('fornecedorService CRUD', () => {
   });
 
   it('updateFornecedor usa eq(id) e retorna dado', async () => {
-    let capturedId: any = null;
+    let capturedId = '';
     mock.from.mockImplementationOnce(() => ({
       update: () => ({
         eq: (_c: string, v: string) => {

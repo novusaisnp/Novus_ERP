@@ -32,7 +32,7 @@ describe('clienteUtils.validateCliente', () => {
   });
 
   it('rejeita quando tipo ausente', () => {
-    const r = clienteUtils.validateCliente(baseCliente({ tipo: '' as any }));
+    const r = clienteUtils.validateCliente(baseCliente({ tipo: '' as Cliente['tipo'] }));
     expect(r.isValid).toBe(false);
     expect(r.error).toMatch(/Tipo/);
   });
@@ -75,7 +75,7 @@ describe('clienteUtils.validateCliente', () => {
           atividadePrincipal: '',
           contatoEmpresa: { nomeCompleto: '', departamento: '', cargo: '' },
         },
-      } as any)
+      })
     );
     expect(r.isValid).toBe(false);
     expect(r.error).toMatch(/http/);
@@ -117,11 +117,11 @@ describe('clienteUtils.transformSupabaseToCliente', () => {
       data_fundacao: '2020-01-01',
       atividade_principal: 'consultoria',
       contato_empresa: { nomeCompleto: 'X', departamento: 'Y', cargo: 'Z' },
-      contatos: [{ nome: 'C1' }] as any,
-      documentos: [{ tipo: 'RG' }] as any,
-      emails: ['a@a.com', 'b@b.com'] as any,
-      telefones: ['11999', '11888'] as any,
-      dados_pessoais: { estadoCivil: 'solteiro' } as any,
+      contatos: [{ nome: 'C1' }],
+      documentos: [{ tipo: 'RG' }],
+      emails: ['a@a.com', 'b@b.com'],
+      telefones: ['11999', '11888'],
+      dados_pessoais: { estadoCivil: 'solteiro' },
       setor_id: 'setor-1',
       ativo: true,
       created_at: '2024-01-01T00:00:00Z',

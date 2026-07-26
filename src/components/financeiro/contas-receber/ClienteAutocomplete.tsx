@@ -14,6 +14,7 @@ import { Check, ChevronsUpDown, Building2, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useClientes } from '@/hooks/useClientes';
 import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
+import type { Cliente } from '@/types/cliente';
 
 interface ClienteAutocompleteProps {
   value?: string | null;
@@ -35,16 +36,16 @@ export const ClienteAutocomplete: React.FC<ClienteAutocompleteProps> = ({
   const { data: empresaId } = useEmpresaAtual();
   const { clientes, loading } = useClientes(empresaId ?? null);
 
-  const isPJ = (c: any) => c.tipo === 'J' || c.tipo_pessoa === 'PJ';
+  const isPJ = (c: Cliente) => c.tipo === 'J';
 
-  const displayName = (c: any) =>
+  const displayName = (c: Cliente) =>
     isPJ(c)
-      ? c.nomeFantasia || c.razaoSocial || c.nome || 'Empresa'
+      ? c.dadosEmpresa?.nomeFantasia || c.nome || 'Empresa'
       : c.nome || 'Cliente';
 
-  const documento = (c: any) => c.cpfCnpj || c.cnpj || c.cpf || '';
+  const documento = (c: Cliente) => c.cpfCnpj || '';
 
-  const filtered = clientes.filter((c: any) => {
+  const filtered = clientes.filter((c) => {
     const s = searchTerm.toLowerCase();
     return (
       displayName(c).toLowerCase().includes(s) ||
@@ -52,7 +53,7 @@ export const ClienteAutocomplete: React.FC<ClienteAutocompleteProps> = ({
     );
   });
 
-  const selected = clientes.find((c: any) => c.id === value);
+  const selected = clientes.find((c) => c.id === value);
 
   return (
     <div className="space-y-2">
@@ -85,7 +86,7 @@ export const ClienteAutocomplete: React.FC<ClienteAutocompleteProps> = ({
                 {loading ? 'Carregando...' : 'Nenhum cliente encontrado.'}
               </CommandEmpty>
               <CommandGroup>
-                {filtered.map((c: any) => (
+                {filtered.map((c) => (
                   <CommandItem
                     key={c.id}
                     value={c.id}
