@@ -6386,11 +6386,15 @@ export type Database = {
       vencimentos_padrao: {
         Row: {
           ativo: boolean
+          codigo: string | null
           competencia: string | null
           created_at: string
           descricao: string | null
           empresa_representada_id: string
           id: string
+          incide_fgts: boolean
+          incide_inss: boolean
+          incide_irrf: boolean
           nome: string
           ordem: number
           percentual: number | null
@@ -6401,11 +6405,15 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          codigo?: string | null
           competencia?: string | null
           created_at?: string
           descricao?: string | null
           empresa_representada_id: string
           id?: string
+          incide_fgts?: boolean
+          incide_inss?: boolean
+          incide_irrf?: boolean
           nome: string
           ordem?: number
           percentual?: number | null
@@ -6416,11 +6424,15 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          codigo?: string | null
           competencia?: string | null
           created_at?: string
           descricao?: string | null
           empresa_representada_id?: string
           id?: string
+          incide_fgts?: boolean
+          incide_inss?: boolean
+          incide_irrf?: boolean
           nome?: string
           ordem?: number
           percentual?: number | null

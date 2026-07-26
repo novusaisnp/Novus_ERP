@@ -147,6 +147,6 @@ describe('produtoService.buscarPorCodigoBarras', () => {
       }),
     }));
     expect(await produtoService.buscarPorCodigoBarras('789')).toEqual({ id: 'p1' });
-    expect(capturedCol).toBe('codigo_barras');
+    expect(capturedCol).toBe('codigo');
   });
 });

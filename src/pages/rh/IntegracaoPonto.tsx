@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { integracaoPontoService, type IntegracaoPonto } from '@/services/integracaoPontoService';
+import type { Json } from '@/integrations/supabase/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,7 +45,7 @@ const IntegracaoPontoPage: React.FC = () => {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      let cfg: unknown = null;
+      let cfg: Json = null;
       try { cfg = form.configuracoes ? JSON.parse(form.configuracoes) : null; }
       catch { throw new Error('Configurações devem ser JSON válido'); }
       const payload = {

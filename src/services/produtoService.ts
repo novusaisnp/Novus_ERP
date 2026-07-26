@@ -1,6 +1,10 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { Produto, SupabaseProduto } from '@/types/produto';
+
+type ProdutoInsert = Database['public']['Tables']['produtos']['Insert'];
+type ProdutoUpdate = Database['public']['Tables']['produtos']['Update'];
 
 async function getEmpresaId(): Promise<string> {
   const { data, error } = await supabase.rpc('get_user_empresa_id');
@@ -46,7 +50,7 @@ export const produtoService = {
 
   async criar(produto: Produto): Promise<SupabaseProduto> {
     const empresa_representada_id = await getEmpresaId();
-    const payload: Record<string, unknown> = {
+    const payload: ProdutoInsert = {
       empresa_representada_id,
       nome: produto.nome,
       descricao: produto.descricao || null,
@@ -81,7 +85,7 @@ export const produtoService = {
   },
 
   async atualizar(id: string, produto: Produto): Promise<SupabaseProduto> {
-    const payload: Record<string, unknown> = {
+    const payload: ProdutoUpdate = {
       nome: produto.nome,
       descricao: produto.descricao || null,
       codigo: produto.codigo ?? null,
@@ -135,7 +139,7 @@ export const produtoService = {
     const { data, error } = await supabase
       .from('produtos')
       .select('*')
-      .eq('codigo_barras', codigoBarras)
+      .eq('codigo', codigoBarras)
       .maybeSingle();
 
     if (error) {

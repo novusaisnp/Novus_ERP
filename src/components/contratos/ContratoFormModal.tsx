@@ -12,6 +12,7 @@ import { Contrato, ContratoStatus } from '@/types/contratos';
 import { clienteService } from '@/services/clienteService';
 import { planosPagamentoService } from '@/services/configBasicasService';
 import { useContratos } from '@/hooks/useContratos';
+import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
 
 interface Props {
   open: boolean;
@@ -30,7 +31,12 @@ const empty = (): Contrato => ({
 
 export const ContratoFormModal: React.FC<Props> = ({ open, onOpenChange, contrato }) => {
   const { saveContrato, saving } = useContratos();
-  const { data: clientes = [] } = useQuery({ queryKey: ['clientes'], queryFn: clienteService.fetchClientes });
+  const { data: empresaId } = useEmpresaAtual();
+  const { data: clientes = [] } = useQuery({
+    queryKey: ['clientes', empresaId],
+    queryFn: () => clienteService.fetchClientes(empresaId!),
+    enabled: !!empresaId,
+  });
   const { data: planos = [] } = useQuery({ queryKey: ['planos-pagamento'], queryFn: planosPagamentoService.getAll });
 
   const [form, setForm] = useState<Contrato>(empty());

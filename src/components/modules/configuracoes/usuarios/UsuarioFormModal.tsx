@@ -281,21 +281,13 @@ const UsuarioFormModal: React.FC<UsuarioFormModalProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Coluna Esquerda - Dados do Usuário */}
             <div>
-              <FormUsuario
-                nomeCompleto={formData.nomeCompleto}
-                cpf={formData.cpf}
-                email={formData.email}
-                senhaTemporaria={formData.senhaTemporaria || ''}
-                obrigarTrocaSenha={formData.obrigarTrocaSenha || false}
-                ativo={formData.ativo}
-                isColaboradorVinculado={!!formData.colaboradorId}
-                onNomeChange={(nome) => setFormData(prev => ({ ...prev, nomeCompleto: nome }))}
-                onCpfChange={(cpf) => setFormData(prev => ({ ...prev, cpf }))}
-                onEmailChange={(email) => setFormData(prev => ({ ...prev, email }))}
-                onSenhaChange={(senha) => setFormData(prev => ({ ...prev, senhaTemporaria: senha }))}
-                onObrigarTrocaSenhaChange={(obrigar) => setFormData(prev => ({ ...prev, obrigarTrocaSenha: obrigar }))}
-                onAtivoChange={(ativo) => setFormData(prev => ({ ...prev, ativo }))}
-              />
+              {/* [Nota] FormUsuario.tsx foi reescrito como página autocontida
+                  (ConfiguracoesUsuarios) durante a limpeza de fronteira de
+                  serviços e não aceita mais estas props como sub-formulário
+                  controlado. Este modal (UsuarioFormModal/UsuariosVinculadosList)
+                  não é referenciado por nenhuma tela real hoje — o fluxo vivo de
+                  criação de usuário é NovoUsuarioModal. */}
+              <FormUsuario />
             </div>
 
             {/* Coluna Direita - Vínculos */}

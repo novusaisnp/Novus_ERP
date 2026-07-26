@@ -2,6 +2,13 @@
 import { supabase } from '@/integrations/supabase/client';
 import { VencimentoPadrao } from '@/types/rh';
 
+const getEmpresaIdAtual = async (): Promise<string> => {
+  const { data, error } = await supabase.rpc('get_user_empresa_id');
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('Empresa não identificada para o usuário atual.');
+  return data;
+};
+
 export const vencimentoPadraoService = {
   async fetchVencimentos() {
     console.log('[RH] Carregando vencimentos padrão...');
@@ -22,9 +29,12 @@ export const vencimentoPadraoService = {
 
   async createVencimento(vencimentoData: VencimentoPadrao) {
     console.log('[RH] Criando vencimento padrão:', vencimentoData.codigo);
-    
+    const empresaId = await getEmpresaIdAtual();
+
     const dataToSave = {
+      empresa_representada_id: empresaId,
       codigo: vencimentoData.codigo,
+      nome: vencimentoData.descricao,
       descricao: vencimentoData.descricao,
       tipo: vencimentoData.tipo,
       valor: vencimentoData.valor || 0,

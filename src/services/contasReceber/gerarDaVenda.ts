@@ -53,5 +53,5 @@ export const gerarContasReceberDaVenda = async (
     }
     throw new Error(traduzirCodigo(friendlyError(error)));
   }
-  return data as GerarContasReceberResult;
+  return data as unknown as GerarContasReceberResult;
 };

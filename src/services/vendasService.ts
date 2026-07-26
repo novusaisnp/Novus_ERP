@@ -83,6 +83,7 @@ export const vendasService = {
         return {
           venda_id: vendaId,
           empresa_representada_id: empresaId,
+          tipo_item: it.servico_id ? 'S' : 'P',
           produto_id: it.produto_id || null,
           servico_id: it.servico_id || null,
           descricao: it.descricao,

@@ -1,5 +1,6 @@
 // FIN-E3: serviço da camada de pagamento da venda
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import type {
   VendaPagamento,
   VendaPagamentoInput,
@@ -105,7 +106,7 @@ export const vendaPagamentoService = {
         modalidade_id: input.modalidade_id,
         plano_pagamento_id: input.plano_pagamento_id ?? null,
         natureza_id: input.natureza_id ?? null,
-        plano_snapshot: input.plano_snapshot ?? {},
+        plano_snapshot: (input.plano_snapshot ?? {}) as Json,
         valor_bruto,
         valor_desconto,
         valor_juros,
@@ -151,6 +152,6 @@ export const vendaPagamentoService = {
   async validarPagamentoVenda(vendaId: string): Promise<ValidacaoPagamentoResult> {
     const { data, error } = await supabase.rpc('validar_pagamento_venda', { p_venda_id: vendaId });
     if (error) throw new Error(friendlyError(error));
-    return data as ValidacaoPagamentoResult;
+    return data as unknown as ValidacaoPagamentoResult;
   },
 };

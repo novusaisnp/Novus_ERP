@@ -14,6 +14,7 @@ import { vendasService } from '@/services/vendasService';
 import { clienteService } from '@/services/clienteService';
 import { planosPagamentoService } from '@/services/configBasicasService';
 import { useVendas } from '@/hooks/useVendas';
+import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
 
 interface Props {
   open: boolean;
@@ -33,7 +34,12 @@ const emptyItem = (): ItemVenda => ({
 
 export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) => {
   const { saveVenda, saving } = useVendas();
-  const { data: clientes = [] } = useQuery({ queryKey: ['clientes'], queryFn: clienteService.fetchClientes });
+  const { data: empresaId } = useEmpresaAtual();
+  const { data: clientes = [] } = useQuery({
+    queryKey: ['clientes', empresaId],
+    queryFn: () => clienteService.fetchClientes(empresaId!),
+    enabled: !!empresaId,
+  });
   const { data: planos = [] } = useQuery({ queryKey: ['planos-pagamento'], queryFn: planosPagamentoService.getAll });
 
   const [form, setForm] = useState<Venda>({
