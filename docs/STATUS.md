@@ -32,23 +32,20 @@ este arquivo é sobre o que está pendente **agora**.
   foram todos corrigidos).
 - `npm run test -- --run`: **357/357 passando** (45 arquivos de teste).
 - `npm run build`: passa.
-- Lint `@typescript-eslint/no-explicit-any`: **191 ocorrências restantes** (começou em 1222).
-  Não bloqueia `ci:gate`, é limpeza em andamento, sem urgência funcional. Próximos arquivos por
-  volume (rode `npx eslint . --format json` para atualizar antes de continuar):
-  ```
-  8  src/services/cnpjApi.test.ts
-  8  src/services/produtoService.test.ts
-  7  src/__tests__/lote3d.test.ts
-  7  src/utils/rhUtils.ts
-  7  src/utils/clienteUtils.test.ts
-  6  src/components/financeiro/contas-receber/ClienteAutocomplete.tsx
-  6  src/__tests__/webhookConfigService.test.ts
-  6  src/services/fornecedorService.test.ts
-  5  src/services/webhookConfigService.ts
-  ```
+- Lint `@typescript-eslint/no-explicit-any`: **116 ocorrências restantes** (começou em 1222;
+  191 no início de 2026-07-26, 75 removidas num único push de commits nesse dia). Não bloqueia
+  `ci:gate`, é limpeza em andamento, sem urgência funcional. Próximos arquivos por volume (rode
+  `npx eslint . --format json` para atualizar antes de continuar): `src/pages/rh/FolhaPagamento.tsx`,
+  `src/components/vendas/VendaFormModal.tsx`, `src/components/contratos/ContratoFormModal.tsx`,
+  `src/services/empresaResponsavelService.ts`, `src/services/empresasRepresentadasService.ts`,
+  `src/services/movimentacoesService.ts`, `src/services/movimentacoesBancariasService.ts`,
+  `src/test/setup.ts`, `src/types/movimentacoesFinanceiras.ts` (a maioria dos arquivos restantes
+  tem só 2-4 ocorrências cada, espalhados por ~40 arquivos).
   Metodologia: um arquivo por vez, `typecheck` + suíte completa antes de cada commit, preferir
   remover cast desnecessário a inventar tipo novo, usar `unknown`/`Record<string, unknown>` para
-  payload genuinamente dinâmico (JSONB, dado de satélite).
+  payload genuinamente dinâmico (JSONB, dado de satélite). Achados reais corrigidos de passagem
+  nesse push: `Departamento` (types/rh.ts) não tinha `responsavelId` apesar de ser campo usado de
+  verdade — adicionado ao tipo.
 
 ## Riscos arquiteturais registrados (não são bugs — decisões conscientes a revisitar)
 
