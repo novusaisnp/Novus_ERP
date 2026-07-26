@@ -3,8 +3,16 @@ import { Cliente } from '@/types/cliente';
 import { SupabaseCliente } from '@/services/clienteService';
 import { validarCPF, validarCNPJ } from '@/services/cnpjApi';
 
+// fetchClientes() hoje faz select('*') em `clientes`, sem embed de `setores` — então
+// `setor` nunca vem preenchido na prática. O tipo abaixo documenta o formato esperado
+// caso esse embed venha a ser adicionado, sem usar `any` para expressar "campo extra".
+type SupabaseClienteComSetor = SupabaseCliente & {
+  setor?: { id: string; nome?: string; codigo?: string; descricao?: string } | null;
+};
+
 export const clienteUtils = {
   transformSupabaseToCliente(item: SupabaseCliente): Cliente {
+    const row = item as SupabaseClienteComSetor;
     return {
       id: item.id,
       nome: item.nome,
@@ -37,11 +45,11 @@ export const clienteUtils = {
         }
       },
       // Setor para integração CRM
-      setor: (item as any).setor ? {
-        id: (item as any).setor.id,
-        nome: (item as any).setor.nome ?? (item as any).setor.codigo ?? '',
-        codigo: (item as any).setor.codigo ?? (item as any).setor.nome,
-        descricao: (item as any).setor.descricao
+      setor: row.setor ? {
+        id: row.setor.id,
+        nome: row.setor.nome ?? row.setor.codigo ?? '',
+        codigo: row.setor.codigo ?? row.setor.nome,
+        descricao: row.setor.descricao
       } : undefined,
       setorId: item.setor_id || undefined,
       contatos: (Array.isArray(item.contatos) ? item.contatos : []) as Cliente['contatos'],
@@ -98,7 +106,7 @@ export const clienteUtils = {
     return { isValid: true };
   },
 
-  getErrorMessage(error: any): string {
+  getErrorMessage(error: { code?: string; message?: string }): string {
     if (error.code === '23505') {
       return 'Já existe um cliente com este CPF/CNPJ.';
     } else if (error.code === '23503') {

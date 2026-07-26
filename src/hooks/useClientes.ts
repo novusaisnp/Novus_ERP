@@ -15,9 +15,9 @@ export const useClientes = (empresaRepresentadaId: string | null) => { // <--- P
   // Usar o empresaRepresentadaId passado como parâmetro
   const currentEmpresaId = empresaRepresentadaId;
 
-  const handleError = (error: any, defaultMessage: string) => {
+  const handleError = (error: unknown, defaultMessage: string) => {
     console.error('Erro:', error);
-    const errorMessage = clienteUtils.getErrorMessage(error);
+    const errorMessage = clienteUtils.getErrorMessage(error as { code?: string; message?: string });
     toast({
       title: "Erro",
       description: errorMessage || defaultMessage,
