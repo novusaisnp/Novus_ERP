@@ -19,7 +19,7 @@ vi.mock('@/services/clienteService', () => ({
 import { useClientes } from './useClientes';
 import { clienteService } from '@/services/clienteService';
 
-const svc = clienteService as any;
+const svc = clienteService as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 const supabaseRow = {
   id: 'c1',
@@ -34,7 +34,7 @@ const supabaseRow = {
 
 beforeEach(() => {
   toastFn.mockReset();
-  Object.values(svc).forEach((f: any) => f.mockReset());
+  Object.values(svc).forEach((f) => f.mockReset());
 });
 
 describe('useClientes.loadClientes', () => {
@@ -61,9 +61,9 @@ describe('useClientes.saveCliente', () => {
     const { result } = renderHook(() => useClientes('empresa-1'));
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let ok: any;
+    let ok = true;
     await act(async () => {
-      ok = await result.current.saveCliente({ nome: '', tipo: 'F' } as any);
+      ok = await result.current.saveCliente({ nome: '', tipo: 'F' });
     });
     expect(ok).toBe(false);
     expect(svc.createCliente).not.toHaveBeenCalled();
@@ -76,14 +76,14 @@ describe('useClientes.saveCliente', () => {
     const { result } = renderHook(() => useClientes('empresa-1'));
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let ok: any;
+    let ok = false;
     await act(async () => {
       ok = await result.current.saveCliente({
         nome: 'Novo',
         tipo: 'F',
         emails: [],
         telefones: [],
-      } as any);
+      });
     });
     expect(ok).toBe(true);
     expect(svc.createCliente).toHaveBeenCalled();
@@ -96,7 +96,7 @@ describe('useClientes.saveCliente', () => {
     const { result } = renderHook(() => useClientes('empresa-1'));
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let ok: any;
+    let ok = false;
     await act(async () => {
       ok = await result.current.saveCliente({
         id: 'c1',
@@ -104,7 +104,7 @@ describe('useClientes.saveCliente', () => {
         tipo: 'F',
         emails: [],
         telefones: [],
-      } as any);
+      });
     });
     expect(ok).toBe(true);
     expect(svc.updateCliente).toHaveBeenCalledWith('c1', expect.any(Object), 'empresa-1');
@@ -116,14 +116,14 @@ describe('useClientes.saveCliente', () => {
     const { result } = renderHook(() => useClientes('empresa-1'));
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let ok: any;
+    let ok = true;
     await act(async () => {
       ok = await result.current.saveCliente({
         nome: 'X',
         tipo: 'F',
         emails: [],
         telefones: [],
-      } as any);
+      });
     });
     expect(ok).toBe(false);
     expect(toastFn).toHaveBeenCalledWith(expect.objectContaining({ variant: 'destructive' }));
@@ -136,7 +136,7 @@ describe('useClientes.deleteCliente', () => {
     const { result } = renderHook(() => useClientes('empresa-1'));
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let ok: any;
+    let ok = true;
     await act(async () => {
       ok = await result.current.deleteCliente('');
     });
@@ -150,7 +150,7 @@ describe('useClientes.deleteCliente', () => {
     const { result } = renderHook(() => useClientes('empresa-1'));
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let ok: any;
+    let ok = false;
     await act(async () => {
       ok = await result.current.deleteCliente('c1');
     });
@@ -165,7 +165,7 @@ describe('useClientes.deleteCliente', () => {
     const { result } = renderHook(() => useClientes('empresa-1'));
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let ok: any;
+    let ok = true;
     await act(async () => {
       ok = await result.current.deleteCliente('c1');
     });
