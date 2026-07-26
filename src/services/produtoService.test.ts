@@ -8,7 +8,7 @@ import { produtoService } from './produtoService';
 import { supabase } from '@/integrations/supabase/client';
 import type { Produto } from '@/types/produto';
 
-const mock = supabase as any;
+const mock = supabase as unknown as { from: ReturnType<typeof vi.fn>; rpc: ReturnType<typeof vi.fn> };
 
 const produto: Produto = {
   nome: 'Item',
@@ -28,7 +28,7 @@ const produto: Produto = {
   estoque_atual: 5,
   estoque_minimo: 1,
   ativo: true,
-} as any;
+};
 
 beforeEach(() => {
   mock.from.mockReset();
@@ -63,9 +63,9 @@ describe('produtoService.buscarPorId', () => {
 describe('produtoService.criar', () => {
   it('obtém empresa_id via RPC e envia payload snake_case', async () => {
     mock.rpc.mockResolvedValueOnce({ data: 'emp-1', error: null });
-    let captured: any = null;
+    let captured: Record<string, unknown> = {};
     mock.from.mockImplementationOnce(() => ({
-      insert: (p: any) => {
+      insert: (p: Record<string, unknown>) => {
         captured = p;
         return { select: () => ({ single: () => Promise.resolve({ data: { id: 'new' }, error: null }) }) };
       },
@@ -99,10 +99,10 @@ describe('produtoService.criar', () => {
 
 describe('produtoService.atualizar', () => {
   it('envia payload com updated_at e usa eq(id)', async () => {
-    let captured: any = null;
-    let capturedId: any = null;
+    let captured: Record<string, unknown> = {};
+    let capturedId = '';
     mock.from.mockImplementationOnce(() => ({
-      update: (p: any) => {
+      update: (p: Record<string, unknown>) => {
         captured = p;
         return {
           eq: (_c: string, v: string) => {
@@ -137,7 +137,7 @@ describe('produtoService.excluir', () => {
 
 describe('produtoService.buscarPorCodigoBarras', () => {
   it('retorna produto', async () => {
-    let capturedCol: any = null;
+    let capturedCol = '';
     mock.from.mockImplementationOnce(() => ({
       select: () => ({
         eq: (c: string) => {

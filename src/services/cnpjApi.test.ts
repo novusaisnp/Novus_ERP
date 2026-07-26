@@ -87,8 +87,10 @@ describe('formatarCEP', () => {
 });
 
 describe('consultarCNPJ (fetch mockado)', () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn());
+    fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
   });
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -97,7 +99,7 @@ describe('consultarCNPJ (fetch mockado)', () => {
 
   it('retorna dados mapeados quando resposta OK', async () => {
     const cnpj = '22222222000191'; // único para evitar cache entre testes
-    (globalThis.fetch as any).mockResolvedValue({
+    fetchMock.mockResolvedValue({
       ok: true,
       json: async () => ({
         cnpj,
@@ -130,20 +132,20 @@ describe('consultarCNPJ (fetch mockado)', () => {
   });
 
   it('retorna null em 404', async () => {
-    (globalThis.fetch as any).mockResolvedValue({ ok: false, status: 404 });
+    fetchMock.mockResolvedValue({ ok: false, status: 404 });
     const data = await consultarCNPJ('33333333000191');
     expect(data).toBeNull();
   });
 
   it('retorna null em erro de rede', async () => {
-    (globalThis.fetch as any).mockRejectedValue(new Error('network'));
+    fetchMock.mockRejectedValue(new Error('network'));
     const data = await consultarCNPJ('44444444000191');
     expect(data).toBeNull();
   });
 
   it('usa cache na segunda chamada com mesmo CNPJ', async () => {
     const cnpj = '55555555000191';
-    (globalThis.fetch as any).mockResolvedValue({
+    fetchMock.mockResolvedValue({
       ok: true,
       json: async () => ({ cnpj, razao_social: 'CACHED' }),
     });
@@ -154,8 +156,10 @@ describe('consultarCNPJ (fetch mockado)', () => {
 });
 
 describe('consultarCEP (fetch mockado)', () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn());
+    fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
   });
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -163,7 +167,7 @@ describe('consultarCEP (fetch mockado)', () => {
   });
 
   it('retorna dados mapeados quando resposta OK', async () => {
-    (globalThis.fetch as any).mockResolvedValue({
+    fetchMock.mockResolvedValue({
       ok: true,
       json: async () => ({
         cep: '01310-100',
@@ -186,13 +190,13 @@ describe('consultarCEP (fetch mockado)', () => {
   });
 
   it('retorna null em 404', async () => {
-    (globalThis.fetch as any).mockResolvedValue({ ok: false });
+    fetchMock.mockResolvedValue({ ok: false });
     const data = await consultarCEP('99999998');
     expect(data).toBeNull();
   });
 
   it('retorna null quando ViaCEP responde { erro: true }', async () => {
-    (globalThis.fetch as any).mockResolvedValue({
+    fetchMock.mockResolvedValue({
       ok: true,
       json: async () => ({ erro: true }),
     });
@@ -201,7 +205,7 @@ describe('consultarCEP (fetch mockado)', () => {
   });
 
   it('retorna null em erro de rede', async () => {
-    (globalThis.fetch as any).mockRejectedValue(new Error('network'));
+    fetchMock.mockRejectedValue(new Error('network'));
     const data = await consultarCEP('99999996');
     expect(data).toBeNull();
   });

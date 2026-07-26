@@ -19,12 +19,37 @@ import { qk } from "@/lib/queryKeys";
 
 // ---- Mock do supabase client usado pelo service ---------------------------
 
+interface QueryBuilderMock {
+  _op: string;
+  select: () => QueryBuilderMock;
+  insert: () => QueryBuilderMock;
+  update: () => QueryBuilderMock;
+  eq: () => QueryBuilderMock;
+  in: () => QueryBuilderMock;
+  order: () => QueryBuilderMock;
+  ilike: () => QueryBuilderMock;
+  or: () => QueryBuilderMock;
+  gte: () => QueryBuilderMock;
+  lte: () => QueryBuilderMock;
+  is: () => QueryBuilderMock;
+  maybeSingle: () => Promise<{ data: unknown; error: unknown }>;
+  single: () => Promise<{ data: unknown; error: unknown }>;
+}
+
+interface SupabaseMock {
+  state: { contaSaldo: number; contaStatus: string; estornado: boolean };
+  auth: { getUser: () => Promise<{ data: { user: { id: string } } }> };
+  rpcCalls: unknown[][];
+  rpc: (...args: unknown[]) => Promise<{ data: unknown; error: unknown }>;
+  from: (table: string) => QueryBuilderMock;
+}
+
 const { supabaseMock } = vi.hoisted(() => {
-  const supabaseMock: any = {
+  const supabaseMock: SupabaseMock = {
     state: {
       contaSaldo: 100,
-      contaStatus: "ATIVA" as string,
-      estornado: false as boolean,
+      contaStatus: "ATIVA",
+      estornado: false,
     },
     auth: { getUser: async () => ({ data: { user: { id: "user-1" } } }) },
     rpcCalls: [] as unknown[][],
@@ -37,7 +62,7 @@ const { supabaseMock } = vi.hoisted(() => {
     },
     from: (table: string) => {
       const state = supabaseMock.state;
-      const builder: any = {
+      const builder: QueryBuilderMock = {
         _op: "select",
         select: () => builder,
         insert: () => {
@@ -142,7 +167,7 @@ describe("criarMovimentacaoBancaria — saída sem saldo", () => {
         valor: 500,
         data_movimentacao: "2026-01-01",
         descricao: "teste",
-      } as any)
+      })
     ).rejects.toMatchObject({ code: "SALDO_INSUFICIENTE" });
   });
 });
@@ -156,7 +181,7 @@ describe("estornarMovimentacao — estorno duplo", () => {
       estornarMovimentacao({
         movimentacao_id: "mov-1",
         motivo_estorno: "teste",
-      } as any)
+      })
     ).rejects.toMatchObject({ code: "ESTORNO_DUPLICADO" });
   });
 });
@@ -172,7 +197,7 @@ describe("realizarTransferenciaBancaria — origem=destino", () => {
         valor: 10,
         data_movimentacao: "2026-01-01",
         descricao: "teste",
-      } as any)
+      })
     ).rejects.toMatchObject({ code: "TRANSFERENCIA_INVALIDA" });
     expect(supabaseMock.rpcCalls.length).toBe(0);
   });
@@ -199,11 +224,11 @@ describe("useMovimentacoesBancarias — invalidação de cache", () => {
       valor: 50,
       data_movimentacao: "2026-01-01",
       descricao: "deposito",
-    } as any);
+    });
 
     await waitFor(() => expect(spy).toHaveBeenCalled());
 
-    const calledKeys = spy.mock.calls.map((c) => (c[0] as any).queryKey);
+    const calledKeys = spy.mock.calls.map((c) => (c[0] as { queryKey?: unknown[] }).queryKey);
 
     const includesKey = (target: readonly unknown[]) =>
       calledKeys.some(
