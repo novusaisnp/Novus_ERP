@@ -30,6 +30,9 @@ const { supabaseMock } = vi.hoisted(() => {
     rpcCalls: [] as unknown[][],
     rpc: async (...args: unknown[]) => {
       supabaseMock.rpcCalls.push(args);
+      if (args[0] === "get_user_empresa_id") {
+        return { data: "empresa-1", error: null };
+      }
       return { data: null, error: null };
     },
     from: (table: string) => {

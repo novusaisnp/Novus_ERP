@@ -47,7 +47,8 @@ const checarSaldoParaSaida = async (contaId: string, valor: number): Promise<voi
   if (conta?.status && conta.status !== 'ATIVA') {
     throw new BankingError('CONTA_INATIVA', 'Conta bancária não está ativa', { contaId });
   }
-  const permitirNegativo = conta?.configuracoes?.permitir_saldo_negativo === true;
+  const configuracoes = conta?.configuracoes as { permitir_saldo_negativo?: boolean } | null;
+  const permitirNegativo = configuracoes?.permitir_saldo_negativo === true;
   const saldo = Number(conta?.saldo_atual ?? 0);
   if (!permitirNegativo && saldo < valor) {
     throw new BankingError(
@@ -68,7 +69,7 @@ export const listarMovimentacoesBancarias = async (
     .from('movimentacoes_bancarias')
     .select(`
       *,
-      conta_bancaria:contas_bancarias!conta_bancaria_id (
+      conta_bancaria:contas_bancarias!movimentacoes_bancarias_conta_bancaria_id_fkey (
         id,
         numero_conta,
         titular,
@@ -80,7 +81,7 @@ export const listarMovimentacoesBancarias = async (
           )
         )
       ),
-      conta_destino:contas_bancarias!conta_destino_id (
+      conta_destino:contas_bancarias!movimentacoes_bancarias_conta_destino_id_fkey (
         id,
         numero_conta,
         titular,
@@ -161,7 +162,7 @@ export const listarMovimentacoesBancarias = async (
     throw new Error(`Erro ao listar movimentações: ${error.message}`);
   }
 
-  return (data as MovimentacaoBancaria[]) || [];
+  return (data as unknown as MovimentacaoBancaria[]) || [];
 };
 
 // Função para obter uma movimentação específica
@@ -171,7 +172,7 @@ export const obterMovimentacaoBancaria = async (id: string): Promise<Movimentaca
     .from('movimentacoes_bancarias')
     .select(`
       *,
-      conta_bancaria:contas_bancarias!conta_bancaria_id (
+      conta_bancaria:contas_bancarias!movimentacoes_bancarias_conta_bancaria_id_fkey (
         id,
         numero_conta,
         titular,
@@ -183,7 +184,7 @@ export const obterMovimentacaoBancaria = async (id: string): Promise<Movimentaca
           )
         )
       ),
-      conta_destino:contas_bancarias!conta_destino_id (
+      conta_destino:contas_bancarias!movimentacoes_bancarias_conta_destino_id_fkey (
         id,
         numero_conta,
         titular,
@@ -214,7 +215,7 @@ export const obterMovimentacaoBancaria = async (id: string): Promise<Movimentaca
     throw new Error(`Erro ao obter movimentação: ${error.message}`);
   }
 
-  return data as MovimentacaoBancaria;
+  return data as unknown as MovimentacaoBancaria;
 };
 
 // Função para criar uma nova movimentação
@@ -227,15 +228,23 @@ export const criarMovimentacaoBancaria = async (
     await checarSaldoParaSaida(input.conta_bancaria_id, input.valor);
   }
 
+  const { data: empresaId, error: empresaError } = await supabase.rpc('get_user_empresa_id');
+  if (empresaError || !empresaId) {
+    throw new Error('Não foi possível identificar a empresa do usuário');
+  }
+
   const { data, error } = await supabase
     .from('movimentacoes_bancarias')
     .insert({
       ...input,
+      empresa_representada_id: empresaId,
+      tipo: input.tipo_movimentacao,
+      data_lancamento: input.data_movimentacao,
       usuario_criacao_id: (await supabase.auth.getUser()).data.user?.id,
     })
     .select(`
       *,
-      conta_bancaria:contas_bancarias!conta_bancaria_id (
+      conta_bancaria:contas_bancarias!movimentacoes_bancarias_conta_bancaria_id_fkey (
         id,
         numero_conta,
         titular,
@@ -247,7 +256,7 @@ export const criarMovimentacaoBancaria = async (
           )
         )
       ),
-      conta_destino:contas_bancarias!conta_destino_id (
+      conta_destino:contas_bancarias!movimentacoes_bancarias_conta_destino_id_fkey (
         id,
         numero_conta,
         titular,
@@ -267,7 +276,7 @@ export const criarMovimentacaoBancaria = async (
     throw new Error(`Erro ao criar movimentação: ${error.message}`);
   }
 
-  return data as MovimentacaoBancaria;
+  return data as unknown as MovimentacaoBancaria;
 };
 
 // Realiza transferência bancária de forma atômica via RPC do banco
@@ -299,7 +308,8 @@ export const realizarTransferenciaBancaria = async (
     }
   }
   const origem = contas.find((c: any) => c.id === transferencia.conta_origem_id);
-  const permitirNegativo = origem?.configuracoes?.permitir_saldo_negativo === true;
+  const origemConfiguracoes = origem?.configuracoes as { permitir_saldo_negativo?: boolean } | undefined;
+  const permitirNegativo = origemConfiguracoes?.permitir_saldo_negativo === true;
   if (!permitirNegativo && Number(origem?.saldo_atual ?? 0) < transferencia.valor) {
     throw new BankingError('SALDO_INSUFICIENTE', 'Saldo insuficiente para transferência', {
       contaId: transferencia.conta_origem_id,
@@ -379,7 +389,7 @@ export const estornarMovimentacao = async (
     throw new Error(`Erro ao estornar movimentação: ${error.message}`);
   }
 
-  return data as MovimentacaoBancaria;
+  return data as unknown as MovimentacaoBancaria;
 };
 
 // Função para conciliar movimentação
@@ -407,7 +417,7 @@ export const conciliarMovimentacao = async (
     throw new Error(`Erro ao conciliar movimentação: ${error.message}`);
   }
 
-  return data as MovimentacaoBancaria;
+  return data as unknown as MovimentacaoBancaria;
 };
 
 // Função para obter estatísticas
@@ -544,7 +554,7 @@ export const atualizarMovimentacaoBancaria = async (
     .eq('estornado', false) // Só atualiza se não estiver estornado
     .select(`
       *,
-      conta_bancaria:contas_bancarias!conta_bancaria_id (
+      conta_bancaria:contas_bancarias!movimentacoes_bancarias_conta_bancaria_id_fkey (
         id,
         numero_conta,
         titular,
@@ -556,7 +566,7 @@ export const atualizarMovimentacaoBancaria = async (
           )
         )
       ),
-      conta_destino:contas_bancarias!conta_destino_id (
+      conta_destino:contas_bancarias!movimentacoes_bancarias_conta_destino_id_fkey (
         id,
         numero_conta,
         titular,
@@ -576,7 +586,7 @@ export const atualizarMovimentacaoBancaria = async (
     throw new Error(`Erro ao atualizar movimentação: ${error.message}`);
   }
 
-  return data as MovimentacaoBancaria;
+  return data as unknown as MovimentacaoBancaria;
 };
 
 // Função para excluir movimentação (soft delete)

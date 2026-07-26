@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 
 export interface IntegracaoPonto {
   id: string;
@@ -6,7 +7,7 @@ export interface IntegracaoPonto {
   tipo: string | null;
   endpoint: string | null;
   token_autenticacao: string | null;
-  configuracoes: unknown;
+  configuracoes: Json;
   ativo: boolean | null;
   ultima_sincronizacao: string | null;
 }
@@ -16,7 +17,7 @@ export interface IntegracaoPontoInput {
   tipo: string | null;
   endpoint: string | null;
   token_autenticacao: string | null;
-  configuracoes: unknown;
+  configuracoes: Json;
   ativo: boolean;
 }
 

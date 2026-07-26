@@ -99,7 +99,7 @@ export async function getDanfeMockEnrichmentData(params: {
   if (params.empresaRepresentadaId) {
     const { data: emp } = await supabase
       .from('empresas_representadas')
-      .select('razao_social, nome_fantasia, cnpj, inscricao_estadual, telefone, logradouro, numero, complemento, bairro, cidade, estado, cep')
+      .select('nome, cnpj, telefone, email, endereco, cidade, estado, cep')
       .eq('id', params.empresaRepresentadaId)
       .maybeSingle();
     if (emp) result.emitente = emp;
@@ -108,10 +108,9 @@ export async function getDanfeMockEnrichmentData(params: {
   if (params.vendaId) {
     const { data: venda } = await supabase
       .from('vendas')
-      .select('cliente_id, natureza_operacao, observacoes')
+      .select('cliente_id, observacoes')
       .eq('id', params.vendaId)
       .maybeSingle();
-    result.naturezaOperacao = venda?.natureza_operacao ?? null;
     const clienteId = venda?.cliente_id;
     if (clienteId) {
       const { data: cli } = await supabase

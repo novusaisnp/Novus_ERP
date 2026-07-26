@@ -1986,37 +1986,52 @@ export type Database = {
       }
       documentos_movimentacoes_bancarias: {
         Row: {
+          ativo: boolean
+          categoria: string | null
           created_at: string
           descricao: string | null
           empresa_representada_id: string
           id: string
           movimentacao_id: string
           nome_arquivo: string
+          nome_original: string | null
           tamanho_bytes: number | null
           tipo_arquivo: string | null
+          updated_at: string
           url_arquivo: string
+          usuario_upload_id: string | null
         }
         Insert: {
+          ativo?: boolean
+          categoria?: string | null
           created_at?: string
           descricao?: string | null
           empresa_representada_id: string
           id?: string
           movimentacao_id: string
           nome_arquivo: string
+          nome_original?: string | null
           tamanho_bytes?: number | null
           tipo_arquivo?: string | null
+          updated_at?: string
           url_arquivo: string
+          usuario_upload_id?: string | null
         }
         Update: {
+          ativo?: boolean
+          categoria?: string | null
           created_at?: string
           descricao?: string | null
           empresa_representada_id?: string
           id?: string
           movimentacao_id?: string
           nome_arquivo?: string
+          nome_original?: string | null
           tamanho_bytes?: number | null
           tipo_arquivo?: string | null
+          updated_at?: string
           url_arquivo?: string
+          usuario_upload_id?: string | null
         }
         Relationships: [
           {
@@ -3941,12 +3956,18 @@ export type Database = {
           created_at: string
           data_lancamento: string
           descricao: string | null
+          descricao_lote: string | null
           empresa_representada_id: string
           id: string
+          ip_origem: unknown
           motivo_cancelamento: string | null
+          numero_lote: string | null
+          quantidade_movimentacoes: number
           status: string | null
           tipo: string
+          tipo_lote: string | null
           updated_at: string
+          usuario_criacao_id: string | null
           valor_total: number | null
         }
         Insert: {
@@ -3954,12 +3975,18 @@ export type Database = {
           created_at?: string
           data_lancamento: string
           descricao?: string | null
+          descricao_lote?: string | null
           empresa_representada_id: string
           id?: string
+          ip_origem?: unknown
           motivo_cancelamento?: string | null
+          numero_lote?: string | null
+          quantidade_movimentacoes?: number
           status?: string | null
           tipo: string
+          tipo_lote?: string | null
           updated_at?: string
+          usuario_criacao_id?: string | null
           valor_total?: number | null
         }
         Update: {
@@ -3967,12 +3994,18 @@ export type Database = {
           created_at?: string
           data_lancamento?: string
           descricao?: string | null
+          descricao_lote?: string | null
           empresa_representada_id?: string
           id?: string
+          ip_origem?: unknown
           motivo_cancelamento?: string | null
+          numero_lote?: string | null
+          quantidade_movimentacoes?: number
           status?: string | null
           tipo?: string
+          tipo_lote?: string | null
           updated_at?: string
+          usuario_criacao_id?: string | null
           valor_total?: number | null
         }
         Relationships: [
@@ -4129,84 +4162,126 @@ export type Database = {
       }
       movimentacoes_bancarias: {
         Row: {
+          ativo: boolean
           beneficiario_pagador: string | null
           centro_custo_id: string | null
           conciliado: boolean | null
           conta_bancaria_id: string
+          conta_destino_id: string | null
           created_at: string
           created_by: string | null
           data_compensacao: string | null
           data_conciliacao: string | null
+          data_estorno: string | null
           data_lancamento: string
+          data_movimentacao: string | null
           deleted_at: string | null
           descricao: string
+          documento_referencia: string | null
           empresa_representada_id: string
+          estornado: boolean
           historico: string | null
           id: string
+          ip_origem: unknown
           lote_id: string | null
+          motivo_estorno: string | null
+          movimentacao_estorno_id: string | null
           movimentacao_extrato_id: string | null
           natureza_id: string | null
           numero_documento: string | null
+          observacoes: string | null
           plano_conta_id: string | null
           saldo_anterior: number | null
           saldo_posterior: number | null
           status: string | null
           tipo: string
+          tipo_movimentacao: string | null
           updated_at: string
+          usuario_conciliacao_id: string | null
+          usuario_criacao_id: string | null
+          usuario_estorno_id: string | null
           valor: number
         }
         Insert: {
+          ativo?: boolean
           beneficiario_pagador?: string | null
           centro_custo_id?: string | null
           conciliado?: boolean | null
           conta_bancaria_id: string
+          conta_destino_id?: string | null
           created_at?: string
           created_by?: string | null
           data_compensacao?: string | null
           data_conciliacao?: string | null
+          data_estorno?: string | null
           data_lancamento: string
+          data_movimentacao?: string | null
           deleted_at?: string | null
           descricao: string
+          documento_referencia?: string | null
           empresa_representada_id: string
+          estornado?: boolean
           historico?: string | null
           id?: string
+          ip_origem?: unknown
           lote_id?: string | null
+          motivo_estorno?: string | null
+          movimentacao_estorno_id?: string | null
           movimentacao_extrato_id?: string | null
           natureza_id?: string | null
           numero_documento?: string | null
+          observacoes?: string | null
           plano_conta_id?: string | null
           saldo_anterior?: number | null
           saldo_posterior?: number | null
           status?: string | null
           tipo: string
+          tipo_movimentacao?: string | null
           updated_at?: string
+          usuario_conciliacao_id?: string | null
+          usuario_criacao_id?: string | null
+          usuario_estorno_id?: string | null
           valor: number
         }
         Update: {
+          ativo?: boolean
           beneficiario_pagador?: string | null
           centro_custo_id?: string | null
           conciliado?: boolean | null
           conta_bancaria_id?: string
+          conta_destino_id?: string | null
           created_at?: string
           created_by?: string | null
           data_compensacao?: string | null
           data_conciliacao?: string | null
+          data_estorno?: string | null
           data_lancamento?: string
+          data_movimentacao?: string | null
           deleted_at?: string | null
           descricao?: string
+          documento_referencia?: string | null
           empresa_representada_id?: string
+          estornado?: boolean
           historico?: string | null
           id?: string
+          ip_origem?: unknown
           lote_id?: string | null
+          motivo_estorno?: string | null
+          movimentacao_estorno_id?: string | null
           movimentacao_extrato_id?: string | null
           natureza_id?: string | null
           numero_documento?: string | null
+          observacoes?: string | null
           plano_conta_id?: string | null
           saldo_anterior?: number | null
           saldo_posterior?: number | null
           status?: string | null
           tipo?: string
+          tipo_movimentacao?: string | null
           updated_at?: string
+          usuario_conciliacao_id?: string | null
+          usuario_criacao_id?: string | null
+          usuario_estorno_id?: string | null
           valor?: number
         }
         Relationships: [
@@ -4225,6 +4300,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "movimentacoes_bancarias_conta_destino_id_fkey"
+            columns: ["conta_destino_id"]
+            isOneToOne: false
+            referencedRelation: "contas_bancarias"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "movimentacoes_bancarias_empresa_representada_id_fkey"
             columns: ["empresa_representada_id"]
             isOneToOne: false
@@ -4236,6 +4318,13 @@ export type Database = {
             columns: ["lote_id"]
             isOneToOne: false
             referencedRelation: "lotes_movimentacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimentacoes_bancarias_movimentacao_estorno_id_fkey"
+            columns: ["movimentacao_estorno_id"]
+            isOneToOne: false
+            referencedRelation: "movimentacoes_bancarias"
             referencedColumns: ["id"]
           },
           {
