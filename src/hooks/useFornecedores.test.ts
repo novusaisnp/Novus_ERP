@@ -19,7 +19,7 @@ vi.mock('@/services/fornecedorService', () => ({
 import { useFornecedores } from './useFornecedores';
 import { fornecedorService } from '@/services/fornecedorService';
 
-const svc = fornecedorService as any;
+const svc = fornecedorService as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 const rowPJ = {
   id: 'f1',
@@ -32,7 +32,7 @@ const rowPJ = {
 
 beforeEach(() => {
   toastFn.mockReset();
-  Object.values(svc).forEach((f: any) => f.mockReset());
+  Object.values(svc).forEach((f) => f.mockReset());
 });
 
 describe('useFornecedores load', () => {
@@ -58,9 +58,9 @@ describe('useFornecedores save', () => {
     const { result } = renderHook(() => useFornecedores());
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let ok: any;
+    let ok = true;
     await act(async () => {
-      ok = await result.current.saveFornecedor({ tipo_pessoa: 'PJ' } as any);
+      ok = await result.current.saveFornecedor({ tipo_pessoa: 'PJ' });
     });
     expect(ok).toBe(false);
     expect(svc.createFornecedor).not.toHaveBeenCalled();
@@ -72,13 +72,13 @@ describe('useFornecedores save', () => {
     const { result } = renderHook(() => useFornecedores());
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let ok: any;
+    let ok = false;
     await act(async () => {
       ok = await result.current.saveFornecedor({
         tipo_pessoa: 'PJ',
         razaoSocial: 'ACME',
         cnpj: '11222333000181',
-      } as any);
+      });
     });
     expect(ok).toBe(true);
     expect(svc.createFornecedor).toHaveBeenCalled();
@@ -96,7 +96,7 @@ describe('useFornecedores save', () => {
         tipo_pessoa: 'PJ',
         razaoSocial: 'ACME',
         cnpj: '11222333000181',
-      } as any);
+      });
     });
     expect(svc.updateFornecedor).toHaveBeenCalledWith('f1', expect.any(Object));
   });
@@ -107,13 +107,13 @@ describe('useFornecedores save', () => {
     const { result } = renderHook(() => useFornecedores());
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let ok: any;
+    let ok = true;
     await act(async () => {
       ok = await result.current.saveFornecedor({
         tipo_pessoa: 'PJ',
         razaoSocial: 'ACME',
         cnpj: '11222333000181',
-      } as any);
+      });
     });
     expect(ok).toBe(false);
     expect(toastFn).toHaveBeenCalledWith(expect.objectContaining({ variant: 'destructive' }));
@@ -126,7 +126,7 @@ describe('useFornecedores delete', () => {
     const { result } = renderHook(() => useFornecedores());
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let ok: any;
+    let ok = true;
     await act(async () => {
       ok = await result.current.deleteFornecedor('');
     });
@@ -140,7 +140,7 @@ describe('useFornecedores delete', () => {
     const { result } = renderHook(() => useFornecedores());
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let ok: any;
+    let ok = false;
     await act(async () => {
       ok = await result.current.deleteFornecedor('f1');
     });
@@ -154,7 +154,7 @@ describe('useFornecedores delete', () => {
     const { result } = renderHook(() => useFornecedores());
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let ok: any;
+    let ok = true;
     await act(async () => {
       ok = await result.current.deleteFornecedor('f1');
     });
