@@ -19,8 +19,9 @@ vi.mock('@/services/produtoService', () => ({
 
 import { useProdutos } from './useProdutos';
 import { produtoService } from '@/services/produtoService';
+import type { Produto } from '@/types/produto';
 
-const svc = produtoService as any;
+const svc = produtoService as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 const row = {
   id: 'p1',
@@ -32,7 +33,7 @@ const row = {
 
 beforeEach(() => {
   toastFn.mockReset();
-  Object.values(svc).forEach((f: any) => f.mockReset());
+  Object.values(svc).forEach((f) => f.mockReset());
 });
 
 describe('useProdutos load', () => {
@@ -59,9 +60,9 @@ describe('useProdutos criar/atualizar', () => {
     const { result } = renderHook(() => useProdutos());
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let ok: any;
+    let ok = true;
     await act(async () => {
-      ok = await result.current.criarProduto({ nome: '', preco_venda: 0 } as any);
+      ok = await result.current.criarProduto({ nome: '', preco_venda: 0 });
     });
     expect(ok).toBe(false);
     expect(svc.criar).not.toHaveBeenCalled();
@@ -74,9 +75,9 @@ describe('useProdutos criar/atualizar', () => {
     const { result } = renderHook(() => useProdutos());
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let ok: any;
+    let ok = false;
     await act(async () => {
-      ok = await result.current.criarProduto({ nome: 'Novo', preco_venda: 10 } as any);
+      ok = await result.current.criarProduto({ nome: 'Novo', preco_venda: 10 });
     });
     expect(ok).toBe(true);
     expect(svc.criar).toHaveBeenCalled();
@@ -89,9 +90,9 @@ describe('useProdutos criar/atualizar', () => {
     const { result } = renderHook(() => useProdutos());
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let ok: any;
+    let ok = false;
     await act(async () => {
-      ok = await result.current.atualizarProduto('p1', { nome: 'X', preco_venda: 10 } as any);
+      ok = await result.current.atualizarProduto('p1', { nome: 'X', preco_venda: 10 });
     });
     expect(ok).toBe(true);
     expect(svc.atualizar).toHaveBeenCalledWith('p1', expect.any(Object));
@@ -103,9 +104,9 @@ describe('useProdutos criar/atualizar', () => {
     const { result } = renderHook(() => useProdutos());
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let ok: any;
+    let ok = true;
     await act(async () => {
-      ok = await result.current.criarProduto({ nome: 'X', preco_venda: 10 } as any);
+      ok = await result.current.criarProduto({ nome: 'X', preco_venda: 10 });
     });
     expect(ok).toBe(false);
   });
@@ -114,9 +115,9 @@ describe('useProdutos criar/atualizar', () => {
     svc.listar.mockResolvedValue([]);
     const { result } = renderHook(() => useProdutos());
     await waitFor(() => expect(result.current.loading).toBe(false));
-    let ok: any;
+    let ok = true;
     await act(async () => {
-      ok = await result.current.atualizarProduto('p1', { nome: '', preco_venda: 0 } as any);
+      ok = await result.current.atualizarProduto('p1', { nome: '', preco_venda: 0 });
     });
     expect(ok).toBe(false);
     expect(svc.atualizar).not.toHaveBeenCalled();
@@ -130,7 +131,7 @@ describe('useProdutos excluir', () => {
     const { result } = renderHook(() => useProdutos());
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let ok: any;
+    let ok = false;
     await act(async () => {
       ok = await result.current.excluirProduto('p1');
     });
@@ -144,7 +145,7 @@ describe('useProdutos excluir', () => {
     const { result } = renderHook(() => useProdutos());
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let ok: any;
+    let ok = true;
     await act(async () => {
       ok = await result.current.excluirProduto('p1');
     });
@@ -159,7 +160,7 @@ describe('useProdutos buscarPorCodigoBarras', () => {
     const { result } = renderHook(() => useProdutos());
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let p: any;
+    let p: Produto | null = null;
     await act(async () => {
       p = await result.current.buscarPorCodigoBarras('789');
     });
@@ -172,7 +173,7 @@ describe('useProdutos buscarPorCodigoBarras', () => {
     const { result } = renderHook(() => useProdutos());
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let p: any;
+    let p: Produto | null = null;
     await act(async () => {
       p = await result.current.buscarPorCodigoBarras('000');
     });
@@ -185,7 +186,7 @@ describe('useProdutos buscarPorCodigoBarras', () => {
     const { result } = renderHook(() => useProdutos());
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let p: any;
+    let p: Produto | null = null;
     await act(async () => {
       p = await result.current.buscarPorCodigoBarras('000');
     });
