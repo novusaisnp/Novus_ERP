@@ -1,5 +1,18 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+interface SyncLog {
+  id: string;
+  table_name: string;
+  operation_type: 'insert' | 'update' | 'delete' | 'sync';
+  retry_count: number;
+  data_payload?: SyncPayload;
+}
+
+interface SyncPayload {
+  source_system?: string;
+  data: Record<string, unknown>;
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -122,7 +135,7 @@ serve(async (req) => {
   }
 });
 
-async function reprocessSync(supabase: any, syncLog: any) {
+async function reprocessSync(supabase: SupabaseClient, syncLog: SyncLog) {
   console.log(`Reprocessando sync ${syncLog.id} da tabela ${syncLog.table_name}`);
   
   const payload = syncLog.data_payload;
@@ -147,7 +160,7 @@ async function reprocessSync(supabase: any, syncLog: any) {
   }
 }
 
-async function reprocessCliente(supabase: any, syncLog: any, payload: any) {
+async function reprocessCliente(supabase: SupabaseClient, syncLog: SyncLog, payload: SyncPayload) {
   const { data } = payload;
   
   switch (syncLog.operation_type) {
@@ -205,7 +218,7 @@ async function reprocessCliente(supabase: any, syncLog: any, payload: any) {
   }
 }
 
-async function reprocessVenda(supabase: any, syncLog: any, payload: any) {
+async function reprocessVenda(supabase: SupabaseClient, syncLog: SyncLog, payload: SyncPayload) {
   const { data } = payload;
   
   // Buscar cliente
@@ -279,7 +292,7 @@ async function reprocessVenda(supabase: any, syncLog: any, payload: any) {
     .single();
 }
 
-async function reprocessContrato(supabase: any, syncLog: any, payload: any) {
+async function reprocessContrato(supabase: SupabaseClient, syncLog: SyncLog, payload: SyncPayload) {
   const { data } = payload;
   
   // Buscar cliente
@@ -351,7 +364,7 @@ async function reprocessContrato(supabase: any, syncLog: any, payload: any) {
     .single();
 }
 
-async function reprocessFinanceiro(supabase: any, syncLog: any, payload: any) {
+async function reprocessFinanceiro(supabase: SupabaseClient, syncLog: SyncLog, payload: SyncPayload) {
   const { data } = payload;
   
   // Buscar relacionamentos
@@ -444,7 +457,7 @@ async function reprocessFinanceiro(supabase: any, syncLog: any, payload: any) {
     .single();
 }
 
-function mapClienteData(data: any, sourceSystem: string) {
+function mapClienteData(data: Record<string, unknown>, sourceSystem: string) {
   return {
     nome: data.nome || data.razao_social,
     apelido: data.apelido || data.nome_fantasia,
