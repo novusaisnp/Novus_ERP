@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
-import { Banco, BancoInput } from '@/types/banco';
+import { Banco, BancoInput, BancoBrasilAPI } from '@/types/banco';
 import { buscarBancoPorCodigo, buscarBancosBrasilAPI } from '@/services/bancoService';
 import { Search, Loader2, ChevronDown } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -31,7 +31,7 @@ export const BancosModal = ({
 }: BancosModalProps) => {
   const [isBuscandoAPI, setIsBuscandoAPI] = useState(false);
   const [isBuscandoNome, setIsBuscandoNome] = useState(false);
-  const [bancosEncontrados, setBancosEncontrados] = useState<any[]>([]);
+  const [bancosEncontrados, setBancosEncontrados] = useState<BancoBrasilAPI[]>([]);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const isEdit = !!banco;
 
@@ -158,7 +158,7 @@ export const BancosModal = ({
     }
   };
 
-  const selecionarBanco = (bancoSelecionado: any) => {
+  const selecionarBanco = (bancoSelecionado: BancoBrasilAPI) => {
     console.log('[GestaoBancaria] Banco selecionado:', bancoSelecionado);
     setValue('codigo', bancoSelecionado.code.toString());
     setValue('nome', bancoSelecionado.fullName || bancoSelecionado.name);

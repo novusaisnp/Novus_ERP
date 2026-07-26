@@ -29,7 +29,7 @@ const RegistrosPonto: React.FC = () => {
 
   const colaboradorMap = useMemo(() => {
     const m: Record<string, string> = {};
-    (colaboradores as any[]).forEach((c) => { m[c.id] = c.nome; });
+    colaboradores.forEach((c) => { m[c.id] = c.nome; });
     return m;
   }, [colaboradores]);
 
@@ -55,7 +55,7 @@ const RegistrosPonto: React.FC = () => {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
-                {(colaboradores as any[]).map((c) => (
+                {colaboradores.map((c) => (
                   <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
                 ))}
               </SelectContent>

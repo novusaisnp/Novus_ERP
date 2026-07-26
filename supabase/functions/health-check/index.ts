@@ -90,7 +90,7 @@ serve(async (req) => {
         name: 'webhook_configurations',
         status: 'healthy',
         message: `${webhookConfigs?.length || 0} webhooks ativos`,
-        details: webhookConfigs?.map((w: any) => w.nome) || [],
+        details: webhookConfigs?.map((w) => w.nome) || [],
         response_time_ms: Date.now() - startTime
       });
     } catch (error) {
@@ -203,7 +203,7 @@ serve(async (req) => {
   }
 });
 
-async function checkFunctionHealth(functionName: string): Promise<any> {
+async function checkFunctionHealth(functionName: string): Promise<{ status: string; message: string; response_time_ms: number }> {
   const startTime = Date.now();
   
   try {

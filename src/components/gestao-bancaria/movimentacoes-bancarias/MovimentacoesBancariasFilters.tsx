@@ -11,7 +11,7 @@ import { Search, Filter, X } from 'lucide-react';
 interface ContaOption {
   value: string;
   label: string;
-  conta: any;
+  conta: unknown;
 }
 
 interface MovimentacoesBancariasFiltersProps {
@@ -26,7 +26,7 @@ export function MovimentacoesBancariasFilters({
   onFiltrosChange,
 }: MovimentacoesBancariasFiltersProps) {
   
-  const updateFiltro = (key: keyof FiltrosMovimentacoes, value: any) => {
+  const updateFiltro = (key: keyof FiltrosMovimentacoes, value: FiltrosMovimentacoes[keyof FiltrosMovimentacoes]) => {
     onFiltrosChange({
       ...filtros,
       [key]: value,

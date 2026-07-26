@@ -4,7 +4,7 @@ import { SupabaseFornecedor } from '@/services/fornecedorService';
 import { validarCNPJ } from '@/services/cnpjApi';
 
 export const fornecedorUtils = {
-  transformSupabaseToFornecedor(item: any): Fornecedor {
+  transformSupabaseToFornecedor(item: SupabaseFornecedor): Fornecedor {
     console.log('[fornecedorUtils] Transformando item do Supabase:', item.id, item.tipo_pessoa);
     
     return {
@@ -62,7 +62,7 @@ export const fornecedorUtils = {
       ativo: item.ativo !== false,
       createdAt: item.created_at ? new Date(item.created_at) : new Date(),
       updatedAt: item.updated_at ? new Date(item.updated_at) : undefined,
-    };
+    } as unknown as Fornecedor;
   },
 
   validateFornecedor(fornecedor: Fornecedor): { isValid: boolean; error?: string } {
@@ -170,7 +170,7 @@ export const fornecedorUtils = {
     return cpf;
   },
 
-  getErrorMessage(error: any): string {
+  getErrorMessage(error: { code?: string; message?: string } | null | undefined): string {
     console.log('[fornecedorUtils] Processando erro:', error);
     
     if (error?.code === '23505') {

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { fornecedorUtils } from './fornecedorUtils';
 import { validarCPF as validarCPFCanonico } from '@/services/cnpjApi';
 import type { Fornecedor } from '@/types/fornecedor';
+import type { SupabaseFornecedor } from '@/services/fornecedorService';
 
 const basePJ = (over: Partial<Fornecedor> = {}): Fornecedor =>
   ({
@@ -104,7 +105,7 @@ describe('fornecedorUtils.validarEmail / formatarCNPJ / formatarCPF', () => {
 
 describe('fornecedorUtils.transformSupabaseToFornecedor', () => {
   it('round-trip PJ com JSON populado', () => {
-    const item = {
+    const item: SupabaseFornecedor = {
       id: 'f1',
       tipo_pessoa: 'PJ',
       razao_social: 'ACME',
@@ -139,7 +140,12 @@ describe('fornecedorUtils.transformSupabaseToFornecedor', () => {
   });
 
   it('aplica defaults quando campos ausentes', () => {
-    const f = fornecedorUtils.transformSupabaseToFornecedor({ id: 'f2' });
+    const f = fornecedorUtils.transformSupabaseToFornecedor({
+      id: 'f2',
+      tipo_pessoa: 'PJ',
+      ativo: true,
+      created_at: '2024-01-01T00:00:00Z',
+    });
     expect(f.tipo_pessoa).toBe('PJ');
     expect(f.razaoSocial).toBe('');
     expect(f.telefones).toEqual([]);

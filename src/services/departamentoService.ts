@@ -32,7 +32,7 @@ export const departamentoService = {
       empresa_representada_id: empresaId,
       nome: departamentoData.nome,
       descricao: departamentoData.descricao || null,
-      responsavel_id: (departamentoData as any).responsavelId || null,
+      responsavel_id: departamentoData.responsavelId || null,
       ativo: departamentoData.ativo ?? true,
       updated_at: new Date().toISOString()
     };
@@ -62,7 +62,7 @@ export const departamentoService = {
     const dataToSave = {
       nome: departamentoData.nome,
       descricao: departamentoData.descricao || null,
-      responsavel_id: (departamentoData as any).responsavelId || null,
+      responsavel_id: departamentoData.responsavelId || null,
       ativo: departamentoData.ativo ?? true,
       updated_at: new Date().toISOString()
     };

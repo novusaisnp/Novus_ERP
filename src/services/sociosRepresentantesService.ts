@@ -27,8 +27,8 @@ export const sociosRepresentantesService = {
       .from('usuarios')
       .select('socio_id')
       .not('socio_id', 'is', null);
-    const usedIds = new Set((linked || []).map((u: any) => u.socio_id));
-    return ((socios || []).filter((s: any) => !usedIds.has(s.id))) as unknown as SocioRepresentante[];
+    const usedIds = new Set((linked || []).map((u) => u.socio_id));
+    return ((socios || []).filter((s) => !usedIds.has(s.id))) as unknown as SocioRepresentante[];
   },
 
   async save(input: SocioRepresentante): Promise<SocioRepresentante> {
