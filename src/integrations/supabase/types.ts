@@ -2052,6 +2052,8 @@ export type Database = {
       }
       documentos_titulos_financeiros: {
         Row: {
+          ativo: boolean
+          categoria: string | null
           conta_pagar_id: string | null
           conta_receber_id: string | null
           created_at: string
@@ -2059,11 +2061,17 @@ export type Database = {
           empresa_representada_id: string
           id: string
           nome_arquivo: string
+          nome_original: string | null
           tamanho_bytes: number | null
           tipo_arquivo: string | null
+          tipo_titulo: string | null
+          titulo_id: string | null
+          upload_usuario_id: string | null
           url_arquivo: string
         }
         Insert: {
+          ativo?: boolean
+          categoria?: string | null
           conta_pagar_id?: string | null
           conta_receber_id?: string | null
           created_at?: string
@@ -2071,11 +2079,17 @@ export type Database = {
           empresa_representada_id: string
           id?: string
           nome_arquivo: string
+          nome_original?: string | null
           tamanho_bytes?: number | null
           tipo_arquivo?: string | null
+          tipo_titulo?: string | null
+          titulo_id?: string | null
+          upload_usuario_id?: string | null
           url_arquivo: string
         }
         Update: {
+          ativo?: boolean
+          categoria?: string | null
           conta_pagar_id?: string | null
           conta_receber_id?: string | null
           created_at?: string
@@ -2083,8 +2097,12 @@ export type Database = {
           empresa_representada_id?: string
           id?: string
           nome_arquivo?: string
+          nome_original?: string | null
           tamanho_bytes?: number | null
           tipo_arquivo?: string | null
+          tipo_titulo?: string | null
+          titulo_id?: string | null
+          upload_usuario_id?: string | null
           url_arquivo?: string
         }
         Relationships: [
@@ -3524,36 +3542,57 @@ export type Database = {
           created_at: string
           dados_anteriores: Json | null
           dados_novos: Json | null
+          data_operacao: string
           empresa_representada_id: string
           id: string
           ip_origem: unknown
+          observacoes: string | null
           registro_id: string
           tabela_origem: string
+          tipo_operacao: string | null
+          tipo_titulo: string | null
+          titulo_id: string | null
           usuario_id: string | null
+          usuario_nome: string | null
+          valor_movimentado: number | null
         }
         Insert: {
           acao: string
           created_at?: string
           dados_anteriores?: Json | null
           dados_novos?: Json | null
+          data_operacao?: string
           empresa_representada_id: string
           id?: string
           ip_origem?: unknown
+          observacoes?: string | null
           registro_id: string
           tabela_origem: string
+          tipo_operacao?: string | null
+          tipo_titulo?: string | null
+          titulo_id?: string | null
           usuario_id?: string | null
+          usuario_nome?: string | null
+          valor_movimentado?: number | null
         }
         Update: {
           acao?: string
           created_at?: string
           dados_anteriores?: Json | null
           dados_novos?: Json | null
+          data_operacao?: string
           empresa_representada_id?: string
           id?: string
           ip_origem?: unknown
+          observacoes?: string | null
           registro_id?: string
           tabela_origem?: string
+          tipo_operacao?: string | null
+          tipo_titulo?: string | null
+          titulo_id?: string | null
           usuario_id?: string | null
+          usuario_nome?: string | null
+          valor_movimentado?: number | null
         }
         Relationships: [
           {
@@ -3752,38 +3791,61 @@ export type Database = {
       }
       liquidacoes_multiplas: {
         Row: {
+          conta_bancaria_id: string | null
           created_at: string
           data_liquidacao: string
           empresa_representada_id: string
           forma_pagamento: string | null
           id: string
+          liquidacao_principal_id: string | null
           observacoes: string | null
+          valor: number | null
           valor_total: number
         }
         Insert: {
+          conta_bancaria_id?: string | null
           created_at?: string
           data_liquidacao: string
           empresa_representada_id: string
           forma_pagamento?: string | null
           id?: string
+          liquidacao_principal_id?: string | null
           observacoes?: string | null
+          valor?: number | null
           valor_total: number
         }
         Update: {
+          conta_bancaria_id?: string | null
           created_at?: string
           data_liquidacao?: string
           empresa_representada_id?: string
           forma_pagamento?: string | null
           id?: string
+          liquidacao_principal_id?: string | null
           observacoes?: string | null
+          valor?: number | null
           valor_total?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "liquidacoes_multiplas_conta_bancaria_id_fkey"
+            columns: ["conta_bancaria_id"]
+            isOneToOne: false
+            referencedRelation: "contas_bancarias"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "liquidacoes_multiplas_empresa_representada_id_fkey"
             columns: ["empresa_representada_id"]
             isOneToOne: false
             referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "liquidacoes_multiplas_liquidacao_principal_id_fkey"
+            columns: ["liquidacao_principal_id"]
+            isOneToOne: false
+            referencedRelation: "liquidacoes_titulos"
             referencedColumns: ["id"]
           },
         ]
@@ -3797,19 +3859,29 @@ export type Database = {
           conta_pagar_id: string | null
           conta_receber_id: string | null
           created_at: string
+          data_estorno: string | null
           data_liquidacao: string
+          data_pagamento: string | null
           empresa_representada_id: string
+          estornado: boolean
           forma_pagamento: string | null
           historico: string | null
           id: string
           motivo_cancelamento: string | null
+          motivo_estorno: string | null
           natureza_id: string | null
           numero_cheque: string | null
+          observacoes: string | null
           plano_conta_id: string | null
+          tipo_titulo: string | null
+          titulo_id: string | null
           updated_at: string
+          usuario_estorno_id: string | null
+          usuario_liquidacao_id: string | null
           valor_desconto: number | null
           valor_juros: number | null
           valor_multa: number | null
+          valor_original_titulo: number | null
           valor_pago: number
         }
         Insert: {
@@ -3820,19 +3892,29 @@ export type Database = {
           conta_pagar_id?: string | null
           conta_receber_id?: string | null
           created_at?: string
+          data_estorno?: string | null
           data_liquidacao: string
+          data_pagamento?: string | null
           empresa_representada_id: string
+          estornado?: boolean
           forma_pagamento?: string | null
           historico?: string | null
           id?: string
           motivo_cancelamento?: string | null
+          motivo_estorno?: string | null
           natureza_id?: string | null
           numero_cheque?: string | null
+          observacoes?: string | null
           plano_conta_id?: string | null
+          tipo_titulo?: string | null
+          titulo_id?: string | null
           updated_at?: string
+          usuario_estorno_id?: string | null
+          usuario_liquidacao_id?: string | null
           valor_desconto?: number | null
           valor_juros?: number | null
           valor_multa?: number | null
+          valor_original_titulo?: number | null
           valor_pago: number
         }
         Update: {
@@ -3843,19 +3925,29 @@ export type Database = {
           conta_pagar_id?: string | null
           conta_receber_id?: string | null
           created_at?: string
+          data_estorno?: string | null
           data_liquidacao?: string
+          data_pagamento?: string | null
           empresa_representada_id?: string
+          estornado?: boolean
           forma_pagamento?: string | null
           historico?: string | null
           id?: string
           motivo_cancelamento?: string | null
+          motivo_estorno?: string | null
           natureza_id?: string | null
           numero_cheque?: string | null
+          observacoes?: string | null
           plano_conta_id?: string | null
+          tipo_titulo?: string | null
+          titulo_id?: string | null
           updated_at?: string
+          usuario_estorno_id?: string | null
+          usuario_liquidacao_id?: string | null
           valor_desconto?: number | null
           valor_juros?: number | null
           valor_multa?: number | null
+          valor_original_titulo?: number | null
           valor_pago?: number
         }
         Relationships: [

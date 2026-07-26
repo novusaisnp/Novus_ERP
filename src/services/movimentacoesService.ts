@@ -7,18 +7,28 @@ import type {
   HistoricoMovimentacao
 } from '@/types/movimentacoesFinanceiras';
 
+const getEmpresaIdAtual = async (): Promise<string> => {
+  const { data, error } = await supabase.rpc('get_user_empresa_id');
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('Empresa não identificada para o usuário atual.');
+  return data;
+};
+
 export const movimentacoesService = {
   // Liquidar/Baixar título
   async liquidarTitulo(dadosLiquidacao: LiquidacaoTitulo): Promise<void> {
-    
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
+    const empresaId = await getEmpresaIdAtual();
 
     try {
       // 1. Criar registro de liquidação
       const { data: liquidacao, error: liquidacaoError } = await supabase
         .from('liquidacoes_titulos')
         .insert({
+          empresa_representada_id: empresaId,
+          data_liquidacao: dadosLiquidacao.data_pagamento,
           titulo_id: dadosLiquidacao.titulo_id,
           tipo_titulo: dadosLiquidacao.tipo_titulo,
           valor_pago: dadosLiquidacao.valor_pago,
@@ -37,6 +47,9 @@ export const movimentacoesService = {
       // 2. Se há múltiplas baixas, inserir os registros
       if (dadosLiquidacao.multi_baixa && dadosLiquidacao.multi_baixa.length > 0) {
         const multiBaixas = dadosLiquidacao.multi_baixa.map(baixa => ({
+          empresa_representada_id: empresaId,
+          data_liquidacao: dadosLiquidacao.data_pagamento,
+          valor_total: baixa.valor,
           liquidacao_principal_id: liquidacao.id,
           conta_bancaria_id: baixa.conta_bancaria_id,
           valor: baixa.valor,
@@ -51,18 +64,22 @@ export const movimentacoesService = {
       }
 
       // 3. Atualizar status do título na tabela correspondente
-      const tabelaTitulo = dadosLiquidacao.tipo_titulo === 'CONTAS_PAGAR' ? 'contas_pagar' : 'contas_receber';
-      const novoStatus = dadosLiquidacao.tipo_titulo === 'CONTAS_PAGAR' ? 'PAGA' : 'RECEBIDA';
-
-      const { error: updateError } = await supabase
-        .from(tabelaTitulo)
-        .update({
-          situacao: novoStatus,
-          data_pagamento: dadosLiquidacao.data_pagamento,
-          ...(dadosLiquidacao.tipo_titulo === 'CONTAS_RECEBER' ? 
-            { valor_pago: dadosLiquidacao.valor_pago } : {})
-        })
-        .eq('id', dadosLiquidacao.titulo_id);
+      const { error: updateError } = dadosLiquidacao.tipo_titulo === 'CONTAS_RECEBER'
+        ? await supabase
+            .from('contas_receber')
+            .update({
+              status: 'RECEBIDA',
+              data_recebimento: dadosLiquidacao.data_pagamento,
+              valor_recebido: dadosLiquidacao.valor_pago,
+            })
+            .eq('id', dadosLiquidacao.titulo_id)
+        : await supabase
+            .from('contas_pagar')
+            .update({
+              status: 'PAGA',
+              data_pagamento: dadosLiquidacao.data_pagamento,
+            })
+            .eq('id', dadosLiquidacao.titulo_id);
 
       if (updateError) throw updateError;
 
@@ -105,16 +122,15 @@ export const movimentacoesService = {
       if (estornoError) throw estornoError;
 
       // 2. Reverter status do título para ABERTA
-      const tabelaTitulo = dados.tipo_titulo === 'CONTAS_PAGAR' ? 'contas_pagar' : 'contas_receber';
-
-      const { error: updateError } = await supabase
-        .from(tabelaTitulo)
-        .update({
-          situacao: 'ABERTA',
-          data_pagamento: null,
-          ...(dados.tipo_titulo === 'CONTAS_RECEBER' ? { valor_pago: 0 } : {})
-        })
-        .eq('id', dados.titulo_id);
+      const { error: updateError } = dados.tipo_titulo === 'CONTAS_RECEBER'
+        ? await supabase
+            .from('contas_receber')
+            .update({ status: 'ABERTA', data_recebimento: null, valor_recebido: 0 })
+            .eq('id', dados.titulo_id)
+        : await supabase
+            .from('contas_pagar')
+            .update({ status: 'ABERTA', data_pagamento: null })
+            .eq('id', dados.titulo_id);
 
       if (updateError) throw updateError;
 
@@ -170,7 +186,7 @@ export const movimentacoesService = {
 
       const { error: updateError } = await supabase
         .from(tabelaTitulo)
-        .update({ situacao: 'CANCELADA' })
+        .update({ status: 'CANCELADA' })
         .eq('id', dadosCancelamento.titulo_id);
 
       if (updateError) throw updateError;
@@ -288,6 +304,7 @@ export const movimentacoesService = {
     
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
+    const empresaId = await getEmpresaIdAtual();
 
     try {
       // 1. Upload do arquivo para storage (implementar quando storage estiver configurado)
@@ -299,6 +316,7 @@ export const movimentacoesService = {
       const { error: insertError } = await supabase
         .from('documentos_titulos_financeiros')
         .insert({
+          empresa_representada_id: empresaId,
           titulo_id: dados.titulo_id,
           tipo_titulo: dados.tipo_titulo,
           nome_arquivo: nomeArquivo,
@@ -347,10 +365,16 @@ export const movimentacoesService = {
     observacoes?: string;
   }): Promise<void> {
     const { data: { user } } = await supabase.auth.getUser();
-    
+    const empresaId = await getEmpresaIdAtual();
+    const tabelaOrigem = dados.tipo_titulo === 'CONTAS_PAGAR' ? 'contas_pagar' : 'contas_receber';
+
     const { error } = await supabase
       .from('historico_movimentacoes_financeiras')
       .insert({
+        empresa_representada_id: empresaId,
+        acao: dados.tipo_operacao,
+        registro_id: dados.titulo_id,
+        tabela_origem: tabelaOrigem,
         titulo_id: dados.titulo_id,
         tipo_titulo: dados.tipo_titulo,
         tipo_operacao: dados.tipo_operacao,

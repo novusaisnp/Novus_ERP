@@ -1,5 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { PlanoContas, PlanoContasInput } from '@/types/planoContas';
+
+type PlanoContasUpdate = Database['public']['Tables']['plano_contas']['Update'];
 
 // DB usa: conta_pai_id, aceita_lancamento. Mantemos app-facing como id_pai/analitica.
 type DBRow = {
@@ -142,7 +145,7 @@ export const planoContasService = {
       }
     }
 
-    const updateData: Record<string, unknown> = {};
+    const updateData: PlanoContasUpdate = {};
     if (input.nome !== undefined) updateData.nome = input.nome.trim();
     if (input.tipo !== undefined) updateData.tipo = input.tipo;
     if (input.id_pai !== undefined) updateData.conta_pai_id = input.id_pai || null;
