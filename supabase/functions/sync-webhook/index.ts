@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,8 +13,8 @@ const TS_SKEW_MS =
 interface WebhookPayload {
   event: 'insert' | 'update' | 'delete' | 'sync';
   table: string;
-  data: any;
-  old_data?: any;
+  data: Record<string, unknown>;
+  old_data?: Record<string, unknown>;
   timestamp: string;
   source_system: string;
 }
@@ -312,7 +312,7 @@ serve(async (req) => {
     });
 
   if (dedupError) {
-    if ((dedupError as any).code === '23505') {
+    if (dedupError.code === '23505') {
       return finish(
         {
           success: true,
@@ -325,7 +325,7 @@ serve(async (req) => {
       );
     }
     return finish(
-      { success: false, error: 'dedup_error', details: (dedupError as any).message },
+      { success: false, error: 'dedup_error', details: dedupError.message },
       500,
       'error',
       { reason: 'dedup_insert_failed' },
@@ -375,20 +375,22 @@ serve(async (req) => {
     }
 
     // ---- Dispatch by table ----
+    // empresaId já validado contra webhook_configs acima — toda escrita de domínio
+    // abaixo precisa ficar escopada a essa empresa (nunca confiar em payload.data pra isso).
     let result: unknown;
     switch (payload.table.toLowerCase()) {
       case 'clientes':
-        result = await syncCliente(supabase, payload);
+        result = await syncCliente(supabase, payload, empresaId);
         break;
       case 'vendas':
-        result = await syncVenda(supabase, payload);
+        result = await syncVenda(supabase, payload, empresaId);
         break;
       case 'contratos':
-        result = await syncContrato(supabase, payload);
+        result = await syncContrato(supabase, payload, empresaId);
         break;
       case 'contas_receber':
       case 'financeiro':
-        result = await syncFinanceiro(supabase, payload);
+        result = await syncFinanceiro(supabase, payload, empresaId);
         break;
       case 'e2e_noop':
         // Reserved for E2E validation: bypass domain sync so signature/idempotency
@@ -455,7 +457,7 @@ serve(async (req) => {
 // Domain sync helpers (unchanged behaviour from previous version)
 // ============================================================
 
-async function syncCliente(supabase: any, payload: WebhookPayload) {
+async function syncCliente(supabase: SupabaseClient, payload: WebhookPayload, empresaId: string) {
   const { event, data } = payload;
   switch (event) {
     case 'insert':
@@ -463,6 +465,7 @@ async function syncCliente(supabase: any, payload: WebhookPayload) {
       const { data: existingCliente } = await supabase
         .from('clientes')
         .select('id')
+        .eq('empresa_representada_id', empresaId)
         .or(`cpf_cnpj.eq.${data.cpf_cnpj},external_id.eq.${data.id}`)
         .single();
 
@@ -470,17 +473,18 @@ async function syncCliente(supabase: any, payload: WebhookPayload) {
         return await supabase
           .from('clientes')
           .update({
-            ...mapClienteData(data, payload.source_system),
+            ...mapClienteData(data, payload.source_system, empresaId),
             updated_at: new Date().toISOString(),
           })
           .eq('id', existingCliente.id)
+          .eq('empresa_representada_id', empresaId)
           .select()
           .single();
       }
 
       return await supabase
         .from('clientes')
-        .insert(mapClienteData(data, payload.source_system))
+        .insert(mapClienteData(data, payload.source_system, empresaId))
         .select()
         .single();
     }
@@ -488,10 +492,11 @@ async function syncCliente(supabase: any, payload: WebhookPayload) {
       return await supabase
         .from('clientes')
         .update({
-          ...mapClienteData(data, payload.source_system),
+          ...mapClienteData(data, payload.source_system, empresaId),
           updated_at: new Date().toISOString(),
         })
         .eq('external_id', data.id)
+        .eq('empresa_representada_id', empresaId)
         .select()
         .single();
     case 'delete':
@@ -499,23 +504,26 @@ async function syncCliente(supabase: any, payload: WebhookPayload) {
         .from('clientes')
         .update({ ativo: false, updated_at: new Date().toISOString() })
         .eq('external_id', data.id)
+        .eq('empresa_representada_id', empresaId)
         .select()
         .single();
   }
 }
 
-async function syncVenda(supabase: any, payload: WebhookPayload) {
+async function syncVenda(supabase: SupabaseClient, payload: WebhookPayload, empresaId: string) {
   const { event, data } = payload;
   let clienteId = null;
   if (data.cliente_id) {
     const { data: cliente } = await supabase
       .from('clientes')
       .select('id')
+      .eq('empresa_representada_id', empresaId)
       .or(`external_id.eq.${data.cliente_id},cpf_cnpj.eq.${data.cliente_cpf_cnpj}`)
       .single();
     clienteId = cliente?.id;
   }
   const vendaData = {
+    empresa_representada_id: empresaId,
     numero_venda: data.numero_venda || data.id,
     cliente_id: clienteId,
     data_venda: data.data_venda || new Date().toISOString(),
@@ -542,23 +550,26 @@ async function syncVenda(supabase: any, payload: WebhookPayload) {
         .from('vendas')
         .update({ ...vendaData, updated_at: new Date().toISOString() })
         .eq('numero_venda', data.numero_venda || data.id)
+        .eq('empresa_representada_id', empresaId)
         .select()
         .single();
   }
 }
 
-async function syncContrato(supabase: any, payload: WebhookPayload) {
+async function syncContrato(supabase: SupabaseClient, payload: WebhookPayload, empresaId: string) {
   const { event, data } = payload;
   let clienteId = null;
   if (data.cliente_id) {
     const { data: cliente } = await supabase
       .from('clientes')
       .select('id')
+      .eq('empresa_representada_id', empresaId)
       .or(`external_id.eq.${data.cliente_id},cpf_cnpj.eq.${data.cliente_cpf_cnpj}`)
       .single();
     clienteId = cliente?.id;
   }
   const contratoData = {
+    empresa_representada_id: empresaId,
     numero_contrato: data.numero_contrato || data.id,
     cliente_id: clienteId,
     data_inicio: data.data_inicio,
@@ -585,12 +596,13 @@ async function syncContrato(supabase: any, payload: WebhookPayload) {
         .from('contratos')
         .update({ ...contratoData, updated_at: new Date().toISOString() })
         .eq('numero_contrato', data.numero_contrato || data.id)
+        .eq('empresa_representada_id', empresaId)
         .select()
         .single();
   }
 }
 
-async function syncFinanceiro(supabase: any, payload: WebhookPayload) {
+async function syncFinanceiro(supabase: SupabaseClient, payload: WebhookPayload, empresaId: string) {
   const { event, data } = payload;
   let clienteId = null,
     vendaId = null,
@@ -599,6 +611,7 @@ async function syncFinanceiro(supabase: any, payload: WebhookPayload) {
     const { data: cliente } = await supabase
       .from('clientes')
       .select('id')
+      .eq('empresa_representada_id', empresaId)
       .or(`external_id.eq.${data.cliente_id},cpf_cnpj.eq.${data.cliente_cpf_cnpj}`)
       .single();
     clienteId = cliente?.id;
@@ -608,6 +621,7 @@ async function syncFinanceiro(supabase: any, payload: WebhookPayload) {
       .from('vendas')
       .select('id')
       .eq('numero_venda', data.venda_id)
+      .eq('empresa_representada_id', empresaId)
       .single();
     vendaId = venda?.id;
   }
@@ -616,10 +630,12 @@ async function syncFinanceiro(supabase: any, payload: WebhookPayload) {
       .from('contratos')
       .select('id')
       .eq('numero_contrato', data.contrato_id)
+      .eq('empresa_representada_id', empresaId)
       .single();
     contratoId = contrato?.id;
   }
   const financeiroData = {
+    empresa_representada_id: empresaId,
     numero_documento: data.numero_documento || data.id,
     cliente_id: clienteId,
     venda_id: vendaId,
@@ -653,13 +669,15 @@ async function syncFinanceiro(supabase: any, payload: WebhookPayload) {
         .from('contas_receber')
         .update({ ...financeiroData, updated_at: new Date().toISOString() })
         .eq('numero_documento', data.numero_documento || data.id)
+        .eq('empresa_representada_id', empresaId)
         .select()
         .single();
   }
 }
 
-function mapClienteData(data: any, sourceSystem: string) {
+function mapClienteData(data: Record<string, unknown>, sourceSystem: string, empresaId: string) {
   return {
+    empresa_representada_id: empresaId,
     nome: data.nome || data.razao_social,
     apelido: data.apelido || data.nome_fantasia,
     tipo: data.tipo || (data.cpf ? 'F' : 'J'),
