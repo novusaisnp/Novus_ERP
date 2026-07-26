@@ -78,6 +78,7 @@ export interface Departamento {
   nome: string;
   descricao?: string;
   empresaRepresentadaId?: string;
+  responsavelId?: string;
   ativo: boolean;
   createdAt?: Date;
   updatedAt?: Date;
@@ -210,6 +211,7 @@ export interface SupabaseDepartamento {
   nome: string;
   descricao?: string;
   empresa_representada_id?: string;
+  responsavel_id?: string | null;
   ativo: boolean;
   created_at: string;
   updated_at: string;

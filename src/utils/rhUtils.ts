@@ -1,7 +1,45 @@
-import { Colaborador, SupabaseColaborador, Cargo, SupabaseCargo, Departamento, SupabaseDepartamento, VencimentoPadrao } from '@/types/rh';
+import { Colaborador, Cargo, SupabaseCargo, Departamento, SupabaseDepartamento, VencimentoPadrao } from '@/types/rh';
+
+// `SupabaseColaborador` (types/rh.ts) usa nomes de coluna diferentes dos lidos abaixo
+// (nome_completo/regime_contratacao/situacao vs. os reais nome/tipo_contrato/ativo etc.
+// usados aqui) -- gap de tipos pré-existente, não corrigido aqui (fora do escopo desta
+// limpeza de lint). Este tipo documenta o formato que a função realmente lê.
+interface ColaboradorSupabaseRow {
+  id: string;
+  nome?: string;
+  data_nascimento?: string;
+  cpf?: string;
+  rg?: string;
+  cep?: string;
+  logradouro?: string;
+  numero?: string;
+  complemento?: string;
+  bairro?: string;
+  cidade?: string;
+  estado?: string;
+  telefone?: string;
+  email?: string;
+  email_corporativo?: string;
+  cargo_id?: string;
+  departamento_id?: string;
+  tipo_contrato?: string;
+  data_admissao?: string;
+  data_demissao?: string;
+  regime_trabalho?: string;
+  salario?: number;
+  pis?: string;
+  banco?: string;
+  agencia?: string;
+  conta?: string;
+  tipo_conta?: string;
+  empresa_representada_id?: string;
+  ativo?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
 
 export const rhUtils = {
-  transformSupabaseToColaborador(item: any): Colaborador {
+  transformSupabaseToColaborador(item: ColaboradorSupabaseRow): Colaborador {
     const hasEndereco = !!(item.cep || item.logradouro || item.bairro || item.cidade);
     return {
       id: item.id,
@@ -23,11 +61,11 @@ export const rhUtils = {
       emailCorporativo: item.email_corporativo ?? undefined,
       cargoId: item.cargo_id ?? undefined,
       departamentoId: item.departamento_id ?? undefined,
-      regimeContratacao: (item.tipo_contrato as any) || 'CLT',
+      regimeContratacao: (item.tipo_contrato as Colaborador['regimeContratacao']) || 'CLT',
       dataAdmissao: item.data_admissao ? new Date(item.data_admissao) : new Date(),
       dataDemissao: item.data_demissao ? new Date(item.data_demissao) : undefined,
-      tipoContrato: item.tipo_contrato ?? undefined,
-      regimeTrabalho: item.regime_trabalho ?? undefined,
+      tipoContrato: (item.tipo_contrato as Colaborador['tipoContrato']) ?? undefined,
+      regimeTrabalho: (item.regime_trabalho as Colaborador['regimeTrabalho']) ?? undefined,
       salarioBase: item.salario ?? undefined,
       documentacao: {
         nisPis: item.pis ?? undefined,
@@ -35,7 +73,7 @@ export const rhUtils = {
           banco: item.banco,
           agencia: item.agencia ?? '',
           conta: item.conta ?? '',
-          tipoConta: (item.tipo_conta as any) || 'CORRENTE',
+          tipoConta: (item.tipo_conta as 'CORRENTE' | 'POUPANCA') || 'CORRENTE',
         } : undefined,
       },
       compliance: {
@@ -61,30 +99,43 @@ export const rhUtils = {
     };
   },
 
-  transformSupabaseToDepartamento(item: any): Departamento {
+  transformSupabaseToDepartamento(item: SupabaseDepartamento): Departamento {
     return {
       id: item.id,
       nome: item.nome,
       descricao: item.descricao,
       empresaRepresentadaId: item.empresa_representada_id,
+      responsavelId: item.responsavel_id ?? undefined,
       ativo: item.ativo,
       createdAt: item.created_at ? new Date(item.created_at) : undefined,
       updatedAt: item.updated_at ? new Date(item.updated_at) : undefined,
-      ...({ responsavelId: item.responsavel_id ?? undefined } as any),
-    } as Departamento;
+    };
   },
 
-  transformSupabaseToVencimentoPadrao: (data: any): VencimentoPadrao => ({
+  transformSupabaseToVencimentoPadrao: (data: {
+    id?: string;
+    codigo?: string;
+    descricao?: string;
+    tipo?: string;
+    valor?: number;
+    percentual?: number;
+    incide_inss?: boolean;
+    incide_irrf?: boolean;
+    incide_fgts?: boolean;
+    ativo?: boolean;
+    created_at?: string;
+    updated_at?: string;
+  }): VencimentoPadrao => ({
     id: data.id,
-    codigo: data.codigo,
-    descricao: data.descricao,
-    tipo: data.tipo,
+    codigo: data.codigo ?? '',
+    descricao: data.descricao ?? '',
+    tipo: (data.tipo as VencimentoPadrao['tipo']) ?? 'FIXO',
     valor: data.valor,
     percentual: data.percentual,
-    incideInss: data.incide_inss,
-    incideIrrf: data.incide_irrf,
-    incideFgts: data.incide_fgts,
-    ativo: data.ativo,
+    incideInss: data.incide_inss ?? false,
+    incideIrrf: data.incide_irrf ?? false,
+    incideFgts: data.incide_fgts ?? false,
+    ativo: data.ativo ?? true,
     createdAt: data.created_at ? new Date(data.created_at) : undefined,
     updatedAt: data.updated_at ? new Date(data.updated_at) : undefined,
   }),
@@ -122,7 +173,7 @@ export const rhUtils = {
     return emailRegex.test(email);
   },
 
-  getErrorMessage(error: any): string {
+  getErrorMessage(error: { code?: string; message?: string } | null | undefined): string {
     if (error?.message?.includes('Empresa representada não encontrada')) {
       return 'Seu usuário não está vinculado a uma empresa. Solicite ao administrador o vínculo em Configurações → Usuários.';
     }
