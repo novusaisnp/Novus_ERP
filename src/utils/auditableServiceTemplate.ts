@@ -1,6 +1,5 @@
 
-import { supabase as _supabase } from '@/integrations/supabase/client';
-const supabase: any = _supabase;
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Template genérico para serviços de entidades auditáveis
@@ -16,15 +15,23 @@ export class AuditableServiceTemplate<T extends { id: string; deleted_at?: strin
     console.log(`[${this.entityName}Service] Serviço auditável inicializado para tabela: ${this.tableName}`);
   }
 
+  // Template genérico por design: aceita qualquer nome de tabela em runtime, o que o
+  // client tipado do Supabase não consegue expressar (.from() exige union literal).
+  // Cast único aqui propaga 'any' por toda a cadeia (.select/.insert/.update/...),
+  // em vez de repetir o cast em cada método.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private query(): any {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return supabase.from(this.tableName as any);
+  }
+
   /**
    * Busca apenas registros ativos (não arquivados)
    */
   async getActive(): Promise<T[]> {
     console.log(`[${this.entityName}Service] Buscando registros ativos`);
     
-    // Usar any para evitar erro de tipo específico do Supabase
-    const { data, error } = await (supabase as any)
-      .from(this.tableName)
+    const { data, error } = await this.query()
       .select('*')
       .is('deleted_at', null)
       .order('created_at', { ascending: false });
@@ -44,9 +51,7 @@ export class AuditableServiceTemplate<T extends { id: string; deleted_at?: strin
   async getArchived(): Promise<T[]> {
     console.log(`[${this.entityName}Service] Buscando registros arquivados`);
     
-    // Usar any para evitar erro de tipo específico do Supabase
-    const { data, error } = await (supabase as any)
-      .from(this.tableName)
+    const { data, error } = await this.query()
       .select('*')
       .not('deleted_at', 'is', null)
       .order('deleted_at', { ascending: false });
@@ -66,9 +71,7 @@ export class AuditableServiceTemplate<T extends { id: string; deleted_at?: strin
   async getAll(): Promise<T[]> {
     console.log(`[${this.entityName}Service] Buscando todos os registros`);
     
-    // Usar any para evitar erro de tipo específico do Supabase
-    const { data, error } = await (supabase as any)
-      .from(this.tableName)
+    const { data, error } = await this.query()
       .select('*')
       .order('created_at', { ascending: false });
 
@@ -87,9 +90,7 @@ export class AuditableServiceTemplate<T extends { id: string; deleted_at?: strin
   async getById(id: string, includeArchived = false): Promise<T | null> {
     console.log(`[${this.entityName}Service] Buscando por ID: ${id}`);
     
-    // Usar any para evitar erro de tipo específico do Supabase
-    let query = (supabase as any)
-      .from(this.tableName)
+    let query = this.query()
       .select('*')
       .eq('id', id);
 
@@ -113,9 +114,7 @@ export class AuditableServiceTemplate<T extends { id: string; deleted_at?: strin
   async create(input: Omit<T, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>): Promise<T> {
     console.log(`[${this.entityName}Service] Criando novo registro`);
     
-    // Usar any para evitar erro de tipo específico do Supabase
-    const { data, error } = await (supabase as any)
-      .from(this.tableName)
+    const { data, error } = await this.query()
       .insert(input)
       .select()
       .single();
@@ -140,9 +139,7 @@ export class AuditableServiceTemplate<T extends { id: string; deleted_at?: strin
       updated_at: new Date().toISOString()
     };
 
-    // Usar any para evitar erro de tipo específico do Supabase
-    const { data, error } = await (supabase as any)
-      .from(this.tableName)
+    const { data, error } = await this.query()
       .update(updateData)
       .eq('id', id)
       .is('deleted_at', null)
@@ -164,8 +161,8 @@ export class AuditableServiceTemplate<T extends { id: string; deleted_at?: strin
    */
   async softDelete(id: string): Promise<void> {
     console.warn(`[${this.entityName}Service] softDelete indisponível: RPC soft_delete_with_audit não provisionada.`);
-    const err = new Error(`Arquivamento auditado indisponível para ${this.entityName}.`);
-    (err as any).code = 'FEATURE_UNAVAILABLE';
+    const err = new Error(`Arquivamento auditado indisponível para ${this.entityName}.`) as Error & { code?: string };
+    err.code = 'FEATURE_UNAVAILABLE';
     throw err;
 
     console.log(`[${this.entityName}Service] Soft delete executado com sucesso`);
@@ -177,10 +174,8 @@ export class AuditableServiceTemplate<T extends { id: string; deleted_at?: strin
   async restore(id: string): Promise<T> {
     console.log(`[${this.entityName}Service] Restaurando registro: ${id}`);
     
-    // Usar any para evitar erro de tipo específico do Supabase
-    const { data, error } = await (supabase as any)
-      .from(this.tableName)
-      .update({ 
+    const { data, error } = await this.query()
+      .update({
         deleted_at: null,
         updated_at: new Date().toISOString()
       })
