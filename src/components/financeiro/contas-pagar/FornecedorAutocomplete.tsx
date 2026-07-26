@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Check, ChevronsUpDown, Building2, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFornecedores } from '@/hooks/useFornecedores';
+import type { Fornecedor } from '@/types/fornecedor';
 
 interface FornecedorAutocompleteProps {
   value?: string;
@@ -32,8 +33,8 @@ export const FornecedorAutocomplete: React.FC<FornecedorAutocompleteProps> = ({
     const searchLower = searchTerm.toLowerCase().trim();
     if (!searchLower) return true;
     const nome = fornecedor.tipo_pessoa === 'PJ'
-      ? (fornecedor.razaoSocial || fornecedor.nomeFantasia || (fornecedor as any).nome || '')
-      : ((fornecedor as any).nome_completo || (fornecedor as any).nome || '');
+      ? (fornecedor.razaoSocial || fornecedor.nomeFantasia || '')
+      : (fornecedor.nome_completo || '');
     const documento = fornecedor.tipo_pessoa === 'PJ' ? fornecedor.cnpj : fornecedor.cpf;
 
     return nome.toLowerCase().includes(searchLower) ||
@@ -47,14 +48,14 @@ export const FornecedorAutocomplete: React.FC<FornecedorAutocompleteProps> = ({
     setOpen(false);
   };
 
-  const getFornecedorDisplayName = (fornecedor: any) => {
+  const getFornecedorDisplayName = (fornecedor: Fornecedor) => {
     if (fornecedor.tipo_pessoa === 'PJ') {
-      return fornecedor.nomeFantasia || fornecedor.razaoSocial || fornecedor.nome || 'Empresa';
+      return fornecedor.nomeFantasia || fornecedor.razaoSocial || 'Empresa';
     }
-    return fornecedor.nome_completo || fornecedor.nome || 'Pessoa Física';
+    return fornecedor.nome_completo || 'Pessoa Física';
   };
 
-  const getFornecedorDocument = (fornecedor: any) => {
+  const getFornecedorDocument = (fornecedor: Fornecedor) => {
     return fornecedor.tipo_pessoa === 'PJ' ? fornecedor.cnpj : fornecedor.cpf;
   };
 

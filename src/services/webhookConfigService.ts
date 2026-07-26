@@ -11,17 +11,18 @@ import {
 const TABLE = 'webhook_configs';
 const UNIQUE_NOME_CONSTRAINT = 'webhook_configs_empresa_nome_key';
 
-function mapWebhookError(error: any): Error {
-  if (error?.code === '23505') {
-    const msg = String(error?.message ?? '');
+function mapWebhookError(error: unknown): Error {
+  const err = error as { code?: string; message?: string; constraint?: string } | undefined;
+  if (err?.code === '23505') {
+    const msg = String(err?.message ?? '');
     if (
-      error?.constraint === UNIQUE_NOME_CONSTRAINT ||
+      err?.constraint === UNIQUE_NOME_CONSTRAINT ||
       msg.includes(UNIQUE_NOME_CONSTRAINT)
     ) {
       return new Error('Já existe um webhook com este nome para esta empresa.');
     }
   }
-  return error instanceof Error ? error : new Error(String(error?.message ?? error));
+  return error instanceof Error ? error : new Error(String(err?.message ?? error));
 }
 
 
@@ -57,7 +58,7 @@ export const webhookConfigService = {
       .eq('nome', nome.trim());
     const { data, error } = await query;
     if (error) throw error;
-    const conflicts = (data ?? []).filter((r: any) => r.id !== excludeId);
+    const conflicts = (data ?? []).filter((r: { id: string }) => r.id !== excludeId);
     if (conflicts.length > 0) {
       throw new Error('Já existe um webhook com este nome nesta empresa');
     }
@@ -109,16 +110,16 @@ export const webhookConfigService = {
 
   /** Inativação lógica — NUNCA delete físico. */
   async inativar(id: string, empresaId: string): Promise<WebhookConfig> {
-    return this.update(id, { ativo: false } as any, empresaId);
+    return this.update(id, { ativo: false }, empresaId);
   },
 
   async ativar(id: string, empresaId: string): Promise<WebhookConfig> {
-    return this.update(id, { ativo: true } as any, empresaId);
+    return this.update(id, { ativo: true }, empresaId);
   },
 
   async rotateSecret(id: string, empresaId: string): Promise<{ secret_token: string; row: WebhookConfig }> {
     const newSecret = generateSecretToken();
-    const row = await this.update(id, { secret_token: newSecret } as any, empresaId);
+    const row = await this.update(id, { secret_token: newSecret }, empresaId);
     return { secret_token: newSecret, row };
   },
 

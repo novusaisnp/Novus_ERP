@@ -31,7 +31,7 @@ export const fetchCFOPs = async (): Promise<CFOP[]> => {
     .select('*')
     .order('codigo');
   if (error) throw error;
-  return (data ?? []).map(mapRow as any);
+  return (data ?? []).map((row) => mapRow(row as unknown as CFOPRow));
 };
 
 export const fetchCFOPById = async (id: string): Promise<CFOP | null> => {
@@ -41,7 +41,7 @@ export const fetchCFOPById = async (id: string): Promise<CFOP | null> => {
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
-  return data ? mapRow(data as any) : null;
+  return data ? mapRow(data as unknown as CFOPRow) : null;
 };
 
 export type CFOPInput = Omit<CFOP, 'id' | 'createdAt'>;
@@ -61,11 +61,11 @@ export const createCFOP = async (input: CFOPInput): Promise<CFOP> => {
     .select('*')
     .single();
   if (error) throw error;
-  return mapRow(data as any);
+  return mapRow(data as unknown as CFOPRow);
 };
 
 export const updateCFOP = async (id: string, input: Partial<CFOPInput>): Promise<CFOP> => {
-  const payload: any = {};
+  const payload: Partial<Omit<CFOPRow, 'id' | 'created_at'>> = {};
   if (input.codigo !== undefined) payload.codigo = input.codigo;
   if (input.descricao !== undefined) payload.descricao = input.descricao;
   if (input.aplicacao !== undefined) payload.aplicacao = input.aplicacao ?? null;
@@ -80,7 +80,7 @@ export const updateCFOP = async (id: string, input: Partial<CFOPInput>): Promise
     .select('*')
     .single();
   if (error) throw error;
-  return mapRow(data as any);
+  return mapRow(data as unknown as CFOPRow);
 };
 
 export const toggleCFOPAtivo = async (id: string, ativo: boolean): Promise<void> => {

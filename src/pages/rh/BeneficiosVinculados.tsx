@@ -50,7 +50,7 @@ const BeneficiosVinculados: React.FC = () => {
 
   const colaboradorMap = useMemo(() => {
     const m: Record<string, string> = {};
-    (colaboradores as any[]).forEach((c) => { m[c.id] = c.nome; });
+    colaboradores.forEach((c) => { m[c.id] = c.nome; });
     return m;
   }, [colaboradores]);
 
@@ -107,7 +107,7 @@ const BeneficiosVinculados: React.FC = () => {
       toast.success(editing ? 'Benefício atualizado' : 'Benefício criado');
       setModalOpen(false);
     },
-    onError: (e: any) => toast.error('Erro: ' + e.message),
+    onError: (e: Error) => toast.error('Erro: ' + e.message),
   });
 
   const deleteMutation = useMutation({
@@ -117,7 +117,7 @@ const BeneficiosVinculados: React.FC = () => {
       toast.success('Benefício excluído');
       setToDelete(null);
     },
-    onError: (e: any) => toast.error('Erro: ' + e.message),
+    onError: (e: Error) => toast.error('Erro: ' + e.message),
   });
 
   return (
@@ -137,7 +137,7 @@ const BeneficiosVinculados: React.FC = () => {
             <SelectTrigger className="max-w-md"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
-              {(colaboradores as any[]).map((c) => (
+              {colaboradores.map((c) => (
                 <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
               ))}
             </SelectContent>
@@ -200,7 +200,7 @@ const BeneficiosVinculados: React.FC = () => {
               <Select value={form.colaborador_id} onValueChange={(v) => setForm({ ...form, colaborador_id: v })}>
                 <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>
-                  {(colaboradores as any[]).map((c) => (
+                  {colaboradores.map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
                   ))}
                 </SelectContent>
