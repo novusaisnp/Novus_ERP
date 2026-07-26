@@ -32,24 +32,41 @@ este arquivo é sobre o que está pendente **agora**.
   foram todos corrigidos).
 - `npm run test -- --run`: **357/357 passando** (45 arquivos de teste).
 - `npm run build`: passa.
-- Lint `@typescript-eslint/no-explicit-any`: **235 ocorrências restantes** (começou em 1222).
+- Lint `@typescript-eslint/no-explicit-any`: **191 ocorrências restantes** (começou em 1222).
   Não bloqueia `ci:gate`, é limpeza em andamento, sem urgência funcional. Próximos arquivos por
   volume (rode `npx eslint . --format json` para atualizar antes de continuar):
   ```
-  13  src/hooks/useClientes.test.ts
-  12  src/hooks/useFornecedores.test.ts
-  9   src/utils/auditableServiceTemplate.ts
-  8   src/utils/clienteUtils.ts
-  8   src/services/cnpjApi.test.ts
-  8   src/services/produtoService.test.ts
-  7   src/__tests__/lote3d.test.ts
-  7   src/utils/clienteUtils.test.ts
-  7   src/utils/rhUtils.ts
-  6   src/services/fornecedorService.test.ts
+  8  src/services/cnpjApi.test.ts
+  8  src/services/produtoService.test.ts
+  7  src/__tests__/lote3d.test.ts
+  7  src/utils/rhUtils.ts
+  7  src/utils/clienteUtils.test.ts
+  6  src/components/financeiro/contas-receber/ClienteAutocomplete.tsx
+  6  src/__tests__/webhookConfigService.test.ts
+  6  src/services/fornecedorService.test.ts
+  5  src/services/webhookConfigService.ts
   ```
   Metodologia: um arquivo por vez, `typecheck` + suíte completa antes de cada commit, preferir
   remover cast desnecessário a inventar tipo novo, usar `unknown`/`Record<string, unknown>` para
   payload genuinamente dinâmico (JSONB, dado de satélite).
+
+## Riscos arquiteturais registrados (não são bugs — decisões conscientes a revisitar)
+
+**Dependência de fornecedor único (vendor lock-in) — registrado 2026-07-26.** O projeto é
+fortemente acoplado ao Supabase, não só como "um banco Postgres qualquer": isolamento entre
+empresas via RLS amarrado a `auth.uid()`, RPCs chamadas direto do frontend
+(`supabase.rpc(...)`), sintaxe de embed própria do PostgREST, e Auth/Storage/Edge Functions sem
+substituto plug-and-play. A fronteira de serviço (`src/services/**`) reduz o tamanho de uma
+eventual migração (UI e regras de negócio React sobreviveriam quase intactas) mas não elimina o
+trabalho — `src/services/**`, o schema e Auth/Storage/Edge Functions precisariam ser refeitos.
+**Escopo ampliado pelo usuário**: a mesma preocupação vale para qualquer dependência de
+ferramenta única e substituível — repositório/hospedagem de código, banco de dados, e futuras IAs
+embarcadas como peça central do produto (não só usadas para desenvolver). **Não é ação
+pendente** — é um aviso guardado para consulta rápida, a ser revisitado antes de escalar
+significativamente, antes de assumir estabilidade de longo prazo de um fornecedor num contrato de
+integração de satélite, ou se algum desses fornecedores deixar de ser uma aposta segura. Não
+construir uma camada de abstração genérica agora, sem fornecedor alternativo real em vista
+(mesmo risco de over-engineering identificado noutras partes do projeto).
 
 ## Backlog de prontidão para satélites (isolamento/permissões/tradução)
 
