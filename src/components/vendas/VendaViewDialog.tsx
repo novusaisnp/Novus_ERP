@@ -19,6 +19,7 @@ import {
   type VendaPdfEmpresa,
 } from '@/utils/vendaPdf';
 import { resolveVendaPagamentoInfo } from '@/utils/vendaPagamentoInfo';
+import { VENDA_STATUS_LABEL, VENDA_STATUS_BADGE_CLASS } from '@/utils/vendaStatusBadge';
 
 interface Props {
   venda: Venda | null;
@@ -33,15 +34,6 @@ const brl = (v: number) =>
 
 const fmtDate = (d?: string | null) =>
   d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR') : '-';
-
-const STATUS_LABEL: Record<string, string> = {
-  RASCUNHO: 'Rascunho',
-  CONFIRMADO: 'Confirmado',
-  EM_PRODUCAO: 'Em produção',
-  FATURADO: 'Faturado',
-  ENTREGUE: 'Entregue',
-  CANCELADO: 'Cancelado',
-};
 
 export const VendaViewDialog: React.FC<Props> = ({
   venda,
@@ -94,7 +86,9 @@ export const VendaViewDialog: React.FC<Props> = ({
               </div>
             </div>
             <div className="text-right">
-              <Badge>{STATUS_LABEL[venda.status] ?? venda.status}</Badge>
+              <Badge variant="outline" className={VENDA_STATUS_BADGE_CLASS[venda.status]}>
+                {VENDA_STATUS_LABEL[venda.status] ?? venda.status}
+              </Badge>
               <div className="text-xs text-muted-foreground mt-1">
                 Emissão: {fmtDate(venda.data_venda)}
               </div>

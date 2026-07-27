@@ -1,5 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Venda, ItemVenda, VendaFiltros } from '@/types/vendas';
+import { estoqueService } from '@/services/estoque/estoqueService';
+import { localizacaoService } from '@/services/localizacaoService';
 
 
 async function getEmpresaId(): Promise<string> {
@@ -110,6 +112,20 @@ export const vendasService = {
       }
     }
 
+    // Baixa de estoque real (best-effort): não bloqueia o salvamento da venda
+    // se falhar — idempotente no banco (1 baixa por venda+produto), então é
+    // seguro chamar a cada save enquanto a venda não estiver RASCUNHO/CANCELADO.
+    if (withTotals.status && withTotals.status !== 'RASCUNHO' && withTotals.status !== 'CANCELADO') {
+      try {
+        const locais = await localizacaoService.getAll();
+        if (locais.length > 0) {
+          await estoqueService.baixarEstoqueVenda(vendaId, locais[0].id);
+        }
+      } catch (e) {
+        console.error('[vendasService] Erro ao baixar estoque da venda', e);
+      }
+    }
+
     return { ...withTotals, id: vendaId } as Venda;
   },
 
@@ -132,6 +148,11 @@ export const vendasService = {
     if (error) {
       console.error('[vendasService] Erro ao cancelar venda');
       throw error;
+    }
+    try {
+      await estoqueService.estornarEstoqueVenda(id);
+    } catch (e) {
+      console.error('[vendasService] Erro ao estornar estoque da venda', e);
     }
   },
 };

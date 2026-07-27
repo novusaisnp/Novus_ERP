@@ -23,6 +23,7 @@ import DetalheNFeDrawer from '@/components/fiscal/DetalheNFeDrawer';
 import FiscalStatusBadge from '@/components/fiscal/FiscalStatusBadge';
 import { useFiscalStatusPorVenda } from '@/hooks/fiscal/useFiscalStatusPorVenda';
 import { useClientes } from '@/hooks/useClientes';
+import { VENDA_STATUS_LABEL, VENDA_STATUS_BADGE_CLASS } from '@/utils/vendaStatusBadge';
 import { useEmpresasRepresentadas } from '@/hooks/useEmpresasRepresentadas';
 import { useEmpresasLogosMap } from '@/hooks/useEmpresasLogosMap';
 import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
@@ -187,7 +188,11 @@ const Vendas: React.FC = () => {
                         <TableCell>{v.numero_venda || '-'}</TableCell>
                         <TableCell>{v.data_venda}</TableCell>
                         <TableCell>{v.cliente?.nome || '-'}</TableCell>
-                        <TableCell><Badge variant="outline">{v.status}</Badge></TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={VENDA_STATUS_BADGE_CLASS[v.status]}>
+                            {VENDA_STATUS_LABEL[v.status] ?? v.status}
+                          </Badge>
+                        </TableCell>
                         <TableCell>
                           <FiscalStatusBadge
                             status={fiscal?.status}

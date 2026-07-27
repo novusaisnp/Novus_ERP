@@ -5,6 +5,73 @@ trabalho relevante — se estiver desatualizado, ele apodrece como `SYSTEM_AUDIT
 já apodreceram. Leia primeiro [`../CLAUDE.md`](../CLAUDE.md) para contexto de padrões estáveis;
 este arquivo é sobre o que está pendente **agora**.
 
+## ✅ Itens de venda vinculados a catálogo + ativação da baixa de estoque real (2026-07-27)
+
+Contexto: avaliação de mercado pedida pelo usuário (comparando Vendas com Square/Shopify POS/
+Vendus/Conta Azul/TOTVS) apontou o gap de maior gravidade funcional: itens de venda eram texto/
+preço livre, sem vínculo a `produto_id`/`servico_id`, logo sem baixa de estoque real.
+
+- **`VendaFormModal.tsx`**: cada item agora tem um seletor Tipo (Produto/Serviço) + o
+  `CatalogoItemPicker` (já existente, usado em Orçamentos — reuso direto, não construção nova),
+  preenchendo descrição/preço a partir do cadastro e gravando `produto_id`/`servico_id`.
+  Validação de estoque no `handleSubmit` (mesmo padrão de `Orcamentos.tsx`): bloqueia com toast se
+  a quantidade pedida exceder o saldo de um produto com `controla_estoque = true`.
+- **Achado relevante durante a investigação**: as RPCs `baixar_estoque_venda`/
+  `estornar_estoque_venda` (SECURITY DEFINER, idempotentes — 1 baixa por venda+produto garantida
+  até por índice único no banco) **já existiam prontas desde a migração do módulo de Estoque
+  (2026-07-13) e nunca foram chamadas de lugar nenhum** — recurso construído e esquecido, mesmo
+  padrão do que aconteceu com `has_permissao` antes da Porta 3.
+- **Ativado** em `vendasService.ts`: `save()` chama `baixar_estoque_venda` (best-effort — não
+  bloqueia o salvamento da venda se falhar, só loga erro) sempre que o status salvo não é
+  `RASCUNHO`/`CANCELADO`, usando a primeira localização ativa (`localizacaoService.getAll()` — o
+  tenant de teste tem só 1, "Depósito Central", então não foi necessário adicionar seletor de
+  local no formulário). `cancelar()` chama `estornar_estoque_venda` da mesma forma best-effort.
+- **Limitação conhecida, não resolvida nesta rodada (comportamento pré-existente da RPC, fora de
+  escopo redesenhar agora)**: `baixar_estoque_venda` verifica só "existe baixa para este
+  produto nesta venda?" — se sim, pula. Ou seja, editar a **quantidade** de um item já baixado
+  (numa venda já CONFIRMADO+) não ajusta a baixa existente. Só um produto novo adicionado depois
+  é baixado corretamente. Documentado aqui para não ser redescoberto como bug depois.
+- **Segundo achado, mais sério, encontrado testando o ciclo completo no navegador**:
+  `produtos.estoque_atual` (campo mostrado no `CatalogoItemPicker` e usado na validação de
+  estoque insuficiente — tanto em Vendas quanto, já antes, em Orçamentos) **nunca era atualizado**
+  pelo livro-razão real (`estoque_movimentacoes` → `recalc_saldo_estoque` → `estoque_saldos`). Dois
+  números de estoque paralelos e desencontrados: confirmado ao vivo (baixei 2 unidades reais de um
+  produto, `estoque_saldos` foi para 0 corretamente, `produtos.estoque_atual` continuou em 15).
+  **Corrigido** (migração `20260727120000_sincronizar_produtos_estoque_atual.sql`):
+  `recalc_saldo_estoque` agora também sincroniza `produtos.estoque_atual` com a soma real de
+  `estoque_saldos` do produto (todas as localizações) toda vez que é chamada — mais um backfill
+  de uma vez para produtos que já tinham saldo real divergente do cadastro. Aplicada e verificada
+  ao vivo no projeto real.
+- **Testado ao vivo no navegador, ciclo completo**: criei venda real (Calça Uniforme 5 anos, 2un,
+  CONFIRMADO) → `estoque_movimentacoes` recebeu SAIDA correta, `estoque_atual` sincronizou de 15
+  para 0 (confirmado no próprio seletor de produto, em tempo real) → tentei vender mais 1 unidade
+  com saldo real 0 → bloqueado pelo toast de estoque insuficiente **antes de qualquer request ao
+  Supabase** (confirmado via `read_network_requests`, zero POST em `vendas`) → cancelei a venda
+  original → `estornar_estoque_venda` gerou a reversão (ENTRADA), soft-deletou a SAIDA original,
+  `estoque_atual` voltou a refletir o saldo real corretamente. Tentativa de excluir a venda
+  cancelada foi **corretamente bloqueada** por `ConfirmDeleteWithDeps` (detectou vínculo real com
+  `estoque_movimentacoes`) — deixada como CANCELADO, mesmo tratamento já dado aos rastros de teste
+  da Porta 3 (LIGNUM é tenant descartável, será apagada por completo depois de tudo testado).
+- `npm run typecheck` limpo; `npm run test -- --run` com uma rodada inicial mostrando falhas de
+  timeout de worker do Vitest (contenção de recursos, dev server + Chrome rodando juntos) — os
+  arquivos que falharam foram reexecutados isoladamente e passaram em ~3s, confirmando que não é
+  regressão real.
+
+## ✅ Padronização de cor por status de Venda (2026-07-27)
+
+Pedido explícito do usuário: sinalização visual por cor para status, com um padrão único
+onde quer que o status apareça (ex.: também no Relatório de Vendas).
+
+- Novo `src/utils/vendaStatusBadge.ts`: `VENDA_STATUS_LABEL` (rótulo amigável) e
+  `VENDA_STATUS_BADGE_CLASS` (classe de cor por status — cinza/rascunho, secundário/confirmado,
+  âmbar/em produção, azul/faturado, verde/entregue, vermelho/cancelado — dark mode incluso).
+  Fonte única, reaproveitada nos 3 lugares onde o status de venda aparece como badge:
+  `pages/vendas/Vendas.tsx`, `components/vendas/VendaViewDialog.tsx`,
+  `pages/vendas/Relatorios.tsx`. Escopo deliberadamente restrito a `VendaStatus` (confirmado via
+  grep — 6 arquivos usam esse tipo) — não mexido em status de outros domínios (contratos, fiscal,
+  estoque, financeiro), que têm vocabulário e already-existente esquema de cor próprios.
+- Verificado visualmente no navegador nas 3 telas. `npm run typecheck`/`build` limpos.
+
 ## ✅ Unificação parcial dos mecanismos de crédito (2026-07-27)
 
 Frente 6 da lista "Próxima frente funcional" (abaixo) — escolhida e concluída nesta sessão, como
@@ -194,6 +261,26 @@ escolhida ainda:
    `validar_pagamento_venda` do fluxo de conversão de orçamento~~ — **concluído em escopo mínimo
    2026-07-27** (ver seção acima). Gap restante (exceção auditada só existe no formulário direto,
    não na conversão de orçamento) documentado como trabalho futuro, não crítico.
+
+### Backlog derivado da avaliação de mercado do módulo de Vendas (2026-07-27)
+
+Usuário pediu avaliação sincera comparando Vendas com POS/ERP de mercado (Square, Shopify POS,
+Vendus, Conta Azul, TOTVS), para pequeno negócio (oficina, lojinha, loja de itens prontos).
+Achados completos e a lista original priorizada estão na conversa da sessão, não duplicados aqui
+para não desatualizar — resumo do que já foi decidido/concluído:
+
+- ~~Itens de venda vinculados a catálogo + baixa de estoque real~~ — **concluído 2026-07-27** (ver
+  seção acima, inclui o achado e fix de `produtos.estoque_atual` dessincronizado).
+- ~~Cor por status de venda~~ — **concluído 2026-07-27** (ver seção acima).
+- Itens ainda não escolhidos pelo usuário, por ordem de gravidade levantada na avaliação: (a)
+  desconto percentual (só existe valor fixo hoje); (b) vendedor/operador na venda (ausente até no
+  schema — habilita comissionamento/auditoria); (c) fluxo de "venda rápida"/balcão (maior gap de
+  UX para o público-alvo, mas não deve virar um "modo POS" completo — over-engineering pro estágio
+  atual); (d) KPIs na tela de lista de Vendas (lógica já pronta em `Relatorios.tsx`, é reuso);
+  (e) filtros por cliente específico/forma de pagamento em Vendas.tsx e Relatorios.tsx (padrão de
+  filtro por forma de pagamento já existe em `ContasReceberFilters.tsx`, outro módulo); (f)
+  `origem`/`canal_venda` são campos mortos no schema (relevantes para quando satélites chegarem,
+  mas não vale elaborar domínio de valores agora — um Select simples já destrava relatório).
 
 ## ✅ PDF/impressão de Vendas (2026-07-27)
 

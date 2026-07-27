@@ -42,6 +42,7 @@ import { useReportWorker } from '@/hooks/useReportWorker';
 import type { ReportExportPayload } from '@/utils/reportExportShared';
 import { useVendas } from '@/hooks/useVendas';
 import type { VendaStatus, VendaFiltros, Venda } from '@/types/vendas';
+import { VENDA_STATUS_LABEL, VENDA_STATUS_BADGE_CLASS } from '@/utils/vendaStatusBadge';
 import { toCsv, downloadCsv, type CsvColumn } from '@/utils/csvExport';
 import {
   bucketPeriodo,
@@ -658,7 +659,9 @@ export default function RelatoriosVendas() {
                         {brl(Number(v.valor_total) || 0)}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{v.status}</Badge>
+                        <Badge variant="outline" className={VENDA_STATUS_BADGE_CLASS[v.status]}>
+                          {VENDA_STATUS_LABEL[v.status] ?? v.status}
+                        </Badge>
                       </TableCell>
                     </TableRow>
                   ))}

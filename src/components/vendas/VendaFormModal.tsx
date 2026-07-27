@@ -17,6 +17,8 @@ import { pagamentoCatalogoService } from '@/services/pagamentoCatalogoService';
 import { porta3Service } from '@/services/porta3Service';
 import { useVendas } from '@/hooks/useVendas';
 import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
+import { useCatalogoProdutos } from '@/hooks/useCatalogoOrcamento';
+import { CatalogoItemPicker } from './CatalogoItemPicker';
 import { AutorizacaoExcecaoVendaDialog } from './AutorizacaoExcecaoVendaDialog';
 import type { Bloqueio } from '@/types/porta3';
 
@@ -29,6 +31,7 @@ interface Props {
 const STATUS: VendaStatus[] = ['RASCUNHO', 'CONFIRMADO', 'EM_PRODUCAO', 'FATURADO', 'ENTREGUE', 'CANCELADO'];
 
 const emptyItem = (): ItemVenda => ({
+  tipo_item: 'P',
   descricao: '',
   quantidade: 1,
   preco_unitario: 0,
@@ -49,6 +52,14 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
     queryKey: ['naturezas-pagamento'],
     queryFn: () => pagamentoCatalogoService.listarNaturezas(),
   });
+  const produtosCatalogo = useCatalogoProdutos(empresaId ?? undefined);
+  const estoquePorProduto = useMemo(() => {
+    const m = new Map<string, { estoque: number; controla: boolean; nome: string }>();
+    (produtosCatalogo.data ?? []).forEach((p) =>
+      m.set(p.id, { estoque: p.estoque, controla: p.controlaEstoque, nome: p.nome }),
+    );
+    return m;
+  }, [produtosCatalogo.data]);
 
   const [bloqueioDialog, setBloqueioDialog] = useState<{ open: boolean; bloqueios: Bloqueio[] }>({
     open: false,
@@ -117,6 +128,17 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
     if (itens.length === 0) {
       toast.error('Adicione ao menos um item com descrição.');
       return;
+    }
+    for (const it of itens) {
+      if (it.tipo_item !== 'S' && it.produto_id) {
+        const info = estoquePorProduto.get(it.produto_id);
+        if (info?.controla && Number(it.quantidade) > info.estoque) {
+          toast.error(
+            `Estoque insuficiente para "${info.nome}". Disponível: ${info.estoque}, solicitado: ${it.quantidade}.`,
+          );
+          return;
+        }
+      }
     }
     try {
       // Porta 3 (§6): venda a prazo passa pela pré-checagem de crédito/
@@ -251,13 +273,49 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
                 const total = bruto - (Number(it.desconto_item) || 0) + (Number(it.acrescimo_item) || 0);
                 return (
                   <div key={idx} className="grid grid-cols-12 gap-2 items-end border-b pb-2">
-                    <div className="col-span-12 md:col-span-4">
+                    <div className="col-span-3 md:col-span-1">
+                      <Label className="text-xs">Tipo</Label>
+                      <Select
+                        value={it.tipo_item ?? 'P'}
+                        onValueChange={(v) =>
+                          updateItem(idx, {
+                            tipo_item: v as 'P' | 'S',
+                            produto_id: null,
+                            servico_id: null,
+                            descricao: '',
+                            preco_unitario: 0,
+                          })
+                        }
+                      >
+                        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="P">Produto</SelectItem>
+                          <SelectItem value="S">Serviço</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="col-span-9 md:col-span-3">
                       <Label className="text-xs">Descrição *</Label>
-                      <Input
+                      <CatalogoItemPicker
+                        tipoItem={it.tipo_item === 'S' ? 'S' : 'P'}
+                        empresaId={empresaId ?? ''}
                         value={it.descricao}
-                        onChange={(e) => updateItem(idx, { descricao: e.target.value })}
-                        required
-                        data-testid={`venda-item-descricao-input-${idx}`}
+                        selectedId={it.tipo_item === 'S' ? it.servico_id ?? undefined : it.produto_id ?? undefined}
+                        onSelect={(sel) =>
+                          updateItem(idx, {
+                            descricao: sel.descricao,
+                            preco_unitario: sel.preco,
+                            produto_id: it.tipo_item === 'S' ? null : sel.id,
+                            servico_id: it.tipo_item === 'S' ? sel.id : null,
+                          })
+                        }
+                        onChangeText={(txt) =>
+                          updateItem(idx, {
+                            descricao: txt,
+                            produto_id: null,
+                            servico_id: null,
+                          })
+                        }
                       />
                     </div>
                     <div className="col-span-4 md:col-span-2">

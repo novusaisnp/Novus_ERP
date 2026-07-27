@@ -129,6 +129,23 @@ export const estoqueService = {
     return data as { ok: boolean; saldo_atual: number; quantidade_solicitada: number };
   },
 
+  async baixarEstoqueVenda(venda_id: string, localizacao_id: string) {
+    const { data, error } = await supabase.rpc('baixar_estoque_venda', {
+      p_venda_id: venda_id,
+      p_localizacao_id: localizacao_id,
+    });
+    if (error) throw error;
+    return data as { ok: boolean; baixados: number; ja_baixados: number };
+  },
+
+  async estornarEstoqueVenda(venda_id: string) {
+    const { data, error } = await supabase.rpc('estornar_estoque_venda', {
+      p_venda_id: venda_id,
+    });
+    if (error) throw error;
+    return data as { ok: boolean; estornados: number };
+  },
+
   async listSaldos(empresa_id: string): Promise<EstoqueSaldo[]> {
     const { data, error } = await supabase
       .from('estoque_saldos')
