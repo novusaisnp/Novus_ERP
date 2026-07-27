@@ -7,15 +7,11 @@ este arquivo é sobre o que está pendente **agora**.
 
 ## 🔖 Checkpoint de sessão (2026-07-27, fim do dia — leia isto primeiro)
 
-**Estado do working tree: trabalho pronto, testado, mas NÃO commitado.** `git status` mostra:
-- Modificados/novos: vendedor/operador na venda (migração, tipos, service, `VendaFormModal.tsx`,
-  `Vendas.tsx`, `VendaViewDialog.tsx`, ingestão canônica) + limpeza de código morto (9 arquivos
-  deletados) + correções de `docs/STATUS.md` e memória.
-- `npm run typecheck`: 0 erros. `npm run test -- --run`: 357/357. Migração `20260727130000` já
-  aplicada no Supabase live (confirmado `supabase migration list --linked`, local=remote).
-- **Não commitado nem pushado** — usuário pediu explicitamente para não commitar ainda, só deixar
-  checkpoint pronto pra retomar amanhã. Próxima sessão: perguntar se commita/pusha antes de
-  continuar (não presumir).
+**Estado: tudo sincronizado, nada pendente de commit/push.** Commit `c3983cb` (vendedor/operador
+na venda + limpeza de código morto do fluxo legado de Usuários) pushado para `origin/main`.
+Migração `20260727130000` confirmada aplicada no Supabase live (`supabase migration list
+--linked`, local=remote). `npm run typecheck`: 0 erros. `npm run test -- --run`: 357/357.
+Próxima sessão pode continuar direto do backlog abaixo, sem precisar decidir sobre commit primeiro.
 
 **Decisões em aberto, ambas apresentadas ao usuário e respondidas com "por enquanto não"/aguardando:**
 1. **56 erros `@typescript-eslint/no-explicit-any` em 16 arquivos** (achado 2026-07-27, engano da
