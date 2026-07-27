@@ -82,6 +82,11 @@ export const vendaCanonicalObjectSchema = z.object({
   data_venda: z.string().refine(v => !isNaN(Date.parse(v)), 'data_venda inválida'),
   status: z.enum(['RASCUNHO', 'CONFIRMADO', 'EM_PRODUCAO', 'FATURADO', 'ENTREGUE', 'CANCELADO']),
   valor_total: z.coerce.number().nonnegative().optional().nullable(),
+  // vendedor_id (migração 20260727130000) aponta para usuarios.id — um satélite
+  // só deve preenchê-lo quando já souber resolver seu vendedor/operador para um
+  // usuário real do NOVUS (ex.: um PDV com login federado). Sem essa resolução,
+  // deixar ausente/null é o caminho normal — nunca bloqueia a ingestão.
+  vendedor_id: z.string().uuid().optional().nullable(),
   itens: z.array(itemVendaCanonicalSchema).optional(),
 }).merge(origemEnvelopeSchema);
 

@@ -114,6 +114,11 @@ export const VendaViewDialog: React.FC<Props> = ({
                 {[cliente?.email, cliente?.telefone].filter(Boolean).join(' | ')}
               </div>
             )}
+            {venda.vendedor?.nome && (
+              <div className="text-muted-foreground text-xs mt-1">
+                Vendedor: {venda.vendedor.nome}
+              </div>
+            )}
           </div>
 
           {(() => {

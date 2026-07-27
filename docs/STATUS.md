@@ -5,6 +5,98 @@ trabalho relevante — se estiver desatualizado, ele apodrece como `SYSTEM_AUDIT
 já apodreceram. Leia primeiro [`../CLAUDE.md`](../CLAUDE.md) para contexto de padrões estáveis;
 este arquivo é sobre o que está pendente **agora**.
 
+## 🔖 Checkpoint de sessão (2026-07-27, fim do dia — leia isto primeiro)
+
+**Estado do working tree: trabalho pronto, testado, mas NÃO commitado.** `git status` mostra:
+- Modificados/novos: vendedor/operador na venda (migração, tipos, service, `VendaFormModal.tsx`,
+  `Vendas.tsx`, `VendaViewDialog.tsx`, ingestão canônica) + limpeza de código morto (9 arquivos
+  deletados) + correções de `docs/STATUS.md` e memória.
+- `npm run typecheck`: 0 erros. `npm run test -- --run`: 357/357. Migração `20260727130000` já
+  aplicada no Supabase live (confirmado `supabase migration list --linked`, local=remote).
+- **Não commitado nem pushado** — usuário pediu explicitamente para não commitar ainda, só deixar
+  checkpoint pronto pra retomar amanhã. Próxima sessão: perguntar se commita/pusha antes de
+  continuar (não presumir).
+
+**Decisões em aberto, ambas apresentadas ao usuário e respondidas com "por enquanto não"/aguardando:**
+1. **56 erros `@typescript-eslint/no-explicit-any` em 16 arquivos** (achado 2026-07-27, engano da
+   sessão anterior que alegou "0 em todo o repo" — ver seção "Saúde técnica" abaixo). Usuário disse
+   "por enquanto não" quando perguntado se atacava agora — **não iniciar sem perguntar de novo**.
+2. **Backlog restante da avaliação de mercado de Vendas** (ver seção própria abaixo): itens (a)
+   desconto percentual, (c) venda rápida/balcão, (d) KPIs na lista, (e) filtros avançados, (f)
+   origem/canal_venda — nenhum escolhido ainda pelo usuário. Item (b) vendedor/operador foi
+   concluído nesta sessão.
+
+**Regra nova do usuário (2026-07-27), vale para toda sessão futura:** sempre que aparecer código
+órfão/lixo/achado irrelevante durante qualquer tarefa, limpar na hora — exceto se puder servir
+para integrações futuras (ver [[feedback_cleanup_dead_code]] na memória, e o exemplo real desta
+sessão: `useAuditableEntity.ts` foi mantido por ser template documentado, o resto foi deletado).
+
+## ✅ Limpeza de código morto — fluxo legado de Usuários (2026-07-27)
+
+Achado de passagem enquanto investigava um jeito de listar usuários pro Select de vendedor (ver
+seção abaixo): `usuarioService.fetchUsuarios()` fazia `.order('nome_completo')`, coluna que não
+existe mais em `usuarios` desde a reconstrução da tabela (agora é `nome`) — um bug real de schema
+drift, mas em **código morto**: confirmado por grep que a tela real `/configuracoes/usuarios` já
+usa `fetchUsuariosComPessoa()` (colunas corretas) desde antes desta sessão, e a cadeia antiga
+(`useUsuarios.ts` → `UsuarioFormModal.tsx` → `FormUsuario.tsx`/`FormVinculoColaborador.tsx`/
+`FormPerfil.tsx`/`UsuarioCard.tsx`, chamada a partir de `UsuariosVinculadosList.tsx`) não tinha
+nenhum importador alcançável — o próprio código já tinha uma nota do autor original admitindo isso
+("não é referenciado por nenhuma tela real hoje — o fluxo vivo é NovoUsuarioModal").
+
+Por pedido explícito do usuário (regra geral, não só este caso: sempre limpar achados de lixo/
+código órfão quando encontrados, a menos que sirva para integrações futuras), **deletado**: os 9
+arquivos acima, mais `usuarioService.fetchUsuarios()`/`SupabaseUsuario`/`createUsuario`/
+`updateUsuario`/`deleteUsuario` (só chamados pela cadeia morta) e o tipo `Usuario` órfão em
+`types/empresa.ts`. Verificado antes de apagar (grep completo da cadeia de imports, sem chamador
+vivo) e depois (typecheck 0 erros, 357/357 testes, mesma contagem de testes de antes — nenhum
+teste dependia desse código). Contra-exemplo mantido de propósito:
+`useAuditableEntity.ts`/`useAuditableCentrosCusto.ts` também são código não referenciado por
+nenhuma tela, mas são um template documentado (`src/utils/newTableTemplate.ts` +
+`src/docs/examples/new-auditable-entity.md`) para entidades auditáveis futuras — cai na exceção
+que o usuário deu ("a não ser que isso possa ser usado em futuras integrações"), não foi tocado.
+
+## ✅ Vendedor/operador na venda (2026-07-27)
+
+Item (b) do backlog da avaliação de mercado (ver seção mais abaixo). Antes de implementar, o
+usuário perguntou se o novo §11 do `CONTRATOS_CANONICOS_ERP.md` (pilares técnicos de integração,
+ver seção correspondente abaixo) exigia alguma ação prévia — conclusão: não, o próprio §11.3 já
+classifica as peças maiores de infraestrutura como decisão a tomar só quando houver satélite real.
+Escolhido para implementar em seguida, com o pedido explícito de já deixar o gancho pronto para
+essa informação também poder vir de módulos satélite no futuro (não só da UI direta).
+
+- **Migração `20260727130000_adicionar_vendedor_venda.sql`**: `vendas.vendedor_id uuid NULL
+  REFERENCES usuarios(id) ON DELETE SET NULL` + índice. Aponta para `usuarios` (não `auth.users`
+  nem `colaboradores`) — só `usuarios` carrega `empresa_representada_id` junto e garante, via a
+  constraint XOR de `docs/CONTRATOS_CANONICOS_ERP.md` §7, que é sempre uma pessoa real da empresa.
+  Nullable e aditiva, sem backfill — vendas antigas ficam "não informado".
+- **Gancho para satélites**: `vendedor_id` foi adicionado como campo opcional em
+  `vendaCanonicalObjectSchema` (`supabase/functions/_shared/canonical/entities.ts`), que já herda
+  o envelope de rastreabilidade (`origem_sistema`/`origem_canal`/`externo_id`/`idempotency_key`)
+  via `origemEnvelopeSchema`. Um satélite só preenche `vendedor_id` quando já souber resolver seu
+  vendedor/operador para um usuário real do NOVUS; ausente/null é o caminho normal e nunca bloqueia
+  a ingestão — mesmo padrão já usado por `venda_pagamento.operador_id` (uuid solto, sem FK dura).
+  Teste Deno adicionado em `entities.test.ts` cobrindo esse caso.
+- **`VendaFormModal.tsx`**: novo Select "Vendedor" (grid do cabeçalho mudou de 3 para 4 colunas
+  para acomodar sem quebrar o encaixe visual das linhas). Em venda nova, auto-preenche com o
+  `usuarios` cujo `user_id` bate com o usuário logado (`useAuth()`), sem nunca sobrescrever uma
+  escolha manual já feita. Se o usuário logado não tiver `usuarios` correspondente (ex.: admin sem
+  vínculo de pessoa — confirmado ao vivo no ambiente de teste), o campo fica em branco para escolha
+  manual, sem quebrar nada.
+- **`usuarioService.fetchUsuariosAtivos()`** (novo, enxuto): `id, user_id, nome` de usuários ativos
+  da empresa atual (RLS já escopa por tenant). Não reaproveitado de `fetchUsuarios()` porque esse
+  já é legado com colunas desatualizadas (`nome_completo`, `cpf`, `ultimo_login`) que não existem
+  mais na tabela `usuarios` real — drift de schema pré-existente, fora de escopo corrigir agora,
+  só documentado aqui para não ser redescoberto como bug depois.
+- **Exibição**: coluna "Vendedor" na lista (`Vendas.tsx`) e linha "Vendedor: {nome}" no
+  `VendaViewDialog.tsx`, via embed `vendedor:usuarios(id, nome)` adicionado ao `select()` de
+  `vendasService.list()`.
+- **`src/integrations/supabase/types.ts` regenerado** (`supabase gen types typescript --linked`)
+  para o PostgREST embed `vendas → usuarios` resolver corretamente — sem isso o typecheck falhava
+  (`SelectQueryError` no campo `vendedor`, tipo desatualizado não conhecia a nova FK).
+- Verificado ao vivo no navegador: Select lista os usuários ativos do tenant, venda nova salva com
+  vendedor selecionado, coluna da lista e badge de status (não afetado) coexistem, venda de teste
+  removida depois (RASCUNHO, sem baixa de estoque disparada).
+
 ## ✅ Itens de venda vinculados a catálogo + ativação da baixa de estoque real (2026-07-27)
 
 Contexto: avaliação de mercado pedida pelo usuário (comparando Vendas com Square/Shopify POS/
@@ -184,17 +276,25 @@ frentes funcionais abaixo — escolhida e concluída nesta sessão.
   foram todos corrigidos).
 - `npm run test -- --run`: **357/357 passando** (45 arquivos de teste).
 - `npm run build`: passa.
-- Lint `@typescript-eslint/no-explicit-any`: **✅ ZERO ocorrências em todo o repositório**
-  (começou a sessão em 1222; concluído em 2026-07-26 num único dia de trabalho, ~15 commits).
-  `npx eslint . --format json` confirma 0. Esta frente está **fechada** — não é mais um item de
-  backlog. Metodologia usada (documentada para o caso de o lint voltar a crescer): um arquivo por
-  vez, `typecheck` + suíte completa antes de cada commit; preferir remover cast desnecessário a
-  inventar tipo novo; `unknown`/`Record<string, unknown>` para payload genuinamente dinâmico
-  (JSONB, dado de satélite); um único cast documentado `as unknown as TargetType` no retorno
-  quando o shape de embed do Supabase é imprevisível demais para tipar campo a campo (padrão
-  usado em ~10 services). Achados reais corrigidos de passagem: `Departamento` (types/rh.ts) não
-  tinha `responsavelId` apesar de ser campo usado de verdade; `fiscal/configService.ts` usava
-  `parseFloat` em colunas que já são `number` (nunca fazia sentido, mascarado pelo `any`).
+- Lint `@typescript-eslint/no-explicit-any`: **⚠️ CORREÇÃO (2026-07-27): a alegação de "ZERO em
+  todo o repositório" abaixo (2026-07-26) estava errada.** Rodando `npm run lint` de novo em
+  2026-07-27 (durante o trabalho de vendedor/operador na venda) apareceram **56 erros em 16
+  arquivos** (`src/services/*` majoritariamente — vendasService.ts, contasPagarService.ts,
+  contasReceberService.ts, contratosService.ts e outros; mais `types/fornecedor.ts`,
+  `pages/rh/IntegracaoPonto.tsx`, 2 edge functions). Confirmado via
+  `git show 4ffc6de:src/services/vendasService.ts` que pelo menos um desses `any` já existia **no
+  próprio commit que alegou zero** — a verificação "`npx eslint . --format json` confirma 0" não
+  foi de fato precisa para o repo inteiro (causa raiz não apurada). Não é regressão desta sessão.
+  Não corrigido ainda — é um novo item de backlog, não incidental, a decidir com o usuário se/quando
+  atacar. Texto original (2026-07-26, mantido como registro, não mais confiável) da metodologia
+  usada até então: um arquivo por vez, `typecheck` + suíte completa antes de cada commit; preferir
+  remover cast desnecessário a inventar tipo novo; `unknown`/`Record<string, unknown>` para
+  payload genuinamente dinâmico (JSONB, dado de satélite); um único cast documentado
+  `as unknown as TargetType` no retorno quando o shape de embed do Supabase é imprevisível demais
+  para tipar campo a campo (padrão usado em ~10 services). Achados reais corrigidos de passagem:
+  `Departamento` (types/rh.ts) não tinha `responsavelId` apesar de ser campo usado de verdade;
+  `fiscal/configService.ts` usava `parseFloat` em colunas que já são `number` (nunca fazia
+  sentido, mascarado pelo `any`).
 
 ## Riscos arquiteturais registrados (não são bugs — decisões conscientes a revisitar)
 
@@ -272,9 +372,10 @@ para não desatualizar — resumo do que já foi decidido/concluído:
 - ~~Itens de venda vinculados a catálogo + baixa de estoque real~~ — **concluído 2026-07-27** (ver
   seção acima, inclui o achado e fix de `produtos.estoque_atual` dessincronizado).
 - ~~Cor por status de venda~~ — **concluído 2026-07-27** (ver seção acima).
+- ~~Vendedor/operador na venda~~ — **concluído 2026-07-27** (ver seção acima; inclui o gancho de
+  ingestão via satélite em `vendaCanonicalObjectSchema`).
 - Itens ainda não escolhidos pelo usuário, por ordem de gravidade levantada na avaliação: (a)
-  desconto percentual (só existe valor fixo hoje); (b) vendedor/operador na venda (ausente até no
-  schema — habilita comissionamento/auditoria); (c) fluxo de "venda rápida"/balcão (maior gap de
+  desconto percentual (só existe valor fixo hoje); (c) fluxo de "venda rápida"/balcão (maior gap de
   UX para o público-alvo, mas não deve virar um "modo POS" completo — over-engineering pro estágio
   atual); (d) KPIs na tela de lista de Vendas (lógica já pronta em `Relatorios.tsx`, é reuso);
   (e) filtros por cliente específico/forma de pagamento em Vendas.tsx e Relatorios.tsx (padrão de

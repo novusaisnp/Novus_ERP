@@ -28,7 +28,7 @@ export const vendasService = {
   async list(filtros: VendaFiltros = {}): Promise<Venda[]> {
     let q = supabase
       .from('vendas')
-      .select('*, cliente:clientes(id, nome), itens:itens_venda(*)')
+      .select('*, cliente:clientes(id, nome), vendedor:usuarios(id, nome), itens:itens_venda(*)')
       .is('deleted_at', null)
       .order('data_venda', { ascending: false });
 

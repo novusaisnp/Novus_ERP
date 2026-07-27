@@ -6809,6 +6809,7 @@ export type Database = {
           updated_at: string
           valor_frete: number | null
           valor_total: number | null
+          vendedor_id: string | null
         }
         Insert: {
           acrescimo?: number | null
@@ -6835,6 +6836,7 @@ export type Database = {
           updated_at?: string
           valor_frete?: number | null
           valor_total?: number | null
+          vendedor_id?: string | null
         }
         Update: {
           acrescimo?: number | null
@@ -6861,6 +6863,7 @@ export type Database = {
           updated_at?: string
           valor_frete?: number | null
           valor_total?: number | null
+          vendedor_id?: string | null
         }
         Relationships: [
           {
@@ -6889,6 +6892,13 @@ export type Database = {
             columns: ["plano_pagamento_id"]
             isOneToOne: false
             referencedRelation: "planos_pagamento"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_vendedor_id_fkey"
+            columns: ["vendedor_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
             referencedColumns: ["id"]
           },
         ]

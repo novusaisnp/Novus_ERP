@@ -15,8 +15,10 @@ import { clienteService } from '@/services/clienteService';
 import { planosPagamentoService } from '@/services/configBasicasService';
 import { pagamentoCatalogoService } from '@/services/pagamentoCatalogoService';
 import { porta3Service } from '@/services/porta3Service';
+import { usuarioService } from '@/services/usuarioService';
 import { useVendas } from '@/hooks/useVendas';
 import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
+import { useAuth } from '@/contexts/AuthContext';
 import { useCatalogoProdutos } from '@/hooks/useCatalogoOrcamento';
 import { CatalogoItemPicker } from './CatalogoItemPicker';
 import { AutorizacaoExcecaoVendaDialog } from './AutorizacaoExcecaoVendaDialog';
@@ -42,9 +44,15 @@ const emptyItem = (): ItemVenda => ({
 export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) => {
   const { saveVenda, saving } = useVendas();
   const { data: empresaId } = useEmpresaAtual();
+  const { user: authUser } = useAuth();
   const { data: clientes = [] } = useQuery({
     queryKey: ['clientes', empresaId],
     queryFn: () => clienteService.fetchClientes(empresaId!),
+    enabled: !!empresaId,
+  });
+  const { data: usuarios = [] } = useQuery({
+    queryKey: ['usuarios-ativos-vendedor', empresaId],
+    queryFn: () => usuarioService.fetchUsuariosAtivos(),
     enabled: !!empresaId,
   });
   const { data: planos = [] } = useQuery({ queryKey: ['planos-pagamento'], queryFn: planosPagamentoService.getAll });
@@ -89,6 +97,17 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
         itens: [emptyItem()],
       });
   }, [open, venda]);
+
+  // Vendedor/operador: em venda nova, auto-preenche com o usuário logado
+  // (editável via Select) — nunca sobrescreve uma escolha já feita.
+  useEffect(() => {
+    if (!open || venda?.id || !authUser?.id || usuarios.length === 0) return;
+    setForm((p) => {
+      if (p.vendedor_id) return p;
+      const meu = usuarios.find((u) => u.user_id === authUser.id);
+      return meu ? { ...p, vendedor_id: meu.id } : p;
+    });
+  }, [open, venda, authUser?.id, usuarios]);
 
   const totais = useMemo(() => vendasService.calcTotais(form), [form]);
 
@@ -196,7 +215,7 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <Label>Cliente</Label>
               <Select
@@ -238,6 +257,20 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
                 value={form.data_entrega_prevista || ''}
                 onChange={(e) => setField('data_entrega_prevista', e.target.value)}
               />
+            </div>
+            <div>
+              <Label>Vendedor</Label>
+              <Select
+                value={form.vendedor_id || ''}
+                onValueChange={(v) => setField('vendedor_id', v)}
+              >
+                <SelectTrigger><SelectValue placeholder="Selecione o vendedor" /></SelectTrigger>
+                <SelectContent>
+                  {usuarios.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>{u.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="md:col-span-2">
               <Label>Plano de Pagamento</Label>

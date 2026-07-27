@@ -75,20 +75,6 @@ export interface Perfil {
   updatedAt?: Date;
 }
 
-export interface Usuario {
-  id?: string;
-  empresaRepresentadaId: string;
-  nomeCompleto: string;
-  cpf: string;
-  email: string;
-  perfilId: string;
-  colaboradorId?: string;
-  ativo: boolean;
-  ultimoLogin?: Date;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
 export interface CNPJData {
   cnpj: string;
   nome: string;

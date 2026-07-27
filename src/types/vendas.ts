@@ -39,6 +39,7 @@ export interface Venda {
   valor_frete?: number;
   valor_total?: number;
   plano_pagamento_id?: string | null;
+  vendedor_id?: string | null;
   observacoes?: string | null;
   observacoes_internas?: string | null;
   deleted_at?: string | null;
@@ -46,6 +47,7 @@ export interface Venda {
   updated_at?: string;
   itens?: ItemVenda[];
   cliente?: { id: string; nome: string } | null;
+  vendedor?: { id: string; nome: string } | null;
 }
 
 export interface VendaFiltros {

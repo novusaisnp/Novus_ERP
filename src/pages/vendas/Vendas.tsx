@@ -173,6 +173,7 @@ const Vendas: React.FC = () => {
                     <TableHead>Nº</TableHead>
                     <TableHead>Data</TableHead>
                     <TableHead>Cliente</TableHead>
+                    <TableHead>Vendedor</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>NF-e</TableHead>
                     <TableHead className="text-right">Total</TableHead>
@@ -188,6 +189,7 @@ const Vendas: React.FC = () => {
                         <TableCell>{v.numero_venda || '-'}</TableCell>
                         <TableCell>{v.data_venda}</TableCell>
                         <TableCell>{v.cliente?.nome || '-'}</TableCell>
+                        <TableCell>{v.vendedor?.nome || '-'}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className={VENDA_STATUS_BADGE_CLASS[v.status]}>
                             {VENDA_STATUS_LABEL[v.status] ?? v.status}

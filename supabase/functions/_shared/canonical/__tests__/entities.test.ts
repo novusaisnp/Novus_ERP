@@ -71,6 +71,20 @@ Deno.test('vendaCanonicalSchema aceita venda com origem de sistema satélite (PD
   assertEquals(result.success, true);
 });
 
+Deno.test('vendaCanonicalSchema aceita vendedor_id opcional (satélite que já resolve o usuário NOVUS)', () => {
+  const result = vendaCanonicalSchema.safeParse({
+    empresa_representada_id: EMPRESA,
+    data_venda: '2026-07-24',
+    status: 'CONFIRMADO',
+    origem_sistema: 'pdv-loja-01',
+    vendedor_id: '00000000-0000-0000-0000-0000000000aa',
+    itens: [
+      { descricao: 'Item A', quantidade: 1, preco_unitario: 50 },
+    ],
+  });
+  assertEquals(result.success, true);
+});
+
 Deno.test('vendaCanonicalSchema rejeita array de itens vazio quando presente', () => {
   const result = vendaCanonicalSchema.safeParse({
     empresa_representada_id: EMPRESA,
