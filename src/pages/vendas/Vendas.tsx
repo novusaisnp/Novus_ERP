@@ -14,12 +14,18 @@ import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps
 import { useVendas } from '@/hooks/useVendas';
 import { VendaFormModal } from '@/components/vendas/VendaFormModal';
 import { GerarTitulosButton } from '@/components/vendas/GerarTitulosButton';
+import { VendaAcoesMenu } from '@/components/vendas/VendaAcoesMenu';
+import { VendaViewDialog } from '@/components/vendas/VendaViewDialog';
 import { Venda, VendaStatus, VendaFiltros } from '@/types/vendas';
 
 import EmitirNFeDialog from '@/components/fiscal/EmitirNFeDialog';
 import DetalheNFeDrawer from '@/components/fiscal/DetalheNFeDrawer';
 import FiscalStatusBadge from '@/components/fiscal/FiscalStatusBadge';
 import { useFiscalStatusPorVenda } from '@/hooks/fiscal/useFiscalStatusPorVenda';
+import { useClientes } from '@/hooks/useClientes';
+import { useEmpresasRepresentadas } from '@/hooks/useEmpresasRepresentadas';
+import { useEmpresasLogosMap } from '@/hooks/useEmpresasLogosMap';
+import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
 
 const STATUS: VendaStatus[] = ['RASCUNHO', 'CONFIRMADO', 'EM_PRODUCAO', 'FATURADO', 'ENTREGUE', 'CANCELADO'];
 const STATUS_EMISSAO_OK: VendaStatus[] = ['FATURADO', 'ENTREGUE'];
@@ -48,9 +54,60 @@ const Vendas: React.FC = () => {
   const [toCancel, setToCancel] = useState<Venda | null>(null);
   const [emitirVenda, setEmitirVenda] = useState<Venda | null>(null);
   const [detalheDocId, setDetalheDocId] = useState<string | null>(null);
+  const [viewVenda, setViewVenda] = useState<Venda | null>(null);
 
   const vendaIds = useMemo(() => vendas.map((v) => v.id), [vendas]);
   const { data: fiscalMap = {} } = useFiscalStatusPorVenda(vendaIds);
+
+  const { data: empresaId } = useEmpresaAtual();
+  const { clientes } = useClientes(empresaId ?? null);
+  const { empresas } = useEmpresasRepresentadas();
+  const logosMapQ = useEmpresasLogosMap(empresas);
+  const logoOf = (id: string) => logosMapQ.data?.get(id) ?? null;
+
+  const empresaById = useMemo(() => {
+    const m = new Map<string, (typeof empresas)[number]>();
+    (empresas ?? []).forEach((e) => e.id && m.set(e.id, e));
+    return m;
+  }, [empresas]);
+
+  const clienteById = useMemo(() => {
+    const m = new Map<string, (typeof clientes)[number]>();
+    (clientes ?? []).forEach((c) => c.id && m.set(c.id, c));
+    return m;
+  }, [clientes]);
+
+  const empresaPdfOf = (empresaRepresentadaId?: string | null) => {
+    if (!empresaRepresentadaId) return null;
+    const e = empresaById.get(empresaRepresentadaId);
+    if (!e) return null;
+    return {
+      nome: e.nome,
+      cnpj: e.cnpj,
+      email: e.email,
+      telefone: e.telefone,
+      endereco: e.endereco,
+      cidade: e.cidade,
+      estado: e.estado,
+      cep: e.cep,
+      logoUrl: logoOf(empresaRepresentadaId),
+    };
+  };
+
+  const clientePdfOf = (v: Venda) => {
+    if (!v.cliente_id) return { nome: v.cliente?.nome };
+    const c = clienteById.get(v.cliente_id);
+    if (!c) return { nome: v.cliente?.nome };
+    return {
+      nome: c.nome,
+      cnpj: c.tipo === 'J' ? c.cpfCnpj : null,
+      cpf: c.tipo === 'F' ? c.cpfCnpj : null,
+      email: c.emails?.[0] ?? null,
+      telefone: c.telefones?.[0] ?? null,
+      cidade: c.endereco?.cidade ?? null,
+      estado: c.endereco?.uf ?? null,
+    };
+  };
 
   const abrirNovo = () => { setEditing(null); setModalOpen(true); };
   const abrirEdit = (v: Venda) => { setEditing(v); setModalOpen(true); };
@@ -159,6 +216,14 @@ const Vendas: React.FC = () => {
                           </Tooltip>
                           <Button size="icon" variant="ghost" onClick={() => abrirEdit(v)}><Pencil className="h-4 w-4" /></Button>
                           <GerarTitulosButton venda={v} />
+                          <VendaAcoesMenu
+                            venda={v}
+                            empresa={empresaPdfOf(v.empresa_representada_id)}
+                            cliente={clientePdfOf(v)}
+                            clienteTelefone={v.cliente_id ? clienteById.get(v.cliente_id)?.telefones?.[0] : undefined}
+                            clienteEmail={v.cliente_id ? clienteById.get(v.cliente_id)?.emails?.[0] : undefined}
+                            onView={() => setViewVenda(v)}
+                          />
                           {v.status !== 'CANCELADO' && (
                             <Button size="icon" variant="ghost" onClick={() => setToCancel(v)} title="Cancelar">
                               <Ban className="h-4 w-4" />
@@ -213,6 +278,14 @@ const Vendas: React.FC = () => {
           open={!!detalheDocId}
           onOpenChange={(o) => { if (!o) setDetalheDocId(null); }}
           documentoId={detalheDocId}
+        />
+
+        <VendaViewDialog
+          venda={viewVenda}
+          empresa={viewVenda ? empresaPdfOf(viewVenda.empresa_representada_id) : null}
+          cliente={viewVenda ? clientePdfOf(viewVenda) : null}
+          open={!!viewVenda}
+          onOpenChange={(v) => !v && setViewVenda(null)}
         />
       </div>
     </TooltipProvider>

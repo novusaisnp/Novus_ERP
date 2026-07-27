@@ -11,6 +11,7 @@ export interface ItemVenda {
   venda_id?: string;
   produto_id?: string | null;
   servico_id?: string | null;
+  tipo_item?: 'P' | 'S';
   descricao: string;
   quantidade: number;
   unidade?: string | null;
