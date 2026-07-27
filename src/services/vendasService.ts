@@ -60,7 +60,13 @@ export const vendasService = {
         throw error;
       }
     } else {
-      const { data, error } = await supabase.from('vendas').insert(rest).select('id').single();
+      // vendas.tipo é NOT NULL (CHECK IN ('P','S','H')) mas o formulário não
+      // expõe esse campo — mesmo fallback usado por converter_orcamento_em_venda.
+      const { data, error } = await supabase
+        .from('vendas')
+        .insert({ tipo: 'P', ...rest })
+        .select('id')
+        .single();
       if (error) {
         console.error('[vendasService] Erro ao criar venda');
         throw error;

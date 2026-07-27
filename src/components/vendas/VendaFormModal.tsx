@@ -13,8 +13,12 @@ import { Venda, ItemVenda, VendaStatus } from '@/types/vendas';
 import { vendasService } from '@/services/vendasService';
 import { clienteService } from '@/services/clienteService';
 import { planosPagamentoService } from '@/services/configBasicasService';
+import { pagamentoCatalogoService } from '@/services/pagamentoCatalogoService';
+import { porta3Service } from '@/services/porta3Service';
 import { useVendas } from '@/hooks/useVendas';
 import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
+import { AutorizacaoExcecaoVendaDialog } from './AutorizacaoExcecaoVendaDialog';
+import type { Bloqueio } from '@/types/porta3';
 
 interface Props {
   open: boolean;
@@ -41,6 +45,16 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
     enabled: !!empresaId,
   });
   const { data: planos = [] } = useQuery({ queryKey: ['planos-pagamento'], queryFn: planosPagamentoService.getAll });
+  const { data: naturezas = [] } = useQuery({
+    queryKey: ['naturezas-pagamento'],
+    queryFn: () => pagamentoCatalogoService.listarNaturezas(),
+  });
+
+  const [bloqueioDialog, setBloqueioDialog] = useState<{ open: boolean; bloqueios: Bloqueio[] }>({
+    open: false,
+    bloqueios: [],
+  });
+  const [autorizando, setAutorizando] = useState(false);
 
   const [form, setForm] = useState<Venda>({
     data_venda: new Date().toISOString().slice(0, 10),
@@ -67,6 +81,13 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
 
   const totais = useMemo(() => vendasService.calcTotais(form), [form]);
 
+  const naturezaCrediarioId = naturezas.find((n) => n.codigo === 'CREDIARIO_PROPRIO')?.id;
+  const planoSelecionado = planos.find((p) => p.id === form.plano_pagamento_id);
+  // Porta 3 (docs/CONTRATOS_CANONICOS_ERP.md §6): só faz sentido checar crédito/
+  // inadimplência quando a venda é a prazo (natureza CREDIARIO_PROPRIO do plano
+  // de pagamento selecionado) — venda à vista não tem o que checar.
+  const isCrediario = !!planoSelecionado?.natureza_id && planoSelecionado.natureza_id === naturezaCrediarioId;
+
   const setField = <K extends keyof Venda>(k: K, v: Venda[K]) => setForm((p) => ({ ...p, [k]: v }));
 
   const updateItem = (idx: number, patch: Partial<ItemVenda>) =>
@@ -78,6 +99,12 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
   const addItem = () => setForm((p) => ({ ...p, itens: [...(p.itens || []), emptyItem()] }));
   const removeItem = (idx: number) =>
     setForm((p) => ({ ...p, itens: (p.itens || []).filter((_, i) => i !== idx) }));
+
+  const doSave = async () => {
+    const itens = (form.itens || []).filter((i) => (i.descricao || '').trim().length > 0);
+    await saveVenda({ ...form, itens });
+    onOpenChange(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,8 +119,21 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
       return;
     }
     try {
-      await saveVenda({ ...form, itens });
-      onOpenChange(false);
+      // Porta 3 (§6): venda a prazo passa pela pré-checagem de crédito/
+      // inadimplência antes de persistir. Bloqueado -> abre o modal de
+      // exceção em vez de salvar direto.
+      if (isCrediario && empresaId) {
+        const preflight = await porta3Service.verificarAutorizacaoVenda(
+          form.cliente_id,
+          empresaId,
+          totais.valor_total || 0
+        );
+        if (!preflight.autorizado) {
+          setBloqueioDialog({ open: true, bloqueios: preflight.bloqueios });
+          return;
+        }
+      }
+      await doSave();
     } catch (err) {
       // Não fechar o modal em erro. Preservar estado do usuário.
       const msg = err instanceof Error ? err.message : 'Falha ao salvar venda';
@@ -101,8 +141,32 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
     }
   };
 
+  const handleAutorizarExcecao = async (justificativa: string) => {
+    if (!form.cliente_id || !empresaId) return;
+    setAutorizando(true);
+    try {
+      for (const b of bloqueioDialog.bloqueios) {
+        await porta3Service.autorizarExcecaoVenda({
+          clienteId: form.cliente_id,
+          empresaId,
+          bloqueioCodigo: b.codigo,
+          valorPretendido: totais.valor_total || 0,
+          justificativa,
+        });
+      }
+      setBloqueioDialog({ open: false, bloqueios: [] });
+      await doSave();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Falha ao autorizar exceção';
+      toast.error(msg);
+    } finally {
+      setAutorizando(false);
+    }
+  };
+
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -166,6 +230,11 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
                   ))}
                 </SelectContent>
               </Select>
+              {isCrediario && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Venda a prazo (crediário) — sujeita a checagem de crédito/inadimplência do cliente ao salvar.
+                </p>
+              )}
             </div>
           </div>
 
@@ -287,5 +356,13 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
         </form>
       </DialogContent>
     </Dialog>
+    <AutorizacaoExcecaoVendaDialog
+      open={bloqueioDialog.open}
+      onOpenChange={(o) => setBloqueioDialog((p) => ({ ...p, open: o }))}
+      bloqueios={bloqueioDialog.bloqueios}
+      onAutorizar={handleAutorizarExcecao}
+      autorizando={autorizando}
+    />
+    </>
   );
 };

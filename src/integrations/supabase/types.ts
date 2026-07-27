@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       agencias_bancarias: {
@@ -5097,6 +5122,57 @@ export type Database = {
           },
         ]
       }
+      porta3_autorizacoes_excecao: {
+        Row: {
+          bloqueio_codigo: string
+          cliente_id: string
+          created_at: string
+          empresa_representada_id: string
+          id: string
+          justificativa: string
+          permissao_utilizada: string
+          usuario_id: string
+          valor_pretendido: number | null
+        }
+        Insert: {
+          bloqueio_codigo: string
+          cliente_id: string
+          created_at?: string
+          empresa_representada_id: string
+          id?: string
+          justificativa: string
+          permissao_utilizada: string
+          usuario_id: string
+          valor_pretendido?: number | null
+        }
+        Update: {
+          bloqueio_codigo?: string
+          cliente_id?: string
+          created_at?: string
+          empresa_representada_id?: string
+          id?: string
+          justificativa?: string
+          permissao_utilizada?: string
+          usuario_id?: string
+          valor_pretendido?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "porta3_autorizacoes_excecao_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "porta3_autorizacoes_excecao_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       produto_fornecedores: {
         Row: {
           ativo: boolean
@@ -7110,6 +7186,16 @@ export type Database = {
       }
     }
     Functions: {
+      autorizar_excecao_venda: {
+        Args: {
+          p_bloqueio_codigo: string
+          p_cliente_id: string
+          p_empresa_id: string
+          p_justificativa: string
+          p_valor_pretendido: number
+        }
+        Returns: Json
+      }
       baixar_estoque_venda: {
         Args: { p_localizacao_id: string; p_venda_id: string }
         Returns: Json
@@ -7257,6 +7343,10 @@ export type Database = {
         }[]
       }
       get_user_empresa_id: { Args: never; Returns: string }
+      has_permissao: {
+        Args: { p_permissao: string; p_user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -7351,6 +7441,14 @@ export type Database = {
       validar_pagamento_venda: { Args: { p_venda_id: string }; Returns: Json }
       validar_saldo_estoque: {
         Args: { p_localizacao: string; p_produto: string; p_quantidade: number }
+        Returns: Json
+      }
+      verificar_autorizacao_venda: {
+        Args: {
+          p_cliente_id: string
+          p_empresa_id: string
+          p_valor_pretendido: number
+        }
         Returns: Json
       }
     }
@@ -7485,6 +7583,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: ["admin", "gerente", "operador", "visualizador"],

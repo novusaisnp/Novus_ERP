@@ -34,7 +34,8 @@ const PERMISSOES_GRANULARES: PermissionModule[] = [
       { codigo: 'vendas.delete', nome: 'Excluir Vendas', descricao: 'Remover vendas do sistema', critica: true },
       { codigo: 'vendas.desconto', nome: 'Aplicar Descontos', descricao: 'Conceder descontos em vendas' },
       { codigo: 'vendas.cancelamento', nome: 'Cancelar Vendas', descricao: 'Cancelar vendas finalizadas', critica: true },
-      { codigo: 'vendas.alterarPreco', nome: 'Alterar Preços', descricao: 'Modificar preços de produtos na venda' }
+      { codigo: 'vendas.alterarPreco', nome: 'Alterar Preços', descricao: 'Modificar preços de produtos na venda' },
+      { codigo: 'vendas.autorizarInadimplencia', nome: 'Autorizar Venda a Inadimplente', descricao: 'Superar bloqueio de crédito/inadimplência e autorizar venda a prazo para cliente bloqueado, em análise ou com títulos vencidos', critica: true }
     ]
   },
   {
