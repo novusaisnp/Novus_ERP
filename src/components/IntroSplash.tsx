@@ -42,17 +42,28 @@ export const IntroSplash: React.FC<IntroSplashProps> = ({ onFinish }) => {
       role="button"
       aria-label="Pular animação de abertura"
     >
-      <video
-        ref={videoRef}
-        src="/intro.mp4"
-        className="h-full w-full object-cover"
-        autoPlay
-        muted
-        playsInline
-        preload="auto"
-        onEnded={finish}
-        onError={finish}
-      />
+      <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+        <video
+          ref={videoRef}
+          src="/intro.mp4"
+          className="w-full h-full object-contain"
+          autoPlay
+          muted
+          playsInline
+          preload="auto"
+          onEnded={finish}
+          onError={finish}
+        />
+        {/* Gradient overlay nas bordas */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `
+              radial-gradient(ellipse at center, transparent 40%, rgba(10, 25, 48, 0.4) 85%, rgba(10, 25, 48, 0.8) 100%)
+            `
+          }}
+        />
+      </div>
       <span className="absolute bottom-6 right-6 text-xs text-white/60 tracking-wide">
         Pular
       </span>
