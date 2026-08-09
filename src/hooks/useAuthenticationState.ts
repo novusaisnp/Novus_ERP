@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { markSessionActive } from '@/utils/sessionActivity';
 
 export interface AuthState {
   user: User | null;
@@ -69,6 +70,9 @@ export function useAuthenticationState() {
           } else {
             localStorage.removeItem('novus_remember_me');
           }
+          // Marks this tab as the origin of the login, so the post-login
+          // redirect doesn't get bounced by useSessionPersistence's stale-session check.
+          markSessionActive();
           return {};
         }
 
