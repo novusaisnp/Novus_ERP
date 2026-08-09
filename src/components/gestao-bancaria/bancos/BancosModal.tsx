@@ -228,7 +228,7 @@ export const BancosModal = ({
               )}
             </div>
             {errors.codigo && (
-              <p className="text-sm text-red-600 mt-1">{errors.codigo.message}</p>
+              <p className="text-sm text-status-cancelled mt-1">{errors.codigo.message}</p>
             )}
             {!isEdit && (
               <p className="text-xs text-gray-500 mt-1">
@@ -308,7 +308,7 @@ export const BancosModal = ({
               )}
             </div>
             {errors.nome && (
-              <p className="text-sm text-red-600 mt-1">{errors.nome.message}</p>
+              <p className="text-sm text-status-cancelled mt-1">{errors.nome.message}</p>
             )}
             {!isEdit && (
               <p className="text-xs text-gray-500 mt-1">
@@ -331,7 +331,7 @@ export const BancosModal = ({
               maxLength={10}
             />
             {errors.sigla && (
-              <p className="text-sm text-red-600 mt-1">{errors.sigla.message}</p>
+              <p className="text-sm text-status-cancelled mt-1">{errors.sigla.message}</p>
             )}
           </div>
 
@@ -349,7 +349,7 @@ export const BancosModal = ({
               placeholder="Ex: Brasil, Argentina"
             />
             {errors.pais && (
-              <p className="text-sm text-red-600 mt-1">{errors.pais.message}</p>
+              <p className="text-sm text-status-cancelled mt-1">{errors.pais.message}</p>
             )}
           </div>
 

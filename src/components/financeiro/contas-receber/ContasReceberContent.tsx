@@ -144,7 +144,7 @@ export const ContasReceberContent = ({
                   {formatCurrency(conta.valor_original)}
                 </p>
                 {conta.valor_pago && conta.valor_pago > 0 && (
-                  <p className="text-xs text-green-600">
+                  <p className="text-xs text-status-delivered">
                     Pago: {formatCurrency(conta.valor_pago)}
                   </p>
                 )}
@@ -185,7 +185,7 @@ export const ContasReceberContent = ({
                   variant="outline"
                   onClick={() => onDelete(conta.id)}
                   disabled={isDeleting}
-                  className="flex items-center gap-1 text-red-600 hover:text-red-700"
+                  className="flex items-center gap-1 text-status-cancelled hover:text-status-cancelled/80"
                 >
                   <Trash2 className="h-3 w-3" />
                   Excluir

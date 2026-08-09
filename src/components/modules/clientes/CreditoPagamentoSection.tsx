@@ -198,7 +198,7 @@ export const CreditoPagamentoSection: React.FC<Props> = ({
         {emBloqueio && (
           <div className={cn(
             'rounded-md border p-3 text-sm',
-            'border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300',
+            'border-status-production/40 bg-status-production/10 text-status-production',
           )}>
             Cliente está <strong>BLOQUEADO</strong>. Vendas exigirão override auditado.
             {overrideNecessario && (

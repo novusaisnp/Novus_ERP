@@ -64,19 +64,26 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				erp: {
-					primary: '220 84% 18%',
-					secondary: '220 20% 92%',
-					accent: '220 84% 45%',
-					success: '142 76% 36%',
-					warning: '43 89% 58%',
-					danger: '0 84% 60%'
+				'accent-vivid': {
+					DEFAULT: 'hsl(var(--accent-vivid))',
+					soft: 'hsl(var(--accent-vivid-soft))',
+					foreground: 'hsl(var(--accent-vivid-foreground))'
+				},
+				status: {
+					draft: 'hsl(var(--status-draft))',
+					confirmed: 'hsl(var(--status-confirmed))',
+					production: 'hsl(var(--status-production))',
+					delivered: 'hsl(var(--status-delivered))',
+					cancelled: 'hsl(var(--status-cancelled))'
 				}
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'
+			},
+			boxShadow: {
+				elevated: '0 8px 24px -4px hsl(220 84% 4% / 0.18)'
 			},
 			keyframes: {
 				'accordion-down': {

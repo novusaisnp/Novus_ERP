@@ -93,10 +93,10 @@ const Colaboradores: React.FC = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Ativos</CardTitle>
-            <UserCheck className="h-4 w-4 text-green-600" />
+            <UserCheck className="h-4 w-4 text-status-delivered" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{colaboradoresAtivos}</div>
+            <div className="text-2xl font-bold text-status-delivered">{colaboradoresAtivos}</div>
             <p className="text-xs text-muted-foreground">
               colaboradores ativos
             </p>
@@ -106,10 +106,10 @@ const Colaboradores: React.FC = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Inativos</CardTitle>
-            <UserX className="h-4 w-4 text-red-600" />
+            <UserX className="h-4 w-4 text-status-cancelled" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{colaboradoresInativos}</div>
+            <div className="text-2xl font-bold text-status-cancelled">{colaboradoresInativos}</div>
             <p className="text-xs text-muted-foreground">
               colaboradores inativos
             </p>

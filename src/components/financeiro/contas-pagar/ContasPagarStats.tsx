@@ -34,10 +34,10 @@ export const ContasPagarStats = ({ estatisticas }: ContasPagarStatsProps) => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Contas Abertas</CardTitle>
-          <Clock className="h-4 w-4 text-blue-600" />
+          <Clock className="h-4 w-4 text-status-confirmed" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-blue-600">{estatisticas.contas_abertas}</div>
+          <div className="text-2xl font-bold text-status-confirmed">{estatisticas.contas_abertas}</div>
           <p className="text-xs text-muted-foreground">
             {formatCurrency(estatisticas.valor_total_aberto)}
           </p>
@@ -47,10 +47,10 @@ export const ContasPagarStats = ({ estatisticas }: ContasPagarStatsProps) => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Contas Vencidas</CardTitle>
-          <AlertTriangle className="h-4 w-4 text-red-600" />
+          <AlertTriangle className="h-4 w-4 text-status-cancelled" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-red-600">{estatisticas.contas_vencidas}</div>
+          <div className="text-2xl font-bold text-status-cancelled">{estatisticas.contas_vencidas}</div>
           <p className="text-xs text-muted-foreground">
             {formatCurrency(estatisticas.valor_total_vencido)}
           </p>
@@ -60,10 +60,10 @@ export const ContasPagarStats = ({ estatisticas }: ContasPagarStatsProps) => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Contas Pagas</CardTitle>
-          <CheckCircle className="h-4 w-4 text-green-600" />
+          <CheckCircle className="h-4 w-4 text-status-delivered" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-green-600">{estatisticas.contas_pagas}</div>
+          <div className="text-2xl font-bold text-status-delivered">{estatisticas.contas_pagas}</div>
           <p className="text-xs text-muted-foreground">
             {formatCurrency(estatisticas.valor_total_pago)}
           </p>
@@ -73,10 +73,10 @@ export const ContasPagarStats = ({ estatisticas }: ContasPagarStatsProps) => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total em Aberto</CardTitle>
-          <DollarSign className="h-4 w-4 text-orange-600" />
+          <DollarSign className="h-4 w-4 text-status-production" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-orange-600">
+          <div className="text-2xl font-bold text-status-production">
             {formatCurrency(estatisticas.valor_total_aberto + estatisticas.valor_total_vencido)}
           </div>
         </CardContent>

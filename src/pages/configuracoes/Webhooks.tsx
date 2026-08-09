@@ -149,7 +149,7 @@ const Webhooks: React.FC = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={w.ativo ? 'default' : 'outline'} className={w.ativo ? 'bg-green-600 hover:bg-green-600' : ''}>
+                    <Badge variant={w.ativo ? 'default' : 'outline'} className={w.ativo ? 'bg-status-delivered hover:bg-status-delivered' : ''}>
                       {w.ativo ? 'ATIVO' : 'INATIVO'}
                     </Badge>
                   </TableCell>

@@ -157,7 +157,7 @@ const Categorias: React.FC = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={completa ? 'default' : 'outline'} className={completa ? '' : 'text-amber-600 border-amber-500'}>
+                        <Badge variant={completa ? 'default' : 'outline'} className={completa ? '' : 'text-status-production border-status-production'}>
                           {completa ? 'Completa' : temReceita || temDespesa ? 'Parcial' : 'Pendente'}
                         </Badge>
                       </TableCell>

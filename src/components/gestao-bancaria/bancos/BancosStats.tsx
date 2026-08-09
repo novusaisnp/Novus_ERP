@@ -20,25 +20,25 @@ export const BancosStats = ({ estatisticas }: BancosStatsProps) => {
       title: 'Total de Bancos',
       value: estatisticas.total,
       icon: Building2,
-      color: 'text-blue-600',
+      color: 'text-status-confirmed',
     },
     {
       title: 'Bancos Ativos',
       value: estatisticas.ativos,
       icon: CheckCircle,
-      color: 'text-green-600',
+      color: 'text-status-delivered',
     },
     {
       title: 'Bancos Inativos',
       value: estatisticas.inativos,
       icon: XCircle,
-      color: 'text-orange-600',
+      color: 'text-status-production',
     },
     {
       title: 'Bancos Arquivados',
       value: estatisticas.arquivados,
       icon: Archive,
-      color: 'text-gray-600',
+      color: 'text-status-draft',
     },
   ];
 

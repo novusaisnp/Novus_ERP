@@ -21,8 +21,8 @@ const SEVERITY_STYLES: Record<
   },
   warning: {
     icon: AlertTriangle,
-    wrap: 'border-yellow-500/50 bg-yellow-500/5',
-    iconClass: 'text-yellow-600 dark:text-yellow-500',
+    wrap: 'border-status-production/50 bg-status-production/5',
+    iconClass: 'text-status-production',
   },
   info: {
     icon: Info,

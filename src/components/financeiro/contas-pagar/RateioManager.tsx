@@ -364,19 +364,19 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
 
       {/* Indicador de Percentual Restante */}
       {Math.abs(percentualRestante) > 0.01 && (
-        <Card className="border-orange-200 bg-orange-50">
+        <Card className="border-status-production/30 bg-status-production/10">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Percent className="h-5 w-5 text-orange-600" />
+              <Percent className="h-5 w-5 text-status-production" />
               <div className="flex-1">
-                <p className="text-sm font-medium text-orange-800">
+                <p className="text-sm font-medium text-status-production">
                   {percentualRestante > 0 ? 'Falta ratear:' : 'Excesso no rateio:'}
                 </p>
-                <p className="text-lg font-bold text-orange-900">
+                <p className="text-lg font-bold text-status-production">
                   {Math.abs(percentualRestante).toFixed(2)}% de 100%
                 </p>
                 {Math.abs(diferenca) >= 0.01 && (
-                  <p className="text-sm text-orange-700">
+                  <p className="text-sm text-status-production">
                     Valor: R$ {Math.abs(diferenca).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </p>
                 )}
@@ -393,7 +393,7 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
           const isPreRegistrado = preRegistrados.has(index);
 
           return (
-            <Card key={index} className={cn(!isPreRegistrado && 'border-orange-300')}>
+            <Card key={index} className={cn(!isPreRegistrado && 'border-status-production/50')}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <button
@@ -414,7 +414,7 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
                         <CheckCircle2 className="h-3 w-3" /> Pré-registrado
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="text-orange-700 border-orange-400">
+                      <Badge variant="outline" className="text-status-production border-status-production/50">
                         Não salvo
                       </Badge>
                     )}

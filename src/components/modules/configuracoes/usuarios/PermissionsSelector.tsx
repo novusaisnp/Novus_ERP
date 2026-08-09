@@ -221,7 +221,7 @@ const PermissionsSelector: React.FC<PermissionsSelectorProps> = ({
             </Badge>
           )}
           {readOnly && (
-            <Badge variant="outline" className="border-blue-500 text-blue-700 bg-blue-50">
+            <Badge variant="outline" className="border-status-confirmed text-status-confirmed bg-status-confirmed/10">
               <Lock className="w-3 h-3 mr-1" />
               Somente Leitura
             </Badge>
@@ -275,7 +275,7 @@ const PermissionsSelector: React.FC<PermissionsSelectorProps> = ({
                           flex items-start space-x-3 p-3 rounded-lg border transition-all 
                           ${readOnly ? 'cursor-default' : 'cursor-pointer hover:bg-gray-50'}
                           ${isSelected ? 'border-primary bg-primary/5' : 'border-gray-200'}
-                          ${permissao.critica ? 'border-l-4 border-l-red-400' : ''}
+                          ${permissao.critica ? 'border-l-4 border-l-status-cancelled' : ''}
                         `}
                         onClick={readOnly ? undefined : () => onPermissaoToggle(permissao.codigo)}
                       >
@@ -298,7 +298,7 @@ const PermissionsSelector: React.FC<PermissionsSelectorProps> = ({
                               </Badge>
                             )}
                             {readOnly && (
-                              <Lock className="w-3 h-3 text-blue-500" />
+                              <Lock className="w-3 h-3 text-status-confirmed" />
                             )}
                           </div>
                           <p className="text-xs text-gray-600 mt-1">{permissao.descricao}</p>
@@ -318,13 +318,13 @@ const PermissionsSelector: React.FC<PermissionsSelectorProps> = ({
 
       {/* Aviso sobre permissões críticas */}
       {getPermissoesCriticas() > 0 && (
-        <Card className="border-red-200 bg-red-50">
+        <Card className="border-status-cancelled/20 bg-status-cancelled/5">
           <div className="p-4">
             <div className="flex items-start gap-3">
-              <Shield className="w-5 h-5 text-red-600 mt-0.5" />
+              <Shield className="w-5 h-5 text-status-cancelled mt-0.5" />
               <div>
-                <h4 className="font-medium text-red-900">Permissões Críticas Selecionadas</h4>
-                <p className="text-sm text-red-700 mt-1">
+                <h4 className="font-medium text-status-cancelled">Permissões Críticas Selecionadas</h4>
+                <p className="text-sm text-status-cancelled/80 mt-1">
                   Este perfil possui permissões críticas que podem afetar significativamente o sistema. 
                   Certifique-se de que apenas usuários confiáveis tenham acesso a estas funcionalidades.
                 </p>

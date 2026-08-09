@@ -38,10 +38,10 @@ export const PlanoContasStats: React.FC<PlanoContasStatsProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Receitas</p>
-              <p className="text-2xl font-bold text-green-600">{contasReceita}</p>
+              <p className="text-2xl font-bold text-status-delivered">{contasReceita}</p>
             </div>
-            <div className="h-8 w-8 bg-green-100 rounded-lg flex items-center justify-center">
-              <TrendingUp className="h-4 w-4 text-green-600" />
+            <div className="h-8 w-8 bg-status-delivered/10 rounded-lg flex items-center justify-center">
+              <TrendingUp className="h-4 w-4 text-status-delivered" />
             </div>
           </div>
         </CardContent>
@@ -52,10 +52,10 @@ export const PlanoContasStats: React.FC<PlanoContasStatsProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Despesas</p>
-              <p className="text-2xl font-bold text-red-600">{contasDespesa}</p>
+              <p className="text-2xl font-bold text-status-cancelled">{contasDespesa}</p>
             </div>
-            <div className="h-8 w-8 bg-red-100 rounded-lg flex items-center justify-center">
-              <TrendingDown className="h-4 w-4 text-red-600" />
+            <div className="h-8 w-8 bg-status-cancelled/10 rounded-lg flex items-center justify-center">
+              <TrendingDown className="h-4 w-4 text-status-cancelled" />
             </div>
           </div>
         </CardContent>

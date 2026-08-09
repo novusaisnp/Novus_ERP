@@ -99,7 +99,7 @@ const ContasBancarias = () => {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Erro ao carregar contas bancárias</h1>
+          <h1 className="text-2xl font-bold text-status-cancelled mb-4">Erro ao carregar contas bancárias</h1>
           <p className="text-gray-600">{error.message || 'Erro desconhecido'}</p>
         </div>
       </div>

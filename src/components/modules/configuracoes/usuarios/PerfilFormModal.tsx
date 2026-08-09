@@ -235,7 +235,7 @@ const PerfilFormModal: React.FC<PerfilFormModalProps> = ({
           <DialogTitle className="flex items-center gap-2">
             {readOnly ? (
               <>
-                <Lock className="w-5 h-5 text-blue-600" />
+                <Lock className="w-5 h-5 text-status-confirmed" />
                 Visualizar Perfil do Sistema
               </>
             ) : (
@@ -248,13 +248,13 @@ const PerfilFormModal: React.FC<PerfilFormModalProps> = ({
         </DialogHeader>
 
         {readOnly && (
-          <Card className="border-blue-200 bg-blue-50">
+          <Card className="border-status-confirmed/20 bg-status-confirmed/5">
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
-                <Lock className="w-5 h-5 text-blue-600 mt-0.5" />
+                <Lock className="w-5 h-5 text-status-confirmed mt-0.5" />
                 <div className="flex-1">
-                  <h4 className="font-medium text-blue-900">Perfil do Sistema</h4>
-                  <p className="text-sm text-blue-700 mt-1">
+                  <h4 className="font-medium text-status-confirmed">Perfil do Sistema</h4>
+                  <p className="text-sm text-status-confirmed/80 mt-1">
                     Este é um perfil padrão do sistema e não pode ser modificado. 
                     Você pode visualizar as permissões configuradas, mas não editá-las.
                   </p>
@@ -340,13 +340,13 @@ const PerfilFormModal: React.FC<PerfilFormModalProps> = ({
 
           {/* Confirmação de Permissões Críticas */}
           {!readOnly && getPermissoesCriticas().length > 0 && (
-            <Card className="border-red-200 bg-red-50">
+            <Card className="border-status-cancelled/20 bg-status-cancelled/5">
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5" />
+                  <AlertTriangle className="w-5 h-5 text-status-cancelled mt-0.5" />
                   <div className="flex-1">
-                    <h4 className="font-medium text-red-900">Atenção: Permissões Críticas</h4>
-                    <p className="text-sm text-red-700 mt-1 mb-3">
+                    <h4 className="font-medium text-status-cancelled">Atenção: Permissões Críticas</h4>
+                    <p className="text-sm text-status-cancelled/80 mt-1 mb-3">
                       Este perfil possui {getPermissoesCriticas().length} permissões críticas que podem 
                       afetar significativamente o sistema. Certifique-se de que apenas usuários 
                       confiáveis tenham acesso a estas funcionalidades.
@@ -360,7 +360,7 @@ const PerfilFormModal: React.FC<PerfilFormModalProps> = ({
                         onChange={(e) => setConfirmCritical(e.target.checked)}
                         className="rounded"
                       />
-                      <Label htmlFor="confirmCritical" className="text-sm text-red-900">
+                      <Label htmlFor="confirmCritical" className="text-sm text-status-cancelled">
                         Confirmo que entendo os riscos das permissões críticas
                       </Label>
                     </div>

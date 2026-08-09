@@ -49,10 +49,10 @@ export function MovimentacoesBancariasStats({ estatisticas }: MovimentacoesBanca
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Entradas</CardTitle>
-          <TrendingUp className="h-4 w-4 text-green-600" />
+          <TrendingUp className="h-4 w-4 text-status-delivered" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-green-600">
+          <div className="text-2xl font-bold text-status-delivered">
             {currencyUtils.formatCurrency(valor_total_entradas)}
           </div>
           <p className="text-xs text-muted-foreground">
@@ -65,10 +65,10 @@ export function MovimentacoesBancariasStats({ estatisticas }: MovimentacoesBanca
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Saídas</CardTitle>
-          <TrendingDown className="h-4 w-4 text-red-600" />
+          <TrendingDown className="h-4 w-4 text-status-cancelled" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-red-600">
+          <div className="text-2xl font-bold text-status-cancelled">
             {currencyUtils.formatCurrency(valor_total_saidas)}
           </div>
           <p className="text-xs text-muted-foreground">
@@ -82,13 +82,13 @@ export function MovimentacoesBancariasStats({ estatisticas }: MovimentacoesBanca
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Saldo Líquido</CardTitle>
           {saldoPositivo ? (
-            <TrendingUp className="h-4 w-4 text-green-600" />
+            <TrendingUp className="h-4 w-4 text-status-delivered" />
           ) : (
-            <TrendingDown className="h-4 w-4 text-red-600" />
+            <TrendingDown className="h-4 w-4 text-status-cancelled" />
           )}
         </CardHeader>
         <CardContent>
-          <div className={`text-2xl font-bold ${saldoPositivo ? 'text-green-600' : 'text-red-600'}`}>
+          <div className={`text-2xl font-bold ${saldoPositivo ? 'text-status-delivered' : 'text-status-cancelled'}`}>
             {currencyUtils.formatCurrency(saldo_liquido)}
           </div>
           <p className="text-xs text-muted-foreground">
@@ -101,10 +101,10 @@ export function MovimentacoesBancariasStats({ estatisticas }: MovimentacoesBanca
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Transferências</CardTitle>
-          <ArrowRightLeft className="h-4 w-4 text-blue-600" />
+          <ArrowRightLeft className="h-4 w-4 text-status-confirmed" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-blue-600">{total_transferencias}</div>
+          <div className="text-2xl font-bold text-status-confirmed">{total_transferencias}</div>
           <p className="text-xs text-muted-foreground">
             operações
           </p>
@@ -115,7 +115,7 @@ export function MovimentacoesBancariasStats({ estatisticas }: MovimentacoesBanca
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Conciliação</CardTitle>
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
+          <CheckCircle2 className="h-4 w-4 text-status-delivered" />
         </CardHeader>
         <CardContent>
           <div className="flex items-center space-x-2">

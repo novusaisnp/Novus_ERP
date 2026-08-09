@@ -170,7 +170,7 @@ export const MovimentacoesGestaoPopup = ({
                 {getStatusBadge(titulo.situacao)}
               </DialogTitle>
               {isVencido() && (
-                <div className="flex items-center gap-1 text-red-600 text-sm mt-1">
+                <div className="flex items-center gap-1 text-status-cancelled text-sm mt-1">
                   <AlertTriangle className="w-4 h-4" />
                   Título vencido há {Math.floor((new Date().getTime() - new Date(titulo.data_vencimento).getTime()) / (1000 * 60 * 60 * 24))} dias
                 </div>
@@ -244,7 +244,7 @@ export const MovimentacoesGestaoPopup = ({
                         {titulo.valor_pago && titulo.valor_pago > 0 && (
                           <div>
                             <label className="text-sm font-medium text-muted-foreground">Valor Pago</label>
-                            <div className="text-lg font-semibold text-green-600">
+                            <div className="text-lg font-semibold text-status-delivered">
                               {currencyUtils.formatCurrency(titulo.valor_pago)}
                             </div>
                           </div>
@@ -288,14 +288,14 @@ export const MovimentacoesGestaoPopup = ({
                         </div>
                         <div className="flex justify-between">
                           <span className="text-sm font-medium text-muted-foreground">Data de Vencimento:</span>
-                          <span className={`font-medium ${isVencido() ? 'text-red-600' : ''}`}>
+                          <span className={`font-medium ${isVencido() ? 'text-status-cancelled' : ''}`}>
                             {format(new Date(titulo.data_vencimento), 'dd/MM/yyyy')}
                           </span>
                         </div>
                         {titulo.data_pagamento && (
                           <div className="flex justify-between">
                             <span className="text-sm font-medium text-muted-foreground">Data de Pagamento:</span>
-                            <span className="font-medium text-green-600">
+                            <span className="font-medium text-status-delivered">
                               {format(new Date(titulo.data_pagamento), 'dd/MM/yyyy')}
                             </span>
                           </div>

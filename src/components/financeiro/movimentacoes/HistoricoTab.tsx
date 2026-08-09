@@ -72,7 +72,7 @@ export const HistoricoTab = ({ titulo }: HistoricoTabProps) => {
     switch (item.tipo_movimentacao) {
       case 'LIQUIDACAO':
         return (
-          <div className="mt-2 p-2 bg-green-50 dark:bg-green-950 rounded-md text-sm">
+          <div className="mt-2 p-2 bg-status-delivered/10 rounded-md text-sm">
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <span className="font-medium">Valor Pago:</span>
@@ -100,7 +100,7 @@ export const HistoricoTab = ({ titulo }: HistoricoTabProps) => {
 
       case 'ESTORNO':
         return (
-          <div className="mt-2 p-2 bg-red-50 dark:bg-red-950 rounded-md text-sm">
+          <div className="mt-2 p-2 bg-status-cancelled/10 rounded-md text-sm">
             <div>
               <span className="font-medium">Motivo do Estorno:</span>
               <p className="mt-1">{item.dados_novos?.motivo || 'Não informado'}</p>
@@ -110,7 +110,7 @@ export const HistoricoTab = ({ titulo }: HistoricoTabProps) => {
 
       case 'EDICAO':
         return (
-          <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950 rounded-md text-sm">
+          <div className="mt-2 p-2 bg-status-confirmed/10 rounded-md text-sm">
             <div className="space-y-1">
               <span className="font-medium">Alterações realizadas:</span>
               {item.dados_anteriores && item.dados_novos && (
@@ -143,7 +143,7 @@ export const HistoricoTab = ({ titulo }: HistoricoTabProps) => {
 
       case 'CANCELAMENTO':
         return (
-          <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-950 rounded-md text-sm">
+          <div className="mt-2 p-2 bg-status-draft/10 rounded-md text-sm">
             <div>
               <span className="font-medium">Motivo do Cancelamento:</span>
               <p className="mt-1">{item.dados_novos?.motivo_cancelamento || 'Não informado'}</p>
@@ -199,25 +199,25 @@ export const HistoricoTab = ({ titulo }: HistoricoTabProps) => {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-2xl font-bold text-status-confirmed">
                 {historico.filter(h => h.tipo_movimentacao === 'EDICAO').length}
               </div>
               <div className="text-sm text-muted-foreground">Edições</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-2xl font-bold text-status-delivered">
                 {historico.filter(h => h.tipo_movimentacao === 'LIQUIDACAO').length}
               </div>
               <div className="text-sm text-muted-foreground">Liquidações</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">
+              <div className="text-2xl font-bold text-status-cancelled">
                 {historico.filter(h => h.tipo_movimentacao === 'ESTORNO').length}
               </div>
               <div className="text-sm text-muted-foreground">Estornos</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-600">
+              <div className="text-2xl font-bold text-status-draft">
                 {historico.filter(h => h.tipo_movimentacao === 'CANCELAMENTO').length}
               </div>
               <div className="text-sm text-muted-foreground">Cancelamentos</div>

@@ -549,7 +549,7 @@ export default function RelatoriosFinanceiro() {
             <CardTitle className="text-sm text-muted-foreground">Total a Receber</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
-            <p className="text-2xl font-bold text-green-600 dark:text-green-500">
+            <p className="text-2xl font-bold text-status-delivered">
               {brl(totalReceber)}
             </p>
             {deltas && <DeltaBadge delta={deltas.receber} formatValue={brl} />}
@@ -560,7 +560,7 @@ export default function RelatoriosFinanceiro() {
             <CardTitle className="text-sm text-muted-foreground">Total a Pagar</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
-            <p className="text-2xl font-bold text-red-600 dark:text-red-500">
+            <p className="text-2xl font-bold text-status-cancelled">
               {brl(totalPagar)}
             </p>
             {deltas && <DeltaBadge delta={deltas.pagar} formatValue={brl} />}
@@ -574,8 +574,8 @@ export default function RelatoriosFinanceiro() {
             <p
               className={`text-2xl font-bold ${
                 saldo >= 0
-                  ? 'text-green-600 dark:text-green-500'
-                  : 'text-red-600 dark:text-red-500'
+                  ? 'text-status-delivered'
+                  : 'text-status-cancelled'
               }`}
             >
               {brl(saldo)}

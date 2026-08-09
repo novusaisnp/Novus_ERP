@@ -14,7 +14,7 @@ export function DeltaBadge({ delta, formatValue, className }: DeltaBadgeProps) {
 
   const colorClass =
     delta.status === 'up'
-      ? 'text-green-600 dark:text-green-500'
+      ? 'text-status-delivered'
       : delta.status === 'down'
         ? 'text-destructive'
         : delta.status === 'new'

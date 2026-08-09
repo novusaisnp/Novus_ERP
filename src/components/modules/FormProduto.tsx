@@ -96,13 +96,13 @@ export const FormProduto: React.FC<FormProdutoProps> = ({
 
         <form onSubmit={handleSubmit} className="flex flex-col h-full">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
-            <TabsList className="grid w-full grid-cols-6 mb-4">
-              <TabsTrigger value="dados">Dados</TabsTrigger>
-              <TabsTrigger value="medidas">Medidas</TabsTrigger>
-              <TabsTrigger value="precos">Preços</TabsTrigger>
-              <TabsTrigger value="imagem">Imagem</TabsTrigger>
-              <TabsTrigger value="estoque">Estoque</TabsTrigger>
-              <TabsTrigger value="fornecedores">Fornecedores</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-6 mb-4 bg-transparent p-0 border-b rounded-none">
+              <TabsTrigger value="dados" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(var(--accent-vivid))] data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium">Dados</TabsTrigger>
+              <TabsTrigger value="medidas" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(var(--accent-vivid))] data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium">Medidas</TabsTrigger>
+              <TabsTrigger value="precos" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(var(--accent-vivid))] data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium">Preços</TabsTrigger>
+              <TabsTrigger value="imagem" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(var(--accent-vivid))] data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium">Imagem</TabsTrigger>
+              <TabsTrigger value="estoque" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(var(--accent-vivid))] data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium">Estoque</TabsTrigger>
+              <TabsTrigger value="fornecedores" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(var(--accent-vivid))] data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium">Fornecedores</TabsTrigger>
             </TabsList>
 
             <div className="overflow-y-auto flex-1 pr-2">

@@ -101,7 +101,7 @@ export const VendaPagamentoSection: React.FC<Props> = ({
           </div>
           <div className={cn(
             'rounded-md border p-3',
-            restante > 0 ? 'border-amber-500/40 bg-amber-500/10' : 'border-emerald-500/40 bg-emerald-500/10',
+            restante > 0 ? 'border-status-production/40 bg-status-production/10' : 'border-status-delivered/40 bg-status-delivered/10',
           )}>
             <div className="text-muted-foreground">Restante</div>
             <div className="text-lg font-medium">R$ {restante.toFixed(2)}</div>
@@ -222,7 +222,7 @@ export const VendaPagamentoSection: React.FC<Props> = ({
           <div className={cn(
             'rounded-md border p-3 text-sm',
             validacao.ok
-              ? 'border-emerald-500/40 bg-emerald-500/10'
+              ? 'border-status-delivered/40 bg-status-delivered/10'
               : 'border-destructive/40 bg-destructive/10',
           )}>
             <div className="font-medium">

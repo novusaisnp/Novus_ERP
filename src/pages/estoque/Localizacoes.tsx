@@ -169,7 +169,7 @@ const Localizacoes: React.FC = () => {
                     </TableCell>
                     <TableCell>{localizacao.descricao || '-'}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="text-green-600">
+                      <Badge variant="outline" className="text-status-delivered">
                         Ativa
                       </Badge>
                     </TableCell>

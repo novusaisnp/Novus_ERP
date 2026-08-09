@@ -30,10 +30,10 @@ const operationLabels: Record<string, string> = {
 };
 
 const operationColors: Record<string, string> = {
-  CREATE: 'bg-green-100 text-green-800',
-  UPDATE: 'bg-blue-100 text-blue-800',
-  DELETE: 'bg-red-100 text-red-800',
-  ARCHIVE: 'bg-yellow-100 text-yellow-800',
+  CREATE: 'bg-status-delivered/15 text-status-delivered',
+  UPDATE: 'bg-status-confirmed/15 text-status-confirmed',
+  DELETE: 'bg-status-cancelled/15 text-status-cancelled',
+  ARCHIVE: 'bg-status-production/15 text-status-production',
   RESTORE: 'bg-purple-100 text-purple-800'
 };
 
@@ -99,7 +99,7 @@ export const AuditTrail = ({ tableName, recordId, entityName }: AuditTrailProps)
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Activity className="h-4 w-4" />
-                      <Badge className={operationColors[entry.operacao] || 'bg-gray-100 text-gray-800'}>
+                      <Badge className={operationColors[entry.operacao] || 'bg-status-draft/15 text-status-draft'}>
                         {operationLabels[entry.operacao] || entry.operacao}
                       </Badge>
                     </div>

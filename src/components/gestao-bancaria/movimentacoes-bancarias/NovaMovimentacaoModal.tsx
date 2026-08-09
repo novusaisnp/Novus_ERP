@@ -47,22 +47,22 @@ export function NovaMovimentacaoModal({
     { 
       value: 'DEPOSITO', 
       label: 'Depósito', 
-      icon: <ArrowDownLeft className="h-4 w-4 text-green-600" /> 
+      icon: <ArrowDownLeft className="h-4 w-4 text-status-delivered" />
     },
-    { 
-      value: 'SAQUE', 
-      label: 'Saque', 
-      icon: <ArrowUpRight className="h-4 w-4 text-red-600" /> 
+    {
+      value: 'SAQUE',
+      label: 'Saque',
+      icon: <ArrowUpRight className="h-4 w-4 text-status-cancelled" />
     },
-    { 
-      value: 'AJUSTE_POSITIVO', 
-      label: 'Ajuste Positivo', 
-      icon: <Settings className="h-4 w-4 text-green-600" /> 
+    {
+      value: 'AJUSTE_POSITIVO',
+      label: 'Ajuste Positivo',
+      icon: <Settings className="h-4 w-4 text-status-delivered" />
     },
-    { 
-      value: 'AJUSTE_NEGATIVO', 
-      label: 'Ajuste Negativo', 
-      icon: <Settings className="h-4 w-4 text-red-600" /> 
+    {
+      value: 'AJUSTE_NEGATIVO',
+      label: 'Ajuste Negativo',
+      icon: <Settings className="h-4 w-4 text-status-cancelled" />
     },
   ];
 

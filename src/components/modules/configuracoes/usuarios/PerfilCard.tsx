@@ -54,12 +54,12 @@ const PerfilCard: React.FC<PerfilCardProps> = ({ perfil, onEdit, onDelete }) => 
               {perfil.nome}
               {perfil.sistema && (
                 <span title="Perfil do Sistema">
-                  <Lock className="w-4 h-4 text-blue-600" />
+                  <Lock className="w-4 h-4 text-status-confirmed" />
                 </span>
               )}
               {temPermissoesCriticas && !perfil.sistema && (
                 <span title="Contém permissões críticas">
-                  <AlertTriangle className="w-4 h-4 text-red-500" />
+                  <AlertTriangle className="w-4 h-4 text-status-cancelled" />
                 </span>
               )}
             </CardTitle>
@@ -73,7 +73,7 @@ const PerfilCard: React.FC<PerfilCardProps> = ({ perfil, onEdit, onDelete }) => 
             {perfil.ativo ? 'Ativo' : 'Inativo'}
           </Badge>
           {perfil.sistema && (
-            <Badge variant="outline" className="border-blue-500 text-blue-700 bg-blue-50">
+            <Badge variant="outline" className="border-status-confirmed text-status-confirmed bg-status-confirmed/10">
               Sistema
             </Badge>
           )}

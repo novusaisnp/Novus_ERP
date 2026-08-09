@@ -146,9 +146,9 @@ export function TransferenciaModal({
                   </div>
                   
                   <div className="flex flex-col items-center mx-4">
-                    <ArrowRight className="h-6 w-6 text-blue-600" />
+                    <ArrowRight className="h-6 w-6 text-status-confirmed" />
                     {formData.valor > 0 && (
-                      <div className="text-sm font-bold text-blue-600 mt-1">
+                      <div className="text-sm font-bold text-status-confirmed mt-1">
                         {currencyUtils.formatCurrency(formData.valor)}
                       </div>
                     )}
@@ -234,7 +234,7 @@ export function TransferenciaModal({
                 required
               />
               {contaOrigem && formData.valor > contaOrigem.conta.saldo_atual && (
-                <p className="text-xs text-red-600 mt-1">
+                <p className="text-xs text-status-cancelled mt-1">
                   Valor excede o saldo disponível na conta origem
                 </p>
               )}

@@ -28,25 +28,25 @@ export const TipoClienteSelector: React.FC<TipoClienteSelectorProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex gap-4">
+        <div className="inline-flex w-fit gap-0.5 rounded-md border bg-muted p-0.5">
           <Button
             type="button"
             variant={value === 'F' ? 'default' : 'outline'}
             onClick={() => onChange('F')}
-            className="flex-1 h-12 transition-all duration-200"
+            className="h-9 px-4 border-0 transition-all duration-200"
             aria-pressed={value === 'F'}
           >
-            <Users className="mr-2 h-4 w-4" />
+            <Users className="mr-1.5 h-3.5 w-3.5" />
             Pessoa Física
           </Button>
           <Button
             type="button"
             variant={value === 'J' ? 'default' : 'outline'}
             onClick={() => onChange('J')}
-            className="flex-1 h-12 transition-all duration-200"
+            className="h-9 px-4 border-0 transition-all duration-200"
             aria-pressed={value === 'J'}
           >
-            <Building2 className="mr-2 h-4 w-4" />
+            <Building2 className="mr-1.5 h-3.5 w-3.5" />
             Pessoa Jurídica
           </Button>
         </div>

@@ -51,17 +51,17 @@ const ConfiguracoesSistema: React.FC = () => {
       </div>
 
       {/* Status Atual */}
-      <Card className="mb-8 border-l-4 border-l-blue-500">
+      <Card className="mb-8 border-l-4 border-l-status-confirmed">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-blue-700">
+          <CardTitle className="flex items-center gap-2 text-status-confirmed">
             <Settings className="w-5 h-5" />
             Status do Módulo
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <h3 className="font-semibold text-blue-900 mb-2">Em Desenvolvimento</h3>
-            <p className="text-blue-700">
+          <div className="bg-status-confirmed/10 p-4 rounded-lg">
+            <h3 className="font-semibold text-status-confirmed mb-2">Em Desenvolvimento</h3>
+            <p className="text-status-confirmed">
               Este módulo está sendo desenvolvido e em breve estará disponível com 
               funcionalidades avançadas de configuração do sistema.
             </p>
@@ -89,7 +89,7 @@ const ConfiguracoesSistema: React.FC = () => {
                   {config.descricao}
                 </p>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                  <span className="text-xs bg-status-draft/10 text-status-draft px-2 py-1 rounded">
                     {config.status}
                   </span>
                 </div>

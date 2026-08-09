@@ -63,17 +63,13 @@ export function AppSidebar({
 
   return (
     <div 
-      className={`fixed left-0 top-0 h-full z-30 transition-all duration-300 ease-in-out ${
+      className={`fixed left-0 top-0 h-full z-30 transition-all duration-300 ease-in-out bg-sidebar border-r border-sidebar-border ${
         isHovered ? 'w-64' : 'w-16'
-      }`} 
-      style={{
-        backgroundColor: '#1e3a8a',
-        borderRight: '1px solid #3b82f6'
-      }} 
-      onMouseEnter={handleMouseEnter} 
+      }`}
+      onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <div className="h-full flex flex-col text-white">
+      <div className="h-full flex flex-col text-sidebar-foreground">
         {/* Menu Items - Ocupam toda a altura disponível */}
         <div className="flex-1 overflow-y-auto py-[63px]">
           {visibleItems.map(item => (

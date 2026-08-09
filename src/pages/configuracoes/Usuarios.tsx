@@ -64,8 +64,8 @@ const ConfiguracoesUsuarios: React.FC = () => {
       </div>
 
       {pendentes > 0 && (
-        <div className="flex items-start gap-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-sm">
-          <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5 shrink-0" />
+        <div className="flex items-start gap-2 rounded-md border border-status-production/40 bg-status-production/10 p-3 text-sm">
+          <AlertTriangle className="w-4 h-4 text-status-production mt-0.5 shrink-0" />
           <div>
             <strong>{pendentes} usuário(s) legado(s)</strong> ainda não estão vinculados a um colaborador ou sócio.
             Vincule cada um deles editando o cadastro do respectivo colaborador/sócio para manter a rastreabilidade do sistema.

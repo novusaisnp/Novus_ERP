@@ -78,7 +78,7 @@ export const ArchiveButton = ({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <Archive className="h-5 w-5 text-amber-500" />
+              <Archive className="h-5 w-5 text-status-production" />
               Arquivar {entityName}
             </AlertDialogTitle>
             <AlertDialogDescription>
@@ -98,7 +98,7 @@ export const ArchiveButton = ({
             <AlertDialogAction
               onClick={handleArchive}
               disabled={isArchiving}
-              className="bg-amber-600 hover:bg-amber-700"
+              className="bg-status-production hover:bg-status-production/90"
             >
               {isArchiving ? 'Arquivando...' : 'Confirmar Arquivamento'}
             </AlertDialogAction>

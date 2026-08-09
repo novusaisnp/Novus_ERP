@@ -151,7 +151,7 @@ const UnidadesMedida: React.FC = () => {
                       <Badge variant="secondary">{unidade.sigla}</Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="text-green-600">
+                      <Badge variant="outline" className="text-status-delivered">
                         Ativa
                       </Badge>
                     </TableCell>

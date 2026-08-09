@@ -13,6 +13,7 @@ import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import loginHero from '@/assets/login-hero.png.asset.json';
+import { IntroSplash, hasSeenIntro, markIntroSeen } from '@/components/IntroSplash';
 
 const loginSchema = z.object({
   email: z.string().min(1, 'E-mail é obrigatório').email('Formato de e-mail inválido'),
@@ -27,6 +28,12 @@ const Login: React.FC = () => {
   const { signIn, user, loading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showIntro, setShowIntro] = useState(() => !hasSeenIntro());
+
+  const finishIntro = () => {
+    markIntroSeen();
+    setShowIntro(false);
+  };
   
   const {
     register,
@@ -103,7 +110,9 @@ const Login: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <>
+      {showIntro && <IntroSplash onFinish={finishIntro} />}
+      <div className="min-h-screen flex">
       {/* Login Panel - Left side */}
       <div className="w-full lg:w-2/5 flex items-center justify-center p-8 bg-white">
         <Card className="w-full max-w-md shadow-none border-0">
@@ -138,7 +147,7 @@ const Login: React.FC = () => {
                     {...register('email')}
                   />
                 </div>
-                {errors.email && <p className="text-sm text-red-600">{errors.email.message}</p>}
+                {errors.email && <p className="text-sm text-status-cancelled">{errors.email.message}</p>}
               </div>
 
               {/* Password Field */}
@@ -163,7 +172,7 @@ const Login: React.FC = () => {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-                {errors.password && <p className="text-sm text-red-600">{errors.password.message}</p>}
+                {errors.password && <p className="text-sm text-status-cancelled">{errors.password.message}</p>}
               </div>
 
               {/* Remember Me */}
@@ -220,7 +229,8 @@ const Login: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

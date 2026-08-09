@@ -57,7 +57,7 @@ export const CategoriaSelect: React.FC<CategoriaSelectProps> = ({
       </Select>
 
       {!categoriaId && (
-        <div className="flex items-start gap-2 rounded-md border border-amber-500/50 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-400">
+        <div className="flex items-start gap-2 rounded-md border border-status-production/50 bg-status-production/10 p-2 text-xs text-status-production">
           <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
           <span>Produto sem categoria não terá classificação contábil automática.</span>
         </div>

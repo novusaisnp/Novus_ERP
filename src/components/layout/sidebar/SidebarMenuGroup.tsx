@@ -33,7 +33,7 @@ export const SidebarMenuGroup: React.FC<SidebarMenuGroupProps> = ({
     >
       <CollapsibleTrigger asChild>
         <button
-          className={`w-full flex items-center px-4 py-3 text-white hover:bg-blue-700 transition-colors ${
+          className={`w-full flex items-center px-4 py-3 text-sidebar-foreground hover:bg-sidebar-accent transition-colors ${
             isHovered ? 'justify-start' : 'justify-center'
           }`}
           title={!isHovered ? item.title : undefined}
@@ -51,18 +51,24 @@ export const SidebarMenuGroup: React.FC<SidebarMenuGroupProps> = ({
       </CollapsibleTrigger>
       {isHovered && (
         <CollapsibleContent className="transition-all duration-300">
-          <div className="ml-8 border-l border-blue-600">
-            {item.items?.map((subItem) => (
-              <button
-                key={subItem.title}
-                onClick={() => onNavigate(subItem.url)}
-                className={`w-full text-left px-4 py-2 text-sm text-blue-100 hover:bg-blue-700 hover:text-white transition-colors block ${
-                  location.pathname === subItem.url ? 'bg-blue-600 text-white font-medium' : ''
-                }`}
-              >
-                {subItem.title}
-              </button>
-            ))}
+          <div className="ml-8 border-l border-sidebar-border">
+            {item.items?.map((subItem) => {
+              const isSubActive = location.pathname === subItem.url;
+              return (
+                <button
+                  key={subItem.title}
+                  onClick={() => onNavigate(subItem.url)}
+                  className={`relative w-full text-left px-4 py-2 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors block ${
+                    isSubActive ? 'bg-sidebar-primary text-sidebar-primary-foreground font-medium' : ''
+                  }`}
+                >
+                  {isSubActive && (
+                    <span className="absolute left-0 top-0 h-full w-[3px] bg-[hsl(var(--accent-vivid))]" />
+                  )}
+                  {subItem.title}
+                </button>
+              );
+            })}
           </div>
         </CollapsibleContent>
       )}

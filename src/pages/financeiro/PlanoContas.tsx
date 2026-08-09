@@ -117,19 +117,19 @@ const PlanoContas = () => {
           <div className="text-sm text-muted-foreground">Total de Contas</div>
         </div>
         <div className="bg-card rounded-lg border p-4">
-          <div className="text-2xl font-bold text-green-600">{contasReceita}</div>
+          <div className="text-2xl font-bold text-status-delivered">{contasReceita}</div>
           <div className="text-sm text-muted-foreground">Receitas</div>
         </div>
         <div className="bg-card rounded-lg border p-4">
-          <div className="text-2xl font-bold text-red-600">{contasDespesa}</div>
+          <div className="text-2xl font-bold text-status-cancelled">{contasDespesa}</div>
           <div className="text-sm text-muted-foreground">Despesas</div>
         </div>
         <div className="bg-card rounded-lg border p-4">
-          <div className="text-2xl font-bold text-blue-600">{contasAnaliticas}</div>
+          <div className="text-2xl font-bold text-status-confirmed">{contasAnaliticas}</div>
           <div className="text-sm text-muted-foreground">Analíticas</div>
         </div>
         <div className="bg-card rounded-lg border p-4">
-          <div className="text-2xl font-bold text-amber-600">{contasSinteticas}</div>
+          <div className="text-2xl font-bold text-status-production">{contasSinteticas}</div>
           <div className="text-sm text-muted-foreground">Sintéticas</div>
         </div>
       </div>

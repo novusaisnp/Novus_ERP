@@ -129,9 +129,9 @@ export const FluxoCaixaPage = () => {
               <div className="flex justify-between">
                 <span>Tendência:</span>
                 <span className={
-                  estatisticas.tendencia_saldo === 'CRESCENTE' ? 'text-green-600' :
-                  estatisticas.tendencia_saldo === 'DECRESCENTE' ? 'text-red-600' :
-                  'text-yellow-600'
+                  estatisticas.tendencia_saldo === 'CRESCENTE' ? 'text-status-delivered' :
+                  estatisticas.tendencia_saldo === 'DECRESCENTE' ? 'text-status-cancelled' :
+                  'text-status-production'
                 }>
                   {estatisticas.tendencia_saldo}
                 </span>

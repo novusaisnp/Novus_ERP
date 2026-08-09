@@ -31,7 +31,7 @@ export const FluxoCaixaTabela = ({ movimentacoes, isLoading, onRefresh }: FluxoC
   };
 
   const getTipoColor = (tipo: string) => {
-    return tipo === 'ENTRADA' ? 'text-green-600' : 'text-red-600';
+    return tipo === 'ENTRADA' ? 'text-status-delivered' : 'text-status-cancelled';
   };
 
   if (isLoading) {

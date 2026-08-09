@@ -146,7 +146,7 @@ const Tamanhos: React.FC = () => {
                   <TableRow key={tamanho.id}>
                     <TableCell className="font-medium">{tamanho.descricao}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="text-green-600">
+                      <Badge variant="outline" className="text-status-delivered">
                         Ativo
                       </Badge>
                     </TableCell>

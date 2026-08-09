@@ -35,13 +35,13 @@ export const ContaBancariaCard = ({
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'ATIVA':
-        return 'bg-green-100 text-green-800';
+        return 'bg-status-delivered/10 text-status-delivered';
       case 'INATIVA':
-        return 'bg-red-100 text-red-800';
+        return 'bg-status-cancelled/10 text-status-cancelled';
       case 'BLOQUEADA':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-status-production/10 text-status-production';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-status-draft/10 text-status-draft';
     }
   };
 

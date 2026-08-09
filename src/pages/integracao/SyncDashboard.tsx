@@ -36,7 +36,7 @@ const SyncDashboard: React.FC = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'success':
-        return <Badge variant="default" className="bg-green-100 text-green-800">Sucesso</Badge>;
+        return <Badge variant="default" className="bg-status-delivered/10 text-status-delivered">Sucesso</Badge>;
       case 'error':
         return <Badge variant="destructive">Erro</Badge>;
       case 'pending':
@@ -49,13 +49,13 @@ const SyncDashboard: React.FC = () => {
   const getHealthStatusColor = (status: string) => {
     switch (status) {
       case 'healthy':
-        return 'text-green-600';
+        return 'text-status-delivered';
       case 'warning':
-        return 'text-yellow-600';
+        return 'text-status-production';
       case 'error':
-        return 'text-red-600';
+        return 'text-status-cancelled';
       default:
-        return 'text-gray-600';
+        return 'text-status-draft';
     }
   };
 
@@ -110,8 +110,8 @@ const SyncDashboard: React.FC = () => {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <div className={`w-3 h-3 rounded-full ${
-                health?.status === 'healthy' ? 'bg-green-500' :
-                health?.status === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
+                health?.status === 'healthy' ? 'bg-status-delivered' :
+                health?.status === 'warning' ? 'bg-status-production' : 'bg-status-cancelled'
               }`} />
               <span className={`font-medium ${getHealthStatusColor(health?.status || 'unknown')}`}>
                 {health?.status === 'healthy' ? 'Sistema Saudável' :
@@ -155,10 +155,10 @@ const SyncDashboard: React.FC = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Sucesso</CardTitle>
-                <CheckCircle className="h-4 w-4 text-green-600" />
+                <CheckCircle className="h-4 w-4 text-status-delivered" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">
+                <div className="text-2xl font-bold text-status-delivered">
                   {syncStatus.last24h.success}
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -170,10 +170,10 @@ const SyncDashboard: React.FC = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Erros</CardTitle>
-                <XCircle className="h-4 w-4 text-red-600" />
+                <XCircle className="h-4 w-4 text-status-cancelled" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-red-600">
+                <div className="text-2xl font-bold text-status-cancelled">
                   {syncStatus.last24h.error}
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -185,10 +185,10 @@ const SyncDashboard: React.FC = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Pendente</CardTitle>
-                <Clock className="h-4 w-4 text-yellow-600" />
+                <Clock className="h-4 w-4 text-status-production" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-yellow-600">
+                <div className="text-2xl font-bold text-status-production">
                   {syncStatus.last24h.pending}
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -237,10 +237,10 @@ const SyncDashboard: React.FC = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Sucesso</CardTitle>
-                <CheckCircle className="h-4 w-4 text-green-600" />
+                <CheckCircle className="h-4 w-4 text-status-delivered" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">
+                <div className="text-2xl font-bold text-status-delivered">
                   {syncStatus.last7d.success}
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -252,10 +252,10 @@ const SyncDashboard: React.FC = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Erros</CardTitle>
-                <XCircle className="h-4 w-4 text-red-600" />
+                <XCircle className="h-4 w-4 text-status-cancelled" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-red-600">
+                <div className="text-2xl font-bold text-status-cancelled">
                   {syncStatus.last7d.error}
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -267,10 +267,10 @@ const SyncDashboard: React.FC = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Pendente</CardTitle>
-                <Clock className="h-4 w-4 text-yellow-600" />
+                <Clock className="h-4 w-4 text-status-production" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-yellow-600">
+                <div className="text-2xl font-bold text-status-production">
                   {syncStatus.last7d.pending}
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -341,7 +341,7 @@ const SyncDashboard: React.FC = () => {
                   <TableCell className="text-sm">
                     {log.source_system || '-'}
                   </TableCell>
-                  <TableCell className="text-sm text-red-600 max-w-xs truncate">
+                  <TableCell className="text-sm text-status-cancelled max-w-xs truncate">
                     {log.error_message || '-'}
                   </TableCell>
                 </TableRow>

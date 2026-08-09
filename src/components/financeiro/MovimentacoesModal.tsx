@@ -251,7 +251,7 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
                               <div className="text-sm">
                                 <div>Venc: {format(new Date(titulo.data_vencimento), 'dd/MM/yyyy')}</div>
                                 {titulo.data_pagamento && (
-                                  <div className="text-green-600">
+                                  <div className="text-status-delivered">
                                     Pago: {format(new Date(titulo.data_pagamento), 'dd/MM/yyyy')}
                                   </div>
                                 )}
@@ -262,7 +262,7 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
                                   {currencyUtils.formatCurrency(titulo.valor_original)}
                                 </div>
                                 {titulo.valor_pago && titulo.valor_pago > 0 && (
-                                  <div className="text-sm text-green-600">
+                                  <div className="text-sm text-status-delivered">
                                     Pago: {currencyUtils.formatCurrency(titulo.valor_pago)}
                                   </div>
                                 )}
@@ -311,7 +311,7 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
                       <CardTitle className="text-sm font-medium">Em Aberto</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold text-yellow-600">
+                      <div className="text-2xl font-bold text-status-production">
                         {estatisticas?.total_abertos || 0}
                       </div>
                       <div className="text-sm text-muted-foreground">
@@ -325,7 +325,7 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
                       <CardTitle className="text-sm font-medium">Pagos/Recebidos</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold text-green-600">
+                      <div className="text-2xl font-bold text-status-delivered">
                         {estatisticas?.total_pagos || 0}
                       </div>
                       <div className="text-sm text-muted-foreground">
@@ -339,7 +339,7 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
                       <CardTitle className="text-sm font-medium">Vencidos</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold text-red-600">
+                      <div className="text-2xl font-bold text-status-cancelled">
                         {estatisticas?.total_vencidos || 0}
                       </div>
                       <div className="text-sm text-muted-foreground">

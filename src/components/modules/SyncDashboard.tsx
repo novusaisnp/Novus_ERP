@@ -68,10 +68,10 @@ export const SyncDashboard: React.FC = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Sucesso</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
+            <CheckCircle className="h-4 w-4 text-status-delivered" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-status-delivered">
               {syncStatus.last7d.success}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -83,10 +83,10 @@ export const SyncDashboard: React.FC = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Erros</CardTitle>
-            <XCircle className="h-4 w-4 text-red-600" />
+            <XCircle className="h-4 w-4 text-status-cancelled" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-status-cancelled">
               {syncStatus.last7d.error}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -98,10 +98,10 @@ export const SyncDashboard: React.FC = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pendente</CardTitle>
-            <Clock className="h-4 w-4 text-yellow-600" />
+            <Clock className="h-4 w-4 text-status-production" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
+            <div className="text-2xl font-bold text-status-production">
               {syncStatus.last7d.pending}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -129,7 +129,7 @@ export const SyncDashboard: React.FC = () => {
           )}
           
           <div className="flex gap-2 flex-wrap">
-            <Badge variant="outline" className="text-green-600">
+            <Badge variant="outline" className="text-status-delivered">
               {syncStatus.last7d.success} Sucesso
             </Badge>
             {syncStatus.last7d.error > 0 && (

@@ -203,7 +203,7 @@ export const AgenciasModal: React.FC<AgenciasModalProps> = ({
                   value={watchedBancoId}
                   onValueChange={(value) => setValue('banco_id', value)}
                 >
-                  <SelectTrigger className={errors.banco_id ? 'border-red-500' : ''}>
+                  <SelectTrigger className={errors.banco_id ? 'border-status-cancelled' : ''}>
                     <SelectValue placeholder="Selecione o banco" />
                   </SelectTrigger>
                   <SelectContent>
@@ -215,7 +215,7 @@ export const AgenciasModal: React.FC<AgenciasModalProps> = ({
                   </SelectContent>
                 </Select>
                 {errors.banco_id && (
-                  <p className="text-sm text-red-500">{errors.banco_id.message}</p>
+                  <p className="text-sm text-status-cancelled">{errors.banco_id.message}</p>
                 )}
               </div>
 
@@ -225,10 +225,10 @@ export const AgenciasModal: React.FC<AgenciasModalProps> = ({
                   id="numero_agencia"
                   {...register('numero_agencia')}
                   placeholder="Ex: 1234"
-                  className={errors.numero_agencia ? 'border-red-500' : ''}
+                  className={errors.numero_agencia ? 'border-status-cancelled' : ''}
                 />
                 {errors.numero_agencia && (
-                  <p className="text-sm text-red-500">{errors.numero_agencia.message}</p>
+                  <p className="text-sm text-status-cancelled">{errors.numero_agencia.message}</p>
                 )}
               </div>
             </div>
@@ -239,10 +239,10 @@ export const AgenciasModal: React.FC<AgenciasModalProps> = ({
                 id="descricao"
                 {...register('descricao')}
                 placeholder="Ex: Agência Centro, Agência Shopping..."
-                className={errors.descricao ? 'border-red-500' : ''}
+                className={errors.descricao ? 'border-status-cancelled' : ''}
               />
               {errors.descricao && (
-                <p className="text-sm text-red-500">{errors.descricao.message}</p>
+                <p className="text-sm text-status-cancelled">{errors.descricao.message}</p>
               )}
             </div>
 
@@ -253,10 +253,10 @@ export const AgenciasModal: React.FC<AgenciasModalProps> = ({
                 {...register('telefone')}
                 placeholder="(11) 99999-9999"
                 onChange={handleTelefoneChange}
-                className={errors.telefone ? 'border-red-500' : ''}
+                className={errors.telefone ? 'border-status-cancelled' : ''}
               />
               {errors.telefone && (
-                <p className="text-sm text-red-500">{errors.telefone.message}</p>
+                <p className="text-sm text-status-cancelled">{errors.telefone.message}</p>
               )}
             </div>
           </div>
@@ -323,10 +323,10 @@ export const AgenciasModal: React.FC<AgenciasModalProps> = ({
                   {...register('endereco.cep')}
                   placeholder="12345-678"
                   onChange={handleCepChange}
-                  className={errors.endereco?.cep ? 'border-red-500' : ''}
+                  className={errors.endereco?.cep ? 'border-status-cancelled' : ''}
                 />
                 {errors.endereco?.cep && (
-                  <p className="text-sm text-red-500">{errors.endereco.cep.message}</p>
+                  <p className="text-sm text-status-cancelled">{errors.endereco.cep.message}</p>
                 )}
               </div>
             </div>

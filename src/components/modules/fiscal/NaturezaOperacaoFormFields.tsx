@@ -27,10 +27,10 @@ export const NaturezaOperacaoFormFields: React.FC<NaturezaOperacaoFormFieldsProp
           id="codigo"
           {...register('codigo', { required: 'Código é obrigatório' })}
           placeholder="Ex: VENDA"
-          className={errors.codigo ? "border-red-500" : ""}
+          className={errors.codigo ? "border-status-cancelled" : ""}
         />
         {errors.codigo && (
-          <span className="text-sm text-red-500">{errors.codigo.message}</span>
+          <span className="text-sm text-status-cancelled">{errors.codigo.message}</span>
         )}
       </div>
 
@@ -59,10 +59,10 @@ export const NaturezaOperacaoFormFields: React.FC<NaturezaOperacaoFormFieldsProp
           id="descricao"
           {...register('descricao', { required: 'Descrição é obrigatória' })}
           placeholder="Ex: Venda de Mercadorias"
-          className={errors.descricao ? "border-red-500" : ""}
+          className={errors.descricao ? "border-status-cancelled" : ""}
         />
         {errors.descricao && (
-          <span className="text-sm text-red-500">{errors.descricao.message}</span>
+          <span className="text-sm text-status-cancelled">{errors.descricao.message}</span>
         )}
       </div>
     </div>

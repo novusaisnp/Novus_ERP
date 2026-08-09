@@ -74,21 +74,21 @@ const Relatorios: React.FC = () => {
       valor: 3,
       descricao: "prontos para geração",
       icon: FileText,
-      cor: "text-blue-600"
+      cor: "text-status-confirmed"
     },
     {
       titulo: "Em Desenvolvimento",
       valor: 3,
       descricao: "em construção",
       icon: Calendar,
-      cor: "text-orange-600"
+      cor: "text-status-production"
     },
     {
       titulo: "Formatos",
       valor: "PDF/Excel",
       descricao: "disponíveis",
       icon: Download,
-      cor: "text-green-600"
+      cor: "text-status-delivered"
     }
   ];
 

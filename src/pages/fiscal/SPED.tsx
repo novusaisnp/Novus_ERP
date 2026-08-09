@@ -36,10 +36,10 @@ const SPED: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'gerado': return 'bg-green-100 text-green-800';
-      case 'processando': return 'bg-yellow-100 text-yellow-800';
-      case 'erro': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'gerado': return 'bg-status-delivered/10 text-status-delivered';
+      case 'processando': return 'bg-status-production/10 text-status-production';
+      case 'erro': return 'bg-status-cancelled/10 text-status-cancelled';
+      default: return 'bg-status-draft/10 text-status-draft';
     }
   };
 

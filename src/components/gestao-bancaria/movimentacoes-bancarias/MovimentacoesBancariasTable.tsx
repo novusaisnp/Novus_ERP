@@ -62,13 +62,13 @@ export function MovimentacoesBancariasTable({
       case 'DEPOSITO':
       case 'TRANSFERENCIA_ENTRADA':
       case 'AJUSTE_POSITIVO':
-        return <ArrowDownLeft className="h-4 w-4 text-green-600" />;
+        return <ArrowDownLeft className="h-4 w-4 text-status-delivered" />;
       case 'SAQUE':
       case 'TRANSFERENCIA_SAIDA':
       case 'AJUSTE_NEGATIVO':
-        return <ArrowUpRight className="h-4 w-4 text-red-600" />;
+        return <ArrowUpRight className="h-4 w-4 text-status-cancelled" />;
       default:
-        return <ArrowRightLeft className="h-4 w-4 text-blue-600" />;
+        return <ArrowRightLeft className="h-4 w-4 text-status-confirmed" />;
     }
   };
 
@@ -240,7 +240,7 @@ export function MovimentacoesBancariasTable({
                         {movimentacao.conta_bancaria?.titular}
                       </div>
                       {movimentacao.conta_destino && (
-                        <div className="text-xs text-blue-600">
+                        <div className="text-xs text-status-confirmed">
                           → {movimentacao.conta_destino.numero_conta}
                         </div>
                       )}
@@ -261,8 +261,8 @@ export function MovimentacoesBancariasTable({
                   <TableCell className="text-right">
                     <div className={`font-bold ${
                       ['DEPOSITO', 'TRANSFERENCIA_ENTRADA', 'AJUSTE_POSITIVO'].includes(movimentacao.tipo_movimentacao)
-                        ? 'text-green-600'
-                        : 'text-red-600'
+                        ? 'text-status-delivered'
+                        : 'text-status-cancelled'
                     }`}>
                       {currencyUtils.formatCurrency(movimentacao.valor)}
                     </div>
@@ -330,7 +330,7 @@ export function MovimentacoesBancariasTable({
                             
                             <DropdownMenuItem 
                               onClick={() => handleEstorno(movimentacao)}
-                              className="text-orange-600"
+                              className="text-status-production"
                             >
                               <RotateCcw className="h-4 w-4 mr-2" />
                               Estornar
@@ -338,7 +338,7 @@ export function MovimentacoesBancariasTable({
                             
                             <DropdownMenuItem 
                               onClick={() => handleExclusao(movimentacao)}
-                              className="text-red-600"
+                              className="text-status-cancelled"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
                               Excluir

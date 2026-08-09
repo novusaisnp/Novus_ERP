@@ -99,7 +99,7 @@ export const RateiosTab = ({ titulo, podeEditar }: RateiosTabProps) => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-2xl font-bold text-status-delivered">
                 {currencyUtils.formatCurrency(totalRateado)}
               </div>
               <Progress value={percentualRateado} className="mt-2" />
@@ -114,7 +114,7 @@ export const RateiosTab = ({ titulo, podeEditar }: RateiosTabProps) => {
               <CardTitle className="text-sm font-medium">Valor Restante</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${valorRestante > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+              <div className={`text-2xl font-bold ${valorRestante > 0 ? 'text-status-production' : 'text-status-delivered'}`}>
                 {currencyUtils.formatCurrency(Math.abs(valorRestante))}
               </div>
               {valorRestante !== 0 && (
@@ -286,7 +286,7 @@ export const RateiosTab = ({ titulo, podeEditar }: RateiosTabProps) => {
                 <Separator />
                 <div className="flex items-center justify-between font-medium">
                   <span>Diferença:</span>
-                  <span className={valorRestante === 0 ? 'text-green-600' : 'text-red-600'}>
+                  <span className={valorRestante === 0 ? 'text-status-delivered' : 'text-status-cancelled'}>
                     {currencyUtils.formatCurrency(valorRestante)}
                   </span>
                 </div>

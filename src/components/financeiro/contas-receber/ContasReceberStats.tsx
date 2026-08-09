@@ -54,10 +54,10 @@ export const ContasReceberStats = ({ estatisticas }: ContasReceberStatsProps) =>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Em Aberto</CardTitle>
-          <AlertCircle className="h-4 w-4 text-blue-600" />
+          <AlertCircle className="h-4 w-4 text-status-confirmed" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-blue-600">
+          <div className="text-2xl font-bold text-status-confirmed">
             {estatisticas.contas_abertas}
           </div>
           <p className="text-xs text-muted-foreground">
@@ -69,10 +69,10 @@ export const ContasReceberStats = ({ estatisticas }: ContasReceberStatsProps) =>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Vencidas</CardTitle>
-          <TrendingDown className="h-4 w-4 text-red-600" />
+          <TrendingDown className="h-4 w-4 text-status-cancelled" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-red-600">
+          <div className="text-2xl font-bold text-status-cancelled">
             {estatisticas.contas_vencidas}
           </div>
           <p className="text-xs text-muted-foreground">
@@ -84,10 +84,10 @@ export const ContasReceberStats = ({ estatisticas }: ContasReceberStatsProps) =>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Recebidas</CardTitle>
-          <CheckCircle className="h-4 w-4 text-green-600" />
+          <CheckCircle className="h-4 w-4 text-status-delivered" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-green-600">
+          <div className="text-2xl font-bold text-status-delivered">
             {estatisticas.contas_recebidas}
           </div>
           <p className="text-xs text-muted-foreground">

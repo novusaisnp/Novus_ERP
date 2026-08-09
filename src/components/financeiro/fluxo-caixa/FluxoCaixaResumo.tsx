@@ -58,8 +58,8 @@ export const FluxoCaixaResumo = ({ resumo, isLoading }: FluxoCaixaResumoProps) =
   };
 
   const getVariationColor = (value: number) => {
-    if (value > 0) return 'text-green-600';
-    if (value < 0) return 'text-red-600';
+    if (value > 0) return 'text-status-delivered';
+    if (value < 0) return 'text-status-cancelled';
     return 'text-muted-foreground';
   };
 
@@ -74,14 +74,14 @@ export const FluxoCaixaResumo = ({ resumo, isLoading }: FluxoCaixaResumoProps) =
       title: 'Total de Entradas',
       value: formatCurrency(resumo.total_entradas),
       icon: TrendingUp,
-      color: 'text-green-600',
+      color: 'text-status-delivered',
       description: 'Receitas do período'
     },
     {
       title: 'Total de Saídas',
       value: formatCurrency(resumo.total_saidas),
       icon: TrendingDown,
-      color: 'text-red-600',
+      color: 'text-status-cancelled',
       description: 'Despesas do período'
     },
     {
@@ -109,7 +109,7 @@ export const FluxoCaixaResumo = ({ resumo, isLoading }: FluxoCaixaResumoProps) =
       title: 'Runway',
       value: `${resumo.runway_dias} dias`,
       icon: Calendar,
-      color: resumo.runway_dias < 30 ? 'text-red-600' : 'text-green-600',
+      color: resumo.runway_dias < 30 ? 'text-status-cancelled' : 'text-status-delivered',
       description: 'Dias até esgotamento',
       badge: resumo.runway_dias < 30 ? 'Crítico' : 
              resumo.runway_dias < 60 ? 'Atenção' : 'Saudável'
@@ -179,9 +179,9 @@ export const FluxoCaixaResumo = ({ resumo, isLoading }: FluxoCaixaResumoProps) =
 
       {/* Alertas */}
       {(resumo.saldo_atual < resumo.saldo_minimo || resumo.runway_dias < 30) && (
-        <Card className="border-red-200 bg-red-50">
+        <Card className="border-status-cancelled/30 bg-status-cancelled/10">
           <CardContent className="pt-6">
-            <div className="flex items-center gap-2 text-red-600">
+            <div className="flex items-center gap-2 text-status-cancelled">
               <AlertTriangle className="h-4 w-4" />
               <div className="text-sm">
                 {resumo.saldo_atual < resumo.saldo_minimo && (

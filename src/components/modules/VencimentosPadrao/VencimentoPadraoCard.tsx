@@ -101,7 +101,7 @@ export const VencimentoPadraoCard: React.FC<VencimentoPadraoCardProps> = ({
               variant="outline"
               size="sm"
               onClick={() => onDelete(vencimento)}
-              className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+              className="flex items-center gap-2 text-status-cancelled hover:text-status-cancelled hover:bg-status-cancelled/10"
             >
               <Trash2 className="w-4 h-4" />
               <span className="hidden sm:inline">Excluir</span>

@@ -78,7 +78,7 @@ export const RestoreButton = ({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <RotateCcw className="h-5 w-5 text-green-500" />
+              <RotateCcw className="h-5 w-5 text-status-delivered" />
               Restaurar {entityName}
             </AlertDialogTitle>
             <AlertDialogDescription>
@@ -95,7 +95,7 @@ export const RestoreButton = ({
             <AlertDialogAction
               onClick={handleRestore}
               disabled={isRestoring}
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-status-delivered hover:bg-status-delivered/90"
             >
               {isRestoring ? 'Restaurando...' : 'Confirmar Restauração'}
             </AlertDialogAction>

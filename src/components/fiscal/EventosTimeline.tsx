@@ -9,7 +9,7 @@ interface EventosTimelineProps {
 
 const iconFor = (tipo: string) => {
   switch (tipo) {
-    case 'autorizacao': return { icon: CheckCircle2, color: 'text-green-600' };
+    case 'autorizacao': return { icon: CheckCircle2, color: 'text-status-delivered' };
     case 'cancelamento': return { icon: Ban, color: 'text-destructive' };
     case 'cce': return { icon: MailCheck, color: 'text-primary' };
     case 'rejeicao':
