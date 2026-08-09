@@ -24,9 +24,9 @@ export const AppHeader: React.FC = () => {
     <header className="h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center px-4 gap-4">
       <div className="flex-1 flex items-center gap-3">
         <span className="text-xl font-semibold text-primary">ERP</span>
-        <img 
-          src="/lovable-uploads/2b20e13a-06d5-4b20-8072-9b4f413ad5f2.png" 
-          alt="Logo ERP" 
+        <img
+          src="/novus-logo.png"
+          alt="Logo ERP"
           className="h-8 w-auto"
         />
       </div>

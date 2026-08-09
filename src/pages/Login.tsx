@@ -119,8 +119,8 @@ const Login: React.FC = () => {
           <CardHeader className="text-center space-y-6 pb-8">
             <div className="mx-auto flex items-center justify-center gap-3">
               <span className="text-2xl font-bold text-blue-600">ERP</span>
-              <img 
-                src="/lovable-uploads/2b20e13a-06d5-4b20-8072-9b4f413ad5f2.png"
+              <img
+                src="/novus-logo.png"
                 alt="NOVUS.AI"
                 className="h-8 w-auto"
               />

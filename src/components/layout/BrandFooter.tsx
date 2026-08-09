@@ -7,9 +7,9 @@ export const BrandFooter: React.FC = () => {
       <div className="container mx-auto px-4 py-2">
         <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
           <span>Uma solução</span>
-          <img 
-            src="/lovable-uploads/e3a1140c-9fb4-4ca4-8401-be58b48089cb.png" 
-            alt="NOVUS.AI" 
+          <img
+            src="/novus-logo-footer.png"
+            alt="NOVUS.AI"
             className="h-6 w-auto"
           />
         </div>

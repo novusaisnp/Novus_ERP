@@ -34,3 +34,4 @@ finance-harmonizer/
 
 # Supabase CLI local cache/state (machine-specific, not project source)
 supabase/.temp/
+.vercel
