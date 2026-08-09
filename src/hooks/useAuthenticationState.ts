@@ -102,7 +102,10 @@ export function useAuthenticationState() {
   }, [cleanupAuthState]);
 
   useEffect(() => {
-    // Listener FIRST
+    // onAuthStateChange fires an INITIAL_SESSION event immediately on
+    // subscribe with the current session — a separate getSession() call
+    // duplicates that work and causes a second, near-simultaneous render
+    // (visible as a flash/jank right after login).
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -112,24 +115,6 @@ export function useAuthenticationState() {
         loading: false,
       });
     });
-
-    // THEN initial session
-    const getInitialSession = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        setState({
-          session,
-          user: session?.user ?? null,
-          loading: false,
-        });
-      } catch {
-        setState((prev) => ({ ...prev, loading: false }));
-      }
-    };
-
-    getInitialSession();
 
     return () => {
       subscription.unsubscribe();

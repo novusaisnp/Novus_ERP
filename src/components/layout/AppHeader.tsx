@@ -34,11 +34,13 @@ export const AppHeader: React.FC = () => {
       {/* Logo/dados da empresa representada ativa (loja/CNPJ atual) - Centralizados */}
       <div className="flex-1 flex flex-col items-center justify-center">
         {logoUrl ? (
-          <img
-            src={logoUrl}
-            alt={empresa?.nome || 'Logo da empresa'}
-            className="h-16 max-w-[320px] object-contain"
-          />
+          <div className="bg-white rounded-md px-3 py-1.5">
+            <img
+              src={logoUrl}
+              alt={empresa?.nome || 'Logo da empresa'}
+              className="h-12 max-w-[280px] object-contain"
+            />
+          </div>
         ) : empresa?.nome ? (
           <>
             <div className="text-sm font-medium text-foreground">

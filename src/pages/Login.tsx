@@ -112,7 +112,7 @@ const Login: React.FC = () => {
   return (
     <>
       {showIntro && <IntroSplash onFinish={finishIntro} />}
-      <div className="min-h-screen flex">
+      <div className="light min-h-screen flex">
       {/* Login Panel - Left side */}
       <div className="w-full lg:w-[30%] flex items-center justify-center p-8 bg-white">
         <Card className="w-full max-w-md shadow-none border-0">
