@@ -96,6 +96,7 @@ import Contratos from './pages/contratos/Contratos';
 // Integração Pages
 import SyncDashboard from './pages/integracao/SyncDashboard';
 import { AdminRoute } from './components/auth/AdminRoute';
+import { SessionPersistenceHandler } from './components/SessionPersistenceHandler';
 
 const queryClient = new QueryClient();
 
@@ -112,6 +113,7 @@ function App() {
       <Router>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
+            <SessionPersistenceHandler />
             <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
               <Routes>
                 {/* Public Routes */}
