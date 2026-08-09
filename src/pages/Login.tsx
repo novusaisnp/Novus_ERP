@@ -114,7 +114,7 @@ const Login: React.FC = () => {
       {showIntro && <IntroSplash onFinish={finishIntro} />}
       <div className="min-h-screen flex">
       {/* Login Panel - Left side */}
-      <div className="w-full lg:w-2/5 flex items-center justify-center p-8 bg-white">
+      <div className="w-full lg:w-[30%] flex items-center justify-center p-8 bg-white">
         <Card className="w-full max-w-md shadow-none border-0">
           <CardHeader className="text-center space-y-6 pb-8">
             <div className="mx-auto flex items-center justify-center gap-3">
@@ -212,7 +212,7 @@ const Login: React.FC = () => {
 
       {/* Background Image - Right side */}
       <div
-        className="hidden lg:flex lg:w-3/5 bg-cover bg-center bg-no-repeat relative items-center justify-center"
+        className="hidden lg:flex lg:w-[70%] bg-cover bg-center bg-no-repeat relative items-center justify-center"
         style={{ backgroundImage: `url('${loginHero.url}')` }}
       >
         {/* Subtle overlay */}
