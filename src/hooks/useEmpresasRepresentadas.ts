@@ -44,6 +44,11 @@ export const useEmpresasRepresentadas = (_?: string) => {
         return next.sort((a, b) => a.nome.localeCompare(b.nome));
       });
       qc.invalidateQueries({ queryKey: ['empresas-representadas'] });
+      // Logo pode ter mudado: força recarregar em qualquer tela que a exiba
+      // (header, PDFs, pickers) em vez de esperar o cache expirar sozinho.
+      qc.invalidateQueries({ queryKey: ['empresa-representada-atual'] });
+      qc.invalidateQueries({ queryKey: ['empresa-logo-url'] });
+      qc.invalidateQueries({ queryKey: ['empresas-logos-map'] });
       toast.success('Empresa salva com sucesso');
     },
     onError: (e: Error) => {

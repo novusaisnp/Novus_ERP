@@ -641,6 +641,7 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
                     <p className="text-xs text-muted-foreground">
                       Utilizada no topo do sistema e em layouts de documentos (NFe, boletos, relatórios).
                       PNG, JPG ou SVG até 2 MB — a imagem é ajustada automaticamente para não ficar borrada ou desproporcional.
+                      Para melhor nitidez, envie uma imagem com pelo menos 256×256px e fundo transparente (PNG).
                     </p>
                   </div>
 
