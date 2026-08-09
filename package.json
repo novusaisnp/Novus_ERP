@@ -94,10 +94,13 @@
     "jsdom": "^29.1.1",
     "lovable-tagger": "^1.1.7",
     "postcss": "^8.4.47",
+    "sharp": "^0.35.3",
     "tailwindcss": "^3.4.11",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
     "vite": "^5.4.1",
-    "vitest": "^4.1.10"
+    "vite-plugin-pwa": "^1.3.0",
+    "vitest": "^4.1.10",
+    "workbox-window": "^7.4.1"
   }
 }
