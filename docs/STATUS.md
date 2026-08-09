@@ -5,6 +5,67 @@ trabalho relevante — se estiver desatualizado, ele apodrece como `SYSTEM_AUDIT
 já apodreceram. Leia primeiro [`../CLAUDE.md`](../CLAUDE.md) para contexto de padrões estáveis;
 este arquivo é sobre o que está pendente **agora**.
 
+## 🔖 Checkpoint de sessão (2026-08-09 — reforma visual restyle-only + logo por empresa representada)
+
+**Branch `visual-refactor`** (não mergeada em `main` ainda), 6 commits, pushada pra `origin`.
+Ponto de partida foi o doc `.claude/refatoracao_visual` (skill fornecida pelo usuário) — validado
+contra o código real (2 claims corrigidos: não havia bug de ícone de lixeira no Saldo Bancário, e a
+sidebar não usava tokens de tema como o doc assumia, ao contrário, tinha cor hardcoded `#1e3a8a`/
+`bg-blue-600` bypassando `--sidebar-*` que já existia). Escopo cresceu ao longo da sessão a pedido do
+usuário: começou como restyle das telas citadas no doc, terminou cobrindo praticamente 100% do
+sistema.
+
+1. **Tokens novos** (`src/index.css`/`tailwind.config.ts`, aditivos): `--accent-vivid` (ciano da
+   logo), `--status-draft/confirmed/production/delivered/cancelled`, `--card` off-white,
+   `--radius` 0.5→0.375rem, `boxShadow.elevated`. Grupo `erp` (hardcoded, zero uso real) deletado.
+2. **Sidebar reescrita** para consumir `--sidebar-*` (existia, não era usada) em vez de hex/blue
+   hardcoded; barra de 3px `accent-vivid` no item ativo.
+3. **Foco de 16 primitivos `ui/`** (Input/Select/Checkbox/Switch/Button/Tabs/Dialog/Toast/Badge...)
+   movido de `ring-ring` (navy) pra `accent-vivid` — cobre 100% dos formulários do sistema sem
+   precisar tocar tela por tela (maior alavanca de "escopo 100%" pedida pelo usuário).
+4. **Varredura de ~85 arquivos** com cor de status hardcoded (4 agentes em paralelo, escopo restrito
+   a className/cor, zero lógica) — migrados pros tokens `--status-*`. Paletas categóricas legítimas
+   (tipo de imposto, tipo de arquivo, PF/PJ) e cores sem token equivalente (roxo, teal, cyan-chart)
+   foram deixadas de propósito, listadas nos relatórios dos agentes, não é trabalho esquecido.
+5. **Splash de vídeo no login** (`src/components/IntroSplash.tsx` + `public/intro.mp4`): 1x por
+   sessão (`sessionStorage`), muted+autoplay+playsInline, timeout de segurança de 4.8s, clique pra
+   pular, respeita `prefers-reduced-motion`.
+6. **Logo por empresa representada no header** (não por `empresa_responsavel` — usuário corrigiu
+   explicitamente: cenário multiloja, cada CNPJ tem sua própria logo):
+   - `src/hooks/useEmpresaRepresentadaAtual.ts` (novo): resolve a empresa via `get_user_empresa_id()`;
+     se o usuário é admin sem vínculo (RPC retorna null) E só existe 1 empresa representada ativa,
+     usa ela sem ambiguidade — resolve o caso mono-loja/admin-dono-único sem quebrar multiloja real
+     (com >1 empresa, admin continua sem "empresa atual" determinável, cai no fallback de texto).
+   - `src/lib/normalizeLogoImage.ts` (novo): normalizador de imagem via Canvas nativo (sem
+     dependência nova) — contain-fit centralizado em canvas 512×512 transparente, nunca estica/
+     distorce, aplicado no upload já existente em `EmpresasRepresentadasList.tsx`.
+   - **Bug real achado e corrigido**: header/PDFs/relatórios cada um com query de cache separada
+     pra logo, sem invalidação cruzada no save — trocar a logo só refletia em todo lugar depois do
+     `staleTime` expirar ou reload manual. `useEmpresasRepresentadas.ts` agora invalida
+     `empresa-representada-atual`/`empresa-logo-url`/`empresas-logos-map` junto no `onSuccess` do
+     save. Confirmado via rede que o save dispara refetch automático sem reload.
+   - Removido campo/conceito de logo de `empresa_responsavel` (form, hook, service) — só
+     `empresa_representada` tem logo agora. Coluna `logo_url` no banco não foi migrada/dropada, só
+     parou de ser escrita (decisão consciente, sem `DROP`/`RENAME`).
+   - Logo do header ajustada pro tamanho máximo da barra (`h-16`, toca topo/base do header de 64px).
+7. **Testado ao vivo no navegador** (Claude em Chrome) em cada etapa: sidebar hover/rota ativa,
+   toggle PF/PJ, Dashboard KPIs, upload de logo real (arquivo corrompido → rejeitado limpo sem
+   sujar dado; arquivo válido → normaliza, salva, invalida cache, aparece no header).
+
+**Pendente, fora de escopo desta sessão (decisão consciente, não esquecimento):**
+- **Satélite Educacional** (`novus-ai-educacional-54`, repo/projeto Supabase separado) também
+  consome/exibe logo em seus próprios documentos — usuário pediu, mas não dá pra mexer às cegas
+  num repo não aberto nesta sessão. Precisa de sessão própria lá; o padrão a replicar é o mesmo
+  (path + signed URL resolvida na hora, nunca cópia estática).
+- ~65 arquivos com cor hardcoded não-status (decorativo, gráfico, categórico) deliberadamente fora
+  do escopo da varredura — ver relatórios dos 4 agentes na conversa da sessão se precisar retomar.
+- `console.log` de debug em `AppSidebar.tsx`/`AppLayout.tsx` (pré-existentes, não desta sessão) —
+  fácil follow-up, não é visual.
+- Merge de `visual-refactor` → `main` não feito ainda, aguardando revisão/aprovação do usuário.
+
+`npm run typecheck`: 0 erros. `npm run test -- --run`: 357/357. `npm run build`: passa (warnings de
+chunk size pré-existentes, não desta sessão).
+
 ## 🔖 Checkpoint de sessão (2026-08-09 — reprovisão pós-migração + Porta 3 colaborador, feito a partir do satélite educacional)
 
 **Contexto**: sessão começou no repo `novus-ai-educacional-54` (cadastro de professor/equipe), mas
