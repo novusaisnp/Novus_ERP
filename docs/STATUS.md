@@ -1,9 +1,37 @@
 # Status do projeto — NOVUS ERP
 
-**Última atualização: 2026-08-09.** Este arquivo deve ser atualizado ao final de cada sessão de
+**Última atualização: 2026-08-09 (branch merged, production ready).** Este arquivo deve ser atualizado ao final de cada sessão de
 trabalho relevante — se estiver desatualizado, ele apodrece como `SYSTEM_AUDIT.md`/`ARVORE_PROJETO.md`
 já apodreceram. Leia primeiro [`../CLAUDE.md`](../CLAUDE.md) para contexto de padrões estáveis;
 este arquivo é sobre o que está pendente **agora**.
+
+## 🚀 Checkpoint de sessão (2026-08-09 — Visual refactor final + PWA + Lovable cleanup)
+
+**Branch `visual-refactor` mergeada em `main`.** 4 commits finais, upados para `origin/main`.
+
+1. **Recuperação + melhoria de animação intro**:
+   - Nova imagem de background login (NOVUS.ai com circuito eletrônico), 70% da tela
+   - Formulário reduzido para 30% (proporção 30/70)
+   - Animação intro: `object-contain` (sem cortes) + degradê radial nas bordas suavizando
+
+2. **PWA (Progressive Web App)**:
+   - `vite-plugin-pwa` + `workbox` instalados
+   - Manifest automático com app metadata (nome, descrição, ícones, theme-color)
+   - Service worker gerado, cache offline, precache de 34 assets
+   - 6 ícones PWA em tamanhos (16x16, 32x32, 192x192, 512x512, maskable versions)
+   - Meta tags PWA completas no `index.html`
+   - Cache inteligente: API (NetworkFirst), imagens (CacheFirst 30d)
+
+3. **Remoção total de Lovable**:
+   - `lovable-tagger` dependency removida de `package.json` e `vite.config.ts`
+   - Imagens migradas: `lovable-uploads/*` → `/public/novus-logo*.png`
+   - Componentes atualizados: Login, AppHeader, BrandFooter
+   - PWA cache limpo de referências lovable-uploads
+   - Projeto 100% independente, nenhum vínculo restante
+
+**Build**: `✓ built in 23.80s`, PWA precache `11561.87 KiB`, 34 entries.
+**Vercel**: Deploy automático ativado em webhook (main branch).
+**Tests**: typecheck 0 erros, test suite passando.
 
 ## 🔖 Checkpoint de sessão (2026-08-09 — reforma visual restyle-only + logo por empresa representada)
 
