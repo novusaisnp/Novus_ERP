@@ -555,33 +555,29 @@ async function syncVenda(supabase: SupabaseClient, payload: WebhookPayload, empr
 async function syncContrato(supabase: SupabaseClient, payload: WebhookPayload, empresaId: string) {
   const { event, data } = payload;
   let clienteId = null;
-  if (data.cliente_id) {
+  if (data.cliente_cpf_cnpj) {
+    const cpfCnpj = data.cliente_cpf_cnpj as string;
     const { data: cliente } = await supabase
       .from('clientes')
       .select('id')
       .eq('empresa_representada_id', empresaId)
-      .or(`external_id.eq.${data.cliente_id},cpf_cnpj.eq.${data.cliente_cpf_cnpj}`)
-      .single();
+      .or(`cpf.eq.${cpfCnpj},cnpj.eq.${cpfCnpj}`)
+      .maybeSingle();
     clienteId = cliente?.id;
   }
   const contratoData = {
     empresa_representada_id: empresaId,
     numero_contrato: data.numero_contrato || data.id,
+    titulo: data.titulo || data.numero_contrato || `Contrato ${data.id}`,
     cliente_id: clienteId,
     data_inicio: data.data_inicio,
     data_fim: data.data_fim,
     valor_mensal: data.valor_mensal,
     valor_total: data.valor_total,
-    status: data.status || 'ativo',
-    servicos: data.servicos || [],
+    dia_vencimento: data.dia_vencimento ?? null,
+    status: (data.status || 'ATIVO').toString().toUpperCase(),
+    gera_financeiro: data.gera_financeiro ?? true,
     observacoes: data.observacoes,
-    responsavel: data.responsavel,
-    source_system: payload.source_system,
-    sync_metadata: {
-      external_id: data.id,
-      synchronized_at: new Date().toISOString(),
-      source_data: data,
-    },
   };
   switch (event) {
     case 'insert':
@@ -594,7 +590,7 @@ async function syncContrato(supabase: SupabaseClient, payload: WebhookPayload, e
         .eq('numero_contrato', data.numero_contrato || data.id)
         .eq('empresa_representada_id', empresaId)
         .select()
-        .single();
+        .maybeSingle();
   }
 }
 
@@ -636,6 +632,7 @@ async function syncFinanceiro(supabase: SupabaseClient, payload: WebhookPayload,
     status: data.status || 'PENDENTE',
     recorrente: data.recorrente ?? false,
     periodicidade: data.periodicidade ?? null,
+    total_parcelas: data.total_parcelas ?? null,
     observacoes: data.observacoes,
     origem_sistema: payload.source_system,
     externo_id: data.id,
