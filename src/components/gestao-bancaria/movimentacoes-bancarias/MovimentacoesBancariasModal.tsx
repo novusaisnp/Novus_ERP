@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,13 @@ import { MovimentacoesBancariasTable } from './MovimentacoesBancariasTable';
 import { NovaMovimentacaoModal } from './NovaMovimentacaoModal';
 import { TransferenciaModal } from './TransferenciaModal';
 import { HistoricoMovimentacoes } from './HistoricoMovimentacoes';
-import { X, Plus, ArrowRightLeft, Download, Upload } from 'lucide-react';
+import { X, Plus, ArrowRightLeft, Upload } from 'lucide-react';
+import { toCsv, downloadCsv } from '@/utils/csvExport';
+import { ExportMenu } from '@/components/relatorios/ExportMenu';
+import { groupBy } from '@/utils/relatoriosAgg';
+import { brlPt, type ReportExportPayload } from '@/utils/reportExportShared';
+import type { MovimentacaoBancaria } from '@/types/movimentacoesBancarias';
+import { getTipoLabel } from './tipoMovimentacaoLabels';
 
 
 interface MovimentacoesBancariasModalProps {
@@ -43,9 +49,46 @@ export function MovimentacoesBancariasModal({
     setFiltros(novosFiltros);
   };
 
-  const handleExportarExtrato = () => {
-    // TODO: Implementar exportação
+  const detailColumns = useMemo(() => [
+    { header: 'Data', accessor: (m: MovimentacaoBancaria) => m.data_movimentacao },
+    { header: 'Tipo', accessor: (m: MovimentacaoBancaria) => getTipoLabel(m.tipo_movimentacao) },
+    { header: 'Conta', accessor: (m: MovimentacaoBancaria) => m.conta_bancaria ? `${m.conta_bancaria.numero_conta} - ${m.conta_bancaria.titular}` : '' },
+    { header: 'Conta Destino', accessor: (m: MovimentacaoBancaria) => m.conta_destino ? `${m.conta_destino.numero_conta} - ${m.conta_destino.titular}` : '' },
+    { header: 'Descrição', accessor: (m: MovimentacaoBancaria) => m.descricao },
+    { header: 'Valor', accessor: (m: MovimentacaoBancaria) => m.valor },
+    { header: 'Documento', accessor: (m: MovimentacaoBancaria) => m.documento_referencia ?? '' },
+    { header: 'Conciliado', accessor: (m: MovimentacaoBancaria) => m.conciliado ? 'Sim' : 'Não' },
+    { header: 'Estornado', accessor: (m: MovimentacaoBancaria) => m.estornado ? 'Sim' : 'Não' },
+    { header: 'Observações', accessor: (m: MovimentacaoBancaria) => m.observacoes ?? '' },
+  ], []);
+
+  const handleExportarCsv = () => {
+    const csv = toCsv(movimentacoes, detailColumns);
+    downloadCsv(`movimentacoes-bancarias-${new Date().toISOString().split('T')[0]}.csv`, csv);
   };
+
+  const exportPayload: ReportExportPayload<MovimentacaoBancaria> = useMemo(() => ({
+    title: 'Movimentações Bancárias',
+    subtitle: filtros.data_inicio || filtros.data_fim
+      ? `Período: ${filtros.data_inicio || '—'} a ${filtros.data_fim || '—'}`
+      : undefined,
+    filters: [
+      { label: 'Conta', value: contasBancarias.find((c) => c.id === filtros.conta_bancaria_id)?.numero_conta ?? 'Todas' },
+      { label: 'Tipo', value: filtros.tipo_movimentacao ?? 'Todos' },
+    ],
+    kpis: estatisticas ? [
+      { label: 'Entradas', value: brlPt(estatisticas.valor_total_entradas) },
+      { label: 'Saídas', value: brlPt(estatisticas.valor_total_saidas) },
+      { label: 'Saldo Líquido', value: brlPt(estatisticas.saldo_liquido) },
+    ] : [],
+    insights: [],
+    detail: { columns: detailColumns, rows: movimentacoes },
+    aggregated: movimentacoes.length > 0 ? {
+      groupLabel: 'Tipo',
+      rows: groupBy(movimentacoes, (m) => m.tipo_movimentacao, (m) => m.valor, getTipoLabel),
+    } : null,
+    filenameBase: 'movimentacoes-bancarias',
+  }), [filtros, contasBancarias, estatisticas, movimentacoes, detailColumns]);
 
   const contasOptions = contasBancarias.map(conta => ({
     value: conta.id,
@@ -66,15 +109,11 @@ export function MovimentacoesBancariasModal({
             </Badge>
           </div>
           <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExportarExtrato}
+            <ExportMenu
+              payload={exportPayload}
+              onCsv={handleExportarCsv}
               disabled={movimentacoes.length === 0}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Exportar
-            </Button>
+            />
             <Button
               variant="outline" 
               size="sm"

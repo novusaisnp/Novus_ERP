@@ -74,7 +74,7 @@ export const listarMovimentacoesBancarias = async (
       conta_bancaria:contas_bancarias!movimentacoes_bancarias_conta_bancaria_id_fkey (
         id,
         numero_conta,
-        titular,
+        titular:nome_titular,
         agencia:agencias_bancarias (
           numero_agencia,
           banco:bancos (
@@ -86,7 +86,7 @@ export const listarMovimentacoesBancarias = async (
       conta_destino:contas_bancarias!movimentacoes_bancarias_conta_destino_id_fkey (
         id,
         numero_conta,
-        titular,
+        titular:nome_titular,
         agencia:agencias_bancarias (
           numero_agencia,
           banco:bancos (
@@ -177,7 +177,7 @@ export const obterMovimentacaoBancaria = async (id: string): Promise<Movimentaca
       conta_bancaria:contas_bancarias!movimentacoes_bancarias_conta_bancaria_id_fkey (
         id,
         numero_conta,
-        titular,
+        titular:nome_titular,
         agencia:agencias_bancarias (
           numero_agencia,
           banco:bancos (
@@ -189,7 +189,7 @@ export const obterMovimentacaoBancaria = async (id: string): Promise<Movimentaca
       conta_destino:contas_bancarias!movimentacoes_bancarias_conta_destino_id_fkey (
         id,
         numero_conta,
-        titular,
+        titular:nome_titular,
         agencia:agencias_bancarias (
           numero_agencia,
           banco:bancos (
@@ -249,7 +249,7 @@ export const criarMovimentacaoBancaria = async (
       conta_bancaria:contas_bancarias!movimentacoes_bancarias_conta_bancaria_id_fkey (
         id,
         numero_conta,
-        titular,
+        titular:nome_titular,
         agencia:agencias_bancarias (
           numero_agencia,
           banco:bancos (
@@ -261,7 +261,7 @@ export const criarMovimentacaoBancaria = async (
       conta_destino:contas_bancarias!movimentacoes_bancarias_conta_destino_id_fkey (
         id,
         numero_conta,
-        titular,
+        titular:nome_titular,
         agencia:agencias_bancarias (
           numero_agencia,
           banco:bancos (
@@ -561,7 +561,7 @@ export const atualizarMovimentacaoBancaria = async (
       conta_bancaria:contas_bancarias!movimentacoes_bancarias_conta_bancaria_id_fkey (
         id,
         numero_conta,
-        titular,
+        titular:nome_titular,
         agencia:agencias_bancarias (
           numero_agencia,
           banco:bancos (
@@ -573,7 +573,7 @@ export const atualizarMovimentacaoBancaria = async (
       conta_destino:contas_bancarias!movimentacoes_bancarias_conta_destino_id_fkey (
         id,
         numero_conta,
-        titular,
+        titular:nome_titular,
         agencia:agencias_bancarias (
           numero_agencia,
           banco:bancos (

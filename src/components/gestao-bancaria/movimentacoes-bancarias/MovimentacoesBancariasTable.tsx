@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { getTipoLabel } from './tipoMovimentacaoLabels';
 
 interface MovimentacoesBancariasTableProps {
   movimentacoes: MovimentacaoBancaria[];
@@ -70,18 +71,6 @@ export function MovimentacoesBancariasTable({
       default:
         return <ArrowRightLeft className="h-4 w-4 text-status-confirmed" />;
     }
-  };
-
-  const getTipoLabel = (tipo: string) => {
-    const labels = {
-      'DEPOSITO': 'Depósito',
-      'SAQUE': 'Saque',
-      'TRANSFERENCIA_SAIDA': 'Transf. Saída',
-      'TRANSFERENCIA_ENTRADA': 'Transf. Entrada',
-      'AJUSTE_POSITIVO': 'Ajuste +',
-      'AJUSTE_NEGATIVO': 'Ajuste -',
-    };
-    return labels[tipo as keyof typeof labels] || tipo;
   };
 
   const getTipoVariant = (tipo: string) => {
