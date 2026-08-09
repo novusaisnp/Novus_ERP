@@ -14,6 +14,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmpresaRepresentada } from '@/hooks/useEmpresasRepresentadas';
 import { useEmpresaResponsavel } from '@/hooks/useEmpresaResponsavel';
 import { empresasRepresentadasService } from '@/services/empresasRepresentadasService';
+import { normalizeLogoFile } from '@/lib/normalizeLogoImage';
 import SociosRepresentantesTab from './SociosRepresentantesTab';
 import { toast } from 'sonner';
 import { CepInput } from '@/components/shared/CepInput';
@@ -225,8 +226,9 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
     if (file.size > 2 * 1024 * 1024) { toast.error('Logo deve ter no máximo 2 MB'); return; }
     setUploadingLogo(true);
     try {
+      const normalized = await normalizeLogoFile(file);
       if (form.logo_path) await empresasRepresentadasService.removeLogo(form.logo_path).catch(() => {});
-      const { path } = await empresasRepresentadasService.uploadLogo(folderKeyRef.current, file);
+      const { path } = await empresasRepresentadasService.uploadLogo(folderKeyRef.current, normalized);
       setForm((p) => ({ ...p, logo_path: path }));
       const url = await empresasRepresentadasService.getSignedUrl('empresa-logos', path);
       setLogoPreviewUrl(url);
@@ -637,7 +639,8 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
                   <div>
                     <Label>Logomarca da Empresa</Label>
                     <p className="text-xs text-muted-foreground">
-                      Utilizada em layouts de documentos (NFe, boletos, relatórios). PNG, JPG ou SVG até 2 MB.
+                      Utilizada no topo do sistema e em layouts de documentos (NFe, boletos, relatórios).
+                      PNG, JPG ou SVG até 2 MB — a imagem é ajustada automaticamente para não ficar borrada ou desproporcional.
                     </p>
                   </div>
 

@@ -4,12 +4,15 @@ import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { UserDropdown } from '@/components/layout/header/UserDropdown';
-import { useEmpresaResponsavel } from '@/hooks/useEmpresaResponsavel';
+import { useEmpresaRepresentadaAtual } from '@/hooks/useEmpresaRepresentadaAtual';
+import { useEmpresaLogoUrl } from '@/hooks/useEmpresaLogoUrl';
 import { useAuth } from '@/contexts/AuthContext';
 
 export const AppHeader: React.FC = () => {
-  const { empresa, loading } = useEmpresaResponsavel();
+  const { data: empresa, isLoading: loading } = useEmpresaRepresentadaAtual();
   const { user } = useAuth();
+  const logoPath = (empresa?.configuracoes as Record<string, string> | null)?.logo_path;
+  const { data: logoUrl } = useEmpresaLogoUrl(empresa?.id, logoPath);
 
   const formatarCnpj = (cnpj: string) => {
     if (!cnpj) return '';
@@ -28,9 +31,15 @@ export const AppHeader: React.FC = () => {
         />
       </div>
 
-      {/* Dados da Empresa Responsável - Centralizados */}
+      {/* Logo/dados da empresa representada ativa (loja/CNPJ atual) - Centralizados */}
       <div className="flex-1 flex flex-col items-center justify-center">
-        {empresa?.nome ? (
+        {logoUrl ? (
+          <img
+            src={logoUrl}
+            alt={empresa?.nome || 'Logo da empresa'}
+            className="h-10 max-w-[180px] object-contain"
+          />
+        ) : empresa?.nome ? (
           <>
             <div className="text-sm font-medium text-foreground">
               {empresa.nome}
