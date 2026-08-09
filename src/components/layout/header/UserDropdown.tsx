@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { ChevronDown, Settings, User, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -10,10 +11,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
+import { usuarioService } from "@/services/usuarioService";
 
 export const UserDropdown: React.FC = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+
+  const { data: nomeCadastrado } = useQuery({
+    queryKey: ['usuario-nome-atual', user?.id],
+    queryFn: () => usuarioService.fetchNomeUsuarioAtual(user!.id),
+    enabled: !!user?.id,
+  });
 
   const handleLogout = async () => {
     console.log('[UserDropdown] Fazendo logout');
@@ -32,7 +40,7 @@ export const UserDropdown: React.FC = () => {
     return 'Usuário';
   };
 
-  const userName = user?.user_metadata?.nome_completo || null;
+  const userName = nomeCadastrado || user?.user_metadata?.nome_completo || null;
   const userEmail = user?.email || '';
   const firstName = getFirstName(userName, userEmail);
   const userInitials = firstName.slice(0, 2).toUpperCase();

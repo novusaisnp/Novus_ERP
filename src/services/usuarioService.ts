@@ -45,6 +45,21 @@ export const usuarioService = {
   },
 
   /**
+   * Nome cadastrado em public.usuarios para o usuário autenticado — fonte
+   * mais confiável que auth.user_metadata.nome_completo, que fica vazio
+   * quando a conta foi criada fora do fluxo de convite (ex. signup direto).
+   */
+  async fetchNomeUsuarioAtual(userId: string): Promise<string | null> {
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('nome')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (error) throw error;
+    return data?.nome ?? null;
+  },
+
+  /**
    * Lista enxuta de usuários ativos da empresa atual (RLS já escopa por tenant),
    * para selects de "responsável"/"vendedor" — não confundir com
    * fetchUsuariosComPessoa() (tela de administração, mais pesada).
@@ -136,6 +151,24 @@ export const usuarioService = {
 
   async atualizarPerfilUsuario(id: string, perfil_id: string | null): Promise<void> {
     const { error } = await supabase.from('usuarios').update({ perfil_id, updated_at: new Date().toISOString() }).eq('id', id);
+    if (error) throw error;
+  },
+
+  /**
+   * Vincula um usuário "legado" (pessoa_pendente=true, sem colaborador_id/socio_id)
+   * a um colaborador ou sócio já cadastrado, resolvendo a pendência da tela de Usuários.
+   */
+  async vincularPessoa(id: string, tipo: 'COLABORADOR' | 'SOCIO', pessoaId: string): Promise<void> {
+    const { error } = await supabase
+      .from('usuarios')
+      .update({
+        pessoa_tipo: tipo,
+        pessoa_pendente: false,
+        colaborador_id: tipo === 'COLABORADOR' ? pessoaId : null,
+        socio_id: tipo === 'SOCIO' ? pessoaId : null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id);
     if (error) throw error;
   },
 

@@ -1,19 +1,85 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { usuarioService } from '@/services/usuarioService';
+import { usuarioService, type UsuarioComPessoa } from '@/services/usuarioService';
+import { sociosRepresentantesService } from '@/services/sociosRepresentantesService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
+import { Badge, badgeVariants } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Shield, Plus, AlertTriangle, Briefcase, User as UserIcon } from 'lucide-react';
+import { Users, Shield, Plus, AlertTriangle, Briefcase, User as UserIcon, Link2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePerfis } from '@/hooks/usePerfis';
 import PerfisConfig from '@/components/modules/configuracoes/empresas/PerfisConfig';
 import NovoUsuarioModal from '@/components/modules/configuracoes/usuarios/NovoUsuarioModal';
 import type { Perfil } from '@/types/empresa';
+
+const VincularPessoaAction: React.FC<{ usuario: UsuarioComPessoa; onVinculado: () => void }> = ({ usuario, onVinculado }) => {
+  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+  const [tipo, setTipo] = useState<'COLABORADOR' | 'SOCIO'>('COLABORADOR');
+  const [pessoaId, setPessoaId] = useState('');
+
+  const { data: empresaId } = useQuery({
+    queryKey: ['user-empresa-id'],
+    queryFn: usuarioService.getEmpresaIdAtual,
+    enabled: open,
+  });
+  const { data: colaboradores = [] } = useQuery({
+    queryKey: ['colaboradores-disponiveis', empresaId],
+    queryFn: usuarioService.listColaboradoresDisponiveis,
+    enabled: open && tipo === 'COLABORADOR' && !!empresaId,
+  });
+  const { data: socios = [] } = useQuery({
+    queryKey: ['socios-disponiveis', empresaId],
+    queryFn: () => sociosRepresentantesService.listAvailableForUser(empresaId!),
+    enabled: open && tipo === 'SOCIO' && !!empresaId,
+  });
+  const lista = tipo === 'COLABORADOR' ? colaboradores : socios;
+
+  const vincular = useMutation({
+    mutationFn: () => usuarioService.vincularPessoa(usuario.id, tipo, pessoaId),
+    onSuccess: () => {
+      toast({ title: 'Usuário vinculado' });
+      setOpen(false);
+      setPessoaId('');
+      onVinculado();
+    },
+    onError: (e: Error) => toast({ title: 'Erro', description: e?.message || 'Falha', variant: 'destructive' }),
+  });
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger className={badgeVariants({ variant: 'outline' }) + ' text-yellow-700 border-yellow-500/50 cursor-pointer'}>
+        <AlertTriangle className="w-3 h-3 mr-1" />Pendente
+      </PopoverTrigger>
+      <PopoverContent className="w-72 space-y-3">
+        <div className="text-sm font-medium">Vincular a pessoa existente</div>
+        <Select value={tipo} onValueChange={(v) => { setTipo(v as 'COLABORADOR' | 'SOCIO'); setPessoaId(''); }}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="COLABORADOR">Colaborador</SelectItem>
+            <SelectItem value="SOCIO">Sócio / Representante</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={pessoaId} onValueChange={setPessoaId}>
+          <SelectTrigger><SelectValue placeholder={lista.length ? 'Selecione a pessoa' : 'Nenhuma disponível'} /></SelectTrigger>
+          <SelectContent>
+            {lista.map((p) => (
+              <SelectItem key={p.id} value={p.id}>{p.nome}{p.email ? ` — ${p.email}` : ''}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button size="sm" className="w-full" disabled={!pessoaId || vincular.isPending} onClick={() => vincular.mutate()}>
+          <Link2 className="w-3 h-3 mr-1" />Vincular
+        </Button>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 const ConfiguracoesUsuarios: React.FC = () => {
   const qc = useQueryClient();
@@ -121,9 +187,7 @@ const ConfiguracoesUsuarios: React.FC = () => {
                         <TableCell>{u.email || '-'}</TableCell>
                         <TableCell>
                           {u.pessoa_pendente ? (
-                            <Badge variant="outline" className="text-yellow-700 border-yellow-500/50">
-                              <AlertTriangle className="w-3 h-3 mr-1" />Pendente
-                            </Badge>
+                            <VincularPessoaAction usuario={u} onVinculado={() => qc.invalidateQueries({ queryKey: ['config-usuarios'] })} />
                           ) : u.pessoa_tipo === 'COLABORADOR' ? (
                             <div className="flex items-center gap-1.5">
                               <Briefcase className="w-3 h-3 text-muted-foreground" />

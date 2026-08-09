@@ -99,6 +99,20 @@ Deno.serve(async (req) => {
       );
     }
 
+    // inviteUserByEmail já cria (ou retorna) o auth.users correspondente ao e-mail —
+    // vincula aqui em vez de deixar pessoa_pendente/user_id travados até um passo
+    // futuro que nunca existiu no fluxo (nada mais no código faz esse UPDATE).
+    if (data?.user?.id) {
+      const { error: linkError } = await admin
+        .from('usuarios')
+        .update({ user_id: data.user.id, pessoa_pendente: false })
+        .eq('id', usuarioId)
+        .is('user_id', null);
+      if (linkError) {
+        console.error('[enviar-convite-usuario] falha ao vincular user_id:', linkError.message);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         invited: true,
