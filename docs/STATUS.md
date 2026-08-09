@@ -1,9 +1,58 @@
 # Status do projeto — NOVUS ERP
 
-**Última atualização: 2026-08-09 (banco reksodqzemboaeqxnxyy sincronizado, ~40 migrações atrasadas aplicadas).**
+**Última atualização: 2026-08-09 (Porta 1 + recorrência automática + Contrato formal — funcionais, testados ao vivo).**
 Este arquivo deve ser atualizado ao final de cada sessão de trabalho relevante — se estiver desatualizado, ele
 apodrece como `SYSTEM_AUDIT.md`/`ARVORE_PROJETO.md` já apodreceram. Leia primeiro [`../CLAUDE.md`](../CLAUDE.md)
 para contexto de padrões estáveis; este arquivo é sobre o que está pendente **agora**.
+
+## 🔖 Checkpoint de sessão (2026-08-09 — Porta 1 funcional + recorrência automática + Contrato formal)
+
+**Contexto**: sessão começada no repo-mãe (`NovusSaaS`) pedindo pra conectar ERP↔Educacional de verdade
+(satélite=PDV, responsável=cliente, mensalidade=título). Trabalho cross-repo, commits nos dois lados
+(`novusai-erp` + `novus-ai-educacional-54`) — ver `docs/STATUS.md` do satélite pro lado dele.
+
+1. **Porta 1 (`sync-webhook/index.ts`) estava 100% quebrada pra `clientes` e `contas_receber` de verdade**,
+   não só "faltando recorrente/periodicidade" como a doc antiga dizia — `syncFinanceiro`/`syncCliente`
+   gravavam/buscavam em colunas que não existem no schema atual (`situacao`→`status`, `valor_pago`→
+   `valor_recebido`, `contrato_id` inexistente, `cpf_cnpj`/`external_id`/`tipo`/`endereco` inexistentes em
+   `clientes` — schema real usa `cpf`/`cnpj`/`tipo_pessoa` separados) e nunca preenchiam `descricao` (NOT
+   NULL). Reescrito pros nomes reais, `.single()`→`.maybeSingle()` nos lookups. Testado com POST assinado
+   real contra o tenant ALLEGRA (cliente + título criados corretos, apagados depois).
+2. **Mensalidade recorrente automática, ligada de verdade**: `materializar_recorrencias`/`job-recorrencias`
+   já existiam e já funcionavam, mas (a) nenhum cron chamava a RPC (confirmado em `cron.job` antes do fix —
+   só 2 jobs, nenhum de recorrência; agendado `job_materializar_recorrencias`, 1x/dia) e (b) `syncFinanceiro`
+   nunca mapeava `total_parcelas` (`DEFAULT 1` no banco travava qualquer recorrência na 1ª parcela; agora
+   grava `NULL` = sem fim definido, a menos que o satélite mande um valor). Testado ao vivo: título avulso
+   recorrente → `materializar_recorrencias(30)` chamada manual gerou a parcela 2 com `origem_recorrencia_id`
+   certo.
+3. **`syncContrato` corrigido** (mesma classe de bug do item 1): `titulo` (NOT NULL) nunca era setado — todo
+   insert falhava sempre —, `status` minúsculo nunca batia no CHECK (maiúsculo), campos
+   `servicos`/`responsavel`/`source_system`/`sync_metadata` não existem na tabela real. **Novo**: trigger
+   `gerar_titulo_inicial_contrato` (`AFTER INSERT ON contratos`) faz `gera_financeiro` (campo mudo desde
+   sempre) realmente criar o 1º título recorrente — dali o cron do item 2 cuida do resto. Testado ao vivo
+   ponta a ponta: Contrato com `gera_financeiro=true` → trigger gerou título inicial respeitando
+   `dia_vencimento`/`valor_mensal` → `materializar_recorrencias` gerou a parcela 2 dele também.
+4. **Escopo consciente**: o satélite (`novus-ai-educacional-54`) não foi alterado nesta rodada — continua só
+   com título avulso recorrente (que passa a funcionar sozinho com o fix do item 2), não emite Contrato
+   ainda. Emitir os dois ao mesmo tempo (avulso recorrente + Contrato com `gera_financeiro`) duplicaria a
+   cobrança do mesmo aluno — decisão deliberada, não esquecimento.
+5. **Pendência nova, achada de passagem, não corrigida**: `mapClienteData` (item 1) grava só as colunas
+   "novas" de `clientes` (`tipo_pessoa`/`cpf`/`cnpj`/campos de endereço separados). A UI real do ERP
+   (`clienteService.ts`, ativa, consome `FormCliente.tsx`) lê/grava as colunas "legadas" restauradas pela
+   migração `20260725150000_restore_clientes_legacy_fields.sql` (`tipo`, `cpf_cnpj` combinado, `endereco`
+   jsonb, `apelido`) — as duas coexistem no banco (achado tardio, não documentado até agora). Um cliente
+   criado via satélite (Porta 1) fica com as colunas novas certas mas aparece com `tipo`/`cpf_cnpj`/
+   `endereço` em branco na tela de Clientes do próprio ERP. Não bloqueia nada (dado não se perde, só não
+   aparece na UI legada) — se for atacar depois, `mapClienteData` precisa popular os dois conjuntos de
+   coluna, mesmo padrão do bug já resolvido em `fornecedorService.ts` (item 5 do checkpoint anterior, ainda
+   não corrigido também).
+6. **Fix de segurança relacionado, do lado do satélite**: RLS de `profiles` no Educacional permitia
+   auto-escalação de role/organização (sem `WITH CHECK` efetivo) — corrigido lá, não neste repo, mas
+   documentado aqui porque foi achado no meio deste trabalho cross-repo. Ver checkpoint do satélite.
+
+**Verificação**: `npm run typecheck` 0 erros, `npm run test -- --run` 361/361. Deploy de `sync-webhook`
+feito 3x ao longo da sessão (cada rodada de fix). Migration nova aplicada via `supabase db query --file`
+direto (não testado `supabase db push` nesta sessão pra este repo — sem necessidade, só 1 migration nova).
 
 ## 🔖 Checkpoint de sessão (2026-08-09 — sync de migrações + fix real do Clientes + seed de teste)
 
