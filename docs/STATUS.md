@@ -1,9 +1,80 @@
 # Status do projeto — NOVUS ERP
 
-**Última atualização: 2026-08-09 (branch merged, production ready).** Este arquivo deve ser atualizado ao final de cada sessão de
-trabalho relevante — se estiver desatualizado, ele apodrece como `SYSTEM_AUDIT.md`/`ARVORE_PROJETO.md`
-já apodreceram. Leia primeiro [`../CLAUDE.md`](../CLAUDE.md) para contexto de padrões estáveis;
-este arquivo é sobre o que está pendente **agora**.
+**Última atualização: 2026-08-09 (banco reksodqzemboaeqxnxyy sincronizado, ~40 migrações atrasadas aplicadas).**
+Este arquivo deve ser atualizado ao final de cada sessão de trabalho relevante — se estiver desatualizado, ele
+apodrece como `SYSTEM_AUDIT.md`/`ARVORE_PROJETO.md` já apodreceram. Leia primeiro [`../CLAUDE.md`](../CLAUDE.md)
+para contexto de padrões estáveis; este arquivo é sobre o que está pendente **agora**.
+
+## 🔖 Checkpoint de sessão (2026-08-09 — sync de migrações + fix real do Clientes + seed de teste)
+
+**Contexto**: sessão começou pedindo dados de teste (empresa escola = ALLEGRA, já cadastrada) pra testar o
+ERP fim a fim. Ao rodar o seed, apareceu erro `Could not find the 'sigla' column of 'bancos'` — investigando,
+achado que **o banco `reksodqzemboaeqxnxyy` (migrado de `lrkebsznehpuascgqbri` em 08/08) estava ~40 migrações
+atrasado**: tudo criado a partir de `20260713155404` nunca tinha sido registrado como aplicado
+(`supabase migration list --linked` mostrava `remote: ""` pra todas). O trabalho cresceu de "popular dados" pra
+"sincronizar o banco de verdade", com aprovação do usuário a cada descoberta nova.
+
+1. **Migrações aplicadas via `supabase db push --linked --include-all`**, uma por uma, com problemas reais
+   encontrados e corrigidos no caminho (não são bugs desta sessão, só nunca tinham sido pegos porque o banco
+   nunca tinha rodado essas migrações antes):
+   - 2 migrações de seed de dados de teste de uma empresa antiga (`LIGNUM`, projeto anterior) —
+     marcadas como aplicadas (`supabase migration repair --status applied`), não fazem sentido pro projeto novo.
+   - Várias tabelas (`estoque_movimentacoes`, `estoque_inventarios`, `estoque_inventario_itens`,
+     `estoque_saldos`, `fiscal_configuracoes` e afins, `banco_extratos_importados`,
+     `porta3_autorizacoes_excecao`) **já existiam no banco mas sem RLS/policies/triggers/funções** — a tabela
+     tinha sido criada por fora do fluxo de migração rastreado, então `CREATE TABLE` batia em "already exists"
+     e abortava a migração inteira antes de chegar nas partes que faltavam. Corrigido rodando manualmente só o
+     restante de cada migração (grants/RLS/policies/triggers/funções) via `supabase db query -f`.
+   - **Achado recorrente sério**: `estoque_movimentacoes`, `estoque_inventarios`, `estoque_inventario_itens`,
+     `estoque_saldos`, `porta3_autorizacoes_excecao` e `banco_movimentacoes_extrato` foram criadas **sem
+     PRIMARY KEY** (mesmo tendo `id uuid PRIMARY KEY` na definição da migração) — bloqueava qualquer FK ou
+     `ON CONFLICT` apontando pra elas. Todas vazias, corrigido com `ALTER TABLE ... ADD PRIMARY KEY (id)` antes
+     de rodar o resto. Como isso aconteceu não foi investigado (hipótese: criação manual via dashboard que não
+     copiou a constraint) — se aparecer de novo em tabela nova, é o mesmo padrão.
+   - `entidade_dependencias` (helper de "não pode excluir X, tem Y vinculado") tinha o mesmo problema de PK
+     ausente na chave composta — corrigido, `check_dependencias()`/`regenerar_entidade_dependencias()` agora
+     funcionam.
+   - Módulo de Estoque (RPCs `validar_saldo_estoque`, `baixar_estoque_venda`, `estornar_estoque_venda`,
+     `conciliar_inventario`) e Porta 3 (`verificar_autorizacao_venda`, `autorizar_excecao_venda`,
+     `has_permissao`) **não existiam de jeito nenhum** — as tabelas existiam (criadas por fora), mas as
+     funções nunca tinham rodado. Recriadas manualmente a partir do conteúdo das migrações originais.
+   - Conciliação bancária (`sugerir_matches_extrato`, `confirmar_match`, `desfazer_conciliacao`,
+     `reverter_extrato`, `criar_lancamento_do_extrato`) — mesma causa (PK faltando em
+     `banco_movimentacoes_extrato` bloqueava a FK `movimentacoes_bancarias.movimentacao_extrato_id`).
+     Todas essas 5 funções são stub (`NOT_IMPLEMENTED_P15_1`), então "existir" aqui só quer dizer que a UI
+     não quebra mais tentando chamar uma RPC inexistente — a lógica real de matching ainda não foi implementada.
+2. **Bug real achado e corrigido** (não é da sessão, só nunca tinha sido pego porque a tabela `clientes`
+   nunca tinha sido usada de verdade neste projeto): `clienteService.ts` gravava/lia colunas (`tipo`,
+   `cpf_cnpj`, `endereco`, `qualificacao_fiscal`, `emails`, `telefones`, `contatos`, `documentos`,
+   `dados_pessoais`, `contato_empresa`) que tinham sido restauradas como jsonb/array nativo pela migração
+   `20260725150000_restore_clientes_legacy_fields.sql` (que também nunca tinha rodado até esta sessão), mas
+   o service continuava fazendo `JSON.stringify`/`JSON.parse` manual como se fossem `text` puro — quebrava
+   com `malformed array literal` ao tentar criar qualquer cliente com email/telefone pela UI real
+   (`FormCliente.tsx`, tela ativa, não código morto). Corrigido: `emails`/`telefones` viram array JS nativo,
+   os campos jsonb (`endereco`, `contatos`, etc.) vão sem stringify. Testado ao vivo criando um cliente PF
+   pela UI real — funcionou, removido depois. `src/services/clienteService.test.ts` tinha um teste que
+   validava o comportamento antigo (esperava `JSON.parse` funcionando em cima de um array já stringificado
+   errado) — corrigido pra checar o valor nativo direto.
+3. **`src/integrations/supabase/types.ts` regenerado do banco real** (`supabase gen types typescript
+   --linked`) duas vezes ao longo da sessão, à medida que o schema foi sendo corrigido — estava desatualizado
+   há tempo (tinha colunas em `bancos`/`contas_bancarias`/`clientes` que nunca existiram na versão atual do
+   schema). Isso também destravou 7 erros de typecheck pré-existentes em `dependenciasService.ts`,
+   `estoqueService.ts` e `porta3Service.ts` que chamavam RPCs não reconhecidas pelo tipo `Database`.
+4. **Seed de dados de teste pra ALLEGRA CENTRO DE EDUCACAO LTDA** (`b3de8e2a-5919-475f-a55c-a92f04358eb3`,
+   primeiro caso real do ecossistema): 16 tabelas povoadas (plano de contas, centros de custo, departamentos,
+   cargos, localização de estoque, banco + conta bancária, categorias de produto, colaboradores, clientes
+   PF+PJ, fornecedores, produtos, vendas em 3 status + itens, contas a receber, liquidações, folha de
+   pagamento). Todo registro leva prefixo `[SEED] ` em nome/descrição — convenção de rastreabilidade pra
+   achar e limpar depois, sem depender de coluna `observacoes` (nem toda tabela tem). Script usado
+   (`scripts/seed-*.mjs`, service role key) foi de uso único, apagado ao final — não é ferramenta permanente.
+5. **`fornecedorService.ts` continua dessincronizado do schema real** (mesmo padrão do bug de `clientes`,
+   achado de passagem, **não corrigido nesta sessão** — fora do escopo que foi pedido). Ver
+   `docs/CONTRATOS_CANONICOS_ERP.md`/histórico desta sessão se for atacar depois: colunas reais são
+   `tipo_pessoa`/`cpf`/`cnpj` separados, `nome`/`empresa_representada_id` nunca são enviados pelo service
+   apesar de `NOT NULL` no banco.
+
+**Verificação**: `npm run typecheck` 0 erros, `npm run test -- --run` 361/361, testado ao vivo no navegador
+(criar cliente PF real pela tela de Cadastros).
 
 ## 🚀 Checkpoint de sessão (2026-08-09 — Visual refactor final + PWA + Lovable cleanup)
 

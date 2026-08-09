@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.15"
   }
   graphql_public: {
     Tables: {
@@ -139,29 +139,7 @@ export type Database = {
           snapshot?: Json | null
           usuario_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "banco_conciliacao_log_empresa_representada_id_fkey"
-            columns: ["empresa_representada_id"]
-            isOneToOne: false
-            referencedRelation: "empresas_representadas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "banco_conciliacao_log_movimentacao_bancaria_id_fkey"
-            columns: ["movimentacao_bancaria_id"]
-            isOneToOne: false
-            referencedRelation: "movimentacoes_bancarias"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "banco_conciliacao_log_movimentacao_extrato_id_fkey"
-            columns: ["movimentacao_extrato_id"]
-            isOneToOne: false
-            referencedRelation: "banco_movimentacoes_extrato"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       banco_extratos_importados: {
         Row: {
@@ -224,22 +202,7 @@ export type Database = {
           total_lancamentos?: number
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "banco_extratos_importados_conta_bancaria_id_fkey"
-            columns: ["conta_bancaria_id"]
-            isOneToOne: false
-            referencedRelation: "contas_bancarias"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "banco_extratos_importados_empresa_representada_id_fkey"
-            columns: ["empresa_representada_id"]
-            isOneToOne: false
-            referencedRelation: "empresas_representadas"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       banco_movimentacoes_extrato: {
         Row: {
@@ -308,43 +271,7 @@ export type Database = {
           updated_at?: string
           valor?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "banco_movimentacoes_extrato_conta_bancaria_id_fkey"
-            columns: ["conta_bancaria_id"]
-            isOneToOne: false
-            referencedRelation: "contas_bancarias"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "banco_movimentacoes_extrato_empresa_representada_id_fkey"
-            columns: ["empresa_representada_id"]
-            isOneToOne: false
-            referencedRelation: "empresas_representadas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "banco_movimentacoes_extrato_extrato_importado_id_fkey"
-            columns: ["extrato_importado_id"]
-            isOneToOne: false
-            referencedRelation: "banco_extratos_importados"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "banco_movimentacoes_extrato_movimentacao_bancaria_id_fkey"
-            columns: ["movimentacao_bancaria_id"]
-            isOneToOne: false
-            referencedRelation: "movimentacoes_bancarias"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_bme_regra"
-            columns: ["regra_id"]
-            isOneToOne: false
-            referencedRelation: "banco_regras_conciliacao"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       banco_regras_conciliacao: {
         Row: {
@@ -410,29 +337,7 @@ export type Database = {
           tolerancia_valor?: number
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "banco_regras_conciliacao_centro_custo_id_fkey"
-            columns: ["centro_custo_id"]
-            isOneToOne: false
-            referencedRelation: "centros_custo"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "banco_regras_conciliacao_empresa_representada_id_fkey"
-            columns: ["empresa_representada_id"]
-            isOneToOne: false
-            referencedRelation: "empresas_representadas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "banco_regras_conciliacao_plano_conta_id_fkey"
-            columns: ["plano_conta_id"]
-            isOneToOne: false
-            referencedRelation: "plano_contas"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       bancos: {
         Row: {
@@ -927,21 +832,21 @@ export type Database = {
           cnae: string | null
           cnpj: string | null
           complemento: string | null
-          contato_empresa: string | null
-          contatos: string | null
+          contato_empresa: Json | null
+          contatos: Json | null
           cpf: string | null
           cpf_cnpj: string | null
           created_at: string
-          dados_pessoais: string | null
+          dados_pessoais: Json | null
           data_fundacao: string | null
           data_nascimento: string | null
           deleted_at: string | null
-          documentos: string | null
+          documentos: Json | null
           email: string | null
           email_secundario: string | null
-          emails: string | null
+          emails: string[] | null
           empresa_representada_id: string
-          endereco: string | null
+          endereco: Json | null
           estado: string | null
           forma_atuacao: string | null
           id: string
@@ -953,14 +858,14 @@ export type Database = {
           nome_fantasia: string | null
           numero: string | null
           observacoes: string | null
-          qualificacao_fiscal: string | null
+          qualificacao_fiscal: Json | null
           razao_social: string | null
           rg: string | null
           setor_id: string | null
           site: string | null
           telefone: string | null
           telefone_secundario: string | null
-          telefones: string | null
+          telefones: string[] | null
           tipo: string | null
           tipo_pessoa: string | null
           updated_at: string
@@ -978,21 +883,21 @@ export type Database = {
           cnae?: string | null
           cnpj?: string | null
           complemento?: string | null
-          contato_empresa?: string | null
-          contatos?: string | null
+          contato_empresa?: Json | null
+          contatos?: Json | null
           cpf?: string | null
           cpf_cnpj?: string | null
           created_at?: string
-          dados_pessoais?: string | null
+          dados_pessoais?: Json | null
           data_fundacao?: string | null
           data_nascimento?: string | null
           deleted_at?: string | null
-          documentos?: string | null
+          documentos?: Json | null
           email?: string | null
           email_secundario?: string | null
-          emails?: string | null
+          emails?: string[] | null
           empresa_representada_id: string
-          endereco?: string | null
+          endereco?: Json | null
           estado?: string | null
           forma_atuacao?: string | null
           id?: string
@@ -1004,14 +909,14 @@ export type Database = {
           nome_fantasia?: string | null
           numero?: string | null
           observacoes?: string | null
-          qualificacao_fiscal?: string | null
+          qualificacao_fiscal?: Json | null
           razao_social?: string | null
           rg?: string | null
           setor_id?: string | null
           site?: string | null
           telefone?: string | null
           telefone_secundario?: string | null
-          telefones?: string | null
+          telefones?: string[] | null
           tipo?: string | null
           tipo_pessoa?: string | null
           updated_at?: string
@@ -1029,21 +934,21 @@ export type Database = {
           cnae?: string | null
           cnpj?: string | null
           complemento?: string | null
-          contato_empresa?: string | null
-          contatos?: string | null
+          contato_empresa?: Json | null
+          contatos?: Json | null
           cpf?: string | null
           cpf_cnpj?: string | null
           created_at?: string
-          dados_pessoais?: string | null
+          dados_pessoais?: Json | null
           data_fundacao?: string | null
           data_nascimento?: string | null
           deleted_at?: string | null
-          documentos?: string | null
+          documentos?: Json | null
           email?: string | null
           email_secundario?: string | null
-          emails?: string | null
+          emails?: string[] | null
           empresa_representada_id?: string
-          endereco?: string | null
+          endereco?: Json | null
           estado?: string | null
           forma_atuacao?: string | null
           id?: string
@@ -1055,14 +960,14 @@ export type Database = {
           nome_fantasia?: string | null
           numero?: string | null
           observacoes?: string | null
-          qualificacao_fiscal?: string | null
+          qualificacao_fiscal?: Json | null
           razao_social?: string | null
           rg?: string | null
           setor_id?: string | null
           site?: string | null
           telefone?: string | null
           telefone_secundario?: string | null
-          telefones?: string | null
+          telefones?: string[] | null
           tipo?: string | null
           tipo_pessoa?: string | null
           updated_at?: string
@@ -1075,6 +980,13 @@ export type Database = {
             columns: ["empresa_representada_id"]
             isOneToOne: false
             referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clientes_setor_id_fkey"
+            columns: ["setor_id"]
+            isOneToOne: false
+            referencedRelation: "setores_empresa"
             referencedColumns: ["id"]
           },
         ]
@@ -2381,36 +2293,7 @@ export type Database = {
           saldo_sistema?: number
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "estoque_inventario_itens_empresa_representada_id_fkey"
-            columns: ["empresa_representada_id"]
-            isOneToOne: false
-            referencedRelation: "empresas_representadas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "estoque_inventario_itens_inventario_id_fkey"
-            columns: ["inventario_id"]
-            isOneToOne: false
-            referencedRelation: "estoque_inventarios"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "estoque_inventario_itens_produto_id_fkey"
-            columns: ["produto_id"]
-            isOneToOne: false
-            referencedRelation: "produtos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "estoque_inventario_itens_produto_id_fkey"
-            columns: ["produto_id"]
-            isOneToOne: false
-            referencedRelation: "vw_estoque_ruptura"
-            referencedColumns: ["produto_id"]
-          },
-        ]
+        Relationships: []
       }
       estoque_inventarios: {
         Row: {
@@ -2458,22 +2341,7 @@ export type Database = {
           status?: string
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "estoque_inventarios_empresa_representada_id_fkey"
-            columns: ["empresa_representada_id"]
-            isOneToOne: false
-            referencedRelation: "empresas_representadas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "estoque_inventarios_localizacao_id_fkey"
-            columns: ["localizacao_id"]
-            isOneToOne: false
-            referencedRelation: "localizacoes_estoque"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       estoque_movimentacoes: {
         Row: {
@@ -2535,48 +2403,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "estoque_movimentacoes_empresa_representada_id_fkey"
-            columns: ["empresa_representada_id"]
-            isOneToOne: false
-            referencedRelation: "empresas_representadas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "estoque_movimentacoes_localizacao_destino_id_fkey"
-            columns: ["localizacao_destino_id"]
-            isOneToOne: false
-            referencedRelation: "localizacoes_estoque"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "estoque_movimentacoes_localizacao_origem_id_fkey"
-            columns: ["localizacao_origem_id"]
-            isOneToOne: false
-            referencedRelation: "localizacoes_estoque"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "estoque_movimentacoes_produto_id_fkey"
-            columns: ["produto_id"]
-            isOneToOne: false
-            referencedRelation: "produtos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "estoque_movimentacoes_produto_id_fkey"
-            columns: ["produto_id"]
-            isOneToOne: false
-            referencedRelation: "vw_estoque_ruptura"
-            referencedColumns: ["produto_id"]
-          },
-          {
-            foreignKeyName: "estoque_movimentacoes_venda_id_fkey"
-            columns: ["venda_id"]
-            isOneToOne: false
-            referencedRelation: "vendas"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "fk_estoque_mov_inventario"
             columns: ["inventario_id"]
             isOneToOne: false
@@ -2613,36 +2439,7 @@ export type Database = {
           quantidade?: number
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "estoque_saldos_empresa_representada_id_fkey"
-            columns: ["empresa_representada_id"]
-            isOneToOne: false
-            referencedRelation: "empresas_representadas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "estoque_saldos_localizacao_id_fkey"
-            columns: ["localizacao_id"]
-            isOneToOne: false
-            referencedRelation: "localizacoes_estoque"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "estoque_saldos_produto_id_fkey"
-            columns: ["produto_id"]
-            isOneToOne: false
-            referencedRelation: "produtos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "estoque_saldos_produto_id_fkey"
-            columns: ["produto_id"]
-            isOneToOne: false
-            referencedRelation: "vw_estoque_ruptura"
-            referencedColumns: ["produto_id"]
-          },
-        ]
+        Relationships: []
       }
       fiscal_certificados: {
         Row: {
@@ -2690,15 +2487,7 @@ export type Database = {
           valido_ate?: string | null
           valido_de?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "fiscal_certificados_empresa_representada_id_fkey"
-            columns: ["empresa_representada_id"]
-            isOneToOne: false
-            referencedRelation: "empresas_representadas"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       fiscal_configuracoes: {
         Row: {
@@ -2779,15 +2568,7 @@ export type Database = {
           serie_nfe?: number | null
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "fiscal_configuracoes_empresa_representada_id_fkey"
-            columns: ["empresa_representada_id"]
-            isOneToOne: true
-            referencedRelation: "empresas_representadas"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       fiscal_documentos_eletronicos: {
         Row: {
@@ -2925,43 +2706,7 @@ export type Database = {
           venda_id?: string | null
           xml_url?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "fiscal_documentos_eletronicos_cliente_id_fkey"
-            columns: ["cliente_id"]
-            isOneToOne: false
-            referencedRelation: "clientes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fiscal_documentos_eletronicos_empresa_representada_id_fkey"
-            columns: ["empresa_representada_id"]
-            isOneToOne: false
-            referencedRelation: "empresas_representadas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fiscal_documentos_eletronicos_fornecedor_id_fkey"
-            columns: ["fornecedor_id"]
-            isOneToOne: false
-            referencedRelation: "fornecedores"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fiscal_documentos_eletronicos_natureza_operacao_id_fkey"
-            columns: ["natureza_operacao_id"]
-            isOneToOne: false
-            referencedRelation: "natureza_operacao"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fiscal_documentos_eletronicos_venda_id_fkey"
-            columns: ["venda_id"]
-            isOneToOne: false
-            referencedRelation: "vendas"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       fiscal_documentos_eletronicos_itens: {
         Row: {
@@ -3075,43 +2820,7 @@ export type Database = {
           valor_total?: number
           valor_unitario?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "fiscal_documentos_eletronicos_iten_empresa_representada_id_fkey"
-            columns: ["empresa_representada_id"]
-            isOneToOne: false
-            referencedRelation: "empresas_representadas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fiscal_documentos_eletronicos_itens_documento_id_fkey"
-            columns: ["documento_id"]
-            isOneToOne: false
-            referencedRelation: "fiscal_documentos_eletronicos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fiscal_documentos_eletronicos_itens_produto_id_fkey"
-            columns: ["produto_id"]
-            isOneToOne: false
-            referencedRelation: "produtos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fiscal_documentos_eletronicos_itens_produto_id_fkey"
-            columns: ["produto_id"]
-            isOneToOne: false
-            referencedRelation: "vw_estoque_ruptura"
-            referencedColumns: ["produto_id"]
-          },
-          {
-            foreignKeyName: "fiscal_documentos_eletronicos_itens_servico_id_fkey"
-            columns: ["servico_id"]
-            isOneToOne: false
-            referencedRelation: "servicos"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       fiscal_eventos: {
         Row: {
@@ -3156,22 +2865,7 @@ export type Database = {
           status?: string
           tipo?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "fiscal_eventos_documento_id_fkey"
-            columns: ["documento_id"]
-            isOneToOne: false
-            referencedRelation: "fiscal_documentos_eletronicos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fiscal_eventos_empresa_representada_id_fkey"
-            columns: ["empresa_representada_id"]
-            isOneToOne: false
-            referencedRelation: "empresas_representadas"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       fiscal_provedor_credenciais: {
         Row: {
@@ -3210,15 +2904,7 @@ export type Database = {
           provider?: string
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "fiscal_provedor_credenciais_empresa_representada_id_fkey"
-            columns: ["empresa_representada_id"]
-            isOneToOne: false
-            referencedRelation: "empresas_representadas"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       fiscal_sped_arquivos: {
         Row: {
@@ -3266,15 +2952,7 @@ export type Database = {
           tipo?: string
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "fiscal_sped_arquivos_empresa_representada_id_fkey"
-            columns: ["empresa_representada_id"]
-            isOneToOne: false
-            referencedRelation: "empresas_representadas"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       folha_pagamento: {
         Row: {
@@ -5156,22 +4834,7 @@ export type Database = {
           usuario_id?: string
           valor_pretendido?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "porta3_autorizacoes_excecao_cliente_id_fkey"
-            columns: ["cliente_id"]
-            isOneToOne: false
-            referencedRelation: "clientes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "porta3_autorizacoes_excecao_empresa_representada_id_fkey"
-            columns: ["empresa_representada_id"]
-            isOneToOne: false
-            referencedRelation: "empresas_representadas"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       produto_fornecedores: {
         Row: {
@@ -7034,15 +6697,7 @@ export type Database = {
           total: number | null
           valor_total: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "fiscal_documentos_eletronicos_empresa_representada_id_fkey"
-            columns: ["empresa_representada_id"]
-            isOneToOne: false
-            referencedRelation: "empresas_representadas"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       mv_estoque_curva_abc: {
         Row: {
@@ -7054,29 +6709,7 @@ export type Database = {
           refreshed_at: string | null
           valor_saida: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "estoque_movimentacoes_empresa_representada_id_fkey"
-            columns: ["empresa_id"]
-            isOneToOne: false
-            referencedRelation: "empresas_representadas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "estoque_movimentacoes_produto_id_fkey"
-            columns: ["produto_id"]
-            isOneToOne: false
-            referencedRelation: "produtos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "estoque_movimentacoes_produto_id_fkey"
-            columns: ["produto_id"]
-            isOneToOne: false
-            referencedRelation: "vw_estoque_ruptura"
-            referencedColumns: ["produto_id"]
-          },
-        ]
+        Relationships: []
       }
       mv_fluxo_competencia: {
         Row: {
@@ -7129,34 +6762,6 @@ export type Database = {
           valor_total: number | null
         }
         Relationships: [
-          {
-            foreignKeyName: "estoque_saldos_empresa_representada_id_fkey"
-            columns: ["empresa_id"]
-            isOneToOne: false
-            referencedRelation: "empresas_representadas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "estoque_saldos_localizacao_id_fkey"
-            columns: ["localizacao_id"]
-            isOneToOne: false
-            referencedRelation: "localizacoes_estoque"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "estoque_saldos_produto_id_fkey"
-            columns: ["produto_id"]
-            isOneToOne: false
-            referencedRelation: "produtos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "estoque_saldos_produto_id_fkey"
-            columns: ["produto_id"]
-            isOneToOne: false
-            referencedRelation: "vw_estoque_ruptura"
-            referencedColumns: ["produto_id"]
-          },
           {
             foreignKeyName: "produtos_categoria_id_fkey"
             columns: ["categoria_id"]
@@ -7224,20 +6829,10 @@ export type Database = {
         Returns: Json
       }
       converter_orcamento_em_venda: { Args: { p_payload: Json }; Returns: Json }
-      criar_lancamento_do_extrato:
-        | {
-            Args: { p_extrato_linha_id: string; p_payload?: Json }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_centro_custo_id: string
-              p_movimentacao_extrato_id: string
-              p_natureza_id: string
-              p_plano_conta_id: string
-            }
-            Returns: string
-          }
+      criar_lancamento_do_extrato: {
+        Args: { p_extrato_linha_id: string; p_payload?: Json }
+        Returns: Json
+      }
       desfazer_conciliacao: {
         Args: { p_extrato_linha_id: string }
         Returns: Json
@@ -7452,6 +7047,12 @@ export type Database = {
       validar_saldo_estoque: {
         Args: { p_localizacao: string; p_produto: string; p_quantidade: number }
         Returns: Json
+      }
+      validate_required_user_fields: {
+        Args: { p_email: string; p_full_name: string; p_phone: string }
+        Returns: {
+          missing_field: string
+        }[]
       }
       verificar_autorizacao_venda: {
         Args: {

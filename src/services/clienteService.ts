@@ -1,6 +1,7 @@
 // FILE NAME: clienteService.ts
 // FILE CONTENT:
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { Cliente } from '@/types/cliente';
 
 export interface SupabaseCliente {
@@ -36,21 +37,10 @@ export interface SupabaseCliente {
   updated_at?: string | null;
 }
 
-// As colunas endereco/qualificacao_fiscal/dados_pessoais/contato_empresa/contatos/
-// documentos/emails/telefones existem no banco como text (guardam JSON serializado),
-// não como jsonb nativo — precisam de stringify/parse explícitos neste service.
-const parseJsonField = <T>(raw: string | null | undefined, fallback: T): T => {
-  if (!raw) return fallback;
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
-};
-
-const stringifyJsonField = (value: unknown): string | null =>
-  value === undefined || value === null ? null : JSON.stringify(value);
-
+// endereco/qualificacao_fiscal/dados_pessoais/contato_empresa/contatos/documentos
+// são jsonb nativo no banco (migração 20260725150000) — supabase-js já
+// serializa/desserializa automaticamente, sem stringify/parse manual.
+// emails/telefones são text[] nativo — mesma coisa, array JS direto.
 const parseRow = (row: Record<string, unknown>): SupabaseCliente => ({
   id: row.id as string,
   empresa_representada_id: row.empresa_representada_id as string,
@@ -62,20 +52,20 @@ const parseRow = (row: Record<string, unknown>): SupabaseCliente => ({
   tipo: row.tipo as string,
   rg: row.rg as string | null,
   data_nascimento: row.data_nascimento as string | null,
-  endereco: parseJsonField(row.endereco as string | null, undefined),
-  qualificacao_fiscal: parseJsonField(row.qualificacao_fiscal as string | null, undefined),
+  endereco: row.endereco as Record<string, unknown> | undefined,
+  qualificacao_fiscal: row.qualificacao_fiscal as Record<string, unknown> | undefined,
   nome_fantasia: row.nome_fantasia as string | null,
   cnae: row.cnae as string | null,
   site: row.site as string | null,
   forma_atuacao: row.forma_atuacao as string | null,
   data_fundacao: row.data_fundacao as string | null,
   atividade_principal: row.atividade_principal as string | null,
-  contato_empresa: parseJsonField(row.contato_empresa as string | null, undefined),
-  contatos: parseJsonField(row.contatos as string | null, []),
-  documentos: parseJsonField(row.documentos as string | null, []),
-  emails: parseJsonField(row.emails as string | null, undefined),
-  telefones: parseJsonField(row.telefones as string | null, undefined),
-  dados_pessoais: parseJsonField(row.dados_pessoais as string | null, undefined),
+  contato_empresa: row.contato_empresa as Record<string, unknown> | undefined,
+  contatos: (row.contatos as unknown[]) ?? [],
+  documentos: (row.documentos as unknown[]) ?? [],
+  emails: row.emails as string[] | undefined,
+  telefones: row.telefones as string[] | undefined,
+  dados_pessoais: row.dados_pessoais as Record<string, unknown> | undefined,
   setor_id: row.setor_id as string | null,
   ativo: Boolean(row.ativo),
   created_at: row.created_at as string,
@@ -92,13 +82,13 @@ const buildDataToSave = (clienteData: Cliente, empresaRepresentadaId: string) =>
   tipo: clienteData.tipo,
   rg: clienteData.rg || null,
   data_nascimento: clienteData.dataNascimento || null,
-  endereco: stringifyJsonField(clienteData.endereco),
-  qualificacao_fiscal: stringifyJsonField(clienteData.qualificacaoFiscal),
-  emails: stringifyJsonField(clienteData.emails || []),
-  telefones: stringifyJsonField(clienteData.telefones || []),
-  dados_pessoais: stringifyJsonField(clienteData.dadosPessoais || {}),
-  documentos: stringifyJsonField(clienteData.documentos || []),
-  contatos: stringifyJsonField(clienteData.contatos || []),
+  endereco: clienteData.endereco ?? null,
+  qualificacao_fiscal: clienteData.qualificacaoFiscal ?? null,
+  emails: (clienteData.emails || []).filter(Boolean),
+  telefones: (clienteData.telefones || []).filter(Boolean),
+  dados_pessoais: clienteData.dadosPessoais ?? null,
+  documentos: (clienteData.documentos ?? []) as unknown as Json,
+  contatos: (clienteData.contatos ?? []) as unknown as Json,
   // Campos específicos para PJ
   nome_fantasia: clienteData.dadosEmpresa?.nomeFantasia || null,
   cnae: clienteData.dadosEmpresa?.cnae || null,
@@ -106,7 +96,7 @@ const buildDataToSave = (clienteData: Cliente, empresaRepresentadaId: string) =>
   forma_atuacao: clienteData.dadosEmpresa?.formaAtuacao || null,
   data_fundacao: clienteData.dadosEmpresa?.dataFundacao || null,
   atividade_principal: clienteData.dadosEmpresa?.atividadePrincipal || null,
-  contato_empresa: stringifyJsonField(clienteData.dadosEmpresa?.contatoEmpresa || null),
+  contato_empresa: clienteData.dadosEmpresa?.contatoEmpresa ?? null,
   // Campo setor para integração CRM
   setor_id: clienteData.setorId || null,
   ativo: clienteData.ativo !== false,

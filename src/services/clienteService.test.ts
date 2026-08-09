@@ -121,11 +121,11 @@ describe('clienteService.createCliente payload shape', () => {
       setor_id: 'setor-1',
       ativo: true,
     });
-    expect(JSON.parse(capturedPayload.emails as string)).toEqual(['a@a.com', 'b@b.com']);
-    expect(JSON.parse(capturedPayload.telefones as string)).toEqual(['11999']);
-    expect(JSON.parse(capturedPayload.contatos as string)).toEqual([{ nome: 'C1' }]);
-    expect(JSON.parse(capturedPayload.documentos as string)).toEqual([{ tipo: 'RG' }]);
-    expect(JSON.parse(capturedPayload.qualificacao_fiscal as string)).toEqual({ regime: 'simples' });
+    expect(capturedPayload.emails).toEqual(['a@a.com', 'b@b.com']);
+    expect(capturedPayload.telefones).toEqual(['11999']);
+    expect(capturedPayload.contatos).toEqual([{ nome: 'C1' }]);
+    expect(capturedPayload.documentos).toEqual([{ tipo: 'RG' }]);
+    expect(capturedPayload.qualificacao_fiscal).toEqual({ regime: 'simples' });
     expect(typeof capturedPayload.updated_at).toBe('string');
   });
 
