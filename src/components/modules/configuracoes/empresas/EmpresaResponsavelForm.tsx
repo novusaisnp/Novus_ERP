@@ -25,7 +25,6 @@ interface FormState {
   email: string;
   telefone: string;
   endereco: string;
-  logo_url: string;
   // configuracoes jsonb
   razao_social: string;
   nome_fantasia: string;
@@ -46,7 +45,7 @@ interface FormState {
 }
 
 const empty = (): FormState => ({
-  nome: '', cnpj: '', email: '', telefone: '', endereco: '', logo_url: '',
+  nome: '', cnpj: '', email: '', telefone: '', endereco: '',
   razao_social: '', nome_fantasia: '', inscricao_estadual: '', inscricao_municipal: '',
   tipo_empresa: '', regime_tributario: '', perfil_tributario: '',
   cnae_principal: '', natureza_juridica: '', data_abertura: '',
@@ -65,7 +64,6 @@ const fromEmpresa = (e?: EmpresaResponsavel | null): FormState => {
     email: e.email || '',
     telefone: e.telefone || '',
     endereco: e.endereco || '',
-    logo_url: e.logo_url || '',
     razao_social: c.razao_social || '',
     nome_fantasia: c.nome_fantasia || '',
     inscricao_estadual: c.inscricao_estadual || '',
@@ -140,7 +138,6 @@ const EmpresaResponsavelForm: React.FC<Props> = ({ empresa, onSave, saving }) =>
       email: form.email || null,
       telefone: form.telefone || null,
       endereco: form.endereco || null,
-      logo_url: form.logo_url || null,
       configuracoes: {
         razao_social: form.razao_social,
         nome_fantasia: form.nome_fantasia,
@@ -209,10 +206,6 @@ const EmpresaResponsavelForm: React.FC<Props> = ({ empresa, onSave, saving }) =>
                 <div>
                   <Label>Telefone</Label>
                   <Input value={form.telefone} onChange={(e) => setField('telefone', e.target.value)} />
-                </div>
-                <div className="md:col-span-2">
-                  <Label>Logo URL</Label>
-                  <Input value={form.logo_url} onChange={(e) => setField('logo_url', e.target.value)} />
                 </div>
               </div>
             </TabsContent>

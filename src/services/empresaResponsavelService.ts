@@ -33,7 +33,6 @@ function buildPayload(input: EmpresaResponsavel & Record<string, unknown>) {
     email: input.email || null,
     telefone: input.telefone || null,
     endereco: input.endereco || null,
-    logo_url: input.logo_url || null,
     configuracoes: configuracoes as Json,
     updated_at: new Date().toISOString(),
   };

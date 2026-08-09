@@ -9,7 +9,6 @@ export interface EmpresaResponsavel {
   email?: string | null;
   telefone?: string | null;
   endereco?: string | null;
-  logo_url?: string | null;
   configuracoes?: Record<string, unknown> | null;
   [key: string]: unknown;
 }
