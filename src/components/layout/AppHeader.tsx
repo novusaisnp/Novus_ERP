@@ -37,7 +37,7 @@ export const AppHeader: React.FC = () => {
           <img
             src={logoUrl}
             alt={empresa?.nome || 'Logo da empresa'}
-            className="h-10 max-w-[180px] object-contain"
+            className="h-16 max-w-[320px] object-contain"
           />
         ) : empresa?.nome ? (
           <>
