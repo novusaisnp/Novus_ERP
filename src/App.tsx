@@ -4,6 +4,7 @@ import { ThemeProvider } from './components/ui/theme-provider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import { AppLayout } from './components/layout/AppLayout';
+import { Toaster } from './components/ui/toaster';
 import Login from './pages/Login';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
@@ -114,6 +115,7 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <SessionPersistenceHandler />
+            <Toaster />
             <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
               <Routes>
                 {/* Public Routes */}

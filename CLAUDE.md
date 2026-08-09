@@ -14,9 +14,9 @@ está formalizado em [`docs/CONTRATOS_CANONICOS_ERP.md`](./docs/CONTRATOS_CANONI
 ## Stack e arquitetura
 
 - Vite 5 + React 18 + TypeScript + Tailwind/shadcn-ui + TanStack Query + React Hook Form + Zod.
-- Supabase: Postgres + Auth + Storage + Edge Functions (Deno). Projeto real: `lrkebsznehpuascgqbri`
-  ("Novus ERP 2026") — **sempre confirme com `supabase projects list` antes de qualquer ação em
-  banco**, nunca confie de memória em qual ID é o certo.
+- Supabase: Postgres + Auth + Storage + Edge Functions (Deno). Projeto real: `reksodqzemboaeqxnxyy`
+  (migrado de `lrkebsznehpuascgqbri` em 2026-08-08) — **sempre confirme com `supabase projects list`
+  antes de qualquer ação em banco**, nunca confie de memória em qual ID é o certo.
 - Multi-tenancy: quase toda tabela tem `empresa_representada_id`, aplicado via RLS. Isolamento
   entre empresas é requisito de segurança de primeira classe, não um detalhe — ver a seção de
   segurança abaixo.

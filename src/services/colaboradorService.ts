@@ -2,7 +2,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Colaborador } from '@/types/rh';
 
 async function getEmpresaId(): Promise<string | null> {
-  const { data } = await supabase.rpc('get_user_empresa_id');
+  const { data, error } = await supabase.rpc('get_user_empresa_id');
+  if (error) {
+    console.error('[RH] Erro ao obter empresa do usuário');
+    throw error;
+  }
   return data ?? null;
 }
 
