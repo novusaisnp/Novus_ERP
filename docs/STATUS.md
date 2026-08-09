@@ -1,9 +1,58 @@
 # Status do projeto — NOVUS ERP
 
-**Última atualização: 2026-07-27.** Este arquivo deve ser atualizado ao final de cada sessão de
+**Última atualização: 2026-08-09.** Este arquivo deve ser atualizado ao final de cada sessão de
 trabalho relevante — se estiver desatualizado, ele apodrece como `SYSTEM_AUDIT.md`/`ARVORE_PROJETO.md`
 já apodreceram. Leia primeiro [`../CLAUDE.md`](../CLAUDE.md) para contexto de padrões estáveis;
 este arquivo é sobre o que está pendente **agora**.
+
+## 🔖 Checkpoint de sessão (2026-08-09 — reprovisão pós-migração + Porta 3 colaborador, feito a partir do satélite educacional)
+
+**Contexto**: sessão começou no repo `novus-ai-educacional-54` (cadastro de professor/equipe), mas
+achou que a migração do ERP pra este projeto (`reksodqzemboaeqxnxyy`, concluída 2026-08-08 por fora
+desta sessão) tinha **deixado o banco migrado mas nenhuma Edge Function deployada** — `supabase
+functions list` retornava vazio. Trabalho feito aqui, do lado ERP, veio como consequência disso.
+
+1. **3 Edge Functions deployadas** (nenhuma existia neste projeto antes de hoje):
+   - `sync-webhook` (já existia no código, só nunca tinha sido deployada pro projeto novo).
+   - `get-empresa-logo` (**nova, não existia em lugar nenhum** — o satélite educacional já
+     chamava esse endpoint desde antes, mas ele nunca tinha sido construído; sempre caiu em
+     silêncio no fallback local). Resolve `empresas_representadas.configuracoes->>'logo_path'`
+     + `storage.createSignedUrl` (bucket `empresa-logos` é **privado**, não público como um
+     comentário antigo no código do satélite assumia).
+   - `colaborador-preflight` (**nova**): Porta 3 — `{cpf, empresa_representada_id}` assinado
+     (HMAC V1, mesmo esquema de `sync-webhook`) → `{autorizado, bloqueios[]}` no formato
+     canônico (`_shared/canonical/preflight.ts`). Verifica se a pessoa é um `colaboradores`
+     ativo (`ativo=true AND deleted_at IS NULL AND (data_demissao IS NULL OR futura)`).
+     **Desenhado genérico de propósito** (usuário pediu explicitamente): identifica só por
+     CPF+empresa, nada específico de satélite educacional — qualquer satélite futuro (PDV,
+     frente de caixa, CRM) reusa sem alteração. Todas as 3 deployadas com `--no-verify-jwt`
+     (satélites chamam sem JWT Supabase, só HMAC).
+2. **`webhook_configs` reprovisionado pra ALLEGRA CENTRO DE EDUCACAO LTDA** (`empresa_representada_id
+   b3de8e2a-5919-475f-a55c-a92f04358eb3`, primeiro case real do ecossistema, cadastrada nesta sessão
+   com logo já carregada em `empresa-logos`): linha nova `nome='novus-educacional'`, secret gerado
+   (32 bytes hex), `ativo=true`. Satélite reconfigurado em espelho (`erp_integration_config`,
+   ver `docs/STATUS.md` do satélite) com `mock=false` — **integração real ligada pela primeira vez**.
+3. **Bug real achado, sem código**: `client.ts` do satélite nunca mandava o header `x-empresa-id`
+   que `sync-webhook` exige — mascarado pelo `mock=true` histórico, nunca tinha rodado de verdade
+   contra este endpoint. Corrigido do lado satélite (não deste repo).
+4. **Bug reportado pelo usuário, não investigado nesta sessão**: formulário de cadastro de
+   colaborador na UI do ERP **trava ao salvar** (pisca, não persiste, sem erro visível) — usuário
+   tentou se cadastrar como colaborador de teste e não conseguiu. Bloqueou testar o caminho feliz
+   do gate de colaborador via UI real; contornado inserindo colaborador de teste via SQL direto
+   (removido ao final). **Precisa de investigação própria numa sessão futura** — não sei se é bug
+   de validação client-side, RLS, ou outra coisa; não teve tempo de abrir o DevTools desta sessão.
+5. **Verificação**: `colaborador-preflight` testado via `curl` com HMAC real calculado (openssl) —
+   3 cenários (autorizado, CPF não encontrado, assinatura inválida) todos corretos. `get-empresa-logo`
+   testado ao vivo, retornou signed URL real. Dado de teste (colaborador fake, secret de teste)
+   limpo ao final — a linha real de `webhook_configs`/config do satélite **fica**, é produção.
+
+**Gaps conscientes**:
+- Bug do formulário de colaborador (item 4) — não corrigido, não investigado a fundo.
+- `upsertClient`/`createReceivable` (satélite→ERP, já existiam) nunca foram testados de verdade
+  contra este projeto novo — só a reprovisão básica + o endpoint novo de colaborador foram
+  validados. Podem ter os mesmos bugs de header que `sync-webhook` tinha.
+- Esquema de assinatura usado no endpoint novo é só V1 (sem replay-guard) — decisão consciente,
+  V2 não foi julgado necessário pra uma consulta idempotente.
 
 ## 🔖 Checkpoint de sessão (2026-07-27, fim do dia — leia isto primeiro)
 
