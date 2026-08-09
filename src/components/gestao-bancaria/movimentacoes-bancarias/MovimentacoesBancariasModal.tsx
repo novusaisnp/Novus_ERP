@@ -17,6 +17,8 @@ import { toCsv, downloadCsv } from '@/utils/csvExport';
 import { ExportMenu } from '@/components/relatorios/ExportMenu';
 import { groupBy } from '@/utils/relatoriosAgg';
 import { brlPt, type ReportExportPayload } from '@/utils/reportExportShared';
+import { useEmpresasRepresentadas } from '@/hooks/useEmpresasRepresentadas';
+import { useEmpresasLogosMap } from '@/hooks/useEmpresasLogosMap';
 import type { MovimentacaoBancaria } from '@/types/movimentacoesBancarias';
 import { getTipoLabel } from './tipoMovimentacaoLabels';
 
@@ -37,6 +39,8 @@ export function MovimentacoesBancariasModal({
 
   const { movimentacoes, estatisticas, isLoading, refetch } = useMovimentacoesBancarias(filtros);
   const { contasBancarias } = useContasBancarias();
+  const { empresas } = useEmpresasRepresentadas();
+  const { data: logosMap, isLoading: logosLoading } = useEmpresasLogosMap(empresas);
 
   // Atualizar dados quando o modal abrir
   useEffect(() => {
@@ -67,11 +71,23 @@ export function MovimentacoesBancariasModal({
     downloadCsv(`movimentacoes-bancarias-${new Date().toISOString().split('T')[0]}.csv`, csv);
   };
 
+  const reportBranding = useMemo(() => {
+    const empresa = empresas.find((e) => e.ativo !== false) ?? empresas[0];
+    if (!empresa?.id) return null;
+    const cfg = (empresa.configuracoes as Record<string, unknown> | null | undefined) ?? {};
+    return {
+      companyName: empresa.nome,
+      logoUrl: logosMap?.get(empresa.id) ?? null,
+      primaryColor: typeof cfg.primary_color === 'string' ? cfg.primary_color : null,
+    };
+  }, [empresas, logosMap]);
+
   const exportPayload: ReportExportPayload<MovimentacaoBancaria> = useMemo(() => ({
     title: 'Movimentações Bancárias',
     subtitle: filtros.data_inicio || filtros.data_fim
       ? `Período: ${filtros.data_inicio || '—'} a ${filtros.data_fim || '—'}`
       : undefined,
+    branding: reportBranding,
     filters: [
       { label: 'Conta', value: contasBancarias.find((c) => c.id === filtros.conta_bancaria_id)?.numero_conta ?? 'Todas' },
       { label: 'Tipo', value: filtros.tipo_movimentacao ?? 'Todos' },
@@ -88,7 +104,7 @@ export function MovimentacoesBancariasModal({
       rows: groupBy(movimentacoes, (m) => m.tipo_movimentacao, (m) => m.valor, getTipoLabel),
     } : null,
     filenameBase: 'movimentacoes-bancarias',
-  }), [filtros, contasBancarias, estatisticas, movimentacoes, detailColumns]);
+  }), [filtros, contasBancarias, estatisticas, movimentacoes, detailColumns, reportBranding]);
 
   const contasOptions = contasBancarias.map(conta => ({
     value: conta.id,
@@ -112,7 +128,7 @@ export function MovimentacoesBancariasModal({
             <ExportMenu
               payload={exportPayload}
               onCsv={handleExportarCsv}
-              disabled={movimentacoes.length === 0}
+              disabled={movimentacoes.length === 0 || logosLoading}
             />
             <Button
               variant="outline" 
