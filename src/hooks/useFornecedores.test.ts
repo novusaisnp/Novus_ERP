@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React from 'react';
 
 const { toastFn } = vi.hoisted(() => ({ toastFn: vi.fn() }));
 vi.mock('@/hooks/use-toast', () => ({
@@ -18,6 +20,11 @@ vi.mock('@/services/fornecedorService', () => ({
 
 import { useFornecedores } from './useFornecedores';
 import { fornecedorService } from '@/services/fornecedorService';
+
+const wrapper = ({ children }: { children: React.ReactNode }) => {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return React.createElement(QueryClientProvider, { client: qc }, children);
+};
 
 const svc = fornecedorService as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
@@ -38,7 +45,7 @@ beforeEach(() => {
 describe('useFornecedores load', () => {
   it('carrega e transforma', async () => {
     svc.fetchFornecedores.mockResolvedValue([rowPJ]);
-    const { result } = renderHook(() => useFornecedores());
+    const { result } = renderHook(() => useFornecedores(), { wrapper });
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.fornecedores).toHaveLength(1);
     expect(result.current.fornecedores[0].razaoSocial).toBe('ACME');
@@ -46,7 +53,7 @@ describe('useFornecedores load', () => {
 
   it('toast em erro', async () => {
     svc.fetchFornecedores.mockRejectedValue(new Error('x'));
-    const { result } = renderHook(() => useFornecedores());
+    const { result } = renderHook(() => useFornecedores(), { wrapper });
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(toastFn).toHaveBeenCalledWith(expect.objectContaining({ variant: 'destructive' }));
   });
@@ -55,7 +62,7 @@ describe('useFornecedores load', () => {
 describe('useFornecedores save', () => {
   it('valida e bloqueia insert', async () => {
     svc.fetchFornecedores.mockResolvedValue([]);
-    const { result } = renderHook(() => useFornecedores());
+    const { result } = renderHook(() => useFornecedores(), { wrapper });
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     let ok = true;
@@ -69,7 +76,7 @@ describe('useFornecedores save', () => {
   it('cria PJ válido', async () => {
     svc.fetchFornecedores.mockResolvedValue([]);
     svc.createFornecedor.mockResolvedValue({ id: 'new' });
-    const { result } = renderHook(() => useFornecedores());
+    const { result } = renderHook(() => useFornecedores(), { wrapper });
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     let ok = false;
@@ -87,7 +94,7 @@ describe('useFornecedores save', () => {
   it('atualiza existente', async () => {
     svc.fetchFornecedores.mockResolvedValue([]);
     svc.updateFornecedor.mockResolvedValue({ id: 'f1' });
-    const { result } = renderHook(() => useFornecedores());
+    const { result } = renderHook(() => useFornecedores(), { wrapper });
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     await act(async () => {
@@ -104,7 +111,7 @@ describe('useFornecedores save', () => {
   it('propaga erro do service', async () => {
     svc.fetchFornecedores.mockResolvedValue([]);
     svc.createFornecedor.mockRejectedValue({ code: '23505', message: 'dup cnpj' });
-    const { result } = renderHook(() => useFornecedores());
+    const { result } = renderHook(() => useFornecedores(), { wrapper });
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     let ok = true;
@@ -123,7 +130,7 @@ describe('useFornecedores save', () => {
 describe('useFornecedores delete', () => {
   it('rejeita id vazio', async () => {
     svc.fetchFornecedores.mockResolvedValue([]);
-    const { result } = renderHook(() => useFornecedores());
+    const { result } = renderHook(() => useFornecedores(), { wrapper });
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     let ok = true;
@@ -137,7 +144,7 @@ describe('useFornecedores delete', () => {
   it('exclui com sucesso', async () => {
     svc.fetchFornecedores.mockResolvedValue([]);
     svc.deleteFornecedor.mockResolvedValue(undefined);
-    const { result } = renderHook(() => useFornecedores());
+    const { result } = renderHook(() => useFornecedores(), { wrapper });
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     let ok = false;
@@ -151,7 +158,7 @@ describe('useFornecedores delete', () => {
   it('propaga erro', async () => {
     svc.fetchFornecedores.mockResolvedValue([]);
     svc.deleteFornecedor.mockRejectedValue(new Error('FK'));
-    const { result } = renderHook(() => useFornecedores());
+    const { result } = renderHook(() => useFornecedores(), { wrapper });
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     let ok = true;

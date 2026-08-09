@@ -1,66 +1,52 @@
 
-import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Colaborador } from '@/types/rh';
 import { colaboradorService } from '@/services/colaboradorService';
 import { rhUtils } from '@/utils/rhUtils';
 import { useToast } from '@/hooks/use-toast';
 
+const QUERY_KEY = 'colaboradores';
+
 export const useColaboradores = () => {
-  const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const loadColaboradores = async () => {
-    setLoading(true);
-    try {
+  const { data: colaboradores = [], isLoading: loading } = useQuery({
+    queryKey: [QUERY_KEY],
+    queryFn: async () => {
       const data = await colaboradorService.fetchColaboradores();
-      const colaboradoresFormatados = (data as any[]).map(rhUtils.transformSupabaseToColaborador);
-      setColaboradores(colaboradoresFormatados);
-    } catch (error) {
-      console.error('[RH] Erro ao carregar colaboradores:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar os colaboradores.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+      return (data as any[]).map(rhUtils.transformSupabaseToColaborador);
+    },
+  });
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
 
   const saveColaborador = async (colaboradorData: Colaborador) => {
-    setLoading(true);
-    try {
-      // Validar dados antes de salvar
-      const validation = rhUtils.validateColaboradorData(colaboradorData);
-      if (!validation.isValid) {
-        toast({
-          title: "Erro de Validação",
-          description: validation.error,
-          variant: "destructive",
-        });
-        setLoading(false);
-        return false;
-      }
+    const validation = rhUtils.validateColaboradorData(colaboradorData);
+    if (!validation.isValid) {
+      toast({
+        title: "Erro de Validação",
+        description: validation.error,
+        variant: "destructive",
+      });
+      return false;
+    }
 
+    try {
       if (colaboradorData.id) {
-        // Atualizar colaborador existente
         await colaboradorService.updateColaborador(colaboradorData.id, colaboradorData);
         toast({
           title: "Sucesso",
           description: "Colaborador atualizado com sucesso!",
         });
       } else {
-        // Criar novo colaborador
         await colaboradorService.createColaborador(colaboradorData);
         toast({
           title: "Sucesso",
           description: "Colaborador criado com sucesso!",
         });
       }
-
-      // Recarregar lista
-      await loadColaboradores();
+      await invalidate();
       return true;
     } catch (error) {
       console.error('[RH] Erro ao salvar colaborador:', error);
@@ -70,8 +56,6 @@ export const useColaboradores = () => {
         variant: "destructive",
       });
       return false;
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -85,10 +69,9 @@ export const useColaboradores = () => {
       return false;
     }
 
-    setLoading(true);
     try {
       await colaboradorService.deleteColaborador(id);
-      await loadColaboradores();
+      await invalidate();
       toast({
         title: "Sucesso",
         description: "Colaborador excluído com sucesso!",
@@ -102,20 +85,14 @@ export const useColaboradores = () => {
         variant: "destructive",
       });
       return false;
-    } finally {
-      setLoading(false);
     }
   };
-
-  useEffect(() => {
-    loadColaboradores();
-  }, []);
 
   return {
     colaboradores,
     loading,
     saveColaborador,
     deleteColaborador,
-    refetch: loadColaboradores
+    refetch: invalidate
   };
 };

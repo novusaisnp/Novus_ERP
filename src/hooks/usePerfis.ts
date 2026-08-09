@@ -1,17 +1,30 @@
 
-import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Perfil } from '@/types/empresa';
 
+const QUERY_KEY = 'perfis';
+
+const transformSupabaseToPerfil = (item: any): Perfil => ({
+  id: item.id,
+  nome: item.nome,
+  codigo: item.codigo,
+  descricao: item.descricao || '',
+  permissoes: Array.isArray(item.permissoes) ? (item.permissoes as string[]) : [],
+  ativo: item.ativo || false,
+  sistema: item.sistema || false,
+  createdAt: new Date(item.created_at),
+  updatedAt: new Date(item.updated_at)
+});
+
 export const usePerfis = () => {
-  const [perfis, setPerfis] = useState<Perfil[]>([]);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const loadPerfis = async () => {
-    setLoading(true);
-    try {
+  const { data: perfis = [], isLoading: loading } = useQuery({
+    queryKey: [QUERY_KEY],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('perfis_acesso')
         .select('*')
@@ -19,44 +32,15 @@ export const usePerfis = () => {
 
       if (error) {
         console.error('Erro ao carregar perfis:', error);
-        toast({
-          title: "Erro ao carregar",
-          description: "Não foi possível carregar os perfis.",
-          variant: "destructive"
-        });
-        return;
+        throw error;
       }
+      return (data || []).map(transformSupabaseToPerfil);
+    },
+  });
 
-      if (data) {
-        const perfisFormatados = data.map((item) => ({
-          id: item.id,
-          nome: item.nome,
-          codigo: item.codigo,
-          descricao: item.descricao || '',
-          permissoes: Array.isArray(item.permissoes) 
-            ? (item.permissoes as string[])
-            : [],
-          ativo: item.ativo || false,
-          sistema: item.sistema || false,
-          createdAt: new Date(item.created_at),
-          updatedAt: new Date(item.updated_at)
-        }));
-        setPerfis(perfisFormatados);
-      }
-    } catch (error) {
-      console.error('Erro ao carregar perfis:', error);
-      toast({
-        title: "Erro",
-        description: "Erro inesperado ao carregar os dados.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
 
   const savePerfil = async (perfilData: Perfil) => {
-    setLoading(true);
     try {
       const dataToSave = {
         nome: perfilData.nome,
@@ -83,22 +67,14 @@ export const usePerfis = () => {
 
       if (result.error) {
         console.error('Erro ao salvar perfil:', result.error);
-        toast({
-          title: "Erro ao salvar",
-          description: "Não foi possível salvar os dados do perfil.",
-          variant: "destructive"
-        });
-        return false;
+        throw result.error;
       }
 
-      // Recarregar lista
-      await loadPerfis();
-
+      await invalidate();
       toast({
         title: "Sucesso",
         description: perfilData.id ? "Perfil atualizado com sucesso!" : "Perfil criado com sucesso!",
       });
-
       return true;
     } catch (error) {
       console.error('Erro ao salvar perfil:', error);
@@ -108,13 +84,10 @@ export const usePerfis = () => {
         variant: "destructive"
       });
       return false;
-    } finally {
-      setLoading(false);
     }
   };
 
   const deletePerfil = async (id: string) => {
-    setLoading(true);
     try {
       const { error } = await supabase
         .from('perfis_acesso')
@@ -123,22 +96,14 @@ export const usePerfis = () => {
 
       if (error) {
         console.error('Erro ao excluir perfil:', error);
-        toast({
-          title: "Erro ao excluir",
-          description: "Não foi possível excluir o perfil.",
-          variant: "destructive"
-        });
-        return false;
+        throw error;
       }
 
-      // Recarregar lista
-      await loadPerfis();
-
+      await invalidate();
       toast({
         title: "Sucesso",
         description: "Perfil excluído com sucesso!",
       });
-
       return true;
     } catch (error) {
       console.error('Erro ao excluir perfil:', error);
@@ -148,20 +113,14 @@ export const usePerfis = () => {
         variant: "destructive"
       });
       return false;
-    } finally {
-      setLoading(false);
     }
   };
-
-  useEffect(() => {
-    loadPerfis();
-  }, []);
 
   return {
     perfis,
     loading,
     savePerfil,
     deletePerfil,
-    refetch: loadPerfis
+    refetch: invalidate
   };
 };

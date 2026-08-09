@@ -1,14 +1,36 @@
 
-import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Fornecedor } from '@/types/fornecedor';
 import { fornecedorService } from '@/services/fornecedorService';
 import { fornecedorUtils } from '@/utils/fornecedorUtils';
 import { useToast } from '@/hooks/use-toast';
 
+const QUERY_KEY = 'fornecedores';
+
 export const useFornecedores = () => {
-  const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  const { data: fornecedores = [], isLoading: loading } = useQuery({
+    queryKey: [QUERY_KEY],
+    queryFn: async () => {
+      try {
+        const data = await fornecedorService.fetchFornecedores();
+        return data.map(fornecedorUtils.transformSupabaseToFornecedor);
+      } catch (error) {
+        console.error('[useFornecedores] Erro ao carregar fornecedores:', error);
+        const errorMessage = fornecedorUtils.getErrorMessage(error);
+        toast({
+          title: "Erro",
+          description: errorMessage || "Erro inesperado ao carregar os fornecedores.",
+          variant: "destructive"
+        });
+        throw error;
+      }
+    },
+  });
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
 
   const handleError = (error: any, defaultMessage: string) => {
     console.error('[useFornecedores] Erro:', error);
@@ -27,38 +49,18 @@ export const useFornecedores = () => {
     });
   };
 
-  const loadFornecedores = async () => {
-    setLoading(true);
-    try {
-      console.log('[useFornecedores] Carregando fornecedores...');
-      const data = await fornecedorService.fetchFornecedores();
-      const fornecedoresFormatados = data.map(fornecedorUtils.transformSupabaseToFornecedor);
-      console.log('[useFornecedores] Fornecedores carregados:', fornecedoresFormatados.length);
-      setFornecedores(fornecedoresFormatados);
-    } catch (error) {
-      handleError(error, "Erro inesperado ao carregar os fornecedores.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const saveFornecedor = async (fornecedorData: Fornecedor) => {
-    setLoading(true);
-    try {
-      console.log('[useFornecedores] Salvando fornecedor:', fornecedorData.tipo_pessoa, fornecedorData.id ? 'UPDATE' : 'CREATE');
-      
-      const validation = fornecedorUtils.validateFornecedor(fornecedorData);
-      if (!validation.isValid) {
-        console.log('[useFornecedores] Validação falhou:', validation.error);
-        toast({
-          title: "Erro de validação",
-          description: validation.error!,
-          variant: "destructive"
-        });
-        setLoading(false);
-        return false;
-      }
+    const validation = fornecedorUtils.validateFornecedor(fornecedorData);
+    if (!validation.isValid) {
+      toast({
+        title: "Erro de validação",
+        description: validation.error!,
+        variant: "destructive"
+      });
+      return false;
+    }
 
+    try {
       if (fornecedorData.id) {
         await fornecedorService.updateFornecedor(fornecedorData.id, fornecedorData);
         handleSuccess("Fornecedor atualizado com sucesso!");
@@ -66,14 +68,11 @@ export const useFornecedores = () => {
         await fornecedorService.createFornecedor(fornecedorData);
         handleSuccess("Fornecedor criado com sucesso!");
       }
-
-      await loadFornecedores();
+      await invalidate();
       return true;
     } catch (error) {
       handleError(error, "Erro inesperado ao salvar os dados.");
       return false;
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -88,9 +87,8 @@ export const useFornecedores = () => {
     }
 
     try {
-      console.log('[useFornecedores] Excluindo fornecedor:', id);
       await fornecedorService.deleteFornecedor(id);
-      await loadFornecedores();
+      await invalidate();
       handleSuccess("Fornecedor excluído com sucesso!");
       return true;
     } catch (error) {
@@ -99,15 +97,11 @@ export const useFornecedores = () => {
     }
   };
 
-  useEffect(() => {
-    loadFornecedores();
-  }, []);
-
   return {
     fornecedores,
     loading,
     saveFornecedor,
     deleteFornecedor,
-    refetch: loadFornecedores
+    refetch: invalidate
   };
 };

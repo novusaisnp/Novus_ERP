@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React from 'react';
 
 const { toastFn } = vi.hoisted(() => ({ toastFn: vi.fn() }));
 vi.mock('@/hooks/use-toast', () => ({
@@ -18,6 +20,11 @@ vi.mock('@/services/clienteService', () => ({
 
 import { useClientes } from './useClientes';
 import { clienteService } from '@/services/clienteService';
+
+const wrapper = ({ children }: { children: React.ReactNode }) => {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return React.createElement(QueryClientProvider, { client: qc }, children);
+};
 
 const svc = clienteService as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
@@ -40,7 +47,7 @@ beforeEach(() => {
 describe('useClientes.loadClientes', () => {
   it('carrega e transforma clientes', async () => {
     svc.fetchClientes.mockResolvedValue([supabaseRow]);
-    const { result } = renderHook(() => useClientes('empresa-1'));
+    const { result } = renderHook(() => useClientes('empresa-1'), { wrapper });
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.clientes).toHaveLength(1);
     expect(result.current.clientes[0].nome).toBe('ACME');
@@ -49,7 +56,7 @@ describe('useClientes.loadClientes', () => {
 
   it('exibe toast de erro em falha', async () => {
     svc.fetchClientes.mockRejectedValue(new Error('boom'));
-    const { result } = renderHook(() => useClientes('empresa-1'));
+    const { result } = renderHook(() => useClientes('empresa-1'), { wrapper });
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(toastFn).toHaveBeenCalledWith(expect.objectContaining({ variant: 'destructive' }));
   });
@@ -58,7 +65,7 @@ describe('useClientes.loadClientes', () => {
 describe('useClientes.saveCliente', () => {
   it('bloqueia insert quando validação falha', async () => {
     svc.fetchClientes.mockResolvedValue([]);
-    const { result } = renderHook(() => useClientes('empresa-1'));
+    const { result } = renderHook(() => useClientes('empresa-1'), { wrapper });
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     let ok = true;
@@ -73,7 +80,7 @@ describe('useClientes.saveCliente', () => {
   it('cria cliente novo e recarrega', async () => {
     svc.fetchClientes.mockResolvedValue([]);
     svc.createCliente.mockResolvedValue({ id: 'new' });
-    const { result } = renderHook(() => useClientes('empresa-1'));
+    const { result } = renderHook(() => useClientes('empresa-1'), { wrapper });
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     let ok = false;
@@ -93,7 +100,7 @@ describe('useClientes.saveCliente', () => {
   it('atualiza cliente existente', async () => {
     svc.fetchClientes.mockResolvedValue([]);
     svc.updateCliente.mockResolvedValue({ id: 'c1' });
-    const { result } = renderHook(() => useClientes('empresa-1'));
+    const { result } = renderHook(() => useClientes('empresa-1'), { wrapper });
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     let ok = false;
@@ -113,7 +120,7 @@ describe('useClientes.saveCliente', () => {
   it('propaga erro do service com toast', async () => {
     svc.fetchClientes.mockResolvedValue([]);
     svc.createCliente.mockRejectedValue({ code: '23505' });
-    const { result } = renderHook(() => useClientes('empresa-1'));
+    const { result } = renderHook(() => useClientes('empresa-1'), { wrapper });
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     let ok = true;
@@ -133,7 +140,7 @@ describe('useClientes.saveCliente', () => {
 describe('useClientes.deleteCliente', () => {
   it('valida id vazio', async () => {
     svc.fetchClientes.mockResolvedValue([]);
-    const { result } = renderHook(() => useClientes('empresa-1'));
+    const { result } = renderHook(() => useClientes('empresa-1'), { wrapper });
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     let ok = true;
@@ -147,7 +154,7 @@ describe('useClientes.deleteCliente', () => {
   it('exclui e recarrega', async () => {
     svc.fetchClientes.mockResolvedValue([]);
     svc.deleteCliente.mockResolvedValue(undefined);
-    const { result } = renderHook(() => useClientes('empresa-1'));
+    const { result } = renderHook(() => useClientes('empresa-1'), { wrapper });
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     let ok = false;
@@ -162,7 +169,7 @@ describe('useClientes.deleteCliente', () => {
   it('propaga erro do service', async () => {
     svc.fetchClientes.mockResolvedValue([]);
     svc.deleteCliente.mockRejectedValue(new Error('FK'));
-    const { result } = renderHook(() => useClientes('empresa-1'));
+    const { result } = renderHook(() => useClientes('empresa-1'), { wrapper });
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     let ok = true;

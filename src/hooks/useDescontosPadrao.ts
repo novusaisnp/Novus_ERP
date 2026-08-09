@@ -1,90 +1,11 @@
 
-import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { DescontoPadrao } from '@/types/rh';
 import { descontoPadraoService } from '@/services/descontoPadraoService';
 import { useToast } from '@/hooks/use-toast';
 
-export const useDescontosPadrao = () => {
-  const [descontos, setDescontos] = useState<DescontoPadrao[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+const QUERY_KEY = 'descontos-padrao';
 
-  const loadDescontos = async () => {
-    try {
-      console.log('[DescontosPadrao] Hook - Carregando descontos...');
-      setLoading(true);
-      const data = await descontoPadraoService.fetchDescontos();
-      const transformedData = data.map(transformSupabaseToDescontoPadrao);
-      setDescontos(transformedData);
-      console.log('[DescontosPadrao] Hook - Descontos carregados:', transformedData.length);
-    } catch (error) {
-      console.error('[DescontosPadrao] Hook - Erro ao carregar descontos:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar os descontos padrão.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const saveDesconto = async (desconto: DescontoPadrao): Promise<boolean> => {
-    try {
-      console.log('[DescontosPadrao] Hook - Salvando desconto:', desconto.codigo);
-      
-      if (desconto.id) {
-        await descontoPadraoService.updateDesconto(desconto.id, desconto);
-      } else {
-        await descontoPadraoService.createDesconto(desconto);
-      }
-      
-      await loadDescontos();
-      return true;
-    } catch (error) {
-      console.error('[DescontosPadrao] Hook - Erro ao salvar desconto:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível salvar o desconto padrão.",
-        variant: "destructive",
-      });
-      return false;
-    }
-  };
-
-  const deleteDesconto = async (id: string): Promise<void> => {
-    try {
-      console.log('[DescontosPadrao] Hook - Excluindo desconto:', id);
-      await descontoPadraoService.deleteDesconto(id);
-      await loadDescontos();
-      toast({
-        title: "Sucesso",
-        description: "Desconto padrão excluído com sucesso!",
-      });
-    } catch (error) {
-      console.error('[DescontosPadrao] Hook - Erro ao excluir desconto:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível excluir o desconto padrão.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  useEffect(() => {
-    loadDescontos();
-  }, []);
-
-  return {
-    descontos,
-    loading,
-    saveDesconto,
-    deleteDesconto,
-    reloadDescontos: loadDescontos
-  };
-};
-
-// Função de transformação dos dados do Supabase
 const transformSupabaseToDescontoPadrao = (data: any): DescontoPadrao => {
   return {
     id: data.id,
@@ -97,5 +18,66 @@ const transformSupabaseToDescontoPadrao = (data: any): DescontoPadrao => {
     ativo: data.ativo,
     createdAt: data.created_at ? new Date(data.created_at) : undefined,
     updatedAt: data.updated_at ? new Date(data.updated_at) : undefined,
+  };
+};
+
+export const useDescontosPadrao = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const { data: descontos = [], isLoading: loading } = useQuery({
+    queryKey: [QUERY_KEY],
+    queryFn: async () => {
+      const data = await descontoPadraoService.fetchDescontos();
+      return data.map(transformSupabaseToDescontoPadrao);
+    },
+  });
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
+
+  const saveDesconto = async (desconto: DescontoPadrao): Promise<boolean> => {
+    try {
+      if (desconto.id) {
+        await descontoPadraoService.updateDesconto(desconto.id, desconto);
+      } else {
+        await descontoPadraoService.createDesconto(desconto);
+      }
+      await invalidate();
+      return true;
+    } catch (error) {
+      console.error('[DescontosPadrao] Erro ao salvar desconto:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar o desconto padrão.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
+  const deleteDesconto = async (id: string): Promise<void> => {
+    try {
+      await descontoPadraoService.deleteDesconto(id);
+      await invalidate();
+      toast({
+        title: "Sucesso",
+        description: "Desconto padrão excluído com sucesso!",
+      });
+    } catch (error) {
+      console.error('[DescontosPadrao] Erro ao excluir desconto:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível excluir o desconto padrão.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return {
+    descontos,
+    loading,
+    saveDesconto,
+    deleteDesconto,
+    refetch: invalidate
   };
 };
