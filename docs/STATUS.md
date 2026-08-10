@@ -1,11 +1,56 @@
 # Status do projeto — NOVUS ERP
 
-**Última atualização: 2026-08-10 (vazamento de dado entre empresas fechado — ~40 funções de
-leitura em 17 arquivos, `novus_owner` agora vê só a empresa ativa em toda tela, não mais a soma de
-tudo que a RLS libera).**
+**Última atualização: 2026-08-10 (sidebar mobile aditiva — hamburger+Sheet, desktop intocado).**
 Este arquivo deve ser atualizado ao final de cada sessão de trabalho relevante — se estiver desatualizado, ele
 apodrece como `SYSTEM_AUDIT.md`/`ARVORE_PROJETO.md` já apodreceram. Leia primeiro [`../CLAUDE.md`](../CLAUDE.md)
 para contexto de padrões estáveis; este arquivo é sobre o que está pendente **agora**.
+
+## 🔖 Checkpoint de sessão (2026-08-10 — responsividade mobile, aditiva)
+
+**Contexto**: usuário pediu melhoria de acesso mobile (emergência, não
+experiência principal) pro ERP e pro Educacional na mesma sessão — ver
+`novus-ai-educacional-54/docs/STATUS.md` mesma data pro lado de lá.
+Restrição dura: nada que arrisque quebrar/regredir o desktop.
+
+Achado antes de mexer: a crença de que "o ERP já tá bem adaptado" só era
+parcialmente verdadeira — formulários/diálogos/tabelas já respondiam bem
+(`grid-cols-1 md:grid-cols-2`, `sm:max-w-[...]`, scroll horizontal nativo do
+`<Table>`), mas o **shell principal não tinha nenhum caminho mobile**:
+`AppSidebar.tsx` era uma única `<div>` fixa que só expandia no
+`onMouseEnter` — em touch (sem hover) a navegação ficava permanentemente
+travada em ícone-só, tecnicamente clicável mas ruim. Existia um sistema
+`Sheet`/`useIsMobile` (shadcn padrão) já pronto em `src/components/ui/sidebar/`
+mas nunca usado pelo shell real.
+
+1. **`AppSidebar.tsx`**: ganhou ramo `isMobile` (via `useIsMobile()`, já
+   existia, nunca fora usado) que renderiza `Sheet`/`SheetContent` com os
+   mesmos itens (`SidebarMenuItem`/`SidebarMenuGroup`, reaproveitados —
+   conteúdo extraído pra `renderNavItems()` compartilhado entre as duas
+   variantes). Caminho desktop (`isHovered` fixed rail) **não foi tocado**,
+   só passou a viver dentro de um `if`.
+2. **`AppLayout.tsx`**: `ml-64`/`ml-16` ganharam prefixo `md:` (sem margem
+   fora de `md` — a sidebar deixa de ocupar espaço em fluxo quando é
+   `Sheet`/overlay). Novo estado `mobileMenuOpen` levantado, repassado pra
+   `AppSidebar` e `AppHeader` (mesmo padrão já usado pra
+   `sidebarExpanded`/`onExpandedChange`).
+3. **`AppHeader.tsx`**: botão hamburger novo (`md:hidden`) à esquerda; bloco
+   central "empresa ativa" (3º de 3 `flex-1`) escondido abaixo de `sm`
+   (`hidden sm:flex`) — evita espremer tudo em ~375px, informação já visível
+   em outros lugares do app.
+
+**Não mexido, deliberado**: sistema completo `Sidebar`/`SidebarInset`
+(`src/components/ui/sidebar/sidebar.tsx`) — outro modelo de largura/colapso
+(CSS vars + `peer` selectors), migrar pra ele exigiria reescrever o desktop
+também, risco alto pro que a sessão proibia mexer.
+
+**Verificação**: `npm run typecheck`/`test` (361/361)/`build` limpos.
+Testado ao vivo via Claude in Chrome com técnica de iframe injetado
+(viewport 390×844 real) — desktop 1440px pixel-idêntico ao anterior
+(hover-expand confirmado intocado), mobile: hamburger abre `Sheet` com
+navegação completa, grupo expande, item de submenu navega e fecha o
+`Sheet` sozinho, header não estoura, dialog de formulário (`FormCliente`,
+"Novo Fornecedor") full-width coluna única — comportamento que já existia,
+confirmado que não quebrou.
 
 ## 🔖 Checkpoint de sessão (2026-08-10 — vazamento de dado entre empresas fechado, leitura)
 

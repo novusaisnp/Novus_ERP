@@ -11,6 +11,7 @@ console.log('[Layout] Inicializando AppLayout com suporte a temas');
 
 export const AppLayout: React.FC = () => {
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSidebarExpandedChange = (expanded: boolean) => {
     console.log('[Sidebar] Sidebar expandida:', expanded);
@@ -20,14 +21,18 @@ export const AppLayout: React.FC = () => {
   return (
     <SidebarProvider defaultOpen={false}>
       <div className="min-h-screen flex w-full bg-gradient-to-br from-background to-muted/20 transition-colors duration-300">
-        <AppSidebar onExpandedChange={handleSidebarExpandedChange} />
-        <div 
+        <AppSidebar
+          onExpandedChange={handleSidebarExpandedChange}
+          mobileOpen={mobileMenuOpen}
+          onMobileOpenChange={setMobileMenuOpen}
+        />
+        <div
           className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${
-            sidebarExpanded ? 'ml-64' : 'ml-16'
+            sidebarExpanded ? 'md:ml-64' : 'md:ml-16'
           }`}
           style={{ minHeight: '100vh' }}
         >
-          <AppHeader />
+          <AppHeader onMenuClick={() => setMobileMenuOpen(true)} />
           <main className="flex-1 overflow-auto bg-background/50 transition-colors duration-300" style={{ paddingBottom: '80px' }}>
             <div className="pb-4">
               <Outlet />

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Bell } from 'lucide-react';
+import { Bell, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { UserDropdown } from '@/components/layout/header/UserDropdown';
@@ -8,7 +8,11 @@ import { useEmpresaRepresentadaAtual } from '@/hooks/useEmpresaRepresentadaAtual
 import { useEmpresaLogoUrl } from '@/hooks/useEmpresaLogoUrl';
 import { useAuth } from '@/contexts/AuthContext';
 
-export const AppHeader: React.FC = () => {
+interface AppHeaderProps {
+  onMenuClick?: () => void;
+}
+
+export const AppHeader: React.FC<AppHeaderProps> = ({ onMenuClick }) => {
   const { data: empresa, isLoading: loading } = useEmpresaRepresentadaAtual();
   const { user } = useAuth();
   const logoPath = (empresa?.configuracoes as Record<string, string> | null)?.logo_path;
@@ -22,6 +26,16 @@ export const AppHeader: React.FC = () => {
 
   return (
     <header className="h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center px-4 gap-4">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="md:hidden"
+        onClick={onMenuClick}
+        aria-label="Abrir menu"
+      >
+        <Menu className="h-5 w-5" />
+      </Button>
+
       <div className="flex-1 flex items-center gap-3">
         <span className="text-xl font-semibold text-primary">ERP</span>
         <img
@@ -31,8 +45,8 @@ export const AppHeader: React.FC = () => {
         />
       </div>
 
-      {/* Logo/dados da empresa representada ativa (loja/CNPJ atual) - Centralizados */}
-      <div className="flex-1 flex flex-col items-center justify-center">
+      {/* Logo/dados da empresa representada ativa (loja/CNPJ atual) - Centralizados, escondido em telas estreitas pra caber o menu+ações */}
+      <div className="hidden sm:flex flex-1 flex-col items-center justify-center">
         {logoUrl ? (
           <div className="bg-white rounded-md px-3 py-1.5">
             <img
