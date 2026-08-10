@@ -78,3 +78,4 @@ gap de isolamento, corrija assim que identificado — não adie para depois.
 
 - Visão de produto e modelo de integração: [`docs/CONTRATOS_CANONICOS_ERP.md`](./docs/CONTRATOS_CANONICOS_ERP.md)
 - Estado atual, pendências e próxima ação crítica: [`docs/STATUS.md`](./docs/STATUS.md)
+- Backlog priorizado e próximos passos (o que falta, não o que já foi feito): [`docs/ROADMAP_2026.md`](./docs/ROADMAP_2026.md)
