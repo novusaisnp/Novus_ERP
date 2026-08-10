@@ -1,9 +1,146 @@
 # Status do projeto — NOVUS ERP
 
-**Última atualização: 2026-08-09 (3 gaps reais de conector fechados: cliente invisível na UI, conector de Contrato instalado, envelope de idempotência).**
+**Última atualização: 2026-08-10 (migrations Centelha aplicadas em produção + reorganização de usuários: dono da marca separado da ALLEGRA).**
 Este arquivo deve ser atualizado ao final de cada sessão de trabalho relevante — se estiver desatualizado, ele
 apodrece como `SYSTEM_AUDIT.md`/`ARVORE_PROJETO.md` já apodreceram. Leia primeiro [`../CLAUDE.md`](../CLAUDE.md)
 para contexto de padrões estáveis; este arquivo é sobre o que está pendente **agora**.
+
+## 🔖 Checkpoint de sessão (2026-08-10 — migrations Centelha deployadas + usuários reorganizados)
+
+**Contexto**: continuação da sessão que construiu a fatia 1 do Centelha (código pronto, migrations
+ainda não aplicadas). Usuário pediu pra arrumar a bagunça de usuários que já existia nos dois
+bancos antes de seguir — dono da marca (`novusaisnp@gmail.com`) estava cadastrado como se fosse
+colaborador/admin da própria ALLEGRA (o cliente real), e 2 contas soltas no ERP sem vínculo
+nenhum. Investigação direta nos dois bancos via `supabase db query` (não é suposição de código).
+
+**As 3 migrations Centelha da sessão anterior foram aplicadas em produção** (`centelha_schema`,
+`add_novus_owner_role`, `has_role_scoped_novus_tables`) — **não via `supabase db push`**: o
+histórico de migrations do CLI está bem mais incompleto do que os arquivos locais (projeto
+nasceu no Lovable, boa parte do schema real nunca foi tracked via CLI), `db push` pedia
+`--include-all` pra reaplicar 70+ migrations antigas contra produção viva — risco alto demais,
+não é o que foi pedido. Aplicado o SQL de cada arquivo novo diretamente via `db query`, na ordem
+certa (schema → enum `novus_owner` em transação própria, já que Postgres não deixa usar um valor
+de enum novo na mesma transação em que foi criado → função + policies). Dois bugs pequenos
+achados só na hora de rodar (não apareciam em revisão estática): `'novus_owner'` e o `NULL` do
+backfill de `user_roles` precisavam de cast explícito (`::app_role`, `::uuid`) — sem isso,
+`INSERT ... SELECT` com literal solto infere `text`, não bate com a coluna. Arquivo
+`20260810120200_has_role_scoped_novus_tables.sql` corrigido no repo pra bater com o que rodou.
+
+**Achado operacional que quase causou erro real**: `supabase link --project-ref X` grava o ref
+em `<cwd>/supabase/.temp/project-ref` — **relativo ao diretório atual**, não é estado global do
+CLI. Rodar `link` a partir do diretório errado troca silenciosamente qual projeto um `db query
+--linked` alcança depois. Aconteceu 2x nesta sessão (uma tentativa de aplicar o schema `centelha`
+foi pro banco do Educacional por engano — falhou alto com erro de FK ausente, sem aplicar nada,
+sem dano). Regra daqui pra frente: **sempre `cd` pro diretório do projeto certo antes de
+`supabase link`**, nunca linkar "de qualquer lugar".
+
+**Reorganização de usuários (ERP)**:
+- `novusaisnp@gmail.com` deixou de ser `colaborador`/`usuario`/`admin` escopado à ALLEGRA — vira
+  `user_roles.role='novus_owner'` (`empresa_representada_id=NULL`, acesso global) +
+  `centelha.owners`. Confirmado por teste funcional de RLS que ele continua enxergando `clientes`
+  de qualquer empresa (ALLEGRA e E2E TEST CO) através da nova `has_role_for_empresa`.
+- `joao@tacto.com.br` e `mara.d_o@hotmail.com` (contas que já existiam soltas, sem nenhum vínculo)
+  ganharam `user_roles.role='admin'` escopado à ALLEGRA. Não ganharam registro em
+  `usuarios`/`colaboradores` — exigiria CPF/nome real que não foi fornecido; regra de nunca
+  fabricar dado de identidade (`CLAUDE.md` raiz) se aplica aqui também.
+- "E2E TEST CO" (`empresas_representadas`) confirmado como fixture viva de
+  `e2e/fixtures/db-reset.ts`/`e2e-reset` — não é lixo, não foi tocado.
+- Dados `[SEED]`/teste manual dentro da ALLEGRA (6 colaboradores, 8 clientes, mais o resto das 16
+  tabelas mencionadas na sessão que os criou) — **adiado a pedido do usuário**, fica pra depois.
+
+**Reorganização de usuários (Educacional, `novus-ai-educacional-54`)**: só existia 1 usuário no
+banco inteiro, mas 4 `organizations` — nomes enganavam. A chamada "Allegra Centro Educacional"
+(`0f07e009-...`) estava **vazia**; quem tinha dado real (guardians, students, enrollments,
+documents, audit_logs, `erp_integration_config` já corretamente apontado pra ALLEGRA de
+verdade) era uma organização mal-nomeada "NOVUS.AI - Escola Teste" (`68860f6a-...`). Migrado
+tudo (17 tabelas com linha real, um por um `UPDATE organization_id`) para o id correto
+(`0f07e009-...`), as outras 3 organizations apagadas. `novusaisnp@gmail.com` ficou sem
+`profiles` no Educacional — coerente com o modelo Centelha (dono da marca não é admin de
+organização de cliente nenhuma). `erp_integration_config`/`financial_transactions` não têm FK
+formal pra `organizations` (só `organization_id uuid`, sem `REFERENCES`) — não cascadeiam
+sozinhos, precisou de `DELETE` explícito antes de apagar as organizations.
+
+**Verificação**: `user_roles` final conferido por query direta; `usuarios`/`colaboradores` do
+dono confirmados removidos (`count=0`); `centelha.owners` populado; RLS testado de verdade via
+`SET LOCAL role=authenticated + request.jwt.claims` simulando o `user_id` do dono — leu
+`clientes` de mais de uma empresa, confirmando `novus_owner` funcionando. Lado Educacional:
+`organizations` com 1 linha só, `profiles` do dono vazio.
+
+**Gaps conscientes**: dados `[SEED]` da ALLEGRA no ERP continuam lá (adiado, ver acima). Contas
+`joao@tacto.com.br`/`mara.d_o@hotmail.com` têm acesso admin completo à ALLEGRA sem registro de
+colaborador — se precisarem passar pelo gate `colaborador-preflight` do lado satélite algum dia,
+falta CPF/nome real. Restante do checklist de deploy do Centelha (Dashboard "Exposed schemas"
+incluir `centelha`, seed de `empresas_representadas`/`centelha.satelites` pra NOVUS AI e
+Educacional, secrets `CENTELHA_PROVISION_SECRET`/`ERP_BASE_URL`, deploy das 2 edge functions
+novas) continua pendente — ver checkpoint anterior.
+
+## 🔖 Checkpoint de sessão (2026-08-10 — NovusAI Centelha fatia 1: licença + provisionamento)
+
+**Contexto**: usuário quer um controle central de clientes/licenças da marca NOVUS (nome: Centelha),
+gerenciando quais clientes usam quais ferramentas (ERP, Educacional, e satélites futuros: PDV, Clínica,
+Mercado...) e como o primeiro admin de cada cliente entra no sistema. Plano completo em
+`~/.claude/plans/estive-pensando-muito-sobre-sleepy-zephyr.md`. Investigação confirmou que o motor de
+cobrança comercial (`contratos`/`contas_receber` + trigger de recorrência) já existia pronto — não foi
+reconstruído, só reaproveitado com a NOVUS como uma `empresa_representada` normal deste mesmo ERP.
+
+**Construído nesta sessão (código completo, ver §Pendências pra produção funcionar de verdade)**:
+1. **Schema `centelha` isolado** (`20260810120000_centelha_schema.sql`): tabelas `owners`/`satelites`/
+   `licencas`, `REVOKE ALL ... FROM PUBLIC` explícito (Postgres dá USAGE a PUBLIC por padrão em schema
+   novo — sem o revoke o isolamento não vale nada), RLS habilitado sem nenhuma policy (nega tudo a
+   `authenticated`/`anon`), só `service_role` tem grant. `supabase/config.toml` ganhou `[api] schemas`
+   incluindo `centelha` — **isso só vale pro CLI local; no projeto hospedado, o Dashboard (Settings > API
+   > Exposed schemas) precisa ser atualizado manualmente pra bater**, senão as próprias edge functions não
+   conseguem `.schema('centelha').from(...)`.
+2. **`has_role` escopado, só em 3 tabelas** (`20260810120100_add_novus_owner_role.sql` +
+   `20260810120200_has_role_scoped_novus_tables.sql`): `has_role(uid,'admin')` ignora
+   `empresa_representada_id` em ~158 policies do schema inteiro (padrão intencional — um operador só
+   gerencia várias empresas representadas). Isso vira um vazamento real só nas 3 tabelas que passam a
+   hospedar dado comercial da própria NOVUS (`clientes`/`contratos`/`contas_receber`) — corrigido só
+   nelas via nova função `has_role_for_empresa` + role `novus_owner` (migra automaticamente quem hoje é
+   admin global). **As outras ~146 policies continuam exatamente como estavam, decisão deliberada, não
+   esquecimento** — não confundir com bug se reaparecer em auditoria futura.
+3. **Porta 0 — Provisionamento** (nova, documentada em `docs/CONTRATOS_CANONICOS_ERP.md` §2): direção
+   inversa das 3 portas existentes (NOVUS → satélite, não satélite → NOVUS). Edge function
+   `centelha-provisiona-cliente` (ERP, exige `has_role(uid,'novus_owner')`) busca o satélite alvo em
+   `centelha.satelites` por `codigo` e chama `centelha-provisiona-organizacao` no satélite (HMAC, segredo
+   por-satélite, não por-empresa). Genérico de propósito — satélite futuro (PDV/Clínica/Mercado) só
+   precisa implementar esse endpoint + 1 linha em `centelha.satelites`, zero mudança do lado ERP.
+4. **Lado Educacional implementado** (`supabase/functions/centelha-provisiona-organizacao`): recebe o
+   provisionamento, cria `organizations` + `erp_integration_config` (já resolvendo
+   `empresa_representada_id` vindo do ERP) + convida o admin por `inviteUserByEmail` + `profiles`.
+   Autentica por segredo global (`CENTELHA_PROVISION_SECRET`), não por config por-organização — essa
+   ainda não existe nesse ponto, é este endpoint quem a cria. Mesmo padrão assimétrico que já existia
+   entre outbound (`erp_integration_config`, por-org) e inbound (`edu-erp-webhook`, env var global).
+5. **Signup aberto fechado (Educacional)**: `onboarding-create-org` (deixava qualquer signup criar
+   organização e virar admin sozinho, sem convite nem verificação) deletado, junto com
+   `src/pages/app/onboarding.tsx` e a rota `/app/onboarding`. Dashboard com `orgId` nulo agora mostra
+   "aguarde convite do administrador" em vez de botão de autocriação. `register.tsx` (signup de conta,
+   sem org) continua aberto de propósito — inofensivo, usuário só cai no estado vazio acima.
+
+**Pendências pra produção funcionar de verdade (nada disso é código, é operação manual)**:
+- Aplicar as 2 migrations novas no projeto `reksodqzemboaeqxnxyy` (`supabase db push` ou equivalente).
+- Atualizar "Exposed schemas" no Dashboard do projeto (incluir `centelha`) — `config.toml` não propaga
+  isso sozinho pra projeto hospedado.
+- Seed manual: seu `user_id` em `centelha.owners`; conferir que a migration te moveu pra `novus_owner`
+  (`SELECT * FROM user_roles WHERE role='novus_owner'`); `INSERT empresas_representadas` pra NOVUS AI;
+  `INSERT centelha.satelites` pro Educacional (`codigo='educacional'`, `base_url` real, secret gerado).
+- Configurar `CENTELHA_PROVISION_SECRET` (mesmo valor do `provisioning_secret` acima) e `ERP_BASE_URL`
+  como secrets da function no projeto `ixnpotaccbpcbritxlud` (`supabase secrets set`).
+- Deploy manual das 2 novas edge functions nos dois projetos (`supabase functions deploy
+  centelha-provisiona-cliente` / `centelha-provisiona-organizacao`) — nenhuma delas sobe sozinha no
+  `git push`, mesmo ponto cego já documentado pro resto do repo.
+- Teste ponta a ponta ainda não rodado contra produção (só typecheck/test local, que não cobre edge
+  functions — ver Verificação abaixo).
+
+**Fora de escopo desta fatia, deliberado**: tela de gestão do Centelha (operação por SQL/Studio +
+chamada direta à function por enquanto); contrato automático via landing page; suspender licença
+bloqueando acesso de fato no satélite (hoje `licencas.status` é só registro, nenhum satélite consulta
+antes de logar — preflight de licença é fatia futura, mesmo padrão de `colaborador-preflight`).
+
+**Verificação**: `npm run typecheck && npm run test -- --run` no ERP (361/361 passando) e `bun run
+typecheck && bun run test` no Educacional (47/47 passando) — ambos limpos. Edge functions novas
+(`centelha-provisiona-cliente`, `centelha-provisiona-organizacao`) não cobertas por nenhum dos dois,
+mesmo ponto cego de sempre — revisadas manualmente, não testadas ao vivo ainda.
 
 ## 🔖 Checkpoint de sessão (2026-08-09 — 3 gaps de conector ERP↔satélite fechados)
 

@@ -9,9 +9,12 @@ O NOVUS ERP funciona como um **hub SaaS único**: o núcleo profissional que cen
 
 Este documento formaliza essa linguagem universal: os **contratos canônicos** de cada entidade core, o **envelope de rastreabilidade** que identifica a origem de cada registro, o **padrão de pré-checagem/autorização** para a via de mão dupla, e o **escopo** de negócios que o NOVUS pretende atender.
 
-## 2. As três portas de integração
+## 2. As portas de integração
 
-Um satélite não troca dados com o NOVUS de uma forma só. Existem três portas, com naturezas diferentes:
+Um satélite não troca dados com o NOVUS de uma forma só. Existem quatro portas, com naturezas diferentes:
+
+### Porta 0 — Provisionamento (push, NOVUS Centelha → satélite)
+A única porta na direção inversa das outras três: o NOVUS (via Centelha, o controle de licenciamento de clientes) cria o tenant no satélite, não o satélite que se anuncia ao NOVUS. Acontece uma vez, quando um cliente novo assina — nunca em signup aberto. Contrato genérico, igual para qualquer satélite: o satélite expõe um endpoint `centelha-provisiona-organizacao` que recebe `{organization_name, empresa_representada_id, admin_nome, admin_email}` assinado por um segredo global (não por `webhook_configs`/config por-organização, que ainda não existe nesse ponto — é esse endpoint quem os cria), e devolve `{organization_id}`. Cria a organização/tenant local, o vínculo de integração com o ERP (`empresa_representada_id` já resolvido pelo Centelha) e convida o primeiro admin por e-mail. Um satélite novo (PDV, Clínica, Mercado...) ganha provisionamento pelo Centelha implementando só este endpoint — nenhuma mudança do lado NOVUS além de uma linha em `centelha.satelites`. Ver `supabase/functions/centelha-provisiona-cliente` (lado NOVUS) e o equivalente `centelha-provisiona-organizacao` em cada satélite.
 
 ### Porta 1 — Título (push, satélite → NOVUS)
 O documento financeiro em si: descrição, valor, vencimento, forma de pagamento prevista, cliente. **Não importa o fator gerador** — uma mensalidade escolar, a venda de um uniforme, ou uma parcela de locação de equipamento chegam todas na mesma forma: um título em `contas_receber` (ou `contas_pagar`, no sentido inverso). O "gerador" (Venda, Contrato, ou o conceito que o satélite usa) é metadado opcional pendurado no título via o envelope de rastreabilidade (§3) — nunca um pré-requisito para o título existir. Contrato: `contaReceberCanonicalSchema` (§4).

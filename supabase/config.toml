@@ -1,4 +1,7 @@
 project_id = "reksodqzemboaeqxnxyy"
 
+[api]
+schemas = ["public", "graphql_public", "centelha"]
+
 [functions.job-recorrencias]
 verify_jwt = false
