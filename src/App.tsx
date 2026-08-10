@@ -7,6 +7,8 @@ import { AppLayout } from './components/layout/AppLayout';
 import { Toaster } from './components/ui/toaster';
 import Login from './pages/Login';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { EmpresaGate } from './components/auth/EmpresaGate';
+import SelecionarEmpresa from './pages/auth/SelecionarEmpresa';
 import Dashboard from './pages/Dashboard';
 
 
@@ -120,9 +122,10 @@ function App() {
               <Routes>
                 {/* Public Routes */}
                 <Route path="/login" element={<Login />} />
-                
-                
-                <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+
+                <Route path="/selecionar-empresa" element={<ProtectedRoute><SelecionarEmpresa /></ProtectedRoute>} />
+
+                <Route element={<ProtectedRoute><EmpresaGate><AppLayout /></EmpresaGate></ProtectedRoute>}>
                   {/* Dashboard Route */}
                   <Route index element={<Dashboard />} />
                   

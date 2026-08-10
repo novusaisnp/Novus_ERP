@@ -7,6 +7,7 @@ import type {
   RegraConciliacaoInput,
   SugestaoMatchResult,
 } from "@/types/conciliacao";
+import { getEmpresaAtivaId } from '@/lib/empresaAtiva';
 
 export const conciliacaoService = {
   async listarExtratos(): Promise<ExtratoImportado[]> {
@@ -120,8 +121,7 @@ export const conciliacaoService = {
   },
 
   async criarRegra(input: RegraConciliacaoInput): Promise<RegraConciliacao> {
-    const { data: empresaId, error: empErr } = await supabase.rpc("get_user_empresa_id");
-    if (empErr) throw empErr;
+    const empresaId = await getEmpresaAtivaId();
     if (!empresaId) throw new Error("Usuário sem empresa vinculada.");
     const { data, error } = await supabase
       .from("banco_regras_conciliacao")

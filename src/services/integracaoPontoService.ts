@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
+import { getEmpresaAtivaId } from '@/lib/empresaAtiva';
 
 export interface IntegracaoPonto {
   id: string;
@@ -29,8 +30,7 @@ export const integracaoPontoService = {
   },
 
   async criarIntegracao(input: IntegracaoPontoInput): Promise<void> {
-    const { data: empresaId, error: empresaError } = await supabase.rpc('get_user_empresa_id');
-    if (empresaError) throw empresaError;
+    const empresaId = await getEmpresaAtivaId();
     if (!empresaId) throw new Error('Empresa não encontrada');
 
     const { error } = await supabase

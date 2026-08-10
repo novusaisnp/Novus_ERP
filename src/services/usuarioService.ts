@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { getEmpresaAtivaId as getEmpresaIdAtual } from '@/lib/empresaAtiva';
 
 export interface UsuarioComPessoa {
   id: string;
@@ -38,11 +39,7 @@ export interface NovoUsuarioPendenteInput {
 }
 
 export const usuarioService = {
-  async getEmpresaIdAtual(): Promise<string | null> {
-    const { data, error } = await supabase.rpc('get_user_empresa_id');
-    if (error) throw error;
-    return (data as string | null) ?? null;
-  },
+  getEmpresaIdAtual,
 
   /**
    * Nome cadastrado em public.usuarios para o usuário autenticado — fonte

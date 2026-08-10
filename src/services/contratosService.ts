@@ -1,12 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Contrato, ContratoFiltros } from '@/types/contratos';
-
-
-async function getEmpresaId(): Promise<string> {
-  const { data, error } = await supabase.rpc('get_user_empresa_id');
-  if (error || !data) throw new Error('Empresa do usuário não localizada.');
-  return data as string;
-}
+import { getEmpresaAtivaIdOuFalha as getEmpresaId } from '@/lib/empresaAtiva';
 
 export const contratosService = {
   async list(filtros: ContratoFiltros = {}): Promise<Contrato[]> {

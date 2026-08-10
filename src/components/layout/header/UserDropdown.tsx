@@ -1,8 +1,9 @@
 
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, Settings, User, LogOut } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ChevronDown, Settings, User, LogOut, Building2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { clearEmpresaAtivaId } from '@/lib/empresaAtiva';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +17,13 @@ import { usuarioService } from "@/services/usuarioService";
 export const UserDropdown: React.FC = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const queryClient = useQueryClient();
+
+  const handleTrocarEmpresa = () => {
+    clearEmpresaAtivaId();
+    queryClient.invalidateQueries({ queryKey: ['empresa-representada-atual'] });
+    navigate('/selecionar-empresa');
+  };
 
   const { data: nomeCadastrado } = useQuery({
     queryKey: ['usuario-nome-atual', user?.id],
@@ -74,6 +82,10 @@ export const UserDropdown: React.FC = () => {
         <DropdownMenuItem onClick={() => navigate("/configuracoes/sistema")}>
           <Settings className="mr-2 h-4 w-4" />
           <span>Configurações</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleTrocarEmpresa}>
+          <Building2 className="mr-2 h-4 w-4" />
+          <span>Trocar empresa</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />

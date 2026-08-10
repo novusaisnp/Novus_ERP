@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { CentroCusto, CentroCustoInput, SupabaseCentroCusto } from '@/types/configuracoes';
+import { getEmpresaAtivaIdOuFalha as getEmpresaId } from '@/lib/empresaAtiva';
 
 const transformFromSupabase = (data: SupabaseCentroCusto): CentroCusto => ({
   id: data.id,
@@ -10,18 +11,6 @@ const transformFromSupabase = (data: SupabaseCentroCusto): CentroCusto => ({
   created_at: data.created_at,
   updated_at: data.updated_at,
 });
-
-async function getEmpresaId(): Promise<string> {
-  const { data, error } = await supabase.rpc('get_user_empresa_id');
-  if (error) {
-    console.error('[CentroCusto] Erro ao obter empresa do usuário:', error);
-    throw new Error('Não foi possível identificar a empresa do usuário logado');
-  }
-  if (!data) {
-    throw new Error('Usuário sem empresa vinculada. Configure o vínculo antes de continuar.');
-  }
-  return data as string;
-}
 
 function translateError(error: any, fallback: string): Error {
   const code = error?.code;

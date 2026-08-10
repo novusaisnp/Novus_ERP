@@ -88,12 +88,12 @@ describe('produtoService.criar', () => {
 
   it('lança quando RPC falha', async () => {
     mock.rpc.mockResolvedValueOnce({ data: null, error: { message: 'x' } });
-    await expect(produtoService.criar(produto)).rejects.toThrow(/empresa/);
+    await expect(produtoService.criar(produto)).rejects.toThrow(/Empresa não identificada/i);
   });
 
   it('lança quando usuário sem empresa', async () => {
     mock.rpc.mockResolvedValueOnce({ data: null, error: null });
-    await expect(produtoService.criar(produto)).rejects.toThrow(/sem empresa/);
+    await expect(produtoService.criar(produto)).rejects.toThrow(/Empresa não identificada/i);
   });
 });
 

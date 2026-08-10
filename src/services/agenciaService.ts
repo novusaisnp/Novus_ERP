@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Database, Json } from '@/integrations/supabase/types';
 import { Agencia, AgenciaInput, AgenciaFilters, AgenciaStats } from '@/types/agencia';
+import { getEmpresaAtivaIdOuFalha as getEmpresaIdAtual } from '@/lib/empresaAtiva';
 
 console.log('[AgenciaService] Serviço de agências carregado');
 
@@ -27,13 +28,6 @@ const mapSupabaseAgencia = (data: Record<string, unknown>): Agencia => {
       sigla: bancos.sigla ?? undefined,
     } : undefined,
   };
-};
-
-const getEmpresaIdAtual = async (): Promise<string> => {
-  const { data, error } = await supabase.rpc('get_user_empresa_id');
-  if (error) throw new Error(error.message);
-  if (!data) throw new Error('Empresa não identificada para o usuário atual.');
-  return data;
 };
 
 export const listarAgencias = async (filtros?: AgenciaFilters): Promise<Agencia[]> => {

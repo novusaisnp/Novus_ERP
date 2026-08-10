@@ -6947,6 +6947,16 @@ export type Database = {
           venda_id: string
         }[]
       }
+      get_empresas_disponiveis: {
+        Args: never
+        Returns: {
+          representada_id: string
+          representada_nome: string
+          representada_cnpj: string | null
+          responsavel_id: string | null
+          responsavel_nome: string | null
+        }[]
+      }
       get_user_empresa_id: { Args: never; Returns: string }
       has_permissao: {
         Args: { p_permissao: string; p_user_id: string }

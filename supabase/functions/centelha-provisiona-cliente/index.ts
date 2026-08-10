@@ -34,7 +34,7 @@ async function hmacSha256Hex(rawBody: Uint8Array, secret: string): Promise<strin
 }
 
 interface ProvisionaBody {
-  cliente_id?: string
+  representada_id?: string
   contrato_id?: string
   satelite_codigo?: string
   organization_name?: string
@@ -75,32 +75,45 @@ serve(async (req) => {
     }
 
     const body: ProvisionaBody = await req.json()
-    const { cliente_id, contrato_id, satelite_codigo, organization_name, admin_nome, admin_email } = body
+    const { representada_id, contrato_id, satelite_codigo, organization_name, admin_nome, admin_email } = body
 
-    if (!cliente_id || !contrato_id || !satelite_codigo || !organization_name || !admin_nome || !admin_email) {
+    if (!representada_id || !contrato_id || !satelite_codigo || !organization_name || !admin_nome || !admin_email) {
       return jsonResponse(
-        { error: 'Campos obrigatórios: cliente_id, contrato_id, satelite_codigo, organization_name, admin_nome, admin_email' },
+        { error: 'Campos obrigatórios: representada_id, contrato_id, satelite_codigo, organization_name, admin_nome, admin_email' },
         400
       )
     }
 
-    const { data: cliente, error: clienteError } = await supabase
-      .from('clientes')
-      .select('id, empresa_representada_id')
-      .eq('id', cliente_id)
+    const { data: representada, error: representadaError } = await supabase
+      .from('empresas_representadas')
+      .select('id, responsavel_id')
+      .eq('id', representada_id)
       .maybeSingle()
-    if (clienteError || !cliente) {
-      return jsonResponse({ error: 'Cliente não encontrado' }, 404)
+    if (representadaError || !representada) {
+      return jsonResponse({ error: 'Empresa representada não encontrada' }, 404)
+    }
+    if (!representada.responsavel_id) {
+      return jsonResponse({ error: 'Empresa representada sem responsável vinculado — não pode ser provisionada' }, 409)
+    }
+
+    const { data: responsavel, error: responsavelError } = await supabase
+      .schema('centelha')
+      .from('responsaveis')
+      .select('id, cliente_billing_id')
+      .eq('id', representada.responsavel_id)
+      .maybeSingle()
+    if (responsavelError || !responsavel) {
+      return jsonResponse({ error: 'Responsável não encontrado' }, 404)
     }
 
     const { data: contrato, error: contratoError } = await supabase
       .from('contratos')
       .select('id, cliente_id')
       .eq('id', contrato_id)
-      .eq('cliente_id', cliente_id)
+      .eq('cliente_id', responsavel.cliente_billing_id)
       .maybeSingle()
     if (contratoError || !contrato) {
-      return jsonResponse({ error: 'Contrato não encontrado para este cliente' }, 404)
+      return jsonResponse({ error: 'Contrato não encontrado para o cliente de cobrança deste responsável' }, 404)
     }
 
     const { data: satelite, error: sateliteError } = await supabase
@@ -118,7 +131,7 @@ serve(async (req) => {
 
     const payload = {
       organization_name,
-      empresa_representada_id: cliente.empresa_representada_id,
+      empresa_representada_id: representada.id,
       admin_nome,
       admin_email,
     }
@@ -150,7 +163,7 @@ serve(async (req) => {
       .schema('centelha')
       .from('licencas')
       .insert({
-        cliente_id,
+        responsavel_id: responsavel.id,
         contrato_id,
         satelite_id: satelite.id,
         status: 'ativa',

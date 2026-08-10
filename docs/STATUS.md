@@ -1,9 +1,74 @@
 # Status do projeto — NOVUS ERP
 
-**Última atualização: 2026-08-10 (migrations Centelha aplicadas em produção + reorganização de usuários: dono da marca separado da ALLEGRA).**
+**Última atualização: 2026-08-10 (hierarquia Responsável → Representada + seletor de empresa,
+corrige regressão real do `novus_owner` — testado ao vivo no navegador).**
 Este arquivo deve ser atualizado ao final de cada sessão de trabalho relevante — se estiver desatualizado, ele
 apodrece como `SYSTEM_AUDIT.md`/`ARVORE_PROJETO.md` já apodreceram. Leia primeiro [`../CLAUDE.md`](../CLAUDE.md)
 para contexto de padrões estáveis; este arquivo é sobre o que está pendente **agora**.
+
+## 🔖 Checkpoint de sessão (2026-08-10 — hierarquia Responsável → Representada + seletor de empresa)
+
+**Contexto**: continuação direta do checkpoint anterior (mesma data). Testar o `novus_owner` de
+verdade revelou que ele quebrava a maior parte do ERP — ~23 arquivos duplicavam uma função
+`getEmpresaIdAtual()`/`getEmpresaId()` que lança exceção sempre que `get_user_empresa_id()`
+retorna `NULL` (o caso de um usuário sem empresa fixa nunca tinha existido antes). Usuário pediu
+mais que um fix pontual: uma hierarquia de verdade, `NOVUS.AI → Empresa Responsável (cliente
+pagante) → Empresa Representada (CNPJ operacional)`, com seletor obrigatório quando há mais de
+uma representada disponível.
+
+**Schema novo**: `centelha.responsaveis` (não reaproveitou `public.clientes` — herda o isolamento
+do resto do Centelha, e evita colidir com `empresa_responsavel`, tabela singleton já existente
+que significa outra coisa: branding "Empresa Principal"). `centelha.licencas.cliente_id` renomeado
+pra `responsavel_id` e reapontado pra `centelha.responsaveis` (antes apontava pra
+`public.clientes`, corrigido antes de qualquer licença real existir — 0 linhas confirmado antes).
+`public.empresas_representadas.responsavel_id` novo, nullable (representadas sem grupo, como
+"E2E TEST CO", continuam funcionando). RPC `public.get_empresas_disponiveis()`
+(`SECURITY DEFINER`) faz a ponte de leitura pra usuário comum, mesmo padrão de
+`get_user_empresa_id()`/`has_role_for_empresa`.
+
+**App layer**: `src/lib/empresaAtiva.ts` novo — fonte única de "empresa ativa" (RPC, com fallback
+pro `localStorage` quando o usuário não tem empresa fixa). Os 23 arquivos que duplicavam a lógica
+(4 variantes diferentes, achadas por Explore agent — nunca eram só as ~15 que a sessão anterior
+tinha achado) foram refatorados pra importar dessa fonte única, matando a duplicação de vez em
+vez de só contornar o sintoma. Nova tela `src/pages/auth/SelecionarEmpresa.tsx` (agrupada por
+responsável, seções colapsáveis) + `src/components/auth/EmpresaGate.tsx` (gate de rota, mesmo
+espírito do `ProtectedRoute` mas cuidando só de "sabe pra qual empresa está olhando?") +
+`UserDropdown` ganhou item "Trocar empresa".
+
+**Regressão real achada e corrigida em teste ao vivo no navegador** (não em revisão estática):
+`has_role()` fazia match exato de role — ao trocar `novusaisnp@gmail.com` de `admin`/ALLEGRA pra
+`novus_owner`/global (checkpoint anterior), a conta perdeu o `admin` literal que ~146 tabelas fora
+do Centelha ainda checam direto (`has_role(uid,'admin')`, sem o escopo `has_role_for_empresa` que
+só cobre `clientes`/`contratos`/`contas_receber`). Sintoma: header não lia
+`empresas_representadas` (nome/logo da empresa sumia), Saldo Bancário mostrava R$0,00 mesmo tendo
+saldo real. Fix na raiz, migration `20260810170000_has_role_novus_owner_implies_all.sql`:
+`has_role()` passa a considerar `novus_owner` como implicando qualquer role — as ~146 policies
+não precisaram ser tocadas, só a função. Confirmado ao vivo: header voltou a mostrar a logo da
+ALLEGRA, Saldo Bancário passou a mostrar R$300.000,00 reais.
+
+**`centelha-provisiona-cliente` ajustada** pro novo contrato: recebe `representada_id` (não mais
+`cliente_id`), resolve `responsavel_id` a partir da representada, grava licença com o nome de
+coluna novo.
+
+**Backfill real rodado** (não ficou pendente): `empresas_representadas` "NOVUS AI" criada
+(cnpj ainda `NULL` — dado real que só o usuário pode fornecer, não fabricado);
+`public.clientes` de cobrança da ALLEGRA sob o tenant NOVUS; `centelha.responsaveis` da ALLEGRA
+ligado a esse cliente de cobrança; `empresas_representadas.responsavel_id` da ALLEGRA setado.
+`get_empresas_disponiveis()` testado direto no banco e no navegador: retorna ALLEGRA (agrupada) +
+E2E TEST CO + NOVUS AI (ambas "sem grupo").
+
+**Verificação**: `npm run typecheck && npm run test -- --run` limpos (361/361, 2 asserts de
+`produtoService.test.ts` atualizados pra bater com a mensagem de erro compartilhada nova — mudança
+de comportamento esperada, não regressão). Testado ao vivo no Chrome como `novusaisnp@gmail.com`:
+login → seletor mostra os 2 grupos corretos → escolhe ALLEGRA → dashboard carrega dado real →
+Clientes lista os 8 registros `[SEED]` da ALLEGRA sem erro (tela que antes travava) → "Trocar
+empresa" no menu do usuário volta pro seletor.
+
+**Gaps conscientes**: CNPJ da `empresas_representadas` "NOVUS AI" ainda `NULL` — preencher com o
+CNPJ real da NOVUS quando disponível. Persistência da escolha é só `localStorage` (por
+dispositivo/navegador, não sincroniza) — decisão deliberada desta sessão, servidor fica pra depois
+se precisar. Resto do checklist de deploy do Centelha (edge functions, secrets, Exposed schemas)
+continua pendente, ver checkpoint anterior.
 
 ## 🔖 Checkpoint de sessão (2026-08-10 — migrations Centelha deployadas + usuários reorganizados)
 

@@ -2,19 +2,10 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { Produto, SupabaseProduto } from '@/types/produto';
+import { getEmpresaAtivaIdOuFalha as getEmpresaId } from '@/lib/empresaAtiva';
 
 type ProdutoInsert = Database['public']['Tables']['produtos']['Insert'];
 type ProdutoUpdate = Database['public']['Tables']['produtos']['Update'];
-
-async function getEmpresaId(): Promise<string> {
-  const { data, error } = await supabase.rpc('get_user_empresa_id');
-  if (error) {
-    console.error('[Produtos] Erro ao obter empresa do usuário:', error);
-    throw new Error('Não foi possível identificar a empresa do usuário logado');
-  }
-  if (!data) throw new Error('Usuário sem empresa vinculada.');
-  return data as string;
-}
 
 export const produtoService = {
   async listar(): Promise<SupabaseProduto[]> {

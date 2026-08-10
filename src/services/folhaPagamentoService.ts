@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { getEmpresaAtivaId } from '@/lib/empresaAtiva';
 
 export interface FolhaRow {
   id: string;
@@ -36,8 +37,7 @@ export const folhaPagamentoService = {
   },
 
   async criarFolha(input: NovaFolhaInput): Promise<void> {
-    const { data: empresaId, error: empresaError } = await supabase.rpc('get_user_empresa_id');
-    if (empresaError) throw empresaError;
+    const empresaId = await getEmpresaAtivaId();
     if (!empresaId) throw new Error('Empresa não encontrada');
 
     const { error } = await supabase.from('folha_pagamento').insert({

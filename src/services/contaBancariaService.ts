@@ -47,12 +47,7 @@ const mapRowToConta = (row: Record<string, unknown>): ContaBancaria => ({
   agencia: row.agencia as ContaBancaria['agencia'],
 });
 
-const getEmpresaIdAtual = async (): Promise<string> => {
-  const { data, error } = await supabase.rpc('get_user_empresa_id');
-  if (error) throw new Error(error.message);
-  if (!data) throw new Error('Empresa não identificada para o usuário atual.');
-  return data;
-};
+import { getEmpresaAtivaIdOuFalha as getEmpresaIdAtual } from '@/lib/empresaAtiva';
 
 export const listarContasBancarias = async (filtros?: ContaBancariaFilters): Promise<ContaBancaria[]> => {
   console.log('[ContaBancariaService] Listando contas bancárias com filtros:', filtros);

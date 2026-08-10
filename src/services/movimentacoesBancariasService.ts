@@ -12,6 +12,7 @@ import {
   DocumentoMovimentacao,
   TipoMovimentacao,
 } from '@/types/movimentacoesBancarias';
+import { getEmpresaAtivaId } from '@/lib/empresaAtiva';
 
 type TransferenciaExtras = { natureza_id?: string; plano_conta_id?: string; centro_custo_id?: string };
 
@@ -230,8 +231,8 @@ export const criarMovimentacaoBancaria = async (
     await checarSaldoParaSaida(input.conta_bancaria_id, input.valor);
   }
 
-  const { data: empresaId, error: empresaError } = await supabase.rpc('get_user_empresa_id');
-  if (empresaError || !empresaId) {
+  const empresaId = await getEmpresaAtivaId();
+  if (!empresaId) {
     throw new Error('Não foi possível identificar a empresa do usuário');
   }
 
@@ -321,8 +322,8 @@ export const realizarTransferenciaBancaria = async (
   }
 
   // Obter empresa do usuário atual
-  const { data: empresaId, error: empresaErr } = await supabase.rpc('get_user_empresa_id');
-  if (empresaErr || !empresaId) {
+  const empresaId = await getEmpresaAtivaId();
+  if (!empresaId) {
     throw new Error('Não foi possível identificar a empresa do usuário');
   }
 

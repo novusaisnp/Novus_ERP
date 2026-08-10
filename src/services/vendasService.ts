@@ -2,13 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Venda, ItemVenda, VendaFiltros } from '@/types/vendas';
 import { estoqueService } from '@/services/estoque/estoqueService';
 import { localizacaoService } from '@/services/localizacaoService';
-
-
-async function getEmpresaId(): Promise<string> {
-  const { data, error } = await supabase.rpc('get_user_empresa_id');
-  if (error || !data) throw new Error('Empresa do usuário não localizada.');
-  return data as string;
-}
+import { getEmpresaAtivaIdOuFalha as getEmpresaId } from '@/lib/empresaAtiva';
 
 function calcTotais(v: Partial<Venda>): Partial<Venda> {
   const itens = v.itens || [];

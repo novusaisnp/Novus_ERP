@@ -2,13 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { SupabaseBanco, Banco, BancoInput, BancoBrasilAPI } from '@/types/banco';
-
-const getEmpresaIdAtual = async (): Promise<string> => {
-  const { data, error } = await supabase.rpc('get_user_empresa_id');
-  if (error) throw new Error(error.message);
-  if (!data) throw new Error('Empresa não identificada para o usuário atual.');
-  return data;
-};
+import { getEmpresaAtivaIdOuFalha as getEmpresaIdAtual } from '@/lib/empresaAtiva';
 
 console.log('[Bancos] Service carregado');
 
