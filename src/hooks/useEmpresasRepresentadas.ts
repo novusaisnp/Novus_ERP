@@ -13,6 +13,7 @@ export interface EmpresaRepresentada {
   estado?: string | null;
   cep?: string | null;
   ativo?: boolean;
+  responsavel_id?: string | null;
   configuracoes?: Record<string, unknown> | null;
   [key: string]: unknown;
 }

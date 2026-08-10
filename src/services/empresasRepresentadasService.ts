@@ -6,7 +6,7 @@ import type { EmpresaRepresentada } from '@/hooks/useEmpresasRepresentadas';
 // Colunas reais da tabela empresas_representadas
 const REAL_COLUMNS = [
   'nome', 'cnpj', 'email', 'telefone', 'endereco',
-  'cidade', 'estado', 'cep', 'ativo',
+  'cidade', 'estado', 'cep', 'ativo', 'responsavel_id',
 ] as const;
 
 function buildPayload(input: EmpresaRepresentada & Record<string, unknown>) {
@@ -36,6 +36,7 @@ function buildPayload(input: EmpresaRepresentada & Record<string, unknown>) {
     estado: input.estado || null,
     cep: input.cep || null,
     ativo: input.ativo ?? true,
+    responsavel_id: input.responsavel_id || null,
     configuracoes: configuracoes as Json,
     updated_at: new Date().toISOString(),
   };

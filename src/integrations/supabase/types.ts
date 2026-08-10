@@ -2124,6 +2124,7 @@ export type Database = {
           nome: string
           plano_conta_despesa_default_id: string | null
           plano_conta_receita_default_id: string | null
+          responsavel_id: string | null
           telefone: string | null
           updated_at: string
         }
@@ -2145,6 +2146,7 @@ export type Database = {
           nome: string
           plano_conta_despesa_default_id?: string | null
           plano_conta_receita_default_id?: string | null
+          responsavel_id?: string | null
           telefone?: string | null
           updated_at?: string
         }
@@ -2166,6 +2168,7 @@ export type Database = {
           nome?: string
           plano_conta_despesa_default_id?: string | null
           plano_conta_receita_default_id?: string | null
+          responsavel_id?: string | null
           telefone?: string | null
           updated_at?: string
         }
@@ -6946,6 +6949,15 @@ export type Database = {
           updated_at: string
           venda_id: string
         }[]
+      }
+      is_novus_owner: { Args: never; Returns: boolean }
+      criar_responsavel_centelha: {
+        Args: { p_nome: string; p_cnpj: string | null }
+        Returns: string
+      }
+      listar_satelites_disponiveis: {
+        Args: never
+        Returns: { id: string; codigo: string; nome: string }[]
       }
       get_empresas_disponiveis: {
         Args: never

@@ -1,10 +1,123 @@
 # Status do projeto — NOVUS ERP
 
-**Última atualização: 2026-08-10 (hierarquia Responsável → Representada + seletor de empresa,
-corrige regressão real do `novus_owner` — testado ao vivo no navegador).**
+**Última atualização: 2026-08-10 (wizard de onboarding com seletor em cascata, faturamento
+NOVUS↔cliente espelhado em contas_receber+contas_pagar — testado ponta a ponta; achado importante
+de vazamento de dado entre empresas em telas operacionais, ver checkpoint anterior).**
 Este arquivo deve ser atualizado ao final de cada sessão de trabalho relevante — se estiver desatualizado, ele
 apodrece como `SYSTEM_AUDIT.md`/`ARVORE_PROJETO.md` já apodreceram. Leia primeiro [`../CLAUDE.md`](../CLAUDE.md)
 para contexto de padrões estáveis; este arquivo é sobre o que está pendente **agora**.
+
+## 🔖 Checkpoint de sessão (2026-08-10 — seletor em cascata + faturamento espelhado NOVUS↔cliente)
+
+**Contexto**: ajustes de UX/lógica sobre o wizard entregue no checkpoint anterior, pedidos em
+sequência rápida pelo usuário testando ao vivo.
+
+**Seletor em cascata**: `SelecionarEmpresa.tsx` reescrita — antes mostrava todos os grupos
+expandidos de uma vez (`Collapsible`); agora é 2 passos de verdade — `Select` de Empresa
+Responsável primeiro, só depois de escolher aparece a lista de Representadas daquele responsável
+(`Select` → lista, com botão "Trocar responsável" pra voltar). Pula direto pro passo 2 se só
+existe 1 responsável disponível; pula tudo (como já era) se só existe 1 representada no total.
+Header ganhou o mesmo logo/marca "ERP + NOVUS.AI" do Login, e o overlay da marca d'água
+(`login-hero`) foi de `bg-background/90` pra `/70` — usuário achou a versão anterior "quase
+imperceptível", pediu ~20% mais visível.
+
+**Faturamento: numeração + recorrência mínima + espelho contas a pagar**. Três pedidos
+encadeados, todos escopados só ao wizard (usuário confirmou explicitamente não mexer no trigger
+`gerar_titulo_inicial_contrato` nem no cron compartilhado — são infra já testada, usada por todo
+o ERP):
+1. **numero_documento sem UUID cru**: contrato criado pelo wizard agora recebe
+   `numero_contrato = "NOVUS AI-<RESPONSAVEL>-<ANO>"` explícito — sem isso, o trigger cai no
+   fallback `NEW.id::text` (UUID puro) pro `numero_documento`, achado ao revisar a tela real.
+2. **12 parcelas mínimas na criação**: a 1ª (M1) já sai do trigger existente; o wizard completa
+   M2-M12 direto em `contas_receber` (mesmo formato, mesma `origem_sistema`), em vez de depender
+   só do cron diário `job_materializar_recorrencias` materializando 1 por mês.
+3. **Espelho em contas_pagar do lado do cliente** (pedido do usuário, ponto de contabilidade
+   correto: "se tem contas a receber num lado, tem que ter contas a pagar no outro"): cada
+   parcela que a NOVUS vai **receber** também é criada como conta a **pagar** na representada
+   principal do cliente (`representadasCriadas[0]`), com "NOVUS AI" criado como `fornecedor`
+   daquela representada. `descricao` diferenciada por lado — no `contas_receber` da NOVUS
+   identifica o **cliente** (`contrato.titulo`, ex. "Contrato — LIGNUM..."); no `contas_pagar` do
+   cliente identifica **NOVUS AI** (`"NOVUS AI — Mensalidade (<numero_contrato>)"`), não repete o
+   nome do próprio cliente. Confirmado ao vivo: `empresa_representada_id` do título de
+   `contas_receber` aponta pra NOVUS AI de verdade (não pro cliente) — o que parecia dado
+   misturado era só a tela de Contas a Receber não filtrando por empresa ativa (vazamento já
+   registrado no checkpoint anterior), não um erro de gravação.
+4. **Botão "usar mesmo CNPJ do responsável"** no passo 2 (sugestão do usuário) — copia nome+CNPJ
+   do responsável pra 1ª representada, pro caso comum de empresa com 1 CNPJ só.
+
+**Testado ao vivo, ponta a ponta, 2 clientes de teste novos**: "TESTE RECORRENCIA LTDA" (confirma
+numeração + 12 parcelas) e "TESTE ESPELHO CONTAS PAGAR" (confirma o espelho contas_pagar +
+fornecedor NOVUS AI, botão mesmo-CNPJ). Ambos com dados reais no banco, não limpos ainda — ver
+gaps abaixo.
+
+**Verificação**: `npm run typecheck && npm run test -- --run` limpos (361/361) depois de cada
+rodada de ajuste. Queries diretas no banco confirmaram valores/datas/vínculos em todas as 4
+mudanças.
+
+**Dados de teste já limpos**: os 3 clientes de teste (LIGNUM, TESTE RECORRENCIA, TESTE ESPELHO
+CONTAS PAGAR — responsável/representada/cliente/contrato/contas_receber/contas_pagar/fornecedor
+de cada um) foram apagados do banco na mesma sessão, em ordem segura de FK. Só ALLEGRA (real) e
+E2E TEST CO (fixture de teste automatizado, não tocar) permanecem além da própria NOVUS AI.
+
+**Gaps conscientes**: `data_competencia`/`natureza_id`/`plano_conta_id` de `contas_pagar` não
+preenchidos pelo espelho (fora do mínimo necessário, mesma lógica de "wizard cobre o básico, resto
+se ajusta depois na tela normal"). Resto dos gaps do checkpoint anterior (vazamento entre
+empresas, deploy das edge functions) continua igual, não tocado nesta rodada.
+
+## 🔖 Checkpoint de sessão (2026-08-10 — wizard de onboarding pela UI + achado de vazamento entre empresas)
+
+**Contexto**: usuário apontou que a fatia anterior (hierarquia + seletor) resolveu o bug, mas
+deixou a criação de cliente novo como operação manual via Supabase Studio — risco operacional
+real (senha exposta, sem trilha de auditoria) pra uma tarefa rotineira. Pediu UI própria.
+
+**Construído**: wizard de 5 passos (`src/pages/auth/OnboardingCliente.tsx`, rota
+`/selecionar-empresa/nova`), só visível pra `novus_owner` (botão "+ Nova empresa" em
+`SelecionarEmpresa.tsx`, condicionado a nova RPC `is_novus_owner()`). Cobre responsável (novo ou
+existente) → representada(s) (múltiplas filiais) → contrato → satélite opcional → revisão/salvar,
+tudo em chamadas sequenciais do client (não transação atômica — trade-off deliberado, ver plano).
+Duas funções novas além de `is_novus_owner`: `criar_responsavel_centelha` e
+`listar_satelites_disponiveis` (mesma ponte `SECURITY DEFINER` que o resto do Centelha usa pra
+atravessar o isolamento do schema). Resto reaproveita serviços já existentes sem mudança de
+schema — `empresasRepresentadasService`/`clienteService`/`contratosService` — só ganharam o campo
+`responsavel_id` onde fazia falta. Busca de CNPJ via BrasilAPI (mesmo padrão de
+`EmpresasRepresentadasList.tsx`) autopreenche o nome ao sair do campo.
+
+**Visual**: fundo com a mesma imagem do login (`login-hero`) como marca d'água nas telas de
+seletor/onboarding, a pedido do usuário — consistência visual do fluxo de autenticação.
+
+**Testado ao vivo, ponta a ponta, com dado real**: criado cliente "LIGNUM COMERCIO E EXPORTACOES
+LTDA" (CNPJ real, autopreenchido pela BrasilAPI) — confirmado no banco: `centelha.responsaveis` +
+`empresas_representadas` (linkados) + `public.clientes` + `public.contratos` (R$500/mês) +
+`contas_receber` **gerado sozinho pelo trigger já existente** (`gerar_titulo_inicial_contrato`,
+zero código novo pra isso) — recorrente, mensal, `PENDENTE`, vencimento correto. Redirecionou
+sozinho pro dashboard da empresa recém-criada ao final.
+
+**Achado importante, fora do escopo desta fatia — registrado, não corrigido**: ao revisar o
+resultado no navegador, a tela de Contas a Receber misturava títulos de mais de uma empresa
+(ALLEGRA + LIGNUM juntos) pro usuário `novus_owner`. Causa: `src/services/contasReceber/
+contasReceberQueries.ts` (`aplicarFiltrosComuns`) monta a query **sem nenhum `.eq('empresa_representada_id', ...)`**
+— depende 100% da RLS pra escopar. Pra usuário normal (1 empresa fixa) isso sempre funcionou por
+acidente; pra `novus_owner` (RLS libera tudo, fix da sessão anterior) as telas que nunca filtraram
+explícito por empresa agora misturam dado de empresas diferentes. Grep confirmou o mesmo padrão
+(`.from(tabela)` sem filtro de empresa) em outros **15 arquivos de serviço**: `vendasService`,
+`contasPagarQueries`/`contasPagarOperations`/`contasPagarPagamentos`, `movimentacoesBancariasService`,
+`produtoService`, `fornecedorService`, `fluxoCaixaService`, `fiscal/emissaoService`,
+`fiscal/fiscalDashboardService`, `estoque/estoqueService`, `auditableCentroCustoService`,
+`colaboradorService`, `usuarioService`. **Não é dado mockado, é vazamento real de leitura (e
+provavelmente escrita) entre empresas** — mais sério que o Dashboard (que já tinha o mesmo problema
+nos KPIs, achado antes). Usuário decidiu explicitamente: registrar agora, planejar correção numa
+sessão dedicada — 15+ arquivos é grande demais pra decidir a abordagem (filtro por arquivo? um
+wrapper de query central? travar `novus_owner` de telas operacionais?) no meio de outra entrega.
+
+**Verificação**: `npm run typecheck && npm run test -- --run` limpos (361/361). Teste completo ao
+vivo no navegador (login, wizard, dashboard, confirmação no banco) descrito acima.
+
+**Gaps conscientes**: vazamento entre empresas nas telas operacionais (ver achado acima) — maior
+pendência real do ecossistema agora, recomendo ser o próximo trabalho. `clientes.cnpj` fica `null`
+ao criar via wizard (só grava `cpf_cnpj`, coluna legada) — mesmo dual-schema já documentado, não é
+bug novo. Satélite do wizard (`centelha-provisiona-cliente`) não testado ao vivo — depende do
+deploy da edge function, ainda pendente. Atomicidade do wizard (sequencial, não transação) — ver
+trade-off no plano desta sessão.
 
 ## 🔖 Checkpoint de sessão (2026-08-10 — hierarquia Responsável → Representada + seletor de empresa)
 

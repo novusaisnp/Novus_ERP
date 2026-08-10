@@ -9,6 +9,7 @@ import Login from './pages/Login';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { EmpresaGate } from './components/auth/EmpresaGate';
 import SelecionarEmpresa from './pages/auth/SelecionarEmpresa';
+import OnboardingCliente from './pages/auth/OnboardingCliente';
 import Dashboard from './pages/Dashboard';
 
 
@@ -124,6 +125,7 @@ function App() {
                 <Route path="/login" element={<Login />} />
 
                 <Route path="/selecionar-empresa" element={<ProtectedRoute><SelecionarEmpresa /></ProtectedRoute>} />
+                <Route path="/selecionar-empresa/nova" element={<ProtectedRoute><OnboardingCliente /></ProtectedRoute>} />
 
                 <Route element={<ProtectedRoute><EmpresaGate><AppLayout /></EmpresaGate></ProtectedRoute>}>
                   {/* Dashboard Route */}
