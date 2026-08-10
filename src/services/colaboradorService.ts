@@ -41,9 +41,11 @@ function toDbPayload(c: Colaborador, empresaId: string | null) {
 
 export const colaboradorService = {
   async fetchColaboradores() {
+    const empresaId = await getEmpresaId();
     const { data, error } = await supabase
       .from('colaboradores')
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .is('deleted_at', null)
       .order('nome');
 

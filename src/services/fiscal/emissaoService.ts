@@ -106,25 +106,25 @@ export async function getDanfeMockEnrichmentData(params: {
   }
 
   if (params.vendaId) {
-    const { data: venda } = await supabase
-      .from('vendas')
-      .select('cliente_id, observacoes')
-      .eq('id', params.vendaId)
-      .maybeSingle();
+    let vendaQ = supabase.from('vendas').select('cliente_id, observacoes').eq('id', params.vendaId);
+    if (params.empresaRepresentadaId) vendaQ = vendaQ.eq('empresa_representada_id', params.empresaRepresentadaId);
+    const { data: venda } = await vendaQ.maybeSingle();
     const clienteId = venda?.cliente_id;
     if (clienteId) {
-      const { data: cli } = await supabase
+      let cliQ = supabase
         .from('clientes')
         .select('nome, razao_social, tipo_pessoa, cnpj, cpf, inscricao_estadual, email, telefone, logradouro, numero, complemento, bairro, cidade, estado, cep')
-        .eq('id', clienteId)
-        .maybeSingle();
+        .eq('id', clienteId);
+      if (params.empresaRepresentadaId) cliQ = cliQ.eq('empresa_representada_id', params.empresaRepresentadaId);
+      const { data: cli } = await cliQ.maybeSingle();
       if (cli) result.destinatario = cli;
     }
-    const { data: rows } = await supabase
+    let itensQ = supabase
       .from('itens_venda')
       .select('descricao, quantidade, unidade, preco_unitario, valor_total_item, ordem')
-      .eq('venda_id', params.vendaId)
-      .order('ordem', { ascending: true });
+      .eq('venda_id', params.vendaId);
+    if (params.empresaRepresentadaId) itensQ = itensQ.eq('empresa_representada_id', params.empresaRepresentadaId);
+    const { data: rows } = await itensQ.order('ordem', { ascending: true });
     result.itens = rows ?? [];
   }
 

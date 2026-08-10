@@ -9,10 +9,11 @@ type ProdutoUpdate = Database['public']['Tables']['produtos']['Update'];
 
 export const produtoService = {
   async listar(): Promise<SupabaseProduto[]> {
-    
+    const empresaId = await getEmpresaId();
     const { data, error } = await supabase
       .from('produtos')
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -24,11 +25,12 @@ export const produtoService = {
   },
 
   async buscarPorId(id: string): Promise<SupabaseProduto | null> {
-    
+    const empresaId = await getEmpresaId();
     const { data, error } = await supabase
       .from('produtos')
       .select('*')
       .eq('id', id)
+      .eq('empresa_representada_id', empresaId)
       .maybeSingle();
 
     if (error) {
@@ -126,11 +128,12 @@ export const produtoService = {
   },
 
   async buscarPorCodigoBarras(codigoBarras: string): Promise<SupabaseProduto | null> {
-    
+    const empresaId = await getEmpresaId();
     const { data, error } = await supabase
       .from('produtos')
       .select('*')
       .eq('codigo', codigoBarras)
+      .eq('empresa_representada_id', empresaId)
       .maybeSingle();
 
     if (error) {

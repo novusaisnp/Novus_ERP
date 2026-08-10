@@ -3,8 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { uiStatusPagarToDb } from '@/lib/statusMappers';
 import type { ContaPagarFilters } from '@/types/contasPagar';
 
-export const buildContasPagarQuery = (filtros: ContaPagarFilters = {}) => {
-  
+export const buildContasPagarQuery = (filtros: ContaPagarFilters = {}, empresaId: string) => {
+
   let query = supabase
     .from('contas_pagar')
     .select(`
@@ -45,6 +45,7 @@ export const buildContasPagarQuery = (filtros: ContaPagarFilters = {}) => {
       )
     `)
     .is('deleted_at', null)
+    .eq('empresa_representada_id', empresaId)
     .order('data_vencimento', { ascending: false });
 
   // Aplicar filtros
@@ -79,8 +80,8 @@ export const buildContasPagarQuery = (filtros: ContaPagarFilters = {}) => {
   return query;
 };
 
-export const getContaPagarByIdQuery = (id: string) => {
-  
+export const getContaPagarByIdQuery = (id: string, empresaId: string) => {
+
   return supabase
     .from('contas_pagar')
     .select(`
@@ -121,16 +122,18 @@ export const getContaPagarByIdQuery = (id: string) => {
       )
     `)
     .eq('id', id)
+    .eq('empresa_representada_id', empresaId)
     .is('deleted_at', null)
     .single();
 };
 
-export const getEstatisticasQuery = (filtros: ContaPagarFilters = {}) => {
-  
+export const getEstatisticasQuery = (filtros: ContaPagarFilters = {}, empresaId: string) => {
+
   let query = supabase
     .from('contas_pagar')
     .select('status, valor_original, valor_pago')
-    .is('deleted_at', null);
+    .is('deleted_at', null)
+    .eq('empresa_representada_id', empresaId);
 
   // Aplicar os mesmos filtros da listagem
   if (filtros.busca) {

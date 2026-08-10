@@ -39,6 +39,8 @@ const pf: Fornecedor = {
 
 beforeEach(() => {
   mock.from.mockReset();
+  mock.rpc.mockReset();
+  mock.rpc.mockResolvedValue({ data: 'empresa-1', error: null });
 });
 
 describe('fornecedorService.transformToSupabaseFormat (PJ)', () => {
@@ -82,14 +84,14 @@ describe('fornecedorService.transformToSupabaseFormat (PF)', () => {
 describe('fornecedorService CRUD', () => {
   it('fetchFornecedores retorna lista', async () => {
     mock.from.mockImplementationOnce(() => ({
-      select: () => ({ order: () => Promise.resolve({ data: [{ id: 'f1' }], error: null }) }),
+      select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [{ id: 'f1' }], error: null }) }) }),
     }));
     expect(await fornecedorService.fetchFornecedores()).toEqual([{ id: 'f1' }]);
   });
 
   it('fetchFornecedores propaga erro', async () => {
     mock.from.mockImplementationOnce(() => ({
-      select: () => ({ order: () => Promise.resolve({ data: null, error: { message: 'x' } }) }),
+      select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: null, error: { message: 'x' } }) }) }),
     }));
     await expect(fornecedorService.fetchFornecedores()).rejects.toBeTruthy();
   });

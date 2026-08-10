@@ -77,6 +77,7 @@ export const createContaPagar = async (input: ContaPagarInput) => {
       centros_custo!contas_pagar_centro_custo_id_fkey(id, nome, codigo)
     `)
     .eq('id', contaData.id)
+    .eq('empresa_representada_id', empresaId)
     .single();
 
   if (fetchError) {
@@ -145,6 +146,7 @@ export const updateContaPagar = async (id: string, input: ContaPagarInput) => {
       centros_custo!contas_pagar_centro_custo_id_fkey(id, nome, codigo)
     `)
     .eq('id', id)
+    .eq('empresa_representada_id', empresaId)
     .single();
 
   if (fetchError) {

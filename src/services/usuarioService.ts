@@ -47,11 +47,10 @@ export const usuarioService = {
    * quando a conta foi criada fora do fluxo de convite (ex. signup direto).
    */
   async fetchNomeUsuarioAtual(userId: string): Promise<string | null> {
-    const { data, error } = await supabase
-      .from('usuarios')
-      .select('nome')
-      .eq('user_id', userId)
-      .maybeSingle();
+    const empresaId = await getEmpresaIdAtual();
+    let q = supabase.from('usuarios').select('nome').eq('user_id', userId);
+    if (empresaId) q = q.eq('empresa_representada_id', empresaId);
+    const { data, error } = await q.maybeSingle();
     if (error) throw error;
     return data?.nome ?? null;
   },
@@ -62,25 +61,32 @@ export const usuarioService = {
    * fetchUsuariosComPessoa() (tela de administração, mais pesada).
    */
   async fetchUsuariosAtivos(): Promise<{ id: string; user_id: string; nome: string }[]> {
+    const empresaId = await getEmpresaIdAtual();
+    if (!empresaId) return [];
     const { data, error } = await supabase
       .from('usuarios')
       .select('id, user_id, nome')
       .eq('ativo', true)
+      .eq('empresa_representada_id', empresaId)
       .order('nome');
     if (error) throw error;
     return data ?? [];
   },
 
   async listColaboradoresDisponiveis(): Promise<ColaboradorDisponivel[]> {
+    const empresaId = await getEmpresaIdAtual();
+    if (!empresaId) return [];
     const { data: colabs } = await supabase
       .from('colaboradores')
       .select('id, nome, cpf, email')
       .eq('ativo', true)
+      .eq('empresa_representada_id', empresaId)
       .is('deleted_at', null)
       .order('nome');
     const { data: usados } = await supabase
       .from('usuarios')
       .select('colaborador_id')
+      .eq('empresa_representada_id', empresaId)
       .not('colaborador_id', 'is', null);
     const usedIds = new Set((usados ?? []).map((u) => u.colaborador_id));
     return (colabs ?? []).filter((c) => !usedIds.has(c.id));
@@ -105,9 +111,12 @@ export const usuarioService = {
    * Usado na tela de Configurações > Usuários (vínculo pessoa_tipo/colaborador_id/socio_id).
    */
   async fetchUsuariosComPessoa(): Promise<UsuarioComPessoa[]> {
+    const empresaId = await getEmpresaIdAtual();
+    if (!empresaId) return [];
     const { data: usuarios, error } = await supabase
       .from('usuarios')
-      .select('id, user_id, empresa_representada_id, ativo, nome, email, perfil_id, pessoa_tipo, pessoa_pendente, colaborador_id, socio_id');
+      .select('id, user_id, empresa_representada_id, ativo, nome, email, perfil_id, pessoa_tipo, pessoa_pendente, colaborador_id, socio_id')
+      .eq('empresa_representada_id', empresaId);
     if (error) {
       console.error('[usuarioService] erro ao carregar usuários:', error);
       return [];
@@ -188,10 +197,12 @@ export const usuarioService = {
 
     const cpfLimpo = params.cpf ? params.cpf.replace(/\D/g, '') : '';
     const emailLower = params.email ? params.email.toLowerCase() : '';
+    const empresaId = await getEmpresaIdAtual();
 
     // Email: public.usuarios (case-insensitive)
     if (emailLower) {
       let q = supabase.from('usuarios').select('id').ilike('email', emailLower).limit(1);
+      if (empresaId) q = q.eq('empresa_representada_id', empresaId);
       if (params.exceptId) q = q.neq('id', params.exceptId);
       const { data, error } = await q;
       if (error) throw error;
@@ -202,6 +213,7 @@ export const usuarioService = {
     if (cpfLimpo && params.pessoaTipo) {
       if (params.pessoaTipo === 'COLABORADOR') {
         let q = supabase.from('colaboradores').select('id').eq('cpf', cpfLimpo).limit(1);
+        if (empresaId) q = q.eq('empresa_representada_id', empresaId);
         if (params.exceptPessoaId) q = q.neq('id', params.exceptPessoaId);
         const { data, error } = await q;
         if (error) throw error;
@@ -213,6 +225,7 @@ export const usuarioService = {
           .select('id')
           .eq('cpf', cpfLimpo)
           .limit(1);
+        if (empresaId) q = q.eq('empresa_representada_id', empresaId);
         if (params.exceptPessoaId) q = q.neq('id', params.exceptPessoaId);
         const { data, error } = await q;
         if (error) throw error;

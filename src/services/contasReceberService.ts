@@ -2,6 +2,7 @@
 import { buildContasReceberQuery, getContaReceberByIdQuery, getEstatisticasQuery } from './contasReceber/contasReceberQueries';
 import { transformFromSupabase } from './contasReceber/contasReceberTransforms';
 import { createContaReceber, updateContaReceber, deleteContaReceber } from './contasReceber/contasReceberOperations';
+import { getEmpresaAtivaIdOuFalha } from '@/lib/empresaAtiva';
 import type { 
   ContaReceber, 
   ContaReceberInput, 
@@ -13,7 +14,8 @@ export const contasReceberService = {
   async getAll(filtros: ContaReceberFilters = {}): Promise<ContaReceber[]> {
     
     try {
-      const query = buildContasReceberQuery(filtros);
+      const empresaId = await getEmpresaAtivaIdOuFalha();
+      const query = buildContasReceberQuery(filtros, empresaId);
       const { data, error } = await query;
 
       if (error) {
@@ -36,7 +38,8 @@ export const contasReceberService = {
   async getById(id: string): Promise<ContaReceber | null> {
     
     try {
-      const { data, error } = await getContaReceberByIdQuery(id);
+      const empresaId = await getEmpresaAtivaIdOuFalha();
+      const { data, error } = await getContaReceberByIdQuery(id, empresaId);
 
       if (error) {
         console.error('[ContasReceber] Erro ao buscar conta a receber:', error);
@@ -85,7 +88,8 @@ export const contasReceberService = {
   async getEstatisticas(filtros: ContaReceberFilters = {}): Promise<ContaReceberEstatisticas> {
 
     try {
-      const query = getEstatisticasQuery(filtros);
+      const empresaId = await getEmpresaAtivaIdOuFalha();
+      const query = getEstatisticasQuery(filtros, empresaId);
       const { data, error } = await query;
 
       if (error) {

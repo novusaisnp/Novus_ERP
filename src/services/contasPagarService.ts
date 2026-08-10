@@ -3,6 +3,7 @@ import { buildContasPagarQuery, getContaPagarByIdQuery, getEstatisticasQuery } f
 import { transformFromSupabase } from './contasPagar/contasPagarTransforms';
 import { createContaPagar, updateContaPagar, deleteContaPagar } from './contasPagar/contasPagarOperations';
 import { dbStatusPagarToUi } from '@/lib/statusMappers';
+import { getEmpresaAtivaIdOuFalha } from '@/lib/empresaAtiva';
 
 import type { 
   ContaPagar, 
@@ -14,7 +15,8 @@ import type {
 export const contasPagarService = {
   async getAll(filtros: ContaPagarFilters = {}): Promise<ContaPagar[]> {
     
-    const query = buildContasPagarQuery(filtros);
+    const empresaId = await getEmpresaAtivaIdOuFalha();
+    const query = buildContasPagarQuery(filtros, empresaId);
     const { data, error } = await query;
 
     if (error) {
@@ -27,7 +29,8 @@ export const contasPagarService = {
 
   async getById(id: string): Promise<ContaPagar | null> {
     
-    const { data, error } = await getContaPagarByIdQuery(id);
+    const empresaId = await getEmpresaAtivaIdOuFalha();
+    const { data, error } = await getContaPagarByIdQuery(id, empresaId);
 
     if (error) {
       console.error('[ContasPagar] Erro ao buscar conta a pagar:', error);
@@ -56,7 +59,8 @@ export const contasPagarService = {
 
   async getEstatisticas(filtros: ContaPagarFilters = {}): Promise<ContaPagarEstatisticas> {
 
-    const query = getEstatisticasQuery(filtros);
+    const empresaId = await getEmpresaAtivaIdOuFalha();
+    const query = getEstatisticasQuery(filtros, empresaId);
     const { data, error } = await query;
 
     if (error) {

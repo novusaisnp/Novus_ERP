@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { Fornecedor } from '@/types/fornecedor';
+import { getEmpresaAtivaIdOuFalha } from '@/lib/empresaAtiva';
 
 export interface SupabaseFornecedor {
   id: string;
@@ -42,10 +43,11 @@ export interface SupabaseFornecedor {
 export const fornecedorService = {
   async fetchFornecedores() {
     console.log('[fornecedorService] Buscando fornecedores...');
-    
+    const empresaId = await getEmpresaAtivaIdOuFalha();
     const { data, error } = await supabase
       .from('fornecedores')
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .order('created_at', { ascending: false });
 
     if (error) {

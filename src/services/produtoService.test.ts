@@ -33,19 +33,20 @@ const produto: Produto = {
 beforeEach(() => {
   mock.from.mockReset();
   mock.rpc.mockReset();
+  mock.rpc.mockResolvedValue({ data: 'empresa-1', error: null });
 });
 
 describe('produtoService.listar', () => {
   it('retorna lista ordenada por created_at desc', async () => {
     mock.from.mockImplementationOnce(() => ({
-      select: () => ({ order: () => Promise.resolve({ data: [{ id: 'p1' }], error: null }) }),
+      select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [{ id: 'p1' }], error: null }) }) }),
     }));
     expect(await produtoService.listar()).toEqual([{ id: 'p1' }]);
   });
 
   it('propaga erro', async () => {
     mock.from.mockImplementationOnce(() => ({
-      select: () => ({ order: () => Promise.resolve({ data: null, error: { message: 'x' } }) }),
+      select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: null, error: { message: 'x' } }) }) }),
     }));
     await expect(produtoService.listar()).rejects.toBeTruthy();
   });
@@ -54,7 +55,7 @@ describe('produtoService.listar', () => {
 describe('produtoService.buscarPorId', () => {
   it('retorna produto ou null', async () => {
     mock.from.mockImplementationOnce(() => ({
-      select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: { id: 'p1' }, error: null }) }) }),
+      select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: { id: 'p1' }, error: null }) }) }) }),
     }));
     expect(await produtoService.buscarPorId('p1')).toEqual({ id: 'p1' });
   });
@@ -142,7 +143,7 @@ describe('produtoService.buscarPorCodigoBarras', () => {
       select: () => ({
         eq: (c: string) => {
           capturedCol = c;
-          return { maybeSingle: () => Promise.resolve({ data: { id: 'p1' }, error: null }) };
+          return { eq: () => ({ maybeSingle: () => Promise.resolve({ data: { id: 'p1' }, error: null }) }) };
         },
       }),
     }));

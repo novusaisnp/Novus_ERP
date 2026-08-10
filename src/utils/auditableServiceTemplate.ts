@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { getEmpresaAtivaId } from '@/lib/empresaAtiva';
 
 /**
  * Template genérico para serviços de entidades auditáveis
@@ -30,9 +31,11 @@ export class AuditableServiceTemplate<T extends { id: string; deleted_at?: strin
    */
   async getActive(): Promise<T[]> {
     console.log(`[${this.entityName}Service] Buscando registros ativos`);
-    
+    const empresaId = await getEmpresaAtivaId();
+
     const { data, error } = await this.query()
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
@@ -50,9 +53,11 @@ export class AuditableServiceTemplate<T extends { id: string; deleted_at?: strin
    */
   async getArchived(): Promise<T[]> {
     console.log(`[${this.entityName}Service] Buscando registros arquivados`);
-    
+    const empresaId = await getEmpresaAtivaId();
+
     const { data, error } = await this.query()
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .not('deleted_at', 'is', null)
       .order('deleted_at', { ascending: false });
 
@@ -70,9 +75,11 @@ export class AuditableServiceTemplate<T extends { id: string; deleted_at?: strin
    */
   async getAll(): Promise<T[]> {
     console.log(`[${this.entityName}Service] Buscando todos os registros`);
-    
+    const empresaId = await getEmpresaAtivaId();
+
     const { data, error } = await this.query()
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -89,10 +96,12 @@ export class AuditableServiceTemplate<T extends { id: string; deleted_at?: strin
    */
   async getById(id: string, includeArchived = false): Promise<T | null> {
     console.log(`[${this.entityName}Service] Buscando por ID: ${id}`);
-    
+    const empresaId = await getEmpresaAtivaId();
+
     let query = this.query()
       .select('*')
-      .eq('id', id);
+      .eq('id', id)
+      .eq('empresa_representada_id', empresaId);
 
     if (!includeArchived) {
       query = query.is('deleted_at', null);

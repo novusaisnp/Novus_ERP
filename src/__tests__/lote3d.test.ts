@@ -132,6 +132,7 @@ beforeEach(() => {
   supabaseMock.state.contaSaldo = 100;
   supabaseMock.state.contaStatus = "ATIVA";
   supabaseMock.state.estornado = false;
+  supabaseMock.rpcCalls.length = 0;
 });
 
 // ---- 1. mapBankingError prioriza err.code -------------------------------

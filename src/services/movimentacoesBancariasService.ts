@@ -39,11 +39,15 @@ const validarValorPositivo = (valor: number): void => {
 };
 
 const checarSaldoParaSaida = async (contaId: string, valor: number): Promise<void> => {
-  const { data: conta, error } = await supabase
+  const empresaId = await getEmpresaAtivaId();
+  let saldoQuery = supabase
     .from('contas_bancarias')
     .select('saldo_atual, status, configuracoes')
-    .eq('id', contaId)
-    .single();
+    .eq('id', contaId);
+  if (empresaId) {
+    saldoQuery = saldoQuery.eq('empresa_representada_id', empresaId);
+  }
+  const { data: conta, error } = await saldoQuery.single();
   if (error) {
     throw new Error(`Erro ao validar conta: ${error.message}`);
   }
@@ -67,6 +71,9 @@ const checarSaldoParaSaida = async (contaId: string, valor: number): Promise<voi
 export const listarMovimentacoesBancarias = async (
   filtros?: FiltrosMovimentacoes
 ): Promise<MovimentacaoBancaria[]> => {
+
+  const empresaId = await getEmpresaAtivaId();
+  if (!empresaId) return [];
 
   let query = supabase
     .from('movimentacoes_bancarias')
@@ -104,6 +111,7 @@ export const listarMovimentacoesBancarias = async (
         status
       )
     `)
+    .eq('empresa_representada_id', empresaId)
     .order('data_movimentacao', { ascending: false })
     .order('created_at', { ascending: false });
 
@@ -171,6 +179,9 @@ export const listarMovimentacoesBancarias = async (
 // Função para obter uma movimentação específica
 export const obterMovimentacaoBancaria = async (id: string): Promise<MovimentacaoBancaria | null> => {
 
+  const empresaId = await getEmpresaAtivaId();
+  if (!empresaId) return null;
+
   const { data, error } = await supabase
     .from('movimentacoes_bancarias')
     .select(`
@@ -208,6 +219,7 @@ export const obterMovimentacaoBancaria = async (id: string): Promise<Movimentaca
       )
     `)
     .eq('id', id)
+    .eq('empresa_representada_id', empresaId)
     .single();
 
   if (error) {
@@ -430,10 +442,27 @@ export const obterEstatisticasMovimentacoes = async (
   filtros?: FiltrosMovimentacoes
 ): Promise<EstatisticasMovimentacoes> => {
 
+  const empresaId = await getEmpresaAtivaId();
+  if (!empresaId) {
+    return {
+      total_movimentacoes: 0,
+      total_depositos: 0,
+      total_saques: 0,
+      total_transferencias: 0,
+      total_ajustes: 0,
+      valor_total_entradas: 0,
+      valor_total_saidas: 0,
+      saldo_liquido: 0,
+      movimentacoes_conciliadas: 0,
+      movimentacoes_estornadas: 0,
+    };
+  }
+
   let query = supabase
     .from('movimentacoes_bancarias')
     .select('tipo_movimentacao, valor, estornado, conciliado')
-    .eq('ativo', true);
+    .eq('ativo', true)
+    .eq('empresa_representada_id', empresaId);
 
   // Aplicar mesmos filtros da listagem
   if (filtros?.conta_bancaria_id) {
@@ -531,10 +560,14 @@ export const obterDocumentosMovimentacao = async (
   movimentacaoId: string
 ): Promise<DocumentoMovimentacao[]> => {
 
+  const empresaId = await getEmpresaAtivaId();
+  if (!empresaId) return [];
+
   const { data, error } = await supabase
     .from('documentos_movimentacoes_bancarias')
     .select('*')
     .eq('movimentacao_id', movimentacaoId)
+    .eq('empresa_representada_id', empresaId)
     .eq('ativo', true)
     .order('created_at', { ascending: false });
 

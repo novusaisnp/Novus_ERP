@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
-import { 
+import { getEmpresaAtivaIdOuFalha } from '@/lib/empresaAtiva';
+import {
   FluxoCaixaItem, 
   FluxoCaixaFiltros, 
   FluxoCaixaResumo, 
@@ -23,6 +24,8 @@ export class FluxoCaixaService {
   static async getFluxoCaixa(filtros: FluxoCaixaFiltros = {}): Promise<FluxoCaixaItem[]> {
     
     try {
+      const empresaId = await getEmpresaAtivaIdOuFalha();
+
       // Buscar contas a pagar
       const { data: contasPagar, error: errorPagar } = await supabase
         .from('contas_pagar')
@@ -41,6 +44,7 @@ export class FluxoCaixaService {
         `)
         .gte('data_vencimento', filtros.data_inicio || '2024-01-01')
         .lte('data_vencimento', filtros.data_fim || '2025-12-31')
+        .eq('empresa_representada_id', empresaId)
         .is('deleted_at', null);
 
       if (errorPagar) {
@@ -63,6 +67,7 @@ export class FluxoCaixaService {
         `)
         .gte('data_vencimento', filtros.data_inicio || '2024-01-01')
         .lte('data_vencimento', filtros.data_fim || '2025-12-31')
+        .eq('empresa_representada_id', empresaId)
         .is('deleted_at', null);
 
 
@@ -82,7 +87,8 @@ export class FluxoCaixaService {
           valor_pago,
           conta_bancaria_id
         `)
-        .eq('cancelada', false);
+        .eq('cancelada', false)
+        .eq('empresa_representada_id', empresaId);
 
       if (errorLiquidacoes) {
         console.error('[FluxoCaixa] Erro ao buscar liquidações:', errorLiquidacoes);
@@ -209,8 +215,9 @@ export class FluxoCaixaService {
   static async getResumoFluxoCaixa(filtros: FluxoCaixaFiltros = {}): Promise<FluxoCaixaResumo> {
     
     try {
+      const empresaId = await getEmpresaAtivaIdOuFalha();
       const movimentacoes = await this.getFluxoCaixa(filtros);
-      
+
       const hoje = new Date();
       const data7d = new Date(hoje.getTime() + 7 * 24 * 60 * 60 * 1000);
       const data14d = new Date(hoje.getTime() + 14 * 24 * 60 * 60 * 1000);
@@ -226,7 +233,8 @@ export class FluxoCaixaService {
       const { data: contasBancarias, error: errorContas } = await supabase
         .from('contas_bancarias')
         .select('saldo_atual')
-        .eq('ativo', true);
+        .eq('ativo', true)
+        .eq('empresa_representada_id', empresaId);
 
       if (errorContas) {
         console.error('[FluxoCaixa] Erro ao buscar contas bancárias:', errorContas);

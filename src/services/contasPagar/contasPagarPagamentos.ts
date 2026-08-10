@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { uiStatusPagarToDb } from '@/lib/statusMappers';
+import { getEmpresaAtivaIdOuFalha } from '@/lib/empresaAtiva';
 
 interface PagamentoContaPagar {
   conta_pagar_id: string;
@@ -10,6 +11,7 @@ interface PagamentoContaPagar {
 }
 
 export const registrarPagamento = async (pagamento: PagamentoContaPagar) => {
+  const empresaId = await getEmpresaAtivaIdOuFalha();
 
   // Buscar a conta a pagar com seus rateios
   const { data: conta, error: contaError } = await supabase
@@ -25,6 +27,7 @@ export const registrarPagamento = async (pagamento: PagamentoContaPagar) => {
       )
     `)
     .eq('id', pagamento.conta_pagar_id)
+    .eq('empresa_representada_id', empresaId)
     .is('deleted_at', null)
     .single();
 
@@ -58,7 +61,8 @@ export const registrarPagamento = async (pagamento: PagamentoContaPagar) => {
       status: novoStatusDb,
       data_pagamento: novoRestante === 0 ? pagamento.data_pagamento : null,
     })
-    .eq('id', pagamento.conta_pagar_id);
+    .eq('id', pagamento.conta_pagar_id)
+    .eq('empresa_representada_id', empresaId);
 
   if (updateError) {
     console.error('[ContasPagarPagamentos] Erro ao atualizar conta:', updateError);
@@ -78,6 +82,7 @@ export const registrarPagamento = async (pagamento: PagamentoContaPagar) => {
 
 
 export const consultarRateiosOrigiais = async (contaId: string) => {
+  const empresaId = await getEmpresaAtivaIdOuFalha();
 
   const { data: rateios, error } = await supabase
     .from('rateios_contas_pagar')
@@ -96,6 +101,7 @@ export const consultarRateiosOrigiais = async (contaId: string) => {
       )
     `)
     .eq('conta_pagar_id', contaId)
+    .eq('empresa_representada_id', empresaId)
     .order('created_at', { ascending: true });
 
   if (error) {

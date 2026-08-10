@@ -1,5 +1,6 @@
 // P12: Camada de serviços para o Módulo de Estoque
 import { supabase } from '@/integrations/supabase/client';
+import { getEmpresaAtivaId } from '@/lib/empresaAtiva';
 import type {
   EstoqueMovimentacao,
   EstoqueMovimentacaoTipo,
@@ -57,31 +58,29 @@ export const estoqueService = {
   },
 
   async getProdutoBasico(produto_id: string): Promise<ProdutoBasico | null> {
-    const { data, error } = await supabase
-      .from('produtos')
-      .select('id, nome, codigo')
-      .eq('id', produto_id)
-      .maybeSingle();
+    const empresaId = await getEmpresaAtivaId();
+    let q = supabase.from('produtos').select('id, nome, codigo').eq('id', produto_id);
+    if (empresaId) q = q.eq('empresa_representada_id', empresaId);
+    const { data, error } = await q.maybeSingle();
     if (error) throw error;
     return data;
   },
 
   async getProdutosBasicoPorIds(ids: string[]): Promise<ProdutoBasico[]> {
     if (ids.length === 0) return [];
-    const { data, error } = await supabase
-      .from('produtos')
-      .select('id, nome, codigo')
-      .in('id', ids);
+    const empresaId = await getEmpresaAtivaId();
+    let q = supabase.from('produtos').select('id, nome, codigo').in('id', ids);
+    if (empresaId) q = q.eq('empresa_representada_id', empresaId);
+    const { data, error } = await q;
     if (error) throw error;
     return data ?? [];
   },
 
   async getInventarioById(inventario_id: string): Promise<EstoqueInventario | null> {
-    const { data, error } = await supabase
-      .from('estoque_inventarios')
-      .select('*')
-      .eq('id', inventario_id)
-      .maybeSingle();
+    const empresaId = await getEmpresaAtivaId();
+    let q = supabase.from('estoque_inventarios').select('*').eq('id', inventario_id);
+    if (empresaId) q = q.eq('empresa_representada_id', empresaId);
+    const { data, error } = await q.maybeSingle();
     if (error) throw error;
     return data as EstoqueInventario | null;
   },
@@ -202,11 +201,10 @@ export const estoqueService = {
   },
 
   async listInventarioItens(inventario_id: string): Promise<EstoqueInventarioItem[]> {
-    const { data, error } = await supabase
-      .from('estoque_inventario_itens')
-      .select('*')
-      .eq('inventario_id', inventario_id)
-      .order('created_at');
+    const empresaId = await getEmpresaAtivaId();
+    let q = supabase.from('estoque_inventario_itens').select('*').eq('inventario_id', inventario_id);
+    if (empresaId) q = q.eq('empresa_representada_id', empresaId);
+    const { data, error } = await q.order('created_at');
     if (error) throw error;
     return (data ?? []) as EstoqueInventarioItem[];
   },

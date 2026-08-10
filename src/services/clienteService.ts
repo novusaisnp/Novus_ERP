@@ -3,6 +3,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 import { Cliente } from '@/types/cliente';
+import { getEmpresaAtivaId } from '@/lib/empresaAtiva';
 
 export interface SupabaseCliente {
   id: string;
@@ -105,11 +106,10 @@ const buildDataToSave = (clienteData: Cliente, empresaRepresentadaId: string) =>
 
 export const clienteService = {
   async getEmpresaIdDoCliente(clienteId: string): Promise<string | null> {
-    const { data, error } = await supabase
-      .from('clientes')
-      .select('empresa_representada_id')
-      .eq('id', clienteId)
-      .maybeSingle();
+    const empresaAtivaId = await getEmpresaAtivaId();
+    let q = supabase.from('clientes').select('empresa_representada_id').eq('id', clienteId);
+    if (empresaAtivaId) q = q.eq('empresa_representada_id', empresaAtivaId);
+    const { data, error } = await q.maybeSingle();
     if (error) throw error;
     return data?.empresa_representada_id ?? null;
   },

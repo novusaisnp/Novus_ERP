@@ -1,11 +1,71 @@
 # Status do projeto — NOVUS ERP
 
-**Última atualização: 2026-08-10 (wizard de onboarding com seletor em cascata, faturamento
-NOVUS↔cliente espelhado em contas_receber+contas_pagar — testado ponta a ponta; achado importante
-de vazamento de dado entre empresas em telas operacionais, ver checkpoint anterior).**
+**Última atualização: 2026-08-10 (vazamento de dado entre empresas fechado — ~40 funções de
+leitura em 17 arquivos, `novus_owner` agora vê só a empresa ativa em toda tela, não mais a soma de
+tudo que a RLS libera).**
 Este arquivo deve ser atualizado ao final de cada sessão de trabalho relevante — se estiver desatualizado, ele
 apodrece como `SYSTEM_AUDIT.md`/`ARVORE_PROJETO.md` já apodreceram. Leia primeiro [`../CLAUDE.md`](../CLAUDE.md)
 para contexto de padrões estáveis; este arquivo é sobre o que está pendente **agora**.
+
+## 🔖 Checkpoint de sessão (2026-08-10 — vazamento de dado entre empresas fechado, leitura)
+
+**Contexto**: continuação direta do achado registrado nos 2 checkpoints anteriores — usuário
+descreveu o sintoma de forma bem concreta: mesmo sendo `novus_owner`, ao cair no dashboard de uma
+empresa recém-criada (zero movimento), as telas mostravam soma/lista de **todas** as empresas que
+a RLS libera pro `novus_owner`, não só a empresa ativa escolhida. Decisão explícita do usuário:
+corrigir os dois grupos de função na mesma rodada — telas de listagem/dashboard (alta visibilidade)
+e lookups por id (menor risco, mas ainda vazamento real).
+
+**Fix mecânico em ~40 funções, 17 arquivos**, mesmo padrão em todos: `getEmpresaAtivaId()`/
+`getEmpresaAtivaIdOuFalha()` (`src/lib/empresaAtiva.ts`, não mudou) resolve a empresa ativa, cada
+query ganha `.eq('empresa_representada_id', empresaId)` — sempre encadeado depois de `.select(...)`
+(nunca direto em `.from()`, Supabase-js não expõe filtro ali). Dois pontos onde 1 fix cobriu várias
+funções: `aplicarFiltrosComuns` (`contasReceberQueries.ts`) e o equivalente em
+`contasPagarQueries.ts` cobrem lista+estatísticas+busca-por-id de cada um; `AuditableServiceTemplate`
+(`src/utils/auditableServiceTemplate.ts`) corrigido uma vez na classe genérica, cobre
+`centros_custo` e qualquer service futuro que estenda o template.
+
+**Arquivos tocados**: `dashboardService`, `contasReceber/contasReceberQueries`+`contasReceberService`,
+`contasPagar/contasPagarQueries`+`contasPagarService`, `movimentacoesBancariasService` (5 funções),
+`fluxoCaixaService` (4 funções, `getFluxoCompetencia` não tocado — já recebia `p_empresa_id`
+explícito), `fiscal/fiscalDashboardService` (4 de 5 — `listAlertasFiscaisAtivos` não tem como
+escopar, `report_ops_alerts` não tem coluna `empresa_representada_id`, é tabela global de alertas
+operacionais, confirmado via schema antes de decidir não filtrar), `vendasService.list`,
+`produtoService` (`listar`/`buscarPorId`/`buscarPorCodigoBarras`), `fornecedorService.
+fetchFornecedores`, `colaboradorService.fetchColaboradores`, `usuarioService` (5 funções:
+`fetchUsuariosComPessoa`/`fetchUsuariosAtivos`/`listColaboradoresDisponiveis`/`checkDuplicidade`/
+`fetchNomeUsuarioAtual`), `clienteService.getEmpresaIdDoCliente`, `estoque/estoqueService` (4
+funções), `contasPagar/contasPagarOperations`+`contasPagarPagamentos`, `fiscal/emissaoService.
+getDanfeMockEnrichmentData`.
+
+**Testes quebrados pelo fix, corrigidos no mesmo lote** (mocks desatualizados, não regressão de
+lógica): `fornecedorService.test.ts`/`produtoService.test.ts` mockavam `supabase.from()` sem
+`.eq()` no meio da cadeia e sem `rpc('get_user_empresa_id')` resolvendo — ajustado o shape do mock
+pra bater com a cadeia real. `lote3d.test.ts` tinha um `rpcCalls` global nunca resetado entre
+testes (`beforeEach` zerava `state` mas não o array de chamadas RPC) — passou a falhar porque
+`checarSaldoParaSaida` (agora escopado por empresa) passou a chamar RPC onde antes não chamava,
+poluindo a contagem que outro teste dependia estar zerada; corrigido resetando `rpcCalls.length = 0`
+no `beforeEach`.
+
+**Testado ao vivo no navegador** como `novusaisnp@gmail.com` (`novus_owner`): ALLEGRA mostra os
+próprios números (8 clientes, R$1.160 em aberto, R$300.000 saldo bancário, 4 contas a receber com
+nomes `[SEED]` reais da própria empresa) — sem regressão. Trocando pra "E2E TEST CO" (fixture de
+teste automatizado, achada já existente via "Trocar empresa" → "Sem grupo", zero dado real além do
+seed do próprio E2E) o dashboard vem **genuinamente zerado** (0 clientes, R$0,00 em tudo) e cada
+tela checada (Contas a Receber, Fluxo de Caixa, Vendas, Fornecedores, Produtos — mostrando só
+"E2E Produto Seed F4", Colaboradores) mostra vazio ou só o próprio dado do E2E, nunca dado da
+ALLEGRA. Esse é exatamente o cenário que o usuário descreveu como quebrado — confirmado corrigido.
+
+**Verificação**: `npm run typecheck` limpo, `npm run test -- --run` 361/361 (0 falhas) depois dos
+ajustes de mock. Verificação ao vivo descrita acima. Usuário comum (`joao@tacto.com.br`, 1 empresa
+fixa) não testado nesta rodada — o filtro novo é redundante mas inofensivo pra esse caso (RLS já
+bastava sozinha), mesmo raciocínio já usado nas fatias anteriores desta feature.
+
+**Gaps conscientes**: `fornecedorService.createFornecedor` não seta `empresa_representada_id` no
+insert (achado de passagem, fora do escopo — este fix era só leitura); se algum dia esse insert
+falhar silenciosamente por depender de trigger/default, é o primeiro lugar a olhar. Resto do
+checklist de deploy do Centelha (edge functions, secrets, Exposed schemas) continua pendente, ver
+checkpoints anteriores.
 
 ## 🔖 Checkpoint de sessão (2026-08-10 — seletor em cascata + faturamento espelhado NOVUS↔cliente)
 
