@@ -481,7 +481,7 @@ async function syncCliente(supabase: SupabaseClient, payload: WebhookPayload, em
         return await supabase
           .from('clientes')
           .update({
-            ...mapClienteData(data, payload.source_system, empresaId),
+            ...(await mapClienteData(data, payload.source_system, empresaId)),
             updated_at: new Date().toISOString(),
           })
           .eq('id', existingCliente.id)
@@ -491,7 +491,7 @@ async function syncCliente(supabase: SupabaseClient, payload: WebhookPayload, em
       }
       return await supabase
         .from('clientes')
-        .insert(mapClienteData(data, payload.source_system, empresaId))
+        .insert(await mapClienteData(data, payload.source_system, empresaId))
         .select()
         .single();
     case 'delete':
@@ -565,6 +565,13 @@ async function syncContrato(supabase: SupabaseClient, payload: WebhookPayload, e
       .maybeSingle();
     clienteId = cliente?.id;
   }
+  // idempotency_key: satélites novos devem mandar um explícito (estável,
+  // gerado por eles); fallback aqui só cobre quem ainda não manda.
+  const idempotencyKey =
+    (data.idempotency_key as string) ||
+    `${payload.source_system}:contrato:${data.numero_contrato ?? data.id}`;
+  const hashPayload = await sha256Hex(new TextEncoder().encode(JSON.stringify(data)));
+
   const contratoData = {
     empresa_representada_id: empresaId,
     numero_contrato: data.numero_contrato || data.id,
@@ -578,11 +585,49 @@ async function syncContrato(supabase: SupabaseClient, payload: WebhookPayload, e
     status: (data.status || 'ATIVO').toString().toUpperCase(),
     gera_financeiro: data.gera_financeiro ?? true,
     observacoes: data.observacoes,
+    origem_canal: 'webhook',
+    origem_sistema: payload.source_system,
+    externo_id: (data.id as string) ?? null,
+    idempotency_key: idempotencyKey,
+    hash_payload: hashPayload,
   };
   switch (event) {
     case 'insert':
-    case 'sync':
-      return await supabase.from('contratos').insert(contratoData).select().single();
+    case 'sync': {
+      // Sem isto, todo retry de webhook criava uma linha nova de Contrato
+      // (insert incondicional) — inclusive redisparando o trigger
+      // gerar_titulo_inicial_contrato a cada retry.
+      const { data: existing } = await supabase
+        .from('contratos')
+        .select('id, hash_payload')
+        .eq('empresa_representada_id', empresaId)
+        .eq('idempotency_key', idempotencyKey)
+        .is('deleted_at', null)
+        .maybeSingle();
+
+      if (existing) {
+        if (existing.hash_payload !== hashPayload) {
+          throw new Error(
+            `CONFLITO_PAYLOAD_DIVERGENTE: contrato com idempotency_key=${idempotencyKey} já existe com payload diferente`,
+          );
+        }
+        const replayed = await supabase.from('contratos').select().eq('id', existing.id).single();
+        return { ...replayed, replay: true };
+      }
+
+      const inserted = await supabase.from('contratos').insert(contratoData).select().single();
+      if (inserted.error && (inserted.error as { code?: string }).code === '23505') {
+        // condição de corrida: outra chamada concorrente inseriu entre o SELECT acima e este INSERT
+        const race = await supabase
+          .from('contratos')
+          .select()
+          .eq('empresa_representada_id', empresaId)
+          .eq('idempotency_key', idempotencyKey)
+          .single();
+        return { ...race, replay: true };
+      }
+      return inserted;
+    }
     case 'update':
       return await supabase
         .from('contratos')
@@ -656,19 +701,69 @@ async function syncFinanceiro(supabase: SupabaseClient, payload: WebhookPayload,
   }
 }
 
-function mapClienteData(data: Record<string, unknown>, _sourceSystem: string, empresaId: string) {
-  return {
+// clientes tem dois conjuntos de coluna coexistindo: as "novas" (tipo_pessoa/
+// cpf/cnpj), escritas aqui desde sempre, e as "legadas" (tipo/cpf_cnpj/
+// endereco/apelido) restauradas pela migration 20260725150000 e lidas pela
+// UI real do ERP (clienteService.ts/FormCliente.tsx). Sem popular as legadas,
+// um cliente criado via satélite existe no banco mas aparece em branco pra
+// quem usa a tela de Clientes do próprio ERP.
+function buildEnderecoLegado(data: Record<string, unknown>): Record<string, unknown> | null {
+  if (data.endereco && typeof data.endereco === 'object') {
+    return data.endereco as Record<string, unknown>;
+  }
+  const camposDiretos = ['cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'pais'] as const;
+  const endereco: Record<string, unknown> = {};
+  let temAlgo = false;
+  for (const campo of camposDiretos) {
+    if (data[campo] !== undefined) {
+      endereco[campo] = data[campo];
+      temAlgo = true;
+    }
+  }
+  const uf = data.uf ?? data.estado;
+  if (uf !== undefined) {
+    endereco.uf = uf;
+    temAlgo = true;
+  }
+  return temAlgo ? endereco : null;
+}
+
+async function mapClienteData(data: Record<string, unknown>, sourceSystem: string, empresaId: string) {
+  const cpf = (data.cpf as string) || null;
+  const cnpj = (data.cnpj as string) || null;
+  const tipoPessoa = (data.tipo_pessoa as string) || (cpf ? 'PF' : cnpj ? 'PJ' : null);
+  const endereco = buildEnderecoLegado(data);
+
+  const mapped: Record<string, unknown> = {
     empresa_representada_id: empresaId,
     nome: data.nome || data.razao_social,
     razao_social: data.razao_social,
     nome_fantasia: data.nome_fantasia,
-    tipo_pessoa: data.tipo_pessoa || (data.cpf ? 'PF' : data.cnpj ? 'PJ' : null),
-    cpf: data.cpf || null,
-    cnpj: data.cnpj || null,
+    tipo_pessoa: tipoPessoa,
+    cpf,
+    cnpj,
     rg: data.rg,
     email: data.email,
     telefone: data.telefone,
     observacoes: data.observacoes,
     ativo: data.ativo !== false,
+    // Colunas legadas — tipo/cpf_cnpj são sempre deriváveis do que já chega,
+    // sempre setados. apelido/data_nascimento/endereco só entram quando o
+    // payload realmente traz algo: um update parcial (ex. só e-mail mudou)
+    // não pode apagar dado que um humano digitou na tela do ERP.
+    tipo: tipoPessoa === 'PJ' ? 'J' : 'F',
+    cpf_cnpj: cpf || cnpj || null,
+    origem_canal: 'webhook',
+    origem_sistema: sourceSystem,
+    externo_id: (data.id as string) ?? null,
+    idempotency_key:
+      (data.idempotency_key as string) || `${sourceSystem}:cliente:${cpf || cnpj || data.id}`,
+    hash_payload: await sha256Hex(new TextEncoder().encode(JSON.stringify(data))),
   };
+
+  if (data.apelido !== undefined) mapped.apelido = data.apelido;
+  if (data.data_nascimento !== undefined) mapped.data_nascimento = data.data_nascimento;
+  if (endereco) mapped.endereco = endereco;
+
+  return mapped;
 }

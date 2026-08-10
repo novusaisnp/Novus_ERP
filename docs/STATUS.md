@@ -1,9 +1,68 @@
 # Status do projeto — NOVUS ERP
 
-**Última atualização: 2026-08-09 (Porta 1 + recorrência automática + Contrato formal — funcionais, testados ao vivo).**
+**Última atualização: 2026-08-09 (3 gaps reais de conector fechados: cliente invisível na UI, conector de Contrato instalado, envelope de idempotência).**
 Este arquivo deve ser atualizado ao final de cada sessão de trabalho relevante — se estiver desatualizado, ele
 apodrece como `SYSTEM_AUDIT.md`/`ARVORE_PROJETO.md` já apodreceram. Leia primeiro [`../CLAUDE.md`](../CLAUDE.md)
 para contexto de padrões estáveis; este arquivo é sobre o que está pendente **agora**.
+
+## 🔖 Checkpoint de sessão (2026-08-09 — 3 gaps de conector ERP↔satélite fechados)
+
+**Contexto**: pergunta do usuário no repo-mãe ("que falta pra efetivar a integração do satélite com o ERP?")
+disparou 3 agentes Explore puxando os dois lados de cada conector (payload que o satélite manda vs. o que o
+ERP espera) em vez de responder de memória — achou 3 gaps reais confirmados por leitura direta de código, não
+só de `STATUS.md`. Plano completo em `~/.claude/plans/parallel-baking-narwhal.md`.
+
+1. **Cliente invisível na tela do próprio ERP — corrigido**: `mapClienteData` (`sync-webhook/index.ts`) só
+   escrevia colunas novas (`tipo_pessoa`/`cpf`/`cnpj`); a UI real do ERP (`clienteService.ts`/`FormCliente.tsx`)
+   lê colunas legadas (`tipo`/`cpf_cnpj`/`endereco`/`apelido`, restauradas pela migration
+   `20260725150000_restore_clientes_legacy_fields.sql`). Cliente criado via satélite existia no banco mas
+   aparecia em branco pro time financeiro. Corrigido: `mapClienteData` virou `async`, agora escreve os dois
+   conjuntos de coluna — `tipo`/`cpf_cnpj` sempre (deriváveis do payload atual), `apelido`/`data_nascimento`/
+   `endereco` só quando o payload realmente traz o dado (spread condicional — um update parcial, ex. só
+   e-mail, não pode apagar endereço que um humano digitou na tela do ERP).
+2. **Conector de Contrato — instalado, `gera_financeiro:false`**: ERP já tinha receptor pronto (`syncContrato`
+   + trigger `gerar_titulo_inicial_contrato`, corrigidos em sessão anterior) mas o satélite nunca chamava —
+   só mandava a 1ª mensalidade avulsa via `createReceivable`. Restrição já decidida antes: mandar Contrato com
+   `gera_financeiro:true` JUNTO com o avulso recorrente duplicaria a cobrança (o trigger geraria um 2º título).
+   Satélite agora manda o Contrato com `gera_financeiro:false` — fica visível/consultável na tela de Contratos
+   do ERP (registro documental/jurídico), cobrança continua 100% pelo avulso recorrente já funcionando. Migrar
+   a cobrança em si pro Contrato formal é decisão maior, não entrou nesta fatia.
+3. **Envelope de idempotência (Fase 1b parcial) em `clientes`/`contratos` — instalado**: `contas_receber` já
+   tinha `origem_canal`/`origem_sistema`/`externo_id`/`idempotency_key`/`hash_payload`; `clientes`/`contratos`
+   não tinham nenhuma. Achado mais sério durante a investigação: `syncContrato` fazia **insert incondicional**
+   no branch `insert`/`sync`, sem nenhum lookup de existência (diferente de `syncCliente`, que já dedupa por
+   cpf/cnpj) — todo retry de webhook criava uma linha duplicada de Contrato e redisparava o trigger de título.
+   Migration nova (`20260809234500_clientes_contratos_idempotency_envelope.sql`) adiciona o envelope nas duas
+   tabelas + índice único parcial em `contratos(empresa_representada_id, idempotency_key)` (fecha condição de
+   corrida que só o lookup em código não fecha). `syncContrato` ganhou lookup-antes-de-insert: replay (mesmo
+   `hash_payload`) retorna o existente sem duplicar; payload divergente lança `CONFLITO_PAYLOAD_DIVERGENTE`
+   (mesmo padrão já usado em `converter_orcamento_em_venda`) em vez de sobrescrever silenciosamente.
+4. **Deploy manual de `sync-webhook`** feito (`supabase functions deploy sync-webhook`, confirmado pelo
+   usuário antes — ação de produção, bloqueada por padrão pelo classificador de auto mode).
+5. **Verificação ao vivo, ponta a ponta, contra tenant real (ALLEGRA)**: POST assinado real (HMAC do
+   `webhook_configs` da ALLEGRA) — cliente de teste sincronizado com `tipo='F'`/`cpf_cnpj` populados junto com
+   `tipo_pessoa`/`cpf` (Fix 1 confirmado); Contrato de teste inserido 2x com payload idêntico → 2ª chamada
+   retornou `replay:true`/HTTP 200 (não 201), `SELECT count(*)`=1 confirmado (Fix 3 confirmado); mesmo
+   `numero_contrato` com `valor_mensal` diferente → HTTP 500 `CONFLITO_PAYLOAD_DIVERGENTE`, contagem
+   continuou 1 (nenhuma sobrescrita); `contas_receber` com `gera_financeiro:false` → 0 títulos gerados (Fix 2
+   confirmado, sem duplicar cobrança). Dados de teste removidos ao final, `remaining=0` confirmado nos dois
+   lados (`clientes`/`contratos`).
+6. **Skill `~/.claude/skills/erp-satellite-integration/SKILL.md` atualizada** (pedido explícito do usuário,
+   meta final desta sessão): seção "Bugs confirmados" (que dizia `syncContrato`/`syncFinanceiro` quebrados)
+   estava apodrecida — todos os 3 bugs citados já tinham sido corrigidos numa sessão anterior e a skill nunca
+   foi atualizada. Reescrita com o estado real + 4 padrões novos consolidados: dual-schema gotcha em tabelas
+   com coluna legada restaurada, registro de Contrato sem duplicar cobrança (`gera_financeiro:false`),
+   envelope de idempotência (idempotency_key explícito + lookup-antes-de-insert), `colaborador-preflight` como
+   modelo de referência pra qualquer Porta 3 nova via HTTP (RPCs internas do ERP não são alcançáveis
+   cross-projeto por um satélite).
+
+**Verificação**: `npm run typecheck`/`npm run test -- --run` (361/361)/`npm run build` limpos (edge functions
+fora da cobertura, ponto cego documentado — `npx eslint` rodado manualmente no arquivo alterado, limpo).
+
+**Gaps conscientes**: `upsertClient`/`createReceivable` (chamadas já existentes antes desta sessão) continuam
+sem teste automatizado, só exercitadas via UI real — fora do escopo desta fatia. Fase 2 (adaptador genérico
+por satélite) e envelope completo em `produtos`/`estoque_movimentacoes`/`liquidacoes_titulos` (Fase 1b restante)
+continuam não iniciados — ver `docs/ROADMAP_2026.md`.
 
 ## 🔖 Checkpoint de sessão (2026-08-09 — Porta 1 funcional + recorrência automática + Contrato formal)
 
