@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Artifact",
+      "Bash(git status *)",
+      "Bash(git checkout *)",
+      "Bash(npm run *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(vercel projects *)",
+      "Bash(vercel deploy *)",
+      "Bash(git pull *)",
+      "Bash(git merge *)",
+      "Bash(npm install *)",
+      "Bash(curl -s \"https://lovable-uploads.s3.amazonaws.com/2b20e13a-06d5-4b20-8072-9b4f413ad5f2.png\" -o \"novus-logo.png\")",
+      "Bash(curl -s \"https://lovable-uploads.s3.amazonaws.com/e3a1140c-9fb4-4ca4-8401-be58b48089cb.png\" -o \"novus-logo-footer.png\")",
+      "Bash(cp novus-logo-original.png novus-logo.png)",
+      "Bash(cp novus-logo-original.png novus-logo-footer.png)",
+      "Bash(rm novus-logo-original.png)",
+      "Bash(rm -f public/create-icons.js .claude/refatoracao_visual)",
+      "Bash(git commit *)",
+      "Bash(git show *)",
+      "Read(//tmp/**)",
+      "Bash(file *)",
+      "Bash(xargs ls -lh)",
+      "Bash(cd C:/MaxDev/NovusSaaS && head -100 novus-ai-educacional-54/CLAUDE.md 2>/dev/null || echo \"arquivo nao encontrado\")"
+    ]
+  }
+}
