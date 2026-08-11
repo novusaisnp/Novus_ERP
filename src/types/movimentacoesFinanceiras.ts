@@ -60,6 +60,8 @@ export interface LiquidacaoTitulo {
   conta_bancaria_id?: string;
   observacoes?: string;
   multi_baixa?: MultiBaixa[];
+  /** Emitido pelo diálogo de autorização; obrigatório em baixa retroativa além de 24h. */
+  ticket_autorizacao?: string;
 }
 
 // Para permitir dividir pagamento em múltiplas contas
@@ -128,6 +130,8 @@ export interface CancelamentoTitulo {
   tipo_titulo: TipoTitulo;
   idempotency_key: string;
   motivo_cancelamento: string;
+  /** Emitido pelo diálogo de autorização; cancelamento sempre exige. */
+  ticket_autorizacao?: string;
 }
 
 // Estatísticas do modal
@@ -160,4 +164,6 @@ export interface EstornoLiquidacao {
   liquidacao_id: string;
   motivo: string;
   idempotency_key: string;
+  /** Emitido pelo diálogo de autorização; estorno sempre exige. */
+  ticket_autorizacao?: string;
 }

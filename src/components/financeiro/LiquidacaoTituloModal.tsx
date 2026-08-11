@@ -19,6 +19,8 @@ import { movimentacoesService } from '@/services/movimentacoesService';
 import { qk } from '@/lib/queryKeys';
 import { TituloFinanceiro, LiquidacaoTitulo, FormaPagamento } from '@/types/movimentacoesFinanceiras';
 import { currencyUtils } from '@/utils/currencyUtils';
+import { useAutorizacaoFinanceira } from '@/hooks/useAutorizacaoFinanceira';
+import { AutorizacaoFinanceiraModal } from './AutorizacaoFinanceiraModal';
 
 interface LiquidacaoTituloModalProps {
   isOpen: boolean;
@@ -92,6 +94,8 @@ export const LiquidacaoTituloModal = ({
       onClose();
     },
     onError: (error: any) => {
+      // Falta de autorização não é falha: o diálogo assume e a operação é repetida com ticket.
+      if (autorizacao.tratarErro(error)) return;
       toast({
         title: "Erro",
         description: error.message || "Erro ao liquidar título",
@@ -99,6 +103,10 @@ export const LiquidacaoTituloModal = ({
       });
     },
   });
+
+  const autorizacao = useAutorizacaoFinanceira<LiquidacaoTitulo>((vars) =>
+    liquidarMutation.mutate(vars),
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,7 +145,7 @@ export const LiquidacaoTituloModal = ({
       observacoes: formData.observacoes || undefined,
     };
 
-    liquidarMutation.mutate(dadosLiquidacao);
+    autorizacao.disparar(dadosLiquidacao);
   };
 
 
@@ -308,6 +316,8 @@ export const LiquidacaoTituloModal = ({
           </div>
         </form>
       </DialogContent>
+
+      <AutorizacaoFinanceiraModal {...autorizacao.modalProps} />
     </Dialog>
   );
 };

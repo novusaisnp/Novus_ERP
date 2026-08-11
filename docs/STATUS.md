@@ -1,6 +1,107 @@
 # Status do projeto — NOVUS ERP
 
-**Última atualização: 2026-08-11 (FIN-0 — exclusão de título liquidado bloqueada).**
+**Última atualização: 2026-08-11 (trava de autorização em baixa retroativa, estorno e cancelamento).**
+
+## 🔖 Checkpoint atual — trava de autorização de operação financeira (2026-08-11)
+
+Escopo pedido pelo usuário nesta sessão: travar baixa retroativa acima de 24h, exigindo
+login de um usuário permissionado, com o evento auditável.
+
+### Regras implantadas
+
+- **Baixa**: data de pagamento anterior a agora menos 24h exige autorização. Data de hoje não.
+- **Estorno e cancelamento**: exigem autorização sempre (decisão explícita do usuário).
+- Toda autorização registra quem pediu, quem autorizou, quando, com que justificativa e em
+  que contexto.
+
+### Como funciona
+
+1. A operação é disparada sem ticket. Quem decide se a autorização é necessária é o banco —
+   a UI não reimplementa a regra das 24h, senão passariam a existir duas versões dela.
+2. Faltando autorização, a RPC levanta `28000`. O serviço converte isso em
+   `AutorizacaoRequeridaError` em vez de achatar tudo num erro genérico, e o diálogo abre.
+3. O diálogo pede e-mail, senha e justificativa do autorizador e chama a edge function
+   `financeiro-autorizar`. **A senha nunca chega ao Postgres**: como parâmetro de RPC ela
+   apareceria em `pg_stat_statements` e nos logs de query. A função valida a credencial,
+   confere a permissão do autorizador e devolve um ticket de uso único, válido por 5 minutos.
+4. A mesma operação é repetida com o ticket. As RPCs consomem o ticket na própria transação.
+
+O autorizador pode ser o próprio solicitante, desde que tenha a permissão — empresa de uma
+pessoa só continua operando, e o registro de auditoria é gravado do mesmo jeito.
+
+Permissões exigidas de quem autoriza: `financeiro.lancamentoRetroativo` para baixa
+retroativa, `financeiro.estorno` para estorno e `financeiro.cancelamento` para cancelamento.
+Todas já existiam ou foram criadas na entrega anterior — nenhum vocabulário novo foi inventado.
+
+### Concluído
+
+- Migration `20260811170000_financeiro_autorizacao_operacao.sql`: tabela
+  `autorizacoes_financeiras` (com RLS de leitura por empresa e escrita fora do alcance do
+  cliente), `financeiro_pode_usuario`, `financeiro_consumir_autorizacao`,
+  `financeiro_limite_retroativo` e as duas fachadas usadas pelas RPCs. As três RPCs ganharam
+  `p_ticket_autorizacao` com default nulo — de novo geradas a partir da definição real lida
+  do banco, com o restante do corpo inalterado.
+- Edge function `financeiro-autorizar` criada e deployada.
+- `AutorizacaoFinanceiraModal`, `useAutorizacaoFinanceira` e `autorizacaoFinanceiraService`
+  são novos; os três modais existentes passaram a usar o hook, sem duplicar a lógica.
+
+### Achado durante o teste ao vivo
+
+A primeira versão da edge function resolvia a empresa apenas por `usuarios.empresa_representada_id`
+e usava `auth.getUser()`. Ao vivo, a chamada falhou com "Usuário sem empresa vinculada".
+Corrigido para o padrão que já funciona neste repositório (`auth.getClaims(token)`) e para
+resolver a empresa **ativa** informada pela aplicação, validando que o solicitante pode
+operar nela — papéis que atuam acima de uma empresa não têm vínculo fixo na tabela.
+
+### Validação deste checkpoint
+
+- Migration em `BEGIN ... ROLLBACK` antes de aplicar → passou.
+- Oito cenários no banco real, dentro de rollback: baixa de hoje passa sem ticket; baixa de
+  três dias atrás é recusada; ticket válido libera e é marcado como consumido; o mesmo ticket
+  não serve duas vezes; ticket expirado não vale; cancelamento e estorno são recusados sem
+  ticket; ticket emitido para outra ação não serve.
+- Sanidade: o mesmo teste rodado **sem** a migration falha no cenário 2, provando que detecta
+  o defeito real.
+- Verificação pós-aplicação → assinatura única de cada RPC, sem sobrecarga ambígua.
+- Ao vivo: cancelar um título temporário abriu o diálogo "Autorização necessária —
+  Cancelamento de título"; a edge function recusou credencial inválida com mensagem genérica,
+  que não revela se o e-mail existe. Título temporário removido, banco de volta a zero.
+- `npm run typecheck` limpo, `npm run build` passou, `npm run test -- --run` 45 arquivos e
+  348/348.
+
+### Pendente e riscos
+
+- **O caminho de sucesso da autorização não foi exercido ao vivo**, porque exige digitar uma
+  senha real. Provado no banco (ticket válido libera e é consumido) e até a borda da edge
+  function (credencial inválida recusada), mas falta uma passada humana informando a própria
+  senha no diálogo para fechar o ciclo.
+- Uma falha de teste intermitente apareceu em **uma** de quatro execuções da suíte, numa
+  rodada que levou o dobro do tempo, e não se reproduziu. Provável limite de tempo sob carga,
+  não regressão; fica registrado para não ser tratado como novidade se voltar.
+- `financeiro.liquidar` e `financeiro.cancelamento` continuam sem estar gravados nos perfis
+  de sistema — valem pelo fallback de código análogo descrito na entrega anterior.
+
+### Arquivos desta entrega
+
+- `supabase/migrations/20260811170000_financeiro_autorizacao_operacao.sql`
+- `supabase/functions/financeiro-autorizar/index.ts`
+- `src/services/autorizacaoFinanceiraService.ts`
+- `src/services/movimentacoesService.ts` + `movimentacoesService.test.ts`
+- `src/hooks/useAutorizacaoFinanceira.ts`
+- `src/components/financeiro/AutorizacaoFinanceiraModal.tsx`
+- `src/components/financeiro/{LiquidacaoTitulo,EstornoLiquidacao,CancelamentoTitulo}Modal.tsx`
+- `src/types/movimentacoesFinanceiras.ts`
+- `src/integrations/supabase/types.ts`
+- `docs/STATUS.md`
+
+### Próxima ação única
+
+**Rateio atômico (L2)** — único item crítico restante da FIN-0. `createContaPagar` insere o
+título e depois os rateios, compensando com um `delete` manual; `updateContaPagar` apaga os
+rateios e reinsere **sem compensação alguma**, deixando o título com zero rateios em silêncio
+se a reinserção falhar. O lado de receber repete o padrão. Unificar em uma RPC transacional.
+
+---
 
 ## 🔖 Checkpoint atual — exclusão de título liquidado bloqueada (2026-08-11)
 

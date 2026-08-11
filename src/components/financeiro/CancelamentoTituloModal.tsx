@@ -9,8 +9,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { qk } from '@/lib/queryKeys';
 import { movimentacoesService } from '@/services/movimentacoesService';
-import type { TituloFinanceiro } from '@/types/movimentacoesFinanceiras';
+import type { CancelamentoTitulo, TituloFinanceiro } from '@/types/movimentacoesFinanceiras';
 import { currencyUtils } from '@/utils/currencyUtils';
+import { useAutorizacaoFinanceira } from '@/hooks/useAutorizacaoFinanceira';
+import { AutorizacaoFinanceiraModal } from './AutorizacaoFinanceiraModal';
 
 interface CancelamentoTituloModalProps {
   isOpen: boolean;
@@ -47,6 +49,8 @@ export const CancelamentoTituloModal = ({
       onClose();
     },
     onError: (error: Error) => {
+      // Falta de autorização não é falha: o diálogo assume e a operação é repetida com ticket.
+      if (autorizacao.tratarErro(error)) return;
       toast({
         title: 'Não foi possível cancelar',
         description: error.message,
@@ -55,10 +59,14 @@ export const CancelamentoTituloModal = ({
     },
   });
 
+  const autorizacao = useAutorizacaoFinanceira<CancelamentoTitulo>((vars) =>
+    cancelarMutation.mutate(vars),
+  );
+
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     if (motivo.trim().length < 5 || cancelarMutation.isPending) return;
-    cancelarMutation.mutate({
+    autorizacao.disparar({
       titulo_id: titulo.id,
       tipo_titulo: titulo.tipo,
       motivo_cancelamento: motivo.trim(),
@@ -113,6 +121,8 @@ export const CancelamentoTituloModal = ({
           </div>
         </form>
       </DialogContent>
+
+      <AutorizacaoFinanceiraModal {...autorizacao.modalProps} />
     </Dialog>
   );
 };

@@ -10,6 +10,7 @@ vi.mock('@/integrations/supabase/client', () => ({
 
 import { supabase } from '@/integrations/supabase/client';
 import { movimentacoesService } from './movimentacoesService';
+import { AutorizacaoRequeridaError } from './autorizacaoFinanceiraService';
 
 const rpc = supabase.rpc as unknown as ReturnType<typeof vi.fn>;
 
@@ -41,6 +42,7 @@ describe('movimentacoesService.liquidarTitulo', () => {
       p_conta_bancaria_id: 'conta-1',
       p_observacoes: 'Baixa de teste',
       p_multi_baixa: [],
+      p_ticket_autorizacao: null,
     });
   });
 
@@ -58,6 +60,7 @@ describe('movimentacoesService.liquidarTitulo', () => {
       p_liquidacao_id: 'liquidacao-1',
       p_motivo: 'Pagamento duplicado',
       p_idempotency_key: 'chave-estorno-1',
+      p_ticket_autorizacao: null,
     });
   });
 
@@ -77,6 +80,40 @@ describe('movimentacoesService.liquidarTitulo', () => {
       p_tipo_titulo: 'CONTAS_RECEBER',
       p_motivo: 'Lançamento indevido',
       p_idempotency_key: 'chave-cancelamento-1',
+      p_ticket_autorizacao: null,
     });
+  });
+
+  it('repassa o ticket de autorizacao quando ele existe', async () => {
+    rpc.mockResolvedValue({ data: { status: 'CANCELADO' }, error: null });
+
+    await movimentacoesService.cancelarTitulo({
+      titulo_id: 'titulo-1',
+      tipo_titulo: 'CONTAS_RECEBER',
+      motivo_cancelamento: 'Lançamento indevido',
+      idempotency_key: 'chave-cancelamento-2',
+      ticket_autorizacao: 'ticket-1',
+    });
+
+    expect(rpc).toHaveBeenCalledWith(
+      'financeiro_cancelar_titulo',
+      expect.objectContaining({ p_ticket_autorizacao: 'ticket-1' }),
+    );
+  });
+
+  it('converte a recusa 28000 do banco em pedido de autorizacao', async () => {
+    rpc.mockResolvedValue({
+      data: null,
+      error: { code: '28000', message: 'Operacao exige autorizacao' },
+    });
+
+    await expect(
+      movimentacoesService.cancelarTitulo({
+        titulo_id: 'titulo-1',
+        tipo_titulo: 'CONTAS_RECEBER',
+        motivo_cancelamento: 'Lançamento indevido',
+        idempotency_key: 'chave-cancelamento-3',
+      }),
+    ).rejects.toBeInstanceOf(AutorizacaoRequeridaError);
   });
 });

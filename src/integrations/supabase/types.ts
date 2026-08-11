@@ -238,6 +238,59 @@ export type Database = {
           },
         ]
       }
+      autorizacoes_financeiras: {
+        Row: {
+          acao: string
+          autorizador_user_id: string
+          consumido_em: string | null
+          consumido_ref: string | null
+          contexto: Json
+          criado_em: string
+          empresa_representada_id: string
+          expira_em: string
+          id: string
+          justificativa: string
+          solicitante_user_id: string
+          ticket: string
+        }
+        Insert: {
+          acao: string
+          autorizador_user_id: string
+          consumido_em?: string | null
+          consumido_ref?: string | null
+          contexto?: Json
+          criado_em?: string
+          empresa_representada_id: string
+          expira_em: string
+          id?: string
+          justificativa: string
+          solicitante_user_id: string
+          ticket?: string
+        }
+        Update: {
+          acao?: string
+          autorizador_user_id?: string
+          consumido_em?: string | null
+          consumido_ref?: string | null
+          contexto?: Json
+          criado_em?: string
+          empresa_representada_id?: string
+          expira_em?: string
+          id?: string
+          justificativa?: string
+          solicitante_user_id?: string
+          ticket?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "autorizacoes_financeiras_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       banco_conciliacao_log: {
         Row: {
           acao: string
@@ -6889,23 +6942,48 @@ export type Database = {
         Args: {
           p_idempotency_key: string
           p_motivo: string
+          p_ticket_autorizacao?: string
           p_tipo_titulo: string
           p_titulo_id: string
         }
         Returns: Json
+      }
+      financeiro_consumir_autorizacao: {
+        Args: {
+          p_acao: string
+          p_empresa_id: string
+          p_referencia: string
+          p_ticket: string
+        }
+        Returns: undefined
       }
       financeiro_estornar_liquidacao: {
         Args: {
           p_idempotency_key: string
           p_liquidacao_id: string
           p_motivo: string
+          p_ticket_autorizacao?: string
         }
         Returns: Json
+      }
+      financeiro_exigir_autorizacao_liquidacao: {
+        Args: { p_liquidacao_id: string; p_ticket: string }
+        Returns: undefined
+      }
+      financeiro_exigir_autorizacao_titulo: {
+        Args: {
+          p_acao: string
+          p_ticket: string
+          p_tipo_titulo: string
+          p_titulo_id: string
+        }
+        Returns: undefined
       }
       financeiro_exigir_permissao: {
         Args: { p_acao: string }
         Returns: undefined
       }
+      financeiro_limite_retroativo: { Args: never; Returns: string }
       financeiro_liquidar_titulo: {
         Args: {
           p_conta_bancaria_id?: string
@@ -6914,6 +6992,7 @@ export type Database = {
           p_idempotency_key: string
           p_multi_baixa?: Json
           p_observacoes?: string
+          p_ticket_autorizacao?: string
           p_tipo_titulo: string
           p_titulo_id: string
           p_valor: number
@@ -6922,6 +7001,10 @@ export type Database = {
       }
       financeiro_permissoes: { Args: never; Returns: Json }
       financeiro_pode: { Args: { p_acao: string }; Returns: boolean }
+      financeiro_pode_usuario: {
+        Args: { p_acao: string; p_user_id: string }
+        Returns: boolean
+      }
       fn_curva_abc: {
         Args: {
           p_categoria_id?: string

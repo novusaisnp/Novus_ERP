@@ -10,6 +10,10 @@ import type {
   EstornoLiquidacao,
 } from '@/types/movimentacoesFinanceiras';
 import { getEmpresaAtivaIdOuFalha as getEmpresaIdAtual } from '@/lib/empresaAtiva';
+import {
+  AutorizacaoRequeridaError,
+  exigeAutorizacao,
+} from '@/services/autorizacaoFinanceiraService';
 
 export interface RateioTitulo {
   id: string;
@@ -44,9 +48,11 @@ export const movimentacoesService = {
         p_conta_bancaria_id: dadosLiquidacao.conta_bancaria_id,
         p_observacoes: dadosLiquidacao.observacoes,
         p_multi_baixa: (dadosLiquidacao.multi_baixa || []) as unknown as Json,
+        p_ticket_autorizacao: dadosLiquidacao.ticket_autorizacao ?? null,
       });
       if (error) throw error;
     } catch (error) {
+      if (exigeAutorizacao(error)) throw new AutorizacaoRequeridaError('LIQUIDACAO_RETROATIVA');
       console.error('[MovimentacoesService] Erro ao liquidar título:', error);
       throw new Error(`Erro ao liquidar título: ${error instanceof Error ? error.message : 'falha desconhecida'}`);
     }
@@ -89,9 +95,11 @@ export const movimentacoesService = {
         p_liquidacao_id: dados.liquidacao_id,
         p_motivo: dados.motivo,
         p_idempotency_key: dados.idempotency_key,
+        p_ticket_autorizacao: dados.ticket_autorizacao ?? null,
       });
       if (error) throw error;
     } catch (error) {
+      if (exigeAutorizacao(error)) throw new AutorizacaoRequeridaError('ESTORNO');
       console.error('[MovimentacoesService] Erro ao estornar liquidação:', error);
       throw new Error(`Erro ao estornar liquidação: ${error instanceof Error ? error.message : 'falha desconhecida'}`);
     }
@@ -134,9 +142,11 @@ export const movimentacoesService = {
         p_tipo_titulo: dadosCancelamento.tipo_titulo,
         p_motivo: dadosCancelamento.motivo_cancelamento,
         p_idempotency_key: dadosCancelamento.idempotency_key,
+        p_ticket_autorizacao: dadosCancelamento.ticket_autorizacao ?? null,
       });
       if (error) throw error;
     } catch (error) {
+      if (exigeAutorizacao(error)) throw new AutorizacaoRequeridaError('CANCELAMENTO');
       console.error('[MovimentacoesService] Erro ao cancelar título:', error);
       throw new Error(`Erro ao cancelar título: ${error instanceof Error ? error.message : 'falha desconhecida'}`);
     }

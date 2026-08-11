@@ -9,8 +9,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { qk } from '@/lib/queryKeys';
 import { movimentacoesService } from '@/services/movimentacoesService';
-import type { TituloFinanceiro } from '@/types/movimentacoesFinanceiras';
+import type { EstornoLiquidacao, TituloFinanceiro } from '@/types/movimentacoesFinanceiras';
 import { currencyUtils } from '@/utils/currencyUtils';
+import { useAutorizacaoFinanceira } from '@/hooks/useAutorizacaoFinanceira';
+import { AutorizacaoFinanceiraModal } from './AutorizacaoFinanceiraModal';
 
 interface EstornoLiquidacaoModalProps {
   isOpen: boolean;
@@ -63,6 +65,8 @@ export const EstornoLiquidacaoModal = ({
       onClose();
     },
     onError: (error: Error) => {
+      // Falta de autorização não é falha: o diálogo assume e a operação é repetida com ticket.
+      if (autorizacao.tratarErro(error)) return;
       toast({
         title: 'Não foi possível estornar',
         description: error.message,
@@ -71,10 +75,14 @@ export const EstornoLiquidacaoModal = ({
     },
   });
 
+  const autorizacao = useAutorizacaoFinanceira<EstornoLiquidacao>((vars) =>
+    estornarMutation.mutate(vars),
+  );
+
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!liquidacaoId || motivo.trim().length < 5 || estornarMutation.isPending) return;
-    estornarMutation.mutate({
+    autorizacao.disparar({
       liquidacao_id: liquidacaoId,
       motivo: motivo.trim(),
       idempotency_key: idempotencyKey.current,
@@ -172,6 +180,8 @@ export const EstornoLiquidacaoModal = ({
           </div>
         </form>
       </DialogContent>
+
+      <AutorizacaoFinanceiraModal {...autorizacao.modalProps} />
     </Dialog>
   );
 };
