@@ -31,6 +31,10 @@ export const sidebarItems: MenuItem[] = [
     icon: Inbox,
     items: [
       {
+        title: "Entidades",
+        url: "/cadastros/entidades",
+      },
+      {
         title: "Clientes",
         url: "/cadastros/clientes",
       },

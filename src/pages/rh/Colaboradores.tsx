@@ -1,50 +1,81 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Users, UserCheck, UserX } from 'lucide-react';
-import { useColaboradores } from '@/hooks/useColaboradores';
-import { Colaborador } from '@/types/rh';
+import { Search, Users, UserCheck, UserX } from 'lucide-react';
+import { useEntidades } from '@/hooks/useEntidades';
+import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
+import type { Entidade } from '@/types/entidade';
+import type { Colaborador } from '@/types/rh';
 import { rhUtils } from '@/utils/rhUtils';
-import { ColaboradorFormModal } from '@/components/modules/rh/ColaboradorFormModal';
 import { ColaboradorDetailsModal } from '@/components/modules/rh/ColaboradorDetailsModal';
 
+// ColaboradorDetailsModal é só leitura e ainda espera o formato antigo
+// (Date, não string) — adapter local em vez de reescrever o modal inteiro.
+// jornada/adicionais/localTrabalho/compliance/regimeContratacao nunca foram
+// persistidos de verdade em `colaboradores` (confirmado no schema real antes
+// da migração pra `entidades`) — já apareciam em branco antes desta
+// refatoração, não é regressão.
+function entidadeParaColaboradorView(e: Entidade): Colaborador {
+  const d = e.dadosColaborador ?? {};
+  return {
+    id: e.id,
+    nomeCompleto: e.nome,
+    dataNascimento: e.dataNascimento ? new Date(e.dataNascimento) : new Date(0),
+    cpf: e.cpf || '',
+    rg: e.rg || undefined,
+    endereco: e.cep ? {
+      cep: e.cep || '', logradouro: e.logradouro || '', numero: e.numero || '',
+      complemento: e.complemento || undefined, bairro: e.bairro || '', cidade: e.cidade || '', uf: e.estado || '',
+    } : undefined,
+    telefone: e.telefone || undefined,
+    emailPessoal: e.email || undefined,
+    emailCorporativo: undefined,
+    cargoId: d.cargoId || undefined,
+    departamentoId: d.departamentoId || undefined,
+    setorId: d.setorId || undefined,
+    regimeContratacao: 'CLT',
+    dataAdmissao: d.dataAdmissao ? new Date(d.dataAdmissao) : new Date(0),
+    dataDemissao: d.dataDemissao ? new Date(d.dataDemissao) : undefined,
+    tipoContrato: d.tipoContrato as Colaborador['tipoContrato'],
+    regimeTrabalho: d.regimeTrabalho as Colaborador['regimeTrabalho'],
+    salarioBase: d.salario ?? undefined,
+    documentacao: {
+      nisPis: d.pis || undefined,
+      dadosBancarios: e.banco ? { banco: e.banco, agencia: e.agencia || '', conta: e.conta || '', tipoConta: (e.tipoConta as 'CORRENTE' | 'POUPANCA') || 'CORRENTE' } : undefined,
+    },
+    compliance: { aceiteLgpd: false, consentimentoDados: false },
+    empresaRepresentadaId: e.empresaRepresentadaId,
+    situacao: e.ativo,
+  };
+}
+
+/**
+ * Lista quem já tem o papel Colaborador no Cadastro de Entidades — não cria
+ * entidade daqui. "Novo Colaborador"/"Editar" levam pra /cadastros/entidades.
+ */
 const Colaboradores: React.FC = () => {
-  const { colaboradores, loading } = useColaboradores();
+  const navigate = useNavigate();
+  const { data: empresaId } = useEmpresaAtual();
+  const { entidades: colaboradores, loading } = useEntidades(empresaId ?? null, 'COLABORADOR');
   const [searchTerm, setSearchTerm] = useState('');
-  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const [selectedColaborador, setSelectedColaborador] = useState<Colaborador | null>(null);
+  const [selectedColaborador, setSelectedColaborador] = useState<Entidade | null>(null);
 
-
-  const filteredColaboradores = colaboradores.filter(colaborador =>
-    colaborador.nomeCompleto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    colaborador.cpf.includes(searchTerm)
+  const filteredColaboradores = colaboradores.filter((colaborador) =>
+    colaborador.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (colaborador.cpf || '').includes(searchTerm)
   );
 
-  const colaboradoresAtivos = colaboradores.filter(c => c.situacao).length;
-  const colaboradoresInativos = colaboradores.filter(c => !c.situacao).length;
+  const colaboradoresAtivos = colaboradores.filter((c) => c.ativo).length;
+  const colaboradoresInativos = colaboradores.filter((c) => !c.ativo).length;
 
-  const handleNovoColaborador = () => {
-    setSelectedColaborador(null);
-    setIsFormModalOpen(true);
-  };
-
-  const handleEditarColaborador = (colaborador: Colaborador) => {
-    setSelectedColaborador(colaborador);
-    setIsFormModalOpen(true);
-  };
-
-  const handleVerDetalhes = (colaborador: Colaborador) => {
+  const handleVerDetalhes = (colaborador: Entidade) => {
     setSelectedColaborador(colaborador);
     setIsDetailsModalOpen(true);
-  };
-
-  const handleFormModalClose = () => {
-    setIsFormModalOpen(false);
-    setSelectedColaborador(null);
   };
 
   const handleDetailsModalClose = () => {
@@ -66,13 +97,9 @@ const Colaboradores: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Colaboradores</h1>
           <p className="text-muted-foreground">
-            Gerencie os colaboradores da empresa
+            Entidades com o papel Colaborador — cadastro novo em Cadastros → Entidades
           </p>
         </div>
-        <Button className="flex items-center gap-2" onClick={handleNovoColaborador}>
-          <Plus className="h-4 w-4" />
-          Novo Colaborador
-        </Button>
       </div>
 
       {/* Cards de Estatísticas */}
@@ -140,17 +167,11 @@ const Colaboradores: React.FC = () => {
               <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium mb-2">Nenhum colaborador encontrado</h3>
               <p className="text-muted-foreground mb-4">
-                {searchTerm 
+                {searchTerm
                   ? 'Tente ajustar os filtros de pesquisa'
-                  : 'Comece cadastrando seu primeiro colaborador'
+                  : 'Cadastre entidades com o papel Colaborador em Cadastros → Entidades'
                 }
               </p>
-              {!searchTerm && (
-                <Button onClick={handleNovoColaborador}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Cadastrar Colaborador
-                </Button>
-              )}
             </CardContent>
           </Card>
         ) : (
@@ -160,25 +181,24 @@ const Colaboradores: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold">{colaborador.nomeCompleto}</h3>
-                      <Badge variant={colaborador.situacao ? "default" : "secondary"}>
-                        {colaborador.situacao ? "Ativo" : "Inativo"}
+                      <h3 className="text-lg font-semibold">{colaborador.nome}</h3>
+                      <Badge variant={colaborador.ativo ? "default" : "secondary"}>
+                        {colaborador.ativo ? "Ativo" : "Inativo"}
                       </Badge>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
                       <div>
-                        <span className="font-medium">CPF:</span> {rhUtils.formatCPF(colaborador.cpf)}
+                        <span className="font-medium">CPF:</span> {colaborador.cpf ? rhUtils.formatCPF(colaborador.cpf) : '-'}
                       </div>
-                      <div>
-                        <span className="font-medium">Admissão:</span> {colaborador.dataAdmissao.toLocaleDateString('pt-BR')}
-                      </div>
-                      <div>
-                        <span className="font-medium">Regime:</span> {colaborador.regimeContratacao}
-                      </div>
-                      {colaborador.emailPessoal && (
+                      {colaborador.dadosColaborador?.dataAdmissao && (
                         <div>
-                          <span className="font-medium">Email:</span> {colaborador.emailPessoal}
+                          <span className="font-medium">Admissão:</span> {new Date(colaborador.dadosColaborador.dataAdmissao).toLocaleDateString('pt-BR')}
+                        </div>
+                      )}
+                      {colaborador.email && (
+                        <div>
+                          <span className="font-medium">Email:</span> {colaborador.email}
                         </div>
                       )}
                       {colaborador.telefone && (
@@ -186,24 +206,24 @@ const Colaboradores: React.FC = () => {
                           <span className="font-medium">Telefone:</span> {colaborador.telefone}
                         </div>
                       )}
-                      {colaborador.salarioBase && (
+                      {colaborador.dadosColaborador?.salario != null && (
                         <div>
-                          <span className="font-medium">Salário:</span> {rhUtils.formatCurrency(colaborador.salarioBase)}
+                          <span className="font-medium">Salário:</span> {rhUtils.formatCurrency(colaborador.dadosColaborador.salario)}
                         </div>
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-2">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
-                      onClick={() => handleEditarColaborador(colaborador)}
+                      onClick={() => navigate(`/cadastros/entidades?edit=${colaborador.id}`)}
                     >
                       Editar
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={() => handleVerDetalhes(colaborador)}
                     >
@@ -217,18 +237,11 @@ const Colaboradores: React.FC = () => {
         )}
       </div>
 
-      {/* Modal de Cadastro/Edição */}
-      <ColaboradorFormModal
-        open={isFormModalOpen}
-        onOpenChange={handleFormModalClose}
-        colaborador={selectedColaborador}
-      />
-
       {/* Modal de Detalhes */}
       <ColaboradorDetailsModal
         open={isDetailsModalOpen}
         onOpenChange={handleDetailsModalClose}
-        colaborador={selectedColaborador}
+        colaborador={selectedColaborador ? entidadeParaColaboradorView(selectedColaborador) : null}
       />
     </div>
   );

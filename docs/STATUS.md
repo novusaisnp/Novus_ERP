@@ -1,7 +1,43 @@
 # Status do projeto — NOVUS ERP
 
-**Última atualização: 2026-08-10 (Cadastro Unificado de Entidades — Fase 2 completa nos 4 categorias, fix
-no sync-webhook, 5 edge functions deployadas).**
+**Última atualização: 2026-08-11 (Fase 4 concluída — `FormEntidade.tsx` + Cadastro de Entidades central;
+checkpoint de urgência, sessão ficando sem tokens — ver bloco logo abaixo antes de qualquer coisa).**
+
+## 🔖 CHECKPOINT DE URGÊNCIA (2026-08-11 — sessão sem tokens, commit forçado)
+
+**Fase 4 (UI `FormEntidade.tsx` + tela central de Entidades) está completa e testada ao vivo no navegador**,
+mas o resumo detalhado abaixo não deu tempo de ser escrito com calma — commitando o código real primeiro,
+que é o que importa. Resumo rápido do que foi feito nesta última leva:
+
+- **Correção arquitetural do usuário**: existe UMA tela central `/cadastros/entidades` (nova, no menu) que é
+  o único lugar que cria/edita entidade (toggle PF/PJ + papéis). Clientes/Fornecedores/Colaboradores (RH)
+  viram **list-only** — sem botão "Novo X", só navegação/busca/"Editar" (que abre a tela central via
+  `?edit=<id>`, `navigate(-1)` ao terminar volta pra tela de origem).
+- Novo: `src/types/entidade.ts`, `src/services/entidadeService.ts`, `src/hooks/useEntidades.ts`,
+  `src/components/modules/FormEntidade.tsx`, `src/pages/cadastros/Entidades.tsx`.
+- Reescritos: `src/pages/cadastros/Clientes.tsx`, `src/pages/cadastros/Fornecedores.tsx`,
+  `src/pages/rh/Colaboradores.tsx` (list-only).
+- Deletados (órfãos confirmados via grep): `FormCliente.tsx`, `FormFornecedor.tsx`, `ColaboradorFormModal.tsx`
+  + testes + `TipoClienteSelector`/`TipoPessoaSelector`.
+- Rota nova em `App.tsx` (`cadastros/entidades` → `Entidades`) + item novo em `sidebarConfig.ts`.
+- **Bug de ambiente encontrado, não é bug de código**: `localStorage['novus_representada_ativa_id']` (fallback
+  de `getEmpresaAtivaId()`) apontava pra um UUID de empresa já deletado (sobra de teste anterior) — causava
+  409 em inserts e listas sempre vazias. Corrigido manualmente no navegador de teste, registrado aqui caso
+  aconteça de novo nesta máquina.
+- **Verificação**: `npm run typecheck` limpo, `npm run test -- --run` 338/338 (era 361, -23 dos testes dos
+  forms deletados). Testado ao vivo: criar Cliente PF, lookup real de CNPJ preenchendo endereço, fluxo
+  completo Clientes→Editar→tela central→Cancelar→volta, empty states sem botão de criação.
+
+**Escopo futuro anotado pelo usuário, não implementado**: comissionamento de vendedores; "+" inline nos
+módulos que consomem entidade (Contas a Pagar/Receber, Vendas, Orçamentos, Contratos); mesmo "+" no form de
+Empresa Responsável no campo sócio/representante/procurador.
+
+**Próximo passo**: Educacional (Fases 5-8) — ainda não começado. `clienteService.ts`/`fornecedorService.ts`/
+`colaboradorService.ts` (ERP) ficaram sem uso confirmado, candidatos a deleção numa limpeza futura, não
+removidos agora por precaução.
+
+---
+
 Este arquivo deve ser atualizado ao final de cada sessão de trabalho relevante — se estiver desatualizado, ele
 apodrece como `SYSTEM_AUDIT.md`/`ARVORE_PROJETO.md` já apodreceram. Leia primeiro [`../CLAUDE.md`](../CLAUDE.md)
 para contexto de padrões estáveis; este arquivo é sobre o que está pendente **agora**.

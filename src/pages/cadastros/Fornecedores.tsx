@@ -1,32 +1,27 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Building2, Plus, Search, Edit, Trash2, Loader2 } from 'lucide-react';
-import { Fornecedor } from '@/types/fornecedor';
-import { useFornecedores } from '@/hooks/useFornecedores';
-import { FormFornecedor } from '@/components/modules/FormFornecedor';
+import { Building2, Search, Edit, Trash2, Loader2 } from 'lucide-react';
+import type { Entidade } from '@/types/entidade';
+import { useEntidades } from '@/hooks/useEntidades';
+import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
 import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
 
+/**
+ * Lista quem já tem o papel Fornecedor no Cadastro de Entidades — não cria
+ * entidade daqui. "Novo Fornecedor"/"Editar" levam pra /cadastros/entidades.
+ */
 const Fornecedores: React.FC = () => {
-  console.log('[Fornecedores] Componente inicializado');
-  
-  const { fornecedores, loading, saveFornecedor, deleteFornecedor } = useFornecedores();
+  const navigate = useNavigate();
+  const { data: empresaId } = useEmpresaAtual();
+  const { entidades: fornecedores, loading, remove } = useEntidades(empresaId ?? null, 'FORNECEDOR');
   const [searchTerm, setSearchTerm] = useState('');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingFornecedor, setEditingFornecedor] = useState<Fornecedor | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-
-  const handleEdit = (fornecedor: Fornecedor) => {
-    console.log('[Fornecedores] Editando fornecedor:', fornecedor.id);
-    setEditingFornecedor(fornecedor);
-    setIsDialogOpen(true);
-  };
 
   const requestDelete = (id: string) => {
     if (!id) return;
@@ -37,110 +32,48 @@ const Fornecedores: React.FC = () => {
     const id = confirmDeleteId;
     if (!id) return;
     setConfirmDeleteId(null);
-    setDeleteLoading(id);
-    try {
-      await deleteFornecedor(id);
-    } finally {
-      setDeleteLoading(null);
-    }
+    await remove(id);
   };
 
-  const handleCloseDialog = () => {
-    console.log('[Fornecedores] Fechando modal');
-    setIsDialogOpen(false);
-    setEditingFornecedor(null);
-  };
-
-  const handleSaveFornecedor = async (fornecedor: Fornecedor) => {
-    console.log('[Fornecedores] Salvando fornecedor:', fornecedor);
-    const success = await saveFornecedor(fornecedor);
-    if (success) {
-      handleCloseDialog();
-    }
-    return success;
-  };
-
-  // Filtro aprimorado com verificações de null/undefined
-  const filteredFornecedores = fornecedores.filter(fornecedor => {
+  const filteredFornecedores = fornecedores.filter((fornecedor) => {
     if (!searchTerm.trim()) return true;
-    
     const term = searchTerm.toLowerCase();
-    
-    // Busca por razão social ou nome completo
-    const nome = fornecedor.tipo_pessoa === 'PJ' 
-      ? (fornecedor.razaoSocial || '')
-      : (fornecedor.nome_completo || '');
-    
-    // Busca por nome fantasia (apenas PJ)
-    const nomeFantasia = fornecedor.tipo_pessoa === 'PJ' 
-      ? (fornecedor.nomeFantasia || '')
-      : '';
-    
-    // Busca por documento (CNPJ ou CPF)
-    const documento = fornecedor.tipo_pessoa === 'PJ'
-      ? (fornecedor.cnpj || '')
-      : (fornecedor.cpf || '');
-    
-    // Busca por email
+    const nome = fornecedor.tipoPessoa === 'PJ' ? (fornecedor.razaoSocial || '') : fornecedor.nome;
+    const nomeFantasia = fornecedor.tipoPessoa === 'PJ' ? (fornecedor.nomeFantasia || '') : '';
+    const documento = fornecedor.tipoPessoa === 'PJ' ? (fornecedor.cnpj || '') : (fornecedor.cpf || '');
     const email = fornecedor.email || '';
-    
     return nome.toLowerCase().includes(term) ||
-           nomeFantasia.toLowerCase().includes(term) ||
-           documento.includes(searchTerm) ||
-           email.toLowerCase().includes(term);
+      nomeFantasia.toLowerCase().includes(term) ||
+      documento.includes(searchTerm) ||
+      email.toLowerCase().includes(term);
   });
 
-  const formatarDocumento = (fornecedor: Fornecedor) => {
-    if (fornecedor.tipo_pessoa === 'PJ' && fornecedor.cnpj) {
+  const formatarDocumento = (fornecedor: Entidade) => {
+    if (fornecedor.tipoPessoa === 'PJ' && fornecedor.cnpj) {
       const clean = fornecedor.cnpj.replace(/\D/g, '');
       return clean.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
     }
-    
-    if (fornecedor.tipo_pessoa === 'PF' && fornecedor.cpf) {
+    if (fornecedor.tipoPessoa === 'PF' && fornecedor.cpf) {
       const clean = fornecedor.cpf.replace(/\D/g, '');
       return clean.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
     }
-    
     return '-';
   };
 
-  const getNomeFormatado = (fornecedor: Fornecedor) => {
-    if (fornecedor.tipo_pessoa === 'PJ') {
-      return fornecedor.razaoSocial || 'Sem nome';
+  const getNomeFormatado = (fornecedor: Entidade) => {
+    if (fornecedor.tipoPessoa === 'PJ') {
+      return fornecedor.razaoSocial || fornecedor.nome || 'Sem nome';
     }
-    return fornecedor.nome_completo || 'Sem nome';
+    return fornecedor.nome || 'Sem nome';
   };
-
-  console.log('[Fornecedores] Renderizando com', fornecedores.length, 'fornecedores');
 
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-primary mb-2">Fornecedores</h1>
-          <p className="text-muted-foreground">Gerencie seus fornecedores com qualificação fiscal completa</p>
+          <p className="text-muted-foreground">Entidades com o papel Fornecedor — cadastro novo em Cadastros → Entidades</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="flex items-center gap-2" onClick={() => setEditingFornecedor(null)}>
-              <Plus className="h-4 w-4" />
-              Novo Fornecedor
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingFornecedor ? 'Editar Fornecedor' : 'Novo Fornecedor'}
-              </DialogTitle>
-            </DialogHeader>
-            <FormFornecedor
-              fornecedor={editingFornecedor || undefined}
-              onSave={handleSaveFornecedor}
-              onCancel={handleCloseDialog}
-              loading={loading}
-            />
-          </DialogContent>
-        </Dialog>
       </div>
 
       <Card>
@@ -177,14 +110,8 @@ const Fornecedores: React.FC = () => {
                 {searchTerm ? 'Nenhum fornecedor encontrado' : 'Nenhum fornecedor cadastrado'}
               </h3>
               <p className="text-muted-foreground mb-4">
-                {searchTerm ? 'Tente ajustar os termos de busca' : 'Comece adicionando seu primeiro fornecedor'}
+                {searchTerm ? 'Tente ajustar os termos de busca' : 'Cadastre entidades com o papel Fornecedor em Cadastros → Entidades'}
               </p>
-              {!searchTerm && (
-                <Button onClick={() => setIsDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar Fornecedor
-                </Button>
-              )}
             </div>
           ) : (
             <Table>
@@ -203,13 +130,13 @@ const Fornecedores: React.FC = () => {
                 {filteredFornecedores.map((fornecedor) => (
                   <TableRow key={fornecedor.id}>
                     <TableCell>
-                      <Badge variant={fornecedor.tipo_pessoa === 'PJ' ? 'default' : 'secondary'}>
-                        {fornecedor.tipo_pessoa}
+                      <Badge variant={fornecedor.tipoPessoa === 'PJ' ? 'default' : 'secondary'}>
+                        {fornecedor.tipoPessoa}
                       </Badge>
                     </TableCell>
                     <TableCell className="font-medium">{getNomeFormatado(fornecedor)}</TableCell>
                     <TableCell>
-                      {fornecedor.tipo_pessoa === 'PJ' ? (fornecedor.nomeFantasia || '-') : '-'}
+                      {fornecedor.tipoPessoa === 'PJ' ? (fornecedor.nomeFantasia || '-') : '-'}
                     </TableCell>
                     <TableCell>{formatarDocumento(fornecedor)}</TableCell>
                     <TableCell>{fornecedor.email || '-'}</TableCell>
@@ -223,7 +150,7 @@ const Fornecedores: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleEdit(fornecedor)}
+                          onClick={() => navigate(`/cadastros/entidades?edit=${fornecedor.id}`)}
                           disabled={loading}
                         >
                           <Edit className="h-4 w-4" />
@@ -232,13 +159,9 @@ const Fornecedores: React.FC = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => requestDelete(fornecedor.id!)}
-                          disabled={loading || deleteLoading === fornecedor.id}
+                          disabled={loading}
                         >
-                          {deleteLoading === fornecedor.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
@@ -258,7 +181,6 @@ const Fornecedores: React.FC = () => {
         nomeRegistro="este fornecedor"
         onConfirm={confirmDelete}
       />
-
     </div>
   );
 };

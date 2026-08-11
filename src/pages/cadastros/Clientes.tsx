@@ -1,30 +1,28 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Users, Plus, Search, Edit, Trash2 } from 'lucide-react';
-import { Cliente } from '@/types/cliente';
-import { useClientes } from '@/hooks/useClientes';
+import { Users, Search, Edit, Trash2 } from 'lucide-react';
+import type { Entidade } from '@/types/entidade';
+import { useEntidades } from '@/hooks/useEntidades';
 import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
-import { FormCliente } from '@/components/modules/FormCliente';
 import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
 
+/**
+ * Lista quem já tem o papel Cliente no Cadastro de Entidades — não cria
+ * entidade daqui. "Novo Cliente"/"Editar" levam pra /cadastros/entidades
+ * (único lugar com o form completo, toggle PF/PJ + papéis).
+ */
 const Clientes: React.FC = () => {
+  const navigate = useNavigate();
   const { data: empresaId } = useEmpresaAtual();
-  const { clientes, loading, saveCliente, deleteCliente } = useClientes(empresaId ?? null);
+  const { entidades: clientes, loading, remove } = useEntidades(empresaId ?? null, 'CLIENTE');
   const [searchTerm, setSearchTerm] = useState('');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingCliente, setEditingCliente] = useState<Cliente | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-
-  const handleEdit = (cliente: Cliente) => {
-    setEditingCliente(cliente);
-    setIsDialogOpen(true);
-  };
 
   const requestDelete = (id: string) => {
     if (!id) return;
@@ -35,29 +33,25 @@ const Clientes: React.FC = () => {
     const id = confirmDeleteId;
     if (!id) return;
     setConfirmDeleteId(null);
-    await deleteCliente(id);
+    await remove(id);
   };
 
-  const handleCloseDialog = () => {
-    setIsDialogOpen(false);
-    setEditingCliente(null);
-  };
-
-  const filteredClientes = clientes.filter(cliente =>
+  const filteredClientes = clientes.filter((cliente) =>
     cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (cliente.cpfCnpj && cliente.cpfCnpj.includes(searchTerm)) ||
-    (cliente.emails && cliente.emails.some(email => email.toLowerCase().includes(searchTerm.toLowerCase()))) ||
+    (cliente.cpf && cliente.cpf.includes(searchTerm)) ||
+    (cliente.cnpj && cliente.cnpj.includes(searchTerm)) ||
+    (cliente.email && cliente.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (cliente.apelido && cliente.apelido.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const formatarCpfCnpj = (cpfCnpj: string, tipo: string) => {
-    if (!cpfCnpj) return '-';
-    const clean = cpfCnpj.replace(/\D/g, '');
-    if (tipo === 'F') {
+  const formatarCpfCnpj = (cliente: Entidade) => {
+    const doc = cliente.cpf || cliente.cnpj;
+    if (!doc) return '-';
+    const clean = doc.replace(/\D/g, '');
+    if (cliente.tipoPessoa === 'PF') {
       return clean.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-    } else {
-      return clean.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
     }
+    return clean.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
   };
 
   return (
@@ -65,29 +59,8 @@ const Clientes: React.FC = () => {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-primary mb-2">Clientes</h1>
-          <p className="text-muted-foreground">Gerencie seus clientes (pessoas físicas e jurídicas)</p>
+          <p className="text-muted-foreground">Entidades com o papel Cliente — cadastro novo em Cadastros → Entidades</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="flex items-center gap-2" onClick={() => setEditingCliente(null)}>
-              <Plus className="h-4 w-4" />
-              Novo Cliente
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingCliente ? 'Editar Cliente' : 'Novo Cliente'}
-              </DialogTitle>
-            </DialogHeader>
-            <FormCliente
-              cliente={editingCliente || undefined}
-              onSave={saveCliente}
-              onCancel={handleCloseDialog}
-              loading={loading}
-            />
-          </DialogContent>
-        </Dialog>
       </div>
 
       <Card>
@@ -120,14 +93,8 @@ const Clientes: React.FC = () => {
                 {searchTerm ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
               </h3>
               <p className="text-muted-foreground mb-4">
-                {searchTerm ? 'Tente ajustar os termos de busca' : 'Comece adicionando seu primeiro cliente'}
+                {searchTerm ? 'Tente ajustar os termos de busca' : 'Cadastre entidades com o papel Cliente em Cadastros → Entidades'}
               </p>
-              {!searchTerm && (
-                <Button onClick={() => setIsDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar Cliente
-                </Button>
-              )}
             </div>
           ) : (
             <Table>
@@ -138,7 +105,7 @@ const Clientes: React.FC = () => {
                   <TableHead>CPF/CNPJ</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Telefone</TableHead>
-                  <TableHead>Setor</TableHead>
+                  <TableHead>Papéis</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -158,18 +125,18 @@ const Clientes: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">
-                        {cliente.tipo === 'F' ? 'Pessoa Física' : 'Pessoa Jurídica'}
+                        {cliente.tipoPessoa === 'PF' ? 'Pessoa Física' : 'Pessoa Jurídica'}
                       </Badge>
                     </TableCell>
-                    <TableCell>{formatarCpfCnpj(cliente.cpfCnpj || '', cliente.tipo)}</TableCell>
-                    <TableCell>{cliente.emails?.[0] || '-'}</TableCell>
-                    <TableCell>{cliente.telefones?.[0] || '-'}</TableCell>
+                    <TableCell>{formatarCpfCnpj(cliente)}</TableCell>
+                    <TableCell>{cliente.email || '-'}</TableCell>
+                    <TableCell>{cliente.telefone || '-'}</TableCell>
                     <TableCell>
-                      {cliente.setor ? (
-                        <Badge variant="outline">
-                          {cliente.setor.codigo} - {cliente.setor.descricao}
-                        </Badge>
-                      ) : '-'}
+                      <div className="flex gap-1 flex-wrap">
+                        {cliente.papeis.map((p) => (
+                          <Badge key={p} variant="secondary" className="text-xs">{p}</Badge>
+                        ))}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant={cliente.ativo !== false ? 'default' : 'secondary'}>
@@ -181,7 +148,7 @@ const Clientes: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleEdit(cliente)}
+                          onClick={() => navigate(`/cadastros/entidades?edit=${cliente.id}`)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>

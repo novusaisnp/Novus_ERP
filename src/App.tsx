@@ -25,6 +25,7 @@ const RelatoriosOps = React.lazy(() => import('./pages/configuracoes/RelatoriosO
 
 // Cadastros Pages
 import Servicos from './pages/cadastros/Servicos';
+import Entidades from './pages/cadastros/Entidades';
 import Clientes from './pages/cadastros/Clientes';
 import Fornecedores from './pages/cadastros/Fornecedores';
 
@@ -133,6 +134,7 @@ function App() {
                   
                   {/* Cadastros Routes */}
                   <Route path="cadastros">
+                    <Route path="entidades" element={<Entidades />} />
                     <Route path="clientes" element={<Clientes />} />
                     <Route path="fornecedores" element={<Fornecedores />} />
                     <Route path="servicos" element={<Servicos />} />
