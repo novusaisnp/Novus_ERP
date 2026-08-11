@@ -1,6 +1,82 @@
 # Status do projeto — NOVUS ERP
 
-**Última atualização: 2026-08-11 (baixa com juros, multa, desconto e divisão entre contas).**
+**Última atualização: 2026-08-11 (rateio contábil editável no detalhe do título).**
+
+## 🔖 Checkpoint atual — rateio contábil editável no título (2026-08-11)
+
+Fecha L7. A aba Rateios mostrava os valores mas não permitia mexer neles: o botão
+"Adicionar" abria um marcador com o texto "Modal de formulário de rateio será implementado",
+e os ícones de editar e excluir de cada linha não tinham ação nenhuma.
+
+### Zero SQL novo
+
+`financeiro_salvar_titulo` só monta o `UPDATE` quando há coluna a alterar. Chamando-a com o
+payload de dados vazio, o título fica intacto e apenas os rateios são substituídos — na mesma
+transação, com a mesma validação de empresa e permissão já implantadas. Isso foi **verificado
+no banco antes de escrever o serviço**, com um cenário provando que a descrição do título não
+muda. Nenhuma migration nesta entrega.
+
+### Interface
+
+O botão virou "Editar rateio" e abre um diálogo que reusa o `RateioManager` do formulário de
+contas a pagar — o mesmo que já traz busca de rubrica, centro de custo, distribuição
+igualitária e conferência da soma. Escrever um segundo editor significaria manter as mesmas
+regras em dois lugares.
+
+Editar e remover passaram a acontecer sobre a lista inteira, não linha a linha: o rateio
+precisa fechar com o valor do título, então mexer numa linha isolada deixaria o conjunto
+inválido no meio do caminho. Salvar com a lista vazia remove o rateio.
+
+### Defeito corrigido no caminho
+
+`movimentacoesService` montava suas mensagens de erro com
+`error instanceof Error ? error.message : 'falha desconhecida'`. O erro do PostgREST chega
+como objeto simples com `message`, não como `Error` — então justamente a mensagem do banco,
+a que diz qual regra foi violada, era descartada e o usuário recebia "falha desconhecida".
+Corrigido em um helper único, aplicado às quatro ocorrências. Foi um teste desta entrega que
+expôs o problema.
+
+### Armadilha de interface encontrada ao vivo
+
+O `RateioManager` só entrega uma linha ao componente pai depois do clique em "Pré-registrar
+rateio". Preenchendo rubrica e valor sem esse clique, o botão de salvar continuava
+desabilitado sem dizer por quê — testando ao vivo, o primeiro salvamento gravou o estado
+antigo. A mensagem passou a ser explícita: "Escolha a rubrica e clique em Pré-registrar
+rateio para confirmar cada linha".
+
+### Achado de configuração, fora do escopo desta entrega
+
+A empresa usada no teste **não tem nenhuma conta no plano de contas**. Sem rubricas
+cadastradas o rateio contábil é inutilizável, e a tela não explica isso — só mostra uma busca
+que nunca encontra nada. Reforça o item de FIN-3 sobre onboarding financeiro com plano de
+contas padrão. As rubricas criadas para o teste foram removidas.
+
+### Validação
+
+- Cenário no banco real, dentro de rollback, provando que payload vazio troca só os rateios.
+- Três testes novos do serviço: payload de título vazio com `descricao` virando `observacoes`;
+  lista vazia removendo o rateio; e falha propagada em vez de sucesso fingido.
+- Ao vivo: diálogo abriu com o rateio existente, "Distribuir Igualmente" fez 50/50, a
+  validação de rubrica bloqueou o salvamento, e após pré-registrar as duas linhas o banco
+  confirmou dois rateios de R$ 50 somando o valor do título. Dados temporários removidos.
+- `npm run typecheck` limpo. `npm run test -- --run` → 46 arquivos, 361/361.
+
+### Arquivos desta entrega
+
+- `src/components/financeiro/movimentacoes/RateioContabilModal.tsx` (novo)
+- `src/components/financeiro/movimentacoes/RateiosTab.tsx`
+- `src/services/movimentacoesService.ts` + `movimentacoesService.test.ts`
+- `docs/ROADMAP_2026.md`
+- `docs/STATUS.md`
+
+### Próxima ação única
+
+**Provar isolamento entre empresas em leitura e escrita** — último item aberto da FIN-0, e
+critério de saída da fase. Criar duas empresas de teste e provar, por teste automatizado, que
+um usuário de uma não lê nem escreve dados da outra em nenhum caminho financeiro: consultas,
+RPCs e a gravação de título com rateio.
+
+---
 
 ## 🔖 Checkpoint atual — baixa parcial completa (2026-08-11)
 

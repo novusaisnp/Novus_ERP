@@ -58,7 +58,7 @@ duas baixas concorrentes não duplicam pagamento e nenhum usuário opera fora do
 - [x] Submodal de baixa parcial com juros, multa, desconto e saldo posterior.
 - [x] Divisão da baixa entre múltiplas contas/meios de pagamento.
 - [ ] Renegociação: substituir título por novas parcelas preservando rastreabilidade.
-- [ ] Gestão de rateios de pagar e receber no detalhe do título.
+- [x] Gestão de rateios de pagar e receber no detalhe do título.
 - [ ] Vincular uma movimentação bancária existente ou criar e conciliar uma nova.
 - [ ] Cadastro rápido de entidade nos consumidores financeiros usando o cadastro central.
 - [ ] Aplicar filtros já declarados de conta bancária e usuário.

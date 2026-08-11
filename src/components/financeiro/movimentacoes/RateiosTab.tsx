@@ -6,10 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Edit, Trash2, Plus, Building, DollarSign } from 'lucide-react';
+import { Edit, Plus, Building, DollarSign } from 'lucide-react';
 import { useRateiosTitulo } from '@/hooks/useMovimentacoesCompletas';
 import { TituloFinanceiro } from '@/types/movimentacoesFinanceiras';
 import { currencyUtils } from '@/utils/currencyUtils';
+import { RateioContabilModal } from './RateioContabilModal';
 
 interface RateiosTabProps {
   titulo: TituloFinanceiro;
@@ -158,8 +159,8 @@ export const RateiosTab = ({ titulo, podeEditar }: RateiosTabProps) => {
                 <CardTitle>Rateio contábil por rubrica</CardTitle>
                 {podeEditar && (
                   <Button size="sm" onClick={() => setShowForm(true)}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Adicionar
+                    <Edit className="w-4 h-4 mr-2" />
+                    Editar rateio
                   </Button>
                 )}
               </CardHeader>
@@ -201,16 +202,9 @@ export const RateiosTab = ({ titulo, podeEditar }: RateiosTabProps) => {
                           )}
                         </div>
                         
-                        {podeEditar && (
-                          <div className="flex gap-1 flex-shrink-0">
-                            <Button size="sm" variant="outline" className="h-8 w-8 p-0">
-                              <Edit className="w-3 h-3" />
-                            </Button>
-                            <Button size="sm" variant="outline" className="h-8 w-8 p-0">
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        )}
+                        {/* Editar e remover acontecem no diálogo, sobre a lista inteira: o
+                            rateio precisa fechar com o valor do título, então mexer numa
+                            linha isolada deixaria o conjunto inválido no meio do caminho. */}
                       </div>
                     ))}
                   </div>
@@ -308,17 +302,12 @@ export const RateiosTab = ({ titulo, podeEditar }: RateiosTabProps) => {
           </Card>
         )}
 
-        {/* TODO: Modal de formulário para adicionar/editar rateios */}
-        {showForm && (
-          <div className="text-center p-4 border border-dashed rounded-lg">
-            <p className="text-muted-foreground">
-              Modal de formulário de rateio será implementado
-            </p>
-            <Button variant="outline" className="mt-2" onClick={() => setShowForm(false)}>
-              Fechar
-            </Button>
-          </div>
-        )}
+        <RateioContabilModal
+          isOpen={showForm}
+          onClose={() => setShowForm(false)}
+          titulo={titulo}
+          rateios={rateios}
+        />
       </div>
     </ScrollArea>
   );

@@ -15,6 +15,50 @@ import { AutorizacaoRequeridaError } from './autorizacaoFinanceiraService';
 const rpc = supabase.rpc as unknown as ReturnType<typeof vi.fn>;
 const from = supabase.from as unknown as ReturnType<typeof vi.fn>;
 
+vi.mock('@/lib/empresaAtiva', () => ({
+  getEmpresaAtivaIdOuFalha: () => Promise.resolve('empresa-1'),
+}));
+
+describe('movimentacoesService.salvarRateios', () => {
+  beforeEach(() => rpc.mockReset());
+
+  it('troca somente os rateios, com payload de titulo vazio', async () => {
+    rpc.mockResolvedValue({ data: 'titulo-1', error: null });
+
+    await movimentacoesService.salvarRateios('titulo-1', 'CONTAS_RECEBER', [
+      { plano_conta_id: 'pc-1', valor: 60, percentual: 60, descricao: 'parte A' },
+      { plano_conta_id: 'pc-2', valor: 40, percentual: 40 },
+    ]);
+
+    expect(rpc).toHaveBeenCalledOnce();
+    const [nome, args] = rpc.mock.calls[0] as [string, Record<string, unknown>];
+    expect(nome).toBe('financeiro_salvar_titulo');
+    // Payload vazio: a RPC não monta UPDATE nenhum, então o título fica intacto.
+    expect(args.p_dados).toEqual({});
+    expect(args.p_titulo_id).toBe('titulo-1');
+    expect(args.p_rateios).toHaveLength(2);
+    // `descricao` na interface é `observacoes` na tabela.
+    expect((args.p_rateios as Array<Record<string, unknown>>)[0].observacoes).toBe('parte A');
+  });
+
+  it('lista vazia remove o rateio do titulo', async () => {
+    rpc.mockResolvedValue({ data: 'titulo-1', error: null });
+
+    await movimentacoesService.salvarRateios('titulo-1', 'CONTAS_PAGAR', []);
+
+    const [, args] = rpc.mock.calls[0] as [string, Record<string, unknown>];
+    expect(args.p_rateios).toEqual([]);
+  });
+
+  it('propaga falha em vez de fingir sucesso', async () => {
+    rpc.mockResolvedValue({ data: null, error: { message: 'rubrica invalida' } });
+
+    await expect(
+      movimentacoesService.salvarRateios('titulo-1', 'CONTAS_RECEBER', []),
+    ).rejects.toThrow('rubrica invalida');
+  });
+});
+
 describe('movimentacoesService.getRateiosTitulo', () => {
   beforeEach(() => from.mockReset());
 

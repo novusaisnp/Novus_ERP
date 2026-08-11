@@ -34,6 +34,22 @@ export interface DocumentoTitulo {
   created_at: string;
 }
 
+/**
+ * Mensagem legível de uma falha.
+ *
+ * O erro do PostgREST chega como objeto simples com `message`, não como `Error`. Testar só
+ * por `instanceof Error` descartava justamente a mensagem do banco — a que diz qual regra
+ * foi violada — e entregava "falha desconhecida" ao usuário.
+ */
+const mensagemDoErro = (erro: unknown): string => {
+  if (erro instanceof Error) return erro.message;
+  if (typeof erro === 'object' && erro !== null) {
+    const { message } = erro as { message?: unknown };
+    if (typeof message === 'string' && message) return message;
+  }
+  return 'falha desconhecida';
+};
+
 export const movimentacoesService = {
   // Liquidar/Baixar título
   async liquidarTitulo(dadosLiquidacao: LiquidacaoTitulo): Promise<void> {
@@ -57,7 +73,7 @@ export const movimentacoesService = {
     } catch (error) {
       if (exigeAutorizacao(error)) throw new AutorizacaoRequeridaError('LIQUIDACAO_RETROATIVA');
       console.error('[MovimentacoesService] Erro ao liquidar título:', error);
-      throw new Error(`Erro ao liquidar título: ${error instanceof Error ? error.message : 'falha desconhecida'}`);
+      throw new Error(`Erro ao liquidar título: ${mensagemDoErro(error)}`);
     }
   },
 
@@ -104,7 +120,7 @@ export const movimentacoesService = {
     } catch (error) {
       if (exigeAutorizacao(error)) throw new AutorizacaoRequeridaError('ESTORNO');
       console.error('[MovimentacoesService] Erro ao estornar liquidação:', error);
-      throw new Error(`Erro ao estornar liquidação: ${error instanceof Error ? error.message : 'falha desconhecida'}`);
+      throw new Error(`Erro ao estornar liquidação: ${mensagemDoErro(error)}`);
     }
   },
 
@@ -151,7 +167,7 @@ export const movimentacoesService = {
     } catch (error) {
       if (exigeAutorizacao(error)) throw new AutorizacaoRequeridaError('CANCELAMENTO');
       console.error('[MovimentacoesService] Erro ao cancelar título:', error);
-      throw new Error(`Erro ao cancelar título: ${error instanceof Error ? error.message : 'falha desconhecida'}`);
+      throw new Error(`Erro ao cancelar título: ${mensagemDoErro(error)}`);
     }
   },
 
@@ -186,6 +202,47 @@ export const movimentacoesService = {
     } catch (error) {
       console.error('[MovimentacoesService] Erro ao buscar histórico:', error);
       throw new Error(`Erro ao buscar histórico: ${error.message}`);
+    }
+  },
+
+  /**
+   * Substitui o rateio contábil de um título sem tocar nos demais campos dele.
+   *
+   * Reusa `financeiro_salvar_titulo` com o payload de dados vazio: a RPC só monta o UPDATE
+   * quando há coluna a alterar, então o título fica intacto e os rateios são trocados na
+   * mesma transação — sem caminho de escrita novo e sem repetir a atomicidade.
+   */
+  async salvarRateios(
+    tituloId: string,
+    tipoTitulo: string,
+    rateios: Array<{
+      plano_conta_id?: string | null;
+      centro_custo_id?: string | null;
+      valor: number;
+      percentual: number;
+      descricao?: string | null;
+    }>,
+  ): Promise<void> {
+    try {
+      const { error } = await supabase.rpc('financeiro_salvar_titulo', {
+        p_tipo_titulo: tipoTitulo,
+        p_dados: {} as unknown as Json,
+        p_rateios: rateios.map((r) => ({
+          plano_conta_id: r.plano_conta_id || null,
+          centro_custo_id: r.centro_custo_id || null,
+          valor: r.valor,
+          percentual: r.percentual,
+          observacoes: r.descricao || null,
+        })) as unknown as Json,
+        p_titulo_id: tituloId,
+        p_empresa_id: await getEmpresaIdAtual(),
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error('[MovimentacoesService] Erro ao salvar rateios:', error);
+      throw new Error(
+        `Erro ao salvar rateios: ${mensagemDoErro(error)}`,
+      );
     }
   },
 
