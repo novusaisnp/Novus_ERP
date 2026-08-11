@@ -43,21 +43,30 @@ beforeEach(() => {
   mock.rpc.mockResolvedValue({ data: 'empresa-1', error: null });
 });
 
+// A `entidades` real (ao contrário da antiga `fornecedores`) não tem
+// endereco/dados_bancarios jsonb nem os campos ricos de PJ/PF (cnae,
+// capital_social, anexos, etc.) — só os campos flat que existem de verdade
+// no banco. O mapeamento silenciosamente descarta o resto, o que é uma
+// melhoria: antes esses campos extras faziam o INSERT falhar por completo
+// (coluna inexistente), então o cadastro de fornecedor nunca funcionava.
 describe('fornecedorService.transformToSupabaseFormat (PJ)', () => {
-  it('serializa campos PJ e zera PF', () => {
-    const p = fornecedorService.transformToSupabaseFormat(pj);
+  it('serializa campos PJ reais e zera PF', () => {
+    const p = fornecedorService.transformToSupabaseFormat(pj, 'empresa-1');
     expect(p).toMatchObject({
+      empresa_representada_id: 'empresa-1',
       tipo_pessoa: 'PJ',
+      nome: 'ACME',
       razao_social: 'ACME',
       nome_fantasia: 'AC',
       cnpj: '11222333000181',
-      cnae: '1234',
-      capital_social: 1000,
-      nome_completo: null,
       cpf: null,
       email: 'a@a.com',
       telefone: '11999',
-      telefones: [{ numero: '11999', tipo: 'celular' }],
+      estado: 'SP',
+      banco: 'BB',
+      agencia: '0001',
+      conta: '12345-6',
+      tipo_conta: 'corrente',
       ativo: true,
     });
     expect(p.data_fundacao).toBe('2020-01-15');
@@ -66,16 +75,16 @@ describe('fornecedorService.transformToSupabaseFormat (PJ)', () => {
 });
 
 describe('fornecedorService.transformToSupabaseFormat (PF)', () => {
-  it('usa nome_completo como razao_social e zera PJ', () => {
-    const p = fornecedorService.transformToSupabaseFormat(pf);
+  it('usa nome_completo como nome e zera PJ', () => {
+    const p = fornecedorService.transformToSupabaseFormat(pf, 'empresa-1');
     expect(p).toMatchObject({
       tipo_pessoa: 'PF',
-      razao_social: 'João',
-      nome_completo: 'João',
+      nome: 'João',
+      razao_social: null,
       cpf: '52998224725',
+      rg: '123',
       cnpj: null,
-      cnae: null,
-      capital_social: null,
+      nome_fantasia: null,
     });
     expect(p.data_nascimento).toBe('1990-06-10');
   });
@@ -84,30 +93,47 @@ describe('fornecedorService.transformToSupabaseFormat (PF)', () => {
 describe('fornecedorService CRUD', () => {
   it('fetchFornecedores retorna lista', async () => {
     mock.from.mockImplementationOnce(() => ({
-      select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [{ id: 'f1' }], error: null }) }) }),
+      select: () => ({
+        eq: () => ({
+          eq: () => ({ is: () => ({ order: () => Promise.resolve({ data: [{ id: 'f1' }], error: null }) }) }),
+        }),
+      }),
     }));
     expect(await fornecedorService.fetchFornecedores()).toEqual([{ id: 'f1' }]);
   });
 
   it('fetchFornecedores propaga erro', async () => {
     mock.from.mockImplementationOnce(() => ({
-      select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: null, error: { message: 'x' } }) }) }),
+      select: () => ({
+        eq: () => ({
+          eq: () => ({ is: () => ({ order: () => Promise.resolve({ data: null, error: { message: 'x' } }) }) }),
+        }),
+      }),
     }));
     await expect(fornecedorService.fetchFornecedores()).rejects.toBeTruthy();
   });
 
-  it('createFornecedor envia payload transformado', async () => {
-    let captured: Record<string, unknown> = {};
-    mock.from.mockImplementationOnce(() => ({
-      insert: (p: Record<string, unknown>) => {
-        captured = p;
-        return { select: () => ({ single: () => Promise.resolve({ data: { id: 'new' }, error: null }) }) };
-      },
-    }));
+  it('createFornecedor envia payload transformado e vincula papel Fornecedor', async () => {
+    let capturedEntidade: Record<string, unknown> = {};
+    let capturedPapel: Record<string, unknown> = {};
+    mock.from
+      .mockImplementationOnce(() => ({
+        insert: (p: Record<string, unknown>) => {
+          capturedEntidade = p;
+          return { select: () => ({ single: () => Promise.resolve({ data: { id: 'new' }, error: null }) }) };
+        },
+      }))
+      .mockImplementationOnce(() => ({
+        insert: (p: Record<string, unknown>) => {
+          capturedPapel = p;
+          return Promise.resolve({ error: null });
+        },
+      }));
     const res = await fornecedorService.createFornecedor(pj);
-    expect(captured.tipo_pessoa).toBe('PJ');
-    expect(captured.razao_social).toBe('ACME');
-    expect(captured.cnpj).toBe('11222333000181');
+    expect(capturedEntidade.tipo_pessoa).toBe('PJ');
+    expect(capturedEntidade.razao_social).toBe('ACME');
+    expect(capturedEntidade.cnpj).toBe('11222333000181');
+    expect(capturedPapel).toMatchObject({ entidade_id: 'new', papel: 'FORNECEDOR' });
     expect(res).toEqual({ id: 'new' });
   });
 
@@ -126,14 +152,14 @@ describe('fornecedorService CRUD', () => {
     expect(res).toEqual({ id: 'f-1' });
   });
 
-  it('deleteFornecedor resolve e propaga erro', async () => {
+  it('deleteFornecedor faz soft delete e propaga erro', async () => {
     mock.from.mockImplementationOnce(() => ({
-      delete: () => ({ eq: () => Promise.resolve({ error: null }) }),
+      update: () => ({ eq: () => Promise.resolve({ error: null }) }),
     }));
     await expect(fornecedorService.deleteFornecedor('f-1')).resolves.toBeUndefined();
 
     mock.from.mockImplementationOnce(() => ({
-      delete: () => ({ eq: () => Promise.resolve({ error: { message: 'FK' } }) }),
+      update: () => ({ eq: () => Promise.resolve({ error: { message: 'FK' } }) }),
     }));
     await expect(fornecedorService.deleteFornecedor('f-2')).rejects.toBeTruthy();
   });

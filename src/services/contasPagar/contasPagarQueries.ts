@@ -9,7 +9,7 @@ export const buildContasPagarQuery = (filtros: ContaPagarFilters = {}, empresaId
     .from('contas_pagar')
     .select(`
       *,
-      fornecedores (
+      fornecedores:entidades!contas_pagar_fornecedor_id_fkey (
         id,
         razao_social,
         nome_fantasia
@@ -86,7 +86,7 @@ export const getContaPagarByIdQuery = (id: string, empresaId: string) => {
     .from('contas_pagar')
     .select(`
       *,
-      fornecedores (
+      fornecedores:entidades!contas_pagar_fornecedor_id_fkey (
         id,
         razao_social,
         nome_fantasia

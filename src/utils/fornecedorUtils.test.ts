@@ -104,7 +104,7 @@ describe('fornecedorUtils.validarEmail / formatarCNPJ / formatarCPF', () => {
 });
 
 describe('fornecedorUtils.transformSupabaseToFornecedor', () => {
-  it('round-trip PJ com JSON populado', () => {
+  it('round-trip PJ com colunas reais de entidades', () => {
     const item: SupabaseFornecedor = {
       id: 'f1',
       tipo_pessoa: 'PJ',
@@ -112,17 +112,13 @@ describe('fornecedorUtils.transformSupabaseToFornecedor', () => {
       nome_fantasia: 'AC',
       cnpj: '11222333000181',
       data_fundacao: '2020-01-01',
-      cnae: '1234',
-      capital_social: 1000,
-      anexos_pj: { contrato_social: 'url1' },
-      contato_principal: { nome: 'X', cargo: 'Y' },
-      referencias_comerciais: 'ref',
       email: 'a@a.com',
       telefone: '11999',
-      telefones: ['11999'],
-      endereco: { uf: 'SP' },
-      dados_bancarios: { banco: 'BB', agencia: '1', conta: '2', tipo_conta: 'corrente', numero_banco: '001' },
-      qualificacao_fiscal: { regime: 'simples' },
+      estado: 'SP',
+      banco: 'BB',
+      agencia: '1',
+      conta: '2',
+      tipo_conta: 'corrente',
       ativo: true,
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-02-01T00:00:00Z',
@@ -133,7 +129,9 @@ describe('fornecedorUtils.transformSupabaseToFornecedor', () => {
     expect(f.razaoSocial).toBe('ACME');
     expect(f.cnpj).toBe('11222333000181');
     expect(f.data_fundacao).toBeInstanceOf(Date);
-    expect(f.telefones).toEqual(['11999']);
+    expect(f.telefones).toEqual([{ numero: '11999', tipo: 'celular' }]);
+    expect(f.endereco?.uf).toBe('SP');
+    expect(f.dados_bancarios?.banco).toBe('BB');
     expect(f.ativo).toBe(true);
     expect(f.createdAt).toBeInstanceOf(Date);
     expect(f.updatedAt).toBeInstanceOf(Date);
@@ -149,7 +147,7 @@ describe('fornecedorUtils.transformSupabaseToFornecedor', () => {
     expect(f.tipo_pessoa).toBe('PJ');
     expect(f.razaoSocial).toBe('');
     expect(f.telefones).toEqual([]);
-    expect(f.dados_bancarios.tipo_conta).toBe('corrente');
+    expect(f.dados_bancarios?.tipo_conta).toBe('corrente');
     expect(f.usar_endereco_principal_correspondencia).toBe(true);
     expect(f.ativo).toBe(true);
   });

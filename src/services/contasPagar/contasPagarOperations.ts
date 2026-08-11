@@ -72,7 +72,7 @@ export const createContaPagar = async (input: ContaPagarInput) => {
     .from('contas_pagar')
     .select(`
       *,
-      fornecedores!contas_pagar_fornecedor_id_fkey(id, razao_social, nome_fantasia),
+      fornecedores:entidades!contas_pagar_fornecedor_id_fkey(id, razao_social, nome_fantasia),
       plano_contas!contas_pagar_plano_conta_id_fkey(id, codigo, nome),
       centros_custo!contas_pagar_centro_custo_id_fkey(id, nome, codigo)
     `)
@@ -141,7 +141,7 @@ export const updateContaPagar = async (id: string, input: ContaPagarInput) => {
     .from('contas_pagar')
     .select(`
       *,
-      fornecedores!contas_pagar_fornecedor_id_fkey(id, razao_social, nome_fantasia),
+      fornecedores:entidades!contas_pagar_fornecedor_id_fkey(id, razao_social, nome_fantasia),
       plano_contas!contas_pagar_plano_conta_id_fkey(id, codigo, nome),
       centros_custo!contas_pagar_centro_custo_id_fkey(id, nome, codigo)
     `)

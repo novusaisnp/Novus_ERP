@@ -3,192 +3,147 @@ import { supabase } from '@/integrations/supabase/client';
 import { Fornecedor } from '@/types/fornecedor';
 import { getEmpresaAtivaIdOuFalha } from '@/lib/empresaAtiva';
 
+// Forma real de `entidades` (flat, sem jsonb) — substitui o `SupabaseFornecedor`
+// antigo, que declarava dezenas de campos (cnae, anexos_pj, dados_bancarios
+// jsonb...) que a tabela nunca teve.
 export interface SupabaseFornecedor {
   id: string;
-  tipo_pessoa: string;
-  razao_social?: string;
-  nome_fantasia?: string;
-  cnpj?: string;
-  data_fundacao?: string;
-  cnae?: string;
-  capital_social?: number;
-  anexos_pj?: { contrato_social?: string | null; cartao_cnpj?: string | null; logotipo?: string | null; portfolio_anexo?: string | null } | null;
-  contato_principal?: { nome: string; cargo: string } | null;
-  referencias_comerciais?: string;
-  atividade_principal?: string;
-  prazo_entrega_habitual?: string;
-  responsavel_preenchimento?: { nome: string; cargo: string } | null;
-  nome_completo?: string;
-  data_nascimento?: string;
-  cpf?: string;
-  rg?: string;
-  orgao_emissor_rg?: string;
-  anexos_pf?: { comprovante_residencia?: string | null; copia_rg?: string | null; cartao_bancario?: string | null } | null;
-  referencias_pessoais?: string;
-  horario_atendimento?: string;
-  email?: string;
-  telefone?: string;
-  telefones?: unknown;
-  endereco?: unknown;
-  endereco_correspondencia?: unknown;
-  usar_endereco_principal_correspondencia?: boolean;
-  dados_bancarios?: { banco: string; agencia: string; conta: string; tipo_conta: 'corrente' | 'poupanca'; numero_banco?: string } | null;
-  qualificacao_fiscal?: unknown;
+  tipo_pessoa?: string | null;
+  nome?: string | null;
+  razao_social?: string | null;
+  nome_fantasia?: string | null;
+  cnpj?: string | null;
+  cpf?: string | null;
+  rg?: string | null;
+  inscricao_estadual?: string | null;
+  inscricao_municipal?: string | null;
+  data_fundacao?: string | null;
+  data_nascimento?: string | null;
+  email?: string | null;
+  telefone?: string | null;
+  cep?: string | null;
+  logradouro?: string | null;
+  numero?: string | null;
+  complemento?: string | null;
+  bairro?: string | null;
+  cidade?: string | null;
+  estado?: string | null;
+  banco?: string | null;
+  agencia?: string | null;
+  conta?: string | null;
+  tipo_conta?: string | null;
+  prazo_entrega?: number | null;
   ativo: boolean;
   created_at: string;
   updated_at?: string;
   [key: string]: unknown;
 }
 
+// Mapeia só pros campos reais de `entidades` (flat, sem jsonb) — o service
+// antigo mandava dezenas de campos que a tabela `fornecedores` nunca teve
+// (endereco jsonb, dados_bancarios jsonb, anexos_pj, cnae, etc.), o que
+// derrubava todo INSERT/UPDATE com erro de coluna inexistente. Bate com
+// fornecedores=0 linhas reais na produção — o cadastro nunca funcionou.
+// Corrigido aqui (não só renomeado) porque estava quebrado de qualquer forma.
+function toEntidadePayload(f: Fornecedor, empresaId: string) {
+  const isPJ = (f.tipo_pessoa || 'PJ') === 'PJ';
+  const prazoNumerico = f.prazo_entrega_habitual ? parseInt(f.prazo_entrega_habitual, 10) : null;
+  return {
+    empresa_representada_id: empresaId,
+    tipo_pessoa: f.tipo_pessoa || 'PJ',
+    nome: isPJ ? (f.razaoSocial || f.nomeFantasia || '') : (f.nome_completo || ''),
+    razao_social: isPJ ? (f.razaoSocial || null) : null,
+    nome_fantasia: isPJ ? (f.nomeFantasia || null) : null,
+    cnpj: isPJ ? (f.cnpj || null) : null,
+    cpf: !isPJ ? (f.cpf || null) : null,
+    rg: !isPJ ? (f.rg || null) : null,
+    data_fundacao: isPJ && f.data_fundacao ? f.data_fundacao.toISOString().split('T')[0] : null,
+    data_nascimento: !isPJ && f.data_nascimento ? f.data_nascimento.toISOString().split('T')[0] : null,
+    inscricao_estadual: f.qualificacaoFiscal?.inscricaoEstadual || null,
+    inscricao_municipal: f.qualificacaoFiscal?.inscricaoMunicipal || null,
+    email: f.email || null,
+    telefone: f.telefone || f.telefones?.[0]?.numero || null,
+    cep: f.endereco?.cep || null,
+    logradouro: f.endereco?.logradouro || null,
+    numero: f.endereco?.numero || null,
+    complemento: f.endereco?.complemento || null,
+    bairro: f.endereco?.bairro || null,
+    cidade: f.endereco?.cidade || null,
+    estado: f.endereco?.uf || null,
+    banco: f.dados_bancarios?.banco || null,
+    agencia: f.dados_bancarios?.agencia || null,
+    conta: f.dados_bancarios?.conta || null,
+    tipo_conta: f.dados_bancarios?.tipo_conta || null,
+    prazo_entrega: Number.isFinite(prazoNumerico) ? prazoNumerico : null,
+    ativo: f.ativo !== false,
+    updated_at: new Date().toISOString(),
+  };
+}
+
 export const fornecedorService = {
   async fetchFornecedores() {
-    console.log('[fornecedorService] Buscando fornecedores...');
     const empresaId = await getEmpresaAtivaIdOuFalha();
     const { data, error } = await supabase
-      .from('fornecedores')
-      .select('*')
+      .from('entidades')
+      .select('*, entidade_papeis!inner(papel)')
       .eq('empresa_representada_id', empresaId)
+      .eq('entidade_papeis.papel', 'FORNECEDOR')
+      .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
     if (error) {
       console.error('[fornecedorService] Erro ao carregar fornecedores:', error);
       throw error;
     }
-
-    console.log('[fornecedorService] Fornecedores carregados:', data?.length || 0);
-    return data || [];
+    return (data || []).map(({ entidade_papeis: _omit, ...e }) => e);
   },
 
   async createFornecedor(fornecedorData: Fornecedor) {
-    console.log('[fornecedorService] Criando fornecedor:', fornecedorData.tipo_pessoa);
-    
-    const dataToSave = this.transformToSupabaseFormat(fornecedorData);
-    console.log('[fornecedorService] Dados para salvar:', dataToSave);
+    const empresaId = await getEmpresaAtivaIdOuFalha();
+    const payload = this.transformToSupabaseFormat(fornecedorData, empresaId);
 
-    const { data, error } = await supabase
-      .from('fornecedores')
-      .insert(dataToSave)
-      .select()
-      .single();
-
+    const { data, error } = await supabase.from('entidades').insert(payload).select().single();
     if (error) {
       console.error('[fornecedorService] Erro ao criar fornecedor:', error);
       throw error;
     }
 
-    console.log('[fornecedorService] Fornecedor criado:', data.id);
+    const { error: papelError } = await supabase
+      .from('entidade_papeis')
+      .insert({ entidade_id: data.id, empresa_representada_id: empresaId, papel: 'FORNECEDOR' });
+    if (papelError) {
+      console.error('[fornecedorService] Erro ao vincular papel Fornecedor:', papelError);
+      throw papelError;
+    }
+
     return data;
   },
 
   async updateFornecedor(id: string, fornecedorData: Fornecedor) {
-    console.log('[fornecedorService] Atualizando fornecedor:', id, fornecedorData.tipo_pessoa);
-    
-    const dataToSave = this.transformToSupabaseFormat(fornecedorData);
+    const empresaId = await getEmpresaAtivaIdOuFalha();
+    const payload = this.transformToSupabaseFormat(fornecedorData, empresaId);
 
-    const { data, error } = await supabase
-      .from('fornecedores')
-      .update(dataToSave)
-      .eq('id', id)
-      .select()
-      .single();
-
+    const { data, error } = await supabase.from('entidades').update(payload).eq('id', id).select().single();
     if (error) {
       console.error('[fornecedorService] Erro ao atualizar fornecedor:', error);
       throw error;
     }
-
-    console.log('[fornecedorService] Fornecedor atualizado:', data.id);
     return data;
   },
 
   async deleteFornecedor(id: string) {
-    console.log('[fornecedorService] Excluindo fornecedor:', id);
-    
     const { error } = await supabase
-      .from('fornecedores')
-      .delete()
+      .from('entidades')
+      .update({ deleted_at: new Date().toISOString(), ativo: false })
       .eq('id', id);
 
     if (error) {
       console.error('[fornecedorService] Erro ao excluir fornecedor:', error);
       throw error;
     }
-
-    console.log('[fornecedorService] Fornecedor excluído:', id);
   },
 
-  transformToSupabaseFormat(fornecedorData: Fornecedor) {
-    const baseData = {
-      tipo_pessoa: fornecedorData.tipo_pessoa || 'PJ',
-      email: fornecedorData.email || null,
-      telefone: fornecedorData.telefone || null,
-      endereco: fornecedorData.endereco || null,
-      qualificacao_fiscal: fornecedorData.qualificacaoFiscal || {},
-      ativo: fornecedorData.ativo !== false,
-      updated_at: new Date().toISOString(),
-      
-      // Campos comuns expandidos
-      endereco_correspondencia: fornecedorData.endereco_correspondencia || null,
-      usar_endereco_principal_correspondencia: fornecedorData.usar_endereco_principal_correspondencia !== false,
-      telefones: fornecedorData.telefones || [],
-      dados_bancarios: fornecedorData.dados_bancarios || {}
-    };
-
-    if (fornecedorData.tipo_pessoa === 'PJ') {
-      return {
-        ...baseData,
-        // Campos PJ obrigatórios
-        razao_social: fornecedorData.razaoSocial || '',
-        nome_fantasia: fornecedorData.nomeFantasia || null,
-        cnpj: fornecedorData.cnpj || null,
-        data_fundacao: fornecedorData.data_fundacao ? fornecedorData.data_fundacao.toISOString().split('T')[0] : null,
-        cnae: fornecedorData.cnae || null,
-        capital_social: fornecedorData.capital_social || null,
-        anexos_pj: fornecedorData.anexos_pj || {},
-        contato_principal: fornecedorData.contato_principal || {},
-        referencias_comerciais: fornecedorData.referencias_comerciais || null,
-        atividade_principal: fornecedorData.atividade_principal || null,
-        prazo_entrega_habitual: fornecedorData.prazo_entrega_habitual || null,
-        responsavel_preenchimento: fornecedorData.responsavel_preenchimento || {},
-        
-        // Campos PF como null
-        nome_completo: null,
-        data_nascimento: null,
-        cpf: null,
-        rg: null,
-        orgao_emissor_rg: null,
-        anexos_pf: {},
-        referencias_pessoais: null,
-        horario_atendimento: null
-      };
-    } else {
-      // Para Pessoa Física, usar nome_completo como razao_social (campo obrigatório)
-      return {
-        ...baseData,
-        // Para PF, razao_social é obrigatório, então usamos nome_completo
-        razao_social: fornecedorData.nome_completo || '',
-        nome_fantasia: null,
-        cnpj: null,
-        data_fundacao: null,
-        cnae: null,
-        capital_social: null,
-        anexos_pj: {},
-        contato_principal: {},
-        referencias_comerciais: null,
-        atividade_principal: null,
-        prazo_entrega_habitual: null,
-        responsavel_preenchimento: {},
-        
-        // Campos PF
-        nome_completo: fornecedorData.nome_completo || '',
-        data_nascimento: fornecedorData.data_nascimento ? fornecedorData.data_nascimento.toISOString().split('T')[0] : null,
-        cpf: fornecedorData.cpf || null,
-        rg: fornecedorData.rg || null,
-        orgao_emissor_rg: fornecedorData.orgao_emissor_rg || null,
-        anexos_pf: fornecedorData.anexos_pf || {},
-        referencias_pessoais: fornecedorData.referencias_pessoais || null,
-        horario_atendimento: fornecedorData.horario_atendimento || null
-      };
-    }
-  }
+  transformToSupabaseFormat(fornecedorData: Fornecedor, empresaId: string) {
+    return toEntidadePayload(fornecedorData, empresaId);
+  },
 };

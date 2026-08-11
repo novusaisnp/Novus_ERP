@@ -61,9 +61,30 @@ papel (`papeis_catalogo.tipo_pessoa_permitido`), não hardcoded.
    `fetchColaboradores`/`colaborador-preflight`, `DELETE` e confirmar cascade limpou as 3 tabelas). Padrão
    `!inner` em embed do PostgREST já usado nesta base (`contaBancariaService.ts`), não é sintaxe nova.
 
-**Próximo passo**: Fase 2b (Fornecedores, 12 arquivos) e Fase 2c (Clientes, 23 arquivos + contrato de sync
-com satélite) — mesmo padrão de retargetar FK mantendo nome de coluna onde possível, reescrever só quem
-consulta as tabelas legadas direto.
+6. **Fase 2b (concluída, migration `20260810233000_backfill_cutover_fornecedores.sql`)**: `fornecedores` →
+   `entidades`+`entidade_papeis` (papel `FORNECEDOR`), mesmo padrão de preservar `id`. FKs de `contas_pagar`
+   e `produto_fornecedores` retargeted mantendo nome de coluna. **Bug real encontrado e corrigido nesta
+   fase, não introduzido por ela**: `fornecedorService.ts` (`transformToSupabaseFormat`) mandava dezenas de
+   campos (`cnae`, `capital_social`, `anexos_pj`, `dados_bancarios` jsonb, `endereco` jsonb...) que a tabela
+   `fornecedores` **nunca teve** — todo `INSERT`/`UPDATE` de fornecedor falhava com erro de coluna
+   inexistente, o que bate exatamente com `fornecedores=0` linhas reais na produção (o cadastro nunca
+   funcionou). Corrigido pra mapear só os campos reais de `entidades` — não só renomeado, consertado, já que
+   estava quebrado de qualquer forma. Mesmo bug espelhado em `fornecedorUtils.transformSupabaseToFornecedor`
+   (sentido de leitura) — corrigido junto, testes (`fornecedorService.test.ts`/`fornecedorUtils.test.ts`)
+   reescritos pra validar o mapeamento real em vez do antigo (que testava a função contra si mesma, nunca
+   contra o schema de verdade — por isso o bug nunca foi pego por teste). 6 pontos de embed do PostgREST
+   (`fornecedor:fornecedores(...)`) em `useMovimentacoesFinanceiras.ts`/`contasPagarQueries.ts`/
+   `contasPagarOperations.ts`/`fluxoCaixaService.ts` viraram `entidades!contas_pagar_fornecedor_id_fkey`
+   com alias `fornecedores:`/`fornecedor:` preservado — evita tocar nos consumidores downstream que já
+   esperavam essa chave na resposta. `OnboardingCliente.tsx` (cria fornecedor "NOVUS AI" pro double-entry
+   de cobrança) também migrado.
+7. **Verificação**: `npm run typecheck` limpo, `npm run test -- --run` 361/361. Teste ao vivo via SQL
+   (criar entidade+papel Fornecedor, criar `contas_pagar` real apontando pra ela, confirmar join, cascade
+   delete limpo).
+
+**Próximo passo**: Fase 2c (Clientes, 23 arquivos) — a mais arriscada, única com contrato externo de sync
+com satélite (schema duplo legado+novo já documentado) — combinar com Fase 3 (evolução do contrato
+canônico `sync-webhook`).
 
 ## 🔖 Checkpoint de sessão (2026-08-10 — responsividade mobile, aditiva)
 

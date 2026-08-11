@@ -232,12 +232,18 @@ export default function OnboardingCliente() {
       // veria essa obrigação recorrente). NOVUS AI entra como fornecedor da representada.
       const representadaPrincipal = representadasCriadas[0];
       const { data: fornecedorNovus, error: fornecedorError } = await supabase
-        .from('fornecedores')
-        .insert({ empresa_representada_id: representadaPrincipal.id, nome: 'NOVUS AI', ativo: true })
+        .from('entidades')
+        .insert({ empresa_representada_id: representadaPrincipal.id, tipo_pessoa: 'PJ', nome: 'NOVUS AI', ativo: true })
         .select('id')
         .single();
       if (fornecedorError || !fornecedorNovus) {
         throw new Error(`Contrato criado, mas falha ao registrar NOVUS AI como fornecedor: ${fornecedorError?.message}`);
+      }
+      const { error: papelFornecedorError } = await supabase
+        .from('entidade_papeis')
+        .insert({ entidade_id: fornecedorNovus.id, empresa_representada_id: representadaPrincipal.id, papel: 'FORNECEDOR' });
+      if (papelFornecedorError) {
+        throw new Error(`Contrato criado, mas falha ao vincular papel Fornecedor da NOVUS AI: ${papelFornecedorError.message}`);
       }
 
       const parcelasPagar = vencimentos.map(({ numero, data }) => ({

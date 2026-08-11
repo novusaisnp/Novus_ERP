@@ -1435,7 +1435,7 @@ export type Database = {
             foreignKeyName: "contas_pagar_fornecedor_id_fkey"
             columns: ["fornecedor_id"]
             isOneToOne: false
-            referencedRelation: "fornecedores"
+            referencedRelation: "entidades"
             referencedColumns: ["id"]
           },
           {
@@ -3326,122 +3326,6 @@ export type Database = {
           },
         ]
       }
-      fornecedores: {
-        Row: {
-          agencia: string | null
-          ativo: boolean
-          bairro: string | null
-          banco: string | null
-          celular: string | null
-          cep: string | null
-          cidade: string | null
-          cnpj: string | null
-          complemento: string | null
-          conta: string | null
-          cpf: string | null
-          created_at: string
-          deleted_at: string | null
-          email: string | null
-          email_secundario: string | null
-          empresa_representada_id: string
-          estado: string | null
-          id: string
-          inscricao_estadual: string | null
-          inscricao_municipal: string | null
-          logradouro: string | null
-          nome: string
-          nome_fantasia: string | null
-          numero: string | null
-          observacoes: string | null
-          pix: string | null
-          prazo_entrega: number | null
-          razao_social: string | null
-          telefone: string | null
-          tipo_conta: string | null
-          tipo_pessoa: string | null
-          updated_at: string
-          whatsapp: string | null
-        }
-        Insert: {
-          agencia?: string | null
-          ativo?: boolean
-          bairro?: string | null
-          banco?: string | null
-          celular?: string | null
-          cep?: string | null
-          cidade?: string | null
-          cnpj?: string | null
-          complemento?: string | null
-          conta?: string | null
-          cpf?: string | null
-          created_at?: string
-          deleted_at?: string | null
-          email?: string | null
-          email_secundario?: string | null
-          empresa_representada_id: string
-          estado?: string | null
-          id?: string
-          inscricao_estadual?: string | null
-          inscricao_municipal?: string | null
-          logradouro?: string | null
-          nome: string
-          nome_fantasia?: string | null
-          numero?: string | null
-          observacoes?: string | null
-          pix?: string | null
-          prazo_entrega?: number | null
-          razao_social?: string | null
-          telefone?: string | null
-          tipo_conta?: string | null
-          tipo_pessoa?: string | null
-          updated_at?: string
-          whatsapp?: string | null
-        }
-        Update: {
-          agencia?: string | null
-          ativo?: boolean
-          bairro?: string | null
-          banco?: string | null
-          celular?: string | null
-          cep?: string | null
-          cidade?: string | null
-          cnpj?: string | null
-          complemento?: string | null
-          conta?: string | null
-          cpf?: string | null
-          created_at?: string
-          deleted_at?: string | null
-          email?: string | null
-          email_secundario?: string | null
-          empresa_representada_id?: string
-          estado?: string | null
-          id?: string
-          inscricao_estadual?: string | null
-          inscricao_municipal?: string | null
-          logradouro?: string | null
-          nome?: string
-          nome_fantasia?: string | null
-          numero?: string | null
-          observacoes?: string | null
-          pix?: string | null
-          prazo_entrega?: number | null
-          razao_social?: string | null
-          telefone?: string | null
-          tipo_conta?: string | null
-          tipo_pessoa?: string | null
-          updated_at?: string
-          whatsapp?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fornecedores_empresa_representada_id_fkey"
-            columns: ["empresa_representada_id"]
-            isOneToOne: false
-            referencedRelation: "empresas_representadas"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       historico_estoque_movimentacoes: {
         Row: {
           acao: string
@@ -5212,7 +5096,7 @@ export type Database = {
             foreignKeyName: "produto_fornecedores_fornecedor_id_fkey"
             columns: ["fornecedor_id"]
             isOneToOne: false
-            referencedRelation: "fornecedores"
+            referencedRelation: "entidades"
             referencedColumns: ["id"]
           },
           {

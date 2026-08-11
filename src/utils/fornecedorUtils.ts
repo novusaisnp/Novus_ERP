@@ -4,61 +4,51 @@ import { SupabaseFornecedor } from '@/services/fornecedorService';
 import { validarCNPJ } from '@/services/cnpjApi';
 
 export const fornecedorUtils = {
+  // `entidades` é flat (sem jsonb) — campos ricos que o antigo `fornecedores`
+  // nunca teve de verdade (cnae, anexos, contato_principal, etc.) não têm
+  // mais fonte de dado nenhuma e ficam com o default do tipo `Fornecedor`.
   transformSupabaseToFornecedor(item: SupabaseFornecedor): Fornecedor {
     console.log('[fornecedorUtils] Transformando item do Supabase:', item.id, item.tipo_pessoa);
-    
+    const isPF = item.tipo_pessoa === 'PF';
+
     return {
       id: item.id,
-      tipo_pessoa: item.tipo_pessoa || 'PJ',
-      
-      // Campos PJ
+      tipo_pessoa: (item.tipo_pessoa as 'PJ' | 'PF') || 'PJ',
+
       razaoSocial: item.razao_social || '',
       nomeFantasia: item.nome_fantasia || '',
       cnpj: item.cnpj || '',
       data_fundacao: item.data_fundacao ? new Date(item.data_fundacao) : undefined,
-      cnae: item.cnae || '',
-      capital_social: item.capital_social || undefined,
-      anexos_pj: item.anexos_pj || {
-        contrato_social: null,
-        cartao_cnpj: null,
-        logotipo: null,
-        portfolio_anexo: null
-      },
-      contato_principal: item.contato_principal || { nome: '', cargo: '' },
-      referencias_comerciais: item.referencias_comerciais || '',
-      atividade_principal: item.atividade_principal || '',
-      prazo_entrega_habitual: item.prazo_entrega_habitual || '',
-      responsavel_preenchimento: item.responsavel_preenchimento || { nome: '', cargo: '' },
-      
-      // Campos PF
-      nome_completo: item.nome_completo || '',
+      prazo_entrega_habitual: item.prazo_entrega != null ? String(item.prazo_entrega) : '',
+
+      nome_completo: isPF ? (item.nome || '') : '',
       data_nascimento: item.data_nascimento ? new Date(item.data_nascimento) : undefined,
       cpf: item.cpf || '',
       rg: item.rg || '',
-      orgao_emissor_rg: item.orgao_emissor_rg || '',
-      anexos_pf: item.anexos_pf || {
-        comprovante_residencia: null,
-        copia_rg: null,
-        cartao_bancario: null
-      },
-      referencias_pessoais: item.referencias_pessoais || '',
-      horario_atendimento: item.horario_atendimento || '',
-      
-      // Campos comuns
+
       email: item.email || '',
       telefone: item.telefone || '',
-      telefones: Array.isArray(item.telefones) ? item.telefones : [],
-      endereco: item.endereco || {},
-      endereco_correspondencia: item.endereco_correspondencia || {},
-      usar_endereco_principal_correspondencia: item.usar_endereco_principal_correspondencia !== false,
-      dados_bancarios: item.dados_bancarios || {
-        banco: '',
-        agencia: '',
-        conta: '',
-        tipo_conta: 'corrente',
-        numero_banco: ''
+      telefones: item.telefone ? [{ numero: item.telefone, tipo: 'celular' }] : [],
+      endereco: {
+        cep: item.cep || '',
+        logradouro: item.logradouro || '',
+        numero: item.numero || '',
+        complemento: item.complemento || '',
+        bairro: item.bairro || '',
+        cidade: item.cidade || '',
+        uf: item.estado || '',
       },
-      qualificacaoFiscal: item.qualificacao_fiscal || {},
+      usar_endereco_principal_correspondencia: true,
+      dados_bancarios: {
+        banco: item.banco || '',
+        agencia: item.agencia || '',
+        conta: item.conta || '',
+        tipo_conta: (item.tipo_conta as 'corrente' | 'poupanca') || 'corrente',
+      },
+      qualificacaoFiscal: {
+        inscricaoEstadual: item.inscricao_estadual || undefined,
+        inscricaoMunicipal: item.inscricao_municipal || undefined,
+      },
       ativo: item.ativo !== false,
       createdAt: item.created_at ? new Date(item.created_at) : new Date(),
       updatedAt: item.updated_at ? new Date(item.updated_at) : undefined,

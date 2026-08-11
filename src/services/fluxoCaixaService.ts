@@ -38,7 +38,7 @@ export class FluxoCaixaService {
           data_emissao,
           status,
           observacoes,
-          fornecedor:fornecedores(id, razao_social),
+          fornecedor:entidades!contas_pagar_fornecedor_id_fkey(id, razao_social),
           plano_conta:plano_contas(id, codigo, nome),
           centro_custo:centros_custo(id, nome, codigo)
         `)

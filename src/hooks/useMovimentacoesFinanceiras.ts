@@ -33,7 +33,7 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
           .from('contas_pagar')
           .select(`
             *,
-            fornecedor:fornecedores(id, razao_social, nome_fantasia, cpf, cnpj),
+            fornecedor:entidades!contas_pagar_fornecedor_id_fkey(id, razao_social, nome_fantasia, cpf, cnpj),
             plano_conta:plano_contas(id, codigo, nome),
             centro_custo:centros_custo(id, nome, codigo)
           `);
