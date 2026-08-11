@@ -1,6 +1,87 @@
 # Status do projeto — NOVUS ERP
 
-**Última atualização: 2026-08-11 (Programa Financeiro Robusto — FIN-0, checkpoint 4).**
+**Última atualização: 2026-08-11 (auditoria ponta a ponta do módulo Financeiro).**
+
+## 🔖 Checkpoint atual — auditoria ponta a ponta do Financeiro (2026-08-11)
+
+Sessão de diagnóstico, sem alteração de código, schema ou deploy. O objetivo foi verificar
+**no código e no banco real** o estado do módulo Financeiro, em vez de confiar na
+documentação, e transformar o resultado em uma fila de execução.
+
+### Confirmado como sólido
+
+Liquidação, estorno e cancelamento transacionais e idempotentes (RPCs `financeiro_liquidar_titulo`,
+`financeiro_estornar_liquidacao`, `financeiro_cancelar_titulo`); transferência bancária atômica;
+CRUD de contas a pagar/receber com rateio na criação; plano de contas hierárquico
+(`conta_pai_id`/`nivel`/`tipo`/`natureza`); fluxo de caixa e fluxo por competência com exportação;
+contas bancárias múltiplas com saldo por trigger; documentos e histórico por título; RLS real nas
+tabelas financeiras; RBAC real no banco (`user_roles`, `cargos`, `has_role()`, `perfis_acesso`).
+
+### Lacunas confirmadas por leitura de código (não suposição)
+
+| # | Lacuna | Evidência | Gravidade |
+|---|---|---|---|
+| L1 | Permissões financeiras são fachada: objeto literal com todos os campos `true` | `src/hooks/useMovimentacoesFinanceiras.ts:275-283` | crítico |
+| L2 | Título + rateio não é atômico; `update` apaga rateios e reinsere sem compensação | `src/services/contasPagar/contasPagarOperations.ts:32-89` e `:91+` | crítico |
+| L3 | Exclusão de título não checa liquidações existentes (soft delete direto) | `contasReceberOperations.ts:110` e equivalente em pagar | crítico |
+| L4 | Movimentações carrega a base inteira; estatísticas somadas no navegador | `useMovimentacoesFinanceiras.ts` — sem `.limit()`/`.range()` | alto |
+| L5 | Dinheiro é `number` (float) em todo o TS | `src/types/movimentacoesFinanceiras.ts` | alto |
+| L6 | Erro técnico indistinguível de lista vazia em parte dos serviços | vários serviços financeiros | alto |
+| L7 | Rateio na aba de detalhe é placeholder | `components/financeiro/movimentacoes/RateiosTab.tsx:306` | médio |
+| L8 | `/financeiro/movimentacoes` é casca que só abre modal | `src/pages/financeiro/MovimentacoesFinanceiras.tsx` | médio |
+| L9 | Código morto de "em breve" e `console.log` | `MovimentacoesGestaoPopup.tsx:60,116,153,163,169` | baixo |
+| L10 | Conciliação existe fora do menu Financeiro e sem parser OFX (só CSV) | `src/pages/gestao-bancaria/conciliacao/`, `banco-parse-extrato` | médio |
+| L11 | Sem trilha de auditoria genérica; `auditableServiceTemplate` é soft-delete + log em console | `src/utils/auditableServiceTemplate.ts` | alto |
+| L12 | Baixa parcial sem juros, multa e desconto; sem divisão entre múltiplas contas | RPC de liquidação | alto |
+
+### Ausente por completo
+
+Renegociação de título; orçamento financeiro; multimoeda (`formatCurrency` fixa BRL); livro de
+partidas dobradas (o plano de contas tem `natureza DEVEDORA/CREDORA` preparado e nenhuma tabela de
+lançamento que o consuma); DRE, balancete e balanço; caixa diário com abertura, fechamento, sangria
+e suprimento; alçadas e aprovação de pagamento; Pix e boleto (só existem como rótulo no CHECK de
+`forma_pagamento`); CNAB; Open Finance; conceito de filial/estabelecimento.
+
+### Auditoria de autorização feita no banco real (preparação da próxima fatia)
+
+Projeto confirmado como `reksodqzemboaeqxnxyy` antes de qualquer consulta. Levantado:
+
+- O catálogo de permissões já usa o vocabulário `financeiro.*`: `create`, `read`, `update`,
+  `delete`, `estorno`, `lancamentoRetroativo`, `alterarVencimento`
+  (`src/components/modules/configuracoes/usuarios/PermissionsSelector.tsx`). **Faltam apenas dois
+  códigos** para cobrir a tela de movimentações: liquidar e cancelar título.
+- `perfis_acesso` tem três perfis de sistema — ADMINISTRADOR (72 permissões), OPERADOR (42) e
+  CONSULTA (17) — com `permissoes` como array JSONB de códigos.
+- A cadeia de resolução é `auth.uid()` → `usuarios.user_id` → `usuarios.perfil_id` →
+  `perfis_acesso.permissoes`. `perfis_acesso` permite `SELECT` a qualquer autenticado.
+- Enum `app_role`: `admin`, `gerente`, `operador`, `visualizador`, `novus_owner`.
+- As três RPCs financeiras compartilham o mesmo guard inicial
+  (`IF auth.uid() IS NULL THEN RAISE ... 42501`), que é o ponto natural de inserção do guard de
+  autorização, sem tocar no restante do corpo.
+- Hoje há apenas um usuário no banco, com perfil e `user_id` preenchidos.
+
+### Fila de execução acordada
+
+Fechar integridade (FIN-0/FIN-1) antes de qualquer feature nova. Ordem: autorização real (L1);
+rateio atômico e exclusão protegida (L2, L3); dinheiro sem float (L5); erro diferente de vazio e
+limpeza de código morto (L6, L9); baixa parcial completa (L12); rateio no detalhe (L7); workspace
+com paginação server-side (L4, L8); trilha de auditoria (L11); conciliação no Financeiro com OFX
+(L10); renegociação; DRE/balancete/razão; caixa diário; Pix/boleto por adaptador. Multimoeda e
+filial não começam sem caso real.
+
+### Próxima ação única
+
+**Implementar a autorização financeira real (L1).** Migration aditiva com
+`financeiro_pode(p_acao text)` e `financeiro_exigir_permissao(p_acao text)` resolvendo
+`has_role()` mais `perfis_acesso.permissoes`; acrescentar os dois códigos faltantes ao catálogo,
+concedendo-os por analogia aos perfis que já possuem a permissão equivalente; inserir o guard nas
+três RPCs logo após o guard de autenticação; expor `financeiro_permissoes()` retornando o mesmo
+shape de `PermissoesMovimentacao`, consumido por um hook novo que substitui o objeto literal em
+`useMovimentacoesFinanceiras.ts`. Validar a migration em `BEGIN ... ROLLBACK` no banco real antes
+de aplicar e provar, com um perfil sem a permissão, que o botão some **e** que a chamada direta à
+RPC é recusada.
+
+---
 
 ## 🔖 Checkpoint atual — FIN-0.4 cancelamento transacional implantado (2026-08-11)
 
