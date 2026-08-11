@@ -27,6 +27,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MovimentacoesGestaoPopup } from './MovimentacoesGestaoPopup';
 import { LiquidacaoTituloModal } from './LiquidacaoTituloModal';
 import { EstornoLiquidacaoModal } from './EstornoLiquidacaoModal';
+import { CancelamentoTituloModal } from './CancelamentoTituloModal';
 import { 
   TituloFinanceiro, 
   FiltrosMovimentacao, 
@@ -56,6 +57,7 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
   const [isGestaoPopupOpen, setIsGestaoPopupOpen] = useState(false);
   const [isLiquidacaoModalOpen, setIsLiquidacaoModalOpen] = useState(false);
   const [isEstornoModalOpen, setIsEstornoModalOpen] = useState(false);
+  const [isCancelamentoModalOpen, setIsCancelamentoModalOpen] = useState(false);
   const [tabAtiva, setTabAtiva] = useState('lista');
 
   const {
@@ -87,7 +89,7 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
   const handlePopupClose = () => {
     setIsGestaoPopupOpen(false);
     // [LOTE 3B] Mantém tituloSelecionado se liquidação foi aberta em cadeia.
-    if (!isLiquidacaoModalOpen && !isEstornoModalOpen) {
+    if (!isLiquidacaoModalOpen && !isEstornoModalOpen && !isCancelamentoModalOpen) {
       setTituloSelecionado(null);
     }
     refetch();
@@ -111,6 +113,17 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
     setTituloSelecionado(t);
     setIsGestaoPopupOpen(false);
     setIsEstornoModalOpen(true);
+  };
+
+  const handleCancelamentoClose = () => {
+    setIsCancelamentoModalOpen(false);
+    setTituloSelecionado(null);
+  };
+
+  const handleCancelarFromPopup = (t: TituloFinanceiro) => {
+    setTituloSelecionado(t);
+    setIsGestaoPopupOpen(false);
+    setIsCancelamentoModalOpen(true);
   };
 
   // [LOTE 3B] Popup delega liquidação para o modal único.
@@ -276,7 +289,7 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
                                 <div className="font-semibold">
                                   {currencyUtils.formatCurrency(titulo.valor_original)}
                                 </div>
-                                {titulo.valor_pago && titulo.valor_pago > 0 && (
+                                {(titulo.valor_pago ?? 0) > 0 && (
                                   <div className="text-sm text-status-delivered">
                                     Pago: {currencyUtils.formatCurrency(titulo.valor_pago)}
                                   </div>
@@ -443,6 +456,7 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
           permissoes={permissoes}
           onLiquidar={handleLiquidarFromPopup}
           onEstornar={handleEstornarFromPopup}
+          onCancelar={handleCancelarFromPopup}
         />
       )}
 
@@ -460,6 +474,15 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
         <EstornoLiquidacaoModal
           isOpen={isEstornoModalOpen}
           onClose={handleEstornoClose}
+          titulo={tituloSelecionado}
+          onSuccess={refetch}
+        />
+      )}
+
+      {tituloSelecionado && (
+        <CancelamentoTituloModal
+          isOpen={isCancelamentoModalOpen}
+          onClose={handleCancelamentoClose}
           titulo={tituloSelecionado}
           onSuccess={refetch}
         />

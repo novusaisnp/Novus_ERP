@@ -1,6 +1,51 @@
 # Status do projeto — NOVUS ERP
 
-**Última atualização: 2026-08-11 (Programa Financeiro Robusto — FIN-0, checkpoint 3).**
+**Última atualização: 2026-08-11 (Programa Financeiro Robusto — FIN-0, checkpoint 4).**
+
+## 🔖 Checkpoint atual — FIN-0.4 cancelamento transacional implantado (2026-08-11)
+
+### Concluído
+
+- Auditados schema e fluxo atual: não havia metadados de cancelamento e o serviço fazia atualização
+  do título e histórico em chamadas separadas.
+- Regra implantada: somente título sem valor liquidado pode ser cancelado; parcial ou quitado exige
+  estornar todas as liquidações antes.
+- Migration `20260811133000_financeiro_cancelamento_atomico.sql` aplicada e marcada no projeto ERP:
+  metadados de motivo/data/usuário, chave idempotente e RPC `financeiro_cancelar_titulo`.
+- Serviço usa somente a RPC. Submodal exige motivo mínimo de cinco caracteres e preserva o título
+  cancelado para auditoria.
+- Smoke test real com rollback passou nos três cenários: sem baixa cancela e retry não duplica;
+  parcial bloqueia; quitado bloqueia. Nenhum dado temporário permaneceu.
+- `npm.cmd run typecheck` limpo e teste focado do serviço com 3/3 casos passando.
+- Validação local com título real temporário: motivo curto bloqueou, motivo válido habilitou,
+  cancelamento concluiu, toast apareceu, título saiu da lista padrão e o console ficou sem erros.
+- Banco confirmou `CANCELADO`, motivo, data, usuário, chave e exatamente um histórico. Após a
+  verificação, título e histórico temporários foram removidos (`0` registros restantes).
+- Rodapés de baixa, estorno e cancelamento foram alinhados em duas colunas iguais, mesma altura e
+  empilhamento responsivo. Corrigido também o texto solto `0` em títulos sem valor pago.
+
+### Arquivos desta entrega
+
+- `supabase/migrations/20260811133000_financeiro_cancelamento_atomico.sql`
+- `src/components/financeiro/CancelamentoTituloModal.tsx`
+- `src/components/financeiro/EstornoLiquidacaoModal.tsx`
+- `src/components/financeiro/LiquidacaoTituloModal.tsx`
+- `src/components/financeiro/MovimentacoesGestaoPopup.tsx`
+- `src/components/financeiro/MovimentacoesModal.tsx`
+- `src/components/financeiro/contas-receber/ContasReceberContent.tsx`
+- `src/services/movimentacoesService.ts`
+- `src/services/movimentacoesService.test.ts`
+- `src/types/movimentacoesFinanceiras.ts`
+- `src/integrations/supabase/types.ts`
+- `docs/ROADMAP_2026.md`
+- `docs/STATUS.md`
+
+### Próxima ação única
+
+**Auditar e substituir as permissões financeiras fixas da UI por permissões reais.** Mapear as
+permissões existentes antes de criar nomes novos e provar que UI, RPC e RLS aplicam a mesma regra.
+
+---
 
 ## 🔖 Checkpoint atual — FIN-0.3 estorno transacional implantado (2026-08-11)
 

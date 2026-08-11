@@ -10,7 +10,6 @@ import type {
   EstornoLiquidacao,
 } from '@/types/movimentacoesFinanceiras';
 import { getEmpresaAtivaIdOuFalha as getEmpresaIdAtual } from '@/lib/empresaAtiva';
-import { uiStatusPagarToDb, uiStatusReceberToDb } from '@/lib/statusMappers';
 
 export interface RateioTitulo {
   id: string;
@@ -129,33 +128,17 @@ export const movimentacoesService = {
 
   // Cancelar título
   async cancelarTitulo(dadosCancelamento: CancelamentoTitulo): Promise<void> {
-
     try {
-      const tabelaTitulo = dadosCancelamento.tipo_titulo === 'CONTAS_PAGAR' ? 'contas_pagar' : 'contas_receber';
-
-      const statusCancelado = dadosCancelamento.tipo_titulo === 'CONTAS_PAGAR'
-        ? uiStatusPagarToDb('CANCELADA')
-        : uiStatusReceberToDb('CANCELADA');
-
-      const { error: updateError } = await supabase
-        .from(tabelaTitulo)
-        .update({ status: statusCancelado })
-        .eq('id', dadosCancelamento.titulo_id);
-
-      if (updateError) throw updateError;
-
-      // Registrar no histórico
-      await this.registrarHistorico({
-        titulo_id: dadosCancelamento.titulo_id,
-        tipo_titulo: dadosCancelamento.tipo_titulo,
-        tipo_operacao: 'CANCELAMENTO',
-        dados_novos: dadosCancelamento,
-        observacoes: `Título cancelado: ${dadosCancelamento.motivo_cancelamento}`,
+      const { error } = await supabase.rpc('financeiro_cancelar_titulo', {
+        p_titulo_id: dadosCancelamento.titulo_id,
+        p_tipo_titulo: dadosCancelamento.tipo_titulo,
+        p_motivo: dadosCancelamento.motivo_cancelamento,
+        p_idempotency_key: dadosCancelamento.idempotency_key,
       });
-
+      if (error) throw error;
     } catch (error) {
       console.error('[MovimentacoesService] Erro ao cancelar título:', error);
-      throw new Error(`Erro ao cancelar título: ${error.message}`);
+      throw new Error(`Erro ao cancelar título: ${error instanceof Error ? error.message : 'falha desconhecida'}`);
     }
   },
 

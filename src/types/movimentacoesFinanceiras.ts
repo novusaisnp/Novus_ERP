@@ -126,8 +126,8 @@ export interface EdicaoTitulo {
 export interface CancelamentoTitulo {
   titulo_id: string;
   tipo_titulo: TipoTitulo;
+  idempotency_key: string;
   motivo_cancelamento: string;
-  data_cancelamento: string;
 }
 
 // Estatísticas do modal

@@ -45,6 +45,7 @@ interface MovimentacoesGestaoPopupProps {
   /** [LOTE 3B] Delegar liquidação exclusivamente ao LiquidacaoTituloModal. */
   onLiquidar?: (titulo: TituloFinanceiro) => void;
   onEstornar?: (titulo: TituloFinanceiro) => void;
+  onCancelar?: (titulo: TituloFinanceiro) => void;
 }
 
 export const MovimentacoesGestaoPopup = ({
@@ -54,6 +55,7 @@ export const MovimentacoesGestaoPopup = ({
   permissoes,
   onLiquidar,
   onEstornar,
+  onCancelar,
 }: MovimentacoesGestaoPopupProps) => {
   console.log('[MovimentacoesGestaoPopup] Renderizando popup para título:', titulo.id);
 
@@ -101,7 +103,7 @@ export const MovimentacoesGestaoPopup = ({
       case 'editar':
         return permissoes.pode_editar && titulo.situacao !== 'CANCELADA';
       case 'cancelar':
-        return permissoes.pode_cancelar && titulo.situacao !== 'CANCELADA';
+        return permissoes.pode_cancelar && (titulo.situacao === 'ABERTA' || titulo.situacao === 'VENCIDA');
       default:
         return false;
     }
@@ -142,6 +144,10 @@ export const MovimentacoesGestaoPopup = ({
         }
         return;
       case 'cancelar':
+        if (onCancelar) {
+          onCancelar(titulo);
+          return;
+        }
         toast({
           title: "Cancelar Título",
           description: "Modal de cancelamento será implementado em breve",
@@ -248,7 +254,7 @@ export const MovimentacoesGestaoPopup = ({
                             </div>
                           </div>
                         )}
-                        {titulo.valor_pago && titulo.valor_pago > 0 && (
+                        {(titulo.valor_pago ?? 0) > 0 && (
                           <div>
                             <label className="text-sm font-medium text-muted-foreground">Valor Pago</label>
                             <div className="text-lg font-semibold text-status-delivered">

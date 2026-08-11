@@ -60,4 +60,23 @@ describe('movimentacoesService.liquidarTitulo', () => {
       p_idempotency_key: 'chave-estorno-1',
     });
   });
+
+  it('cancela o titulo somente pela RPC idempotente', async () => {
+    rpc.mockResolvedValue({ data: { status: 'CANCELADO' }, error: null });
+
+    await movimentacoesService.cancelarTitulo({
+      titulo_id: 'titulo-1',
+      tipo_titulo: 'CONTAS_RECEBER',
+      motivo_cancelamento: 'Lançamento indevido',
+      idempotency_key: 'chave-cancelamento-1',
+    });
+
+    expect(rpc).toHaveBeenCalledOnce();
+    expect(rpc).toHaveBeenCalledWith('financeiro_cancelar_titulo', {
+      p_titulo_id: 'titulo-1',
+      p_tipo_titulo: 'CONTAS_RECEBER',
+      p_motivo: 'Lançamento indevido',
+      p_idempotency_key: 'chave-cancelamento-1',
+    });
+  });
 });

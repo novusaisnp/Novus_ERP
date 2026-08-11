@@ -1141,9 +1141,11 @@ export type Database = {
       }
       contas_pagar: {
         Row: {
+          cancelamento_idempotency_key: string | null
           centro_custo_id: string | null
           created_at: string
           data_competencia: string | null
+          data_cancelamento: string | null
           data_emissao: string | null
           data_pagamento: string | null
           data_vencimento: string
@@ -1152,6 +1154,7 @@ export type Database = {
           empresa_representada_id: string
           fornecedor_id: string | null
           id: string
+          motivo_cancelamento: string | null
           natureza_id: string | null
           numero_documento: string | null
           numero_parcela: number | null
@@ -1164,6 +1167,7 @@ export type Database = {
           status: string | null
           total_parcelas: number | null
           updated_at: string
+          usuario_cancelamento_id: string | null
           valor_desconto: number | null
           valor_juros: number | null
           valor_multa: number | null
@@ -1171,9 +1175,11 @@ export type Database = {
           valor_pago: number | null
         }
         Insert: {
+          cancelamento_idempotency_key?: string | null
           centro_custo_id?: string | null
           created_at?: string
           data_competencia?: string | null
+          data_cancelamento?: string | null
           data_emissao?: string | null
           data_pagamento?: string | null
           data_vencimento: string
@@ -1182,6 +1188,7 @@ export type Database = {
           empresa_representada_id: string
           fornecedor_id?: string | null
           id?: string
+          motivo_cancelamento?: string | null
           natureza_id?: string | null
           numero_documento?: string | null
           numero_parcela?: number | null
@@ -1194,6 +1201,7 @@ export type Database = {
           status?: string | null
           total_parcelas?: number | null
           updated_at?: string
+          usuario_cancelamento_id?: string | null
           valor_desconto?: number | null
           valor_juros?: number | null
           valor_multa?: number | null
@@ -1201,9 +1209,11 @@ export type Database = {
           valor_pago?: number | null
         }
         Update: {
+          cancelamento_idempotency_key?: string | null
           centro_custo_id?: string | null
           created_at?: string
           data_competencia?: string | null
+          data_cancelamento?: string | null
           data_emissao?: string | null
           data_pagamento?: string | null
           data_vencimento?: string
@@ -1212,6 +1222,7 @@ export type Database = {
           empresa_representada_id?: string
           fornecedor_id?: string | null
           id?: string
+          motivo_cancelamento?: string | null
           natureza_id?: string | null
           numero_documento?: string | null
           numero_parcela?: number | null
@@ -1224,6 +1235,7 @@ export type Database = {
           status?: string | null
           total_parcelas?: number | null
           updated_at?: string
+          usuario_cancelamento_id?: string | null
           valor_desconto?: number | null
           valor_juros?: number | null
           valor_multa?: number | null
@@ -1284,11 +1296,13 @@ export type Database = {
       }
       contas_receber: {
         Row: {
+          cancelamento_idempotency_key: string | null
           centro_custo_id: string | null
           cliente_id: string | null
           created_at: string
           created_by: string | null
           data_competencia: string | null
+          data_cancelamento: string | null
           data_emissao: string | null
           data_recebimento: string | null
           data_vencimento: string
@@ -1299,6 +1313,7 @@ export type Database = {
           hash_classificacao: string | null
           hash_payload: string | null
           id: string
+          motivo_cancelamento: string | null
           idempotency_key: string | null
           natureza_id: string | null
           numero_documento: string | null
@@ -1314,6 +1329,7 @@ export type Database = {
           status: string | null
           total_parcelas: number | null
           updated_at: string
+          usuario_cancelamento_id: string | null
           valor_desconto: number | null
           valor_juros: number | null
           valor_multa: number | null
@@ -1324,11 +1340,13 @@ export type Database = {
           venda_pagamento_parcela_id: string | null
         }
         Insert: {
+          cancelamento_idempotency_key?: string | null
           centro_custo_id?: string | null
           cliente_id?: string | null
           created_at?: string
           created_by?: string | null
           data_competencia?: string | null
+          data_cancelamento?: string | null
           data_emissao?: string | null
           data_recebimento?: string | null
           data_vencimento: string
@@ -1339,6 +1357,7 @@ export type Database = {
           hash_classificacao?: string | null
           hash_payload?: string | null
           id?: string
+          motivo_cancelamento?: string | null
           idempotency_key?: string | null
           natureza_id?: string | null
           numero_documento?: string | null
@@ -1354,6 +1373,7 @@ export type Database = {
           status?: string | null
           total_parcelas?: number | null
           updated_at?: string
+          usuario_cancelamento_id?: string | null
           valor_desconto?: number | null
           valor_juros?: number | null
           valor_multa?: number | null
@@ -1364,11 +1384,13 @@ export type Database = {
           venda_pagamento_parcela_id?: string | null
         }
         Update: {
+          cancelamento_idempotency_key?: string | null
           centro_custo_id?: string | null
           cliente_id?: string | null
           created_at?: string
           created_by?: string | null
           data_competencia?: string | null
+          data_cancelamento?: string | null
           data_emissao?: string | null
           data_recebimento?: string | null
           data_vencimento?: string
@@ -1379,6 +1401,7 @@ export type Database = {
           hash_classificacao?: string | null
           hash_payload?: string | null
           id?: string
+          motivo_cancelamento?: string | null
           idempotency_key?: string | null
           natureza_id?: string | null
           numero_documento?: string | null
@@ -1394,6 +1417,7 @@ export type Database = {
           status?: string | null
           total_parcelas?: number | null
           updated_at?: string
+          usuario_cancelamento_id?: string | null
           valor_desconto?: number | null
           valor_juros?: number | null
           valor_multa?: number | null
@@ -6854,6 +6878,15 @@ export type Database = {
         Returns: Json
       }
       estornar_estoque_venda: { Args: { p_venda_id: string }; Returns: Json }
+      financeiro_cancelar_titulo: {
+        Args: {
+          p_idempotency_key: string
+          p_motivo: string
+          p_tipo_titulo: string
+          p_titulo_id: string
+        }
+        Returns: Json
+      }
       financeiro_estornar_liquidacao: {
         Args: {
           p_idempotency_key: string

@@ -157,11 +157,12 @@ export const EstornoLiquidacaoModal = ({
             />
           </div>
 
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose} disabled={estornarMutation.isPending}>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <Button className="h-10 w-full" type="button" variant="outline" onClick={onClose} disabled={estornarMutation.isPending}>
               Cancelar
             </Button>
             <Button
+              className="h-10 w-full"
               type="submit"
               variant="destructive"
               disabled={!liquidacaoId || motivo.trim().length < 5 || estornarMutation.isPending}

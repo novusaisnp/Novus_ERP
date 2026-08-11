@@ -143,7 +143,7 @@ export const ContasReceberContent = ({
                 <p className="font-semibold">
                   {formatCurrency(conta.valor_original)}
                 </p>
-                {conta.valor_pago && conta.valor_pago > 0 && (
+                {(conta.valor_pago ?? 0) > 0 && (
                   <p className="text-xs text-status-delivered">
                     Pago: {formatCurrency(conta.valor_pago)}
                   </p>

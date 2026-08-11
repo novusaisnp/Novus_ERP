@@ -287,8 +287,9 @@ export const LiquidacaoTituloModal = ({
             />
           </div>
 
-          <div className="flex justify-end gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <Button
+              className="h-10 w-full"
               type="button"
               variant="outline"
               onClick={onClose}
@@ -297,6 +298,7 @@ export const LiquidacaoTituloModal = ({
               Cancelar
             </Button>
             <Button
+              className="h-10 w-full"
               type="submit"
               disabled={liquidarMutation.isPending || loadingContas}
               data-testid="liquidacao-confirmar-btn"
