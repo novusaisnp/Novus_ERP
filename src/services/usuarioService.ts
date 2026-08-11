@@ -100,8 +100,22 @@ export const usuarioService = {
     return data;
   },
 
-  async enviarConvite(params: { usuario_id?: string; email: string; nome: string }) {
-    return supabase.functions.invoke('enviar-convite-usuario', { body: params });
+  async provisionarAcesso(params: {
+    usuario_id: string;
+    email: string;
+    nome: string;
+    empresa_representada_id: string;
+    role: string;
+  }) {
+    return supabase.functions.invoke('enviar-convite-usuario', {
+      body: { ...params, mode: 'create' },
+    });
+  },
+
+  async resetarSenha(params: { usuario_id: string; email: string; nome: string; role: string }) {
+    return supabase.functions.invoke('enviar-convite-usuario', {
+      body: { ...params, mode: 'reset' },
+    });
   },
 
   /**

@@ -6,7 +6,7 @@ import { useAuthenticationState } from '@/hooks/useAuthenticationState';
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  signIn: (email: string, password: string, rememberMe: boolean) => Promise<{ error?: string }>;
+  signIn: (email: string, password: string, rememberMe: boolean, captchaToken?: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   loading: boolean;
 }

@@ -10,7 +10,11 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Shield, Plus, AlertTriangle, Briefcase, User as UserIcon, Link2 } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Users, Shield, Plus, AlertTriangle, Briefcase, User as UserIcon, Link2, KeyRound } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePerfis } from '@/hooks/usePerfis';
 import PerfisConfig from '@/components/modules/configuracoes/empresas/PerfisConfig';
@@ -81,6 +85,54 @@ const VincularPessoaAction: React.FC<{ usuario: UsuarioComPessoa; onVinculado: (
   );
 };
 
+const ROLES = ['visualizador', 'operador', 'gerente', 'admin'] as const;
+
+const ResetarSenhaAction: React.FC<{
+  usuario: UsuarioComPessoa;
+  onReset: (role: string) => void;
+  pending: boolean;
+}> = ({ usuario, onReset, pending }) => {
+  const [role, setRole] = useState<string>(
+    ROLES.includes(usuario.role as (typeof ROLES)[number]) ? (usuario.role as string) : 'operador',
+  );
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button size="sm" variant="outline" disabled={pending}>
+          <KeyRound className="w-3 h-3 mr-1" />Resetar senha
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Resetar senha de {usuario.nome}?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Isso invalida a senha atual e exige que a pessoa defina uma nova no próximo login,
+            usando o e-mail dela ({usuario.email}) como senha temporária nos dois campos. Também
+            garante o vínculo de acesso à empresa (corrige contas antigas que nunca tiveram role gravado).
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="py-2">
+          <label className="text-sm font-medium">Role</label>
+          <Select value={role} onValueChange={setRole}>
+            <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="visualizador">Visualizador</SelectItem>
+              <SelectItem value="operador">Operador</SelectItem>
+              <SelectItem value="gerente">Gerente</SelectItem>
+              <SelectItem value="admin">Administrador</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction onClick={() => onReset(role)}>Resetar</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+};
+
 const ConfiguracoesUsuarios: React.FC = () => {
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -106,6 +158,20 @@ const ConfiguracoesUsuarios: React.FC = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['config-usuarios'] });
       toast({ title: 'Perfil de acesso atualizado' });
+    },
+    onError: (e: Error) => toast({ title: 'Erro', description: e?.message || 'Falha', variant: 'destructive' }),
+  });
+
+  const resetarSenha = useMutation({
+    mutationFn: (params: { u: UsuarioComPessoa; role: string }) =>
+      usuarioService.resetarSenha({ usuario_id: params.u.id, email: params.u.email || '', nome: params.u.nome || '', role: params.role }),
+    onSuccess: (res) => {
+      if (res.error || !res.data?.ok) {
+        toast({ title: 'Falha ao resetar senha', description: res.error?.message || res.data?.message, variant: 'destructive' });
+        return;
+      }
+      qc.invalidateQueries({ queryKey: ['config-usuarios'] });
+      toast({ title: 'Senha redefinida', description: 'Peça pra pessoa entrar com o e-mail dela nos dois campos (login e senha).' });
     },
     onError: (e: Error) => toast({ title: 'Erro', description: e?.message || 'Falha', variant: 'destructive' }),
   });
@@ -178,6 +244,7 @@ const ConfiguracoesUsuarios: React.FC = () => {
                       <TableHead>Role</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Ativo</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -226,6 +293,15 @@ const ConfiguracoesUsuarios: React.FC = () => {
                         </TableCell>
                         <TableCell className="text-right">
                           <Switch checked={!!u.ativo} onCheckedChange={(v) => toggleAtivo.mutate({ id: u.id, ativo: v })} />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {u.user_id && (
+                            <ResetarSenhaAction
+                              usuario={u}
+                              pending={resetarSenha.isPending}
+                              onReset={(role) => resetarSenha.mutate({ u, role })}
+                            />
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}

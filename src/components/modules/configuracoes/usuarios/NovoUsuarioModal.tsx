@@ -27,7 +27,7 @@ const NovoUsuarioModal: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
   const [origem, setOrigem] = useState<Origem>('COLABORADOR');
   const [pessoaId, setPessoaId] = useState<string>('');
   const [perfilId, setPerfilId] = useState<string>('');
-  const [role, setRole] = useState<'admin' | 'moderator' | 'user'>('user');
+  const [role, setRole] = useState<'admin' | 'gerente' | 'operador' | 'visualizador'>('operador');
   const [saving, setSaving] = useState(false);
 
   const { data: empresaId } = useQuery({
@@ -53,7 +53,7 @@ const NovoUsuarioModal: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
       setOrigem('COLABORADOR');
       setPessoaId('');
       setPerfilId('');
-      setRole('user');
+      setRole('operador');
     }
   }, [open]);
 
@@ -91,7 +91,7 @@ const NovoUsuarioModal: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
         entidade_id: pessoaId,
       };
 
-      // user_id fica NULL até a pessoa aceitar o convite / fazer signup.
+      // user_id fica NULL até o acesso ser provisionado abaixo.
       let created: { id: string };
       try {
         created = await usuarioService.criarUsuarioPendente(payload);
@@ -103,23 +103,27 @@ const NovoUsuarioModal: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
         throw error;
       }
 
-      void role;
-
-      // Dispara convite via edge function (não bloqueia a criação em caso de falha)
+      // Provisiona o acesso: cria a conta com senha temporária = e-mail do
+      // usuário (login com e-mail nos dois campos) e grava o role em
+      // user_roles — sem isso a pessoa nunca vê nenhuma empresa disponível.
       try {
-        const { data: inviteData, error: inviteError } = await usuarioService.enviarConvite(
-          { usuario_id: created?.id, email, nome },
-        );
-        if (inviteError) throw inviteError;
-        if (inviteData?.invited) {
-          toast.success('Usuário criado e convite enviado por e-mail.');
+        const { data: provData, error: provError } = await usuarioService.provisionarAcesso({
+          usuario_id: created.id,
+          email,
+          nome,
+          empresa_representada_id: empresaId,
+          role,
+        });
+        if (provError) throw provError;
+        if (provData?.ok) {
+          toast.success('Usuário criado. Peça pra pessoa entrar com o e-mail dela nos dois campos (login e senha) no primeiro acesso.');
         } else {
-          toast.success('Usuário criado. Convite pendente: ' + (inviteData?.message || 'envio manual necessário.'));
+          toast.warning('Usuário criado, porém o acesso não foi provisionado: ' + (provData?.message || 'erro desconhecido.'));
         }
-      } catch (inviteErr) {
-        console.error('[NovoUsuario] Falha ao enviar convite:', inviteErr);
-        const msg = inviteErr instanceof Error ? inviteErr.message : 'erro desconhecido';
-        toast.warning('Usuário criado, porém falhou ao enviar convite: ' + msg);
+      } catch (provErr) {
+        console.error('[NovoUsuario] Falha ao provisionar acesso:', provErr);
+        const msg = provErr instanceof Error ? provErr.message : 'erro desconhecido';
+        toast.warning('Usuário criado, porém falhou ao provisionar acesso: ' + msg);
       }
 
       onCreated();
@@ -196,11 +200,12 @@ const NovoUsuarioModal: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
             </div>
             <div>
               <Label>Role</Label>
-              <Select value={role} onValueChange={(v) => setRole(v as 'admin' | 'moderator' | 'user')}>
+              <Select value={role} onValueChange={(v) => setRole(v as 'admin' | 'gerente' | 'operador' | 'visualizador')}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="user">Usuário</SelectItem>
-                  <SelectItem value="moderator">Moderador</SelectItem>
+                  <SelectItem value="visualizador">Visualizador</SelectItem>
+                  <SelectItem value="operador">Operador</SelectItem>
+                  <SelectItem value="gerente">Gerente</SelectItem>
                   <SelectItem value="admin">Administrador</SelectItem>
                 </SelectContent>
               </Select>

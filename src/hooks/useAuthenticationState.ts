@@ -35,7 +35,7 @@ export function useAuthenticationState() {
   }, []);
 
   const signIn = useCallback(
-    async (email: string, password: string, rememberMe: boolean) => {
+    async (email: string, password: string, rememberMe: boolean, captchaToken?: string) => {
       try {
         setState((prev) => ({ ...prev, loading: true }));
 
@@ -50,6 +50,7 @@ export function useAuthenticationState() {
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
+          options: captchaToken ? { captchaToken } : undefined,
         });
 
         if (error) {

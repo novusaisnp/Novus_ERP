@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -11,30 +10,52 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { passwordSchema, PASSWORD_POLICY_MESSAGE } from '@/lib/passwordPolicy';
+import { TurnstileWidget } from '@/components/auth/TurnstileWidget';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import loginHero from '@/assets/login-hero.png.asset.json';
 import { IntroSplash, hasSeenIntro, markIntroSeen } from '@/components/IntroSplash';
 
 const loginSchema = z.object({
   email: z.string().min(1, 'E-mail é obrigatório').email('Formato de e-mail inválido'),
-  password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
+  password: z.string().min(1, 'Senha é obrigatória'),
   rememberMe: z.boolean().default(false)
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
+const newPasswordSchema = z
+  .object({
+    newPassword: passwordSchema,
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'As senhas não coincidem.',
+    path: ['confirmPassword'],
+  });
+
+type NewPasswordFormData = z.infer<typeof newPasswordSchema>;
+
 const Login: React.FC = () => {
-  const navigate = useNavigate();
   const { signIn, user, loading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showIntro, setShowIntro] = useState(() => !hasSeenIntro());
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+
+  // Quando o login usa a senha temporária (e-mail nos dois campos) ou uma
+  // senha resetada pelo admin, a conta fica pendente até definir uma senha
+  // de verdade aqui mesmo — sem navegar pra outra rota.
+  const [needsPasswordSetup, setNeedsPasswordSetup] = useState(false);
+  const [settingPassword, setSettingPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   const finishIntro = () => {
     markIntroSeen();
     setShowIntro(false);
   };
-  
+
   const {
     register,
     handleSubmit,
@@ -47,15 +68,49 @@ const Login: React.FC = () => {
       rememberMe: false
     }
   });
-  
+
+  const {
+    register: registerNewPassword,
+    handleSubmit: handleNewPasswordSubmit,
+    formState: { errors: newPasswordErrors },
+    reset: resetNewPasswordForm,
+  } = useForm<NewPasswordFormData>({
+    resolver: zodResolver(newPasswordSchema),
+  });
+
   const rememberMe = watch('rememberMe');
 
-  // Redirect authenticated users to main route
+  // Decide o que fazer com uma sessão autenticada: checar pessoa_pendente
+  // ANTES de navegar. Precisa estar aqui (reagindo a `user`), não dentro do
+  // onSubmit — o listener onAuthStateChange atualiza `user` assim que
+  // signInWithPassword resolve, o que dispararia um redirect imediato pra
+  // '/' numa corrida contra a checagem assíncrona feita no onSubmit.
   useEffect(() => {
-    if (user && !loading) {
-      navigate('/', { replace: true });
-    }
-  }, [user, loading, navigate]);
+    if (!user || loading || needsPasswordSetup) return;
+    let cancelled = false;
+
+    (async () => {
+      const { data: usuario } = await supabase
+        .from('usuarios')
+        .select('pessoa_pendente')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      if (usuario?.pessoa_pendente) {
+        setNeedsPasswordSetup(true);
+        return;
+      }
+
+      // Force page reload for clean state
+      window.location.href = '/';
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, loading, needsPasswordSetup]);
 
   // Check if remember me was previously set
   useEffect(() => {
@@ -69,7 +124,7 @@ const Login: React.FC = () => {
     try {
       setIsSubmitting(true);
 
-      const result = await signIn(data.email, data.password, data.rememberMe);
+      const result = await signIn(data.email, data.password, data.rememberMe, captchaToken ?? undefined);
 
       if (result.error) {
         toast({
@@ -80,13 +135,8 @@ const Login: React.FC = () => {
         return;
       }
 
-      toast({
-        title: 'Bem-vindo ao ERP NOVUS!',
-        description: 'Login realizado com sucesso'
-      });
-
-      // Force page reload for clean state
-      window.location.href = '/';
+      // Sucesso: o useEffect que observa `user` decide entre mostrar o
+      // painel de definição de senha ou seguir pro app.
     } catch (error) {
       toast({
         title: 'Erro Interno',
@@ -95,6 +145,34 @@ const Login: React.FC = () => {
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const onSetNewPassword = async (data: NewPasswordFormData) => {
+    setSettingPassword(true);
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({ password: data.newPassword });
+      if (updateError) {
+        toast({ title: 'Erro ao definir senha', description: updateError.message, variant: 'destructive' });
+        return;
+      }
+
+      const { error: rpcError } = await supabase.rpc('clear_pessoa_pendente');
+      if (rpcError) {
+        console.error('[Login] falha ao limpar pessoa_pendente:', rpcError.message);
+      }
+
+      toast({ title: 'Senha definida com sucesso!' });
+      resetNewPasswordForm();
+      window.location.href = '/';
+    } catch (error) {
+      toast({
+        title: 'Erro Interno',
+        description: 'Ocorreu um erro inesperado. Tente novamente.',
+        variant: 'destructive'
+      });
+    } finally {
+      setSettingPassword(false);
     }
   };
 
@@ -126,86 +204,148 @@ const Login: React.FC = () => {
               />
             </div>
             <p className="text-gray-600 text-sm">
-              Entre com suas credenciais para acessar o sistema
+              {needsPasswordSetup
+                ? 'Cadastre sua senha definitiva para continuar'
+                : 'Entre com suas credenciais para acessar o sistema'}
             </p>
           </CardHeader>
 
           <CardContent className="space-y-6">
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-              {/* Email Field */}
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-                  E-mail
-                </Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    className="pl-10 h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                    {...register('email')}
-                  />
+            {needsPasswordSetup ? (
+              <form onSubmit={handleNewPasswordSubmit(onSetNewPassword)} className="space-y-5">
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword" className="text-sm font-medium text-gray-700">
+                    Nova senha
+                  </Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="newPassword"
+                      type={showNewPassword ? 'text' : 'password'}
+                      placeholder="Digite sua nova senha"
+                      className="pl-10 pr-10 h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      {...registerNewPassword('newPassword')}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500">{PASSWORD_POLICY_MESSAGE}</p>
+                  {newPasswordErrors.newPassword && (
+                    <p className="text-sm text-status-cancelled">{newPasswordErrors.newPassword.message}</p>
+                  )}
                 </div>
-                {errors.email && <p className="text-sm text-status-cancelled">{errors.email.message}</p>}
-              </div>
 
-              {/* Password Field */}
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium text-gray-700">
-                  Senha
-                </Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Digite sua senha"
-                    className="pl-10 pr-10 h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                    {...register('password')}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
+                    Confirme a nova senha
+                  </Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="confirmPassword"
+                      type={showNewPassword ? 'text' : 'password'}
+                      placeholder="Digite novamente"
+                      className="pl-10 h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      {...registerNewPassword('confirmPassword')}
+                    />
+                  </div>
+                  {newPasswordErrors.confirmPassword && (
+                    <p className="text-sm text-status-cancelled">{newPasswordErrors.confirmPassword.message}</p>
+                  )}
                 </div>
-                {errors.password && <p className="text-sm text-status-cancelled">{errors.password.message}</p>}
-              </div>
 
-              {/* Remember Me */}
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="rememberMe"
-                  checked={rememberMe}
-                  onCheckedChange={checked => setValue('rememberMe', !!checked)}
-                />
-                <Label
-                  htmlFor="rememberMe"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer text-gray-700"
+                <Button
+                  type="submit"
+                  className="w-full h-11 text-base font-medium bg-blue-900 hover:bg-blue-800 text-white"
+                  disabled={settingPassword}
                 >
-                  Lembrar-me
-                </Label>
-              </div>
+                  {settingPassword ? 'Salvando...' : 'Definir senha'}
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                {/* Email Field */}
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                    E-mail
+                  </Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="seu@email.com"
+                      className="pl-10 h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      {...register('email')}
+                    />
+                  </div>
+                  {errors.email && <p className="text-sm text-status-cancelled">{errors.email.message}</p>}
+                </div>
 
-              {/* Login Button */}
-              <Button
-                type="submit"
-                className="w-full h-11 text-base font-medium bg-blue-900 hover:bg-blue-800 text-white"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Entrando...
-                  </>
-                ) : (
-                  'Entrar'
-                )}
-              </Button>
-            </form>
+                {/* Password Field */}
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                    Senha
+                  </Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Digite sua senha (primeiro acesso: use seu e-mail)"
+                      className="pl-10 pr-10 h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      {...register('password')}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {errors.password && <p className="text-sm text-status-cancelled">{errors.password.message}</p>}
+                </div>
+
+                {/* Remember Me */}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="rememberMe"
+                    checked={rememberMe}
+                    onCheckedChange={checked => setValue('rememberMe', !!checked)}
+                  />
+                  <Label
+                    htmlFor="rememberMe"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer text-gray-700"
+                  >
+                    Lembrar-me
+                  </Label>
+                </div>
+
+                <TurnstileWidget onVerify={setCaptchaToken} />
+
+                {/* Login Button */}
+                <Button
+                  type="submit"
+                  className="w-full h-11 text-base font-medium bg-blue-900 hover:bg-blue-800 text-white"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Entrando...
+                    </>
+                  ) : (
+                    'Entrar'
+                  )}
+                </Button>
+              </form>
+            )}
           </CardContent>
         </Card>
       </div>

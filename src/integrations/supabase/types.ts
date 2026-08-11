@@ -2261,8 +2261,11 @@ export type Database = {
           email_secundario: string | null
           empresa_representada_id: string
           estado: string | null
+          externo_id: string | null
           forma_atuacao: string | null
+          hash_payload: string | null
           id: string
+          idempotency_key: string | null
           inscricao_estadual: string | null
           inscricao_municipal: string | null
           limite_credito: number | null
@@ -2271,6 +2274,8 @@ export type Database = {
           nome_fantasia: string | null
           numero: string | null
           observacoes: string | null
+          origem_canal: string | null
+          origem_sistema: string | null
           pix: string | null
           prazo_entrega: number | null
           qualificacao_fiscal: Json | null
@@ -2313,8 +2318,11 @@ export type Database = {
           email_secundario?: string | null
           empresa_representada_id: string
           estado?: string | null
+          externo_id?: string | null
           forma_atuacao?: string | null
+          hash_payload?: string | null
           id?: string
+          idempotency_key?: string | null
           inscricao_estadual?: string | null
           inscricao_municipal?: string | null
           limite_credito?: number | null
@@ -2323,6 +2331,8 @@ export type Database = {
           nome_fantasia?: string | null
           numero?: string | null
           observacoes?: string | null
+          origem_canal?: string | null
+          origem_sistema?: string | null
           pix?: string | null
           prazo_entrega?: number | null
           qualificacao_fiscal?: Json | null
@@ -2365,8 +2375,11 @@ export type Database = {
           email_secundario?: string | null
           empresa_representada_id?: string
           estado?: string | null
+          externo_id?: string | null
           forma_atuacao?: string | null
+          hash_payload?: string | null
           id?: string
+          idempotency_key?: string | null
           inscricao_estadual?: string | null
           inscricao_municipal?: string | null
           limite_credito?: number | null
@@ -2375,6 +2388,8 @@ export type Database = {
           nome_fantasia?: string | null
           numero?: string | null
           observacoes?: string | null
+          origem_canal?: string | null
+          origem_sistema?: string | null
           pix?: string | null
           prazo_entrega?: number | null
           qualificacao_fiscal?: Json | null
@@ -6810,6 +6825,7 @@ export type Database = {
         Args: { p_min_events?: number; p_nome: string; p_tenant: string }
         Returns: Json
       }
+      clear_pessoa_pendente: { Args: never; Returns: undefined }
       conciliar_inventario: { Args: { p_inventario_id: string }; Returns: Json }
       confirmar_match: {
         Args: { p_extrato_linha_id: string; p_movimentacao_id: string }
