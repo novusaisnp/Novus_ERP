@@ -72,9 +72,72 @@ certificado/CSC, homologação e deploy manual das Edge Functions.
 Configurar credenciais reais do provedor e executar a homologação controlada de NF-e,
 NFC-e e MDF-e. O deploy das Edge Functions continua manual e separado do `git push`.
 
-**Última atualização: 2026-08-11 (isolamento entre empresas provado; falta 1 item para fechar a FIN-0).**
+**Última atualização: 2026-08-11 (FIN-0 concluída — falha deixou de virar zero silencioso).**
 
-## 🔖 Checkpoint atual — isolamento entre empresas provado (2026-08-11)
+## 🔖 Checkpoint atual — erro deixou de virar zero (2026-08-11)
+
+Último item da FIN-0. **Com ele a fase está concluída.**
+
+### O pior caso estava no dashboard
+
+`dashboardService` terminava cada função em `catch { return 0 }`, e a empresa não resolvida
+também virava zero. Qualquer falha — rede, RLS, erro de consulta — era apresentada como
+"Saldo Bancário R$ 0,00", indistinguível de uma empresa que realmente não tem saldo. Zero é
+uma resposta sobre dinheiro: só pode aparecer quando for verdade.
+
+As três funções passaram a propagar a falha e a usar a variante de resolução de empresa que
+lança em vez da que devolve nulo. Mas isso sozinho não bastava: a tela fazia `data ?? 0`, e o
+zero reapareceria na borda. `MetricCard` ganhou um estado de erro que mostra "—" e "Não foi
+possível carregar" no lugar do número.
+
+### Movimentações bancárias
+
+Cinco pontos usavam `if (!empresaId) return [] / null / estatísticas zeradas`. Todos passaram
+a resolver a empresa pela variante que falha.
+
+Um deles era mais que ruído: em `checarSaldoParaSaida`, o filtro por empresa era **condicional**
+— sem empresa resolvida, a validação de saldo consultava a conta bancária de qualquer empresa.
+Agora o filtro é obrigatório.
+
+### Varredura
+
+Percorridos `contasPagar`, `contasReceber`, `fluxoCaixaService`, `movimentacoesService`,
+`planoContasService`, `contaBancariaService`, `movimentacoesBancariasService`, `conciliacao` e
+`dashboardService`. Os demais `|| []` encontrados são benignos: aparecem depois de o erro já
+ter sido lançado, cobrindo apenas o caso de `data` nulo sem falha.
+
+**Fora do escopo, anotado:** `usuarioService` tem três `if (!empresaId) return []` com o mesmo
+padrão. Não é caminho financeiro, então não entrou nesta fase.
+
+### Validação
+
+- Cinco testes novos em `dashboardService.test.ts`: soma correta; falha de consulta propagada
+  em vez de zero, em títulos e em saldo; empresa não resolvida sem sequer consultar o banco; e
+  zero preservado quando o dado é realmente zero.
+- Ao vivo, com as consultas do dashboard forçadas a falhar: os quatro cartões mostraram "—" e
+  "Não foi possível carregar". Sem a falha, o dashboard voltou a exibir os valores reais —
+  R$ 0,00 legítimo, porque o banco está vazio. Nada foi alterado no banco nem no navegador:
+  a interceptação foi desfeita e a empresa ativa permaneceu a real.
+- `npm run typecheck` limpo. `npm run test -- --run` → 366/366 antes dos testes novos.
+
+### FIN-0 concluída
+
+Entregue nesta sessão: autorização financeira real; bloqueio de exclusão de título liquidado;
+gravação atômica de título e rateios; trava de autorização para baixa retroativa, estorno e
+cancelamento; correção do parcelamento com parcela negativa; rateio de contas a receber que
+nunca aparecia; remoção de código morto; baixa com juros, multa, desconto e divisão entre
+contas; rateio contábil editável no título; prova de isolamento entre empresas; e o fim do
+zero silencioso.
+
+### Próxima ação única
+
+**FIN-1: renegociação de título** — substituir um título por novas parcelas preservando
+rastreabilidade. `gerarParcelas` já existe e está coberto por testes, inclusive contra a
+parcela negativa corrigida nesta sessão.
+
+---
+
+## 🔖 Checkpoint — isolamento entre empresas provado (2026-08-11)
 
 Último item aberto da FIN-0 e critério de saída da fase: nenhum usuário opera fora do seu
 escopo. Antes havia a crença de que a RLS bastava; agora há prova reproduzível.

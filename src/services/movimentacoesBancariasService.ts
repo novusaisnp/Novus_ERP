@@ -12,7 +12,7 @@ import {
   DocumentoMovimentacao,
   TipoMovimentacao,
 } from '@/types/movimentacoesBancarias';
-import { getEmpresaAtivaId } from '@/lib/empresaAtiva';
+import { getEmpresaAtivaIdOuFalha } from '@/lib/empresaAtiva';
 
 type TransferenciaExtras = { natureza_id?: string; plano_conta_id?: string; centro_custo_id?: string };
 
@@ -39,15 +39,15 @@ const validarValorPositivo = (valor: number): void => {
 };
 
 const checarSaldoParaSaida = async (contaId: string, valor: number): Promise<void> => {
-  const empresaId = await getEmpresaAtivaId();
-  let saldoQuery = supabase
+  // O filtro por empresa é obrigatório: era condicional, e sem empresa resolvida a validação
+  // de saldo passava a olhar a conta de qualquer empresa.
+  const empresaId = await getEmpresaAtivaIdOuFalha();
+  const { data: conta, error } = await supabase
     .from('contas_bancarias')
     .select('saldo_atual, status, configuracoes')
-    .eq('id', contaId);
-  if (empresaId) {
-    saldoQuery = saldoQuery.eq('empresa_representada_id', empresaId);
-  }
-  const { data: conta, error } = await saldoQuery.single();
+    .eq('id', contaId)
+    .eq('empresa_representada_id', empresaId)
+    .single();
   if (error) {
     throw new Error(`Erro ao validar conta: ${error.message}`);
   }
@@ -72,8 +72,7 @@ export const listarMovimentacoesBancarias = async (
   filtros?: FiltrosMovimentacoes
 ): Promise<MovimentacaoBancaria[]> => {
 
-  const empresaId = await getEmpresaAtivaId();
-  if (!empresaId) return [];
+  const empresaId = await getEmpresaAtivaIdOuFalha();
 
   let query = supabase
     .from('movimentacoes_bancarias')
@@ -179,8 +178,7 @@ export const listarMovimentacoesBancarias = async (
 // Função para obter uma movimentação específica
 export const obterMovimentacaoBancaria = async (id: string): Promise<MovimentacaoBancaria | null> => {
 
-  const empresaId = await getEmpresaAtivaId();
-  if (!empresaId) return null;
+  const empresaId = await getEmpresaAtivaIdOuFalha();
 
   const { data, error } = await supabase
     .from('movimentacoes_bancarias')
@@ -243,10 +241,7 @@ export const criarMovimentacaoBancaria = async (
     await checarSaldoParaSaida(input.conta_bancaria_id, input.valor);
   }
 
-  const empresaId = await getEmpresaAtivaId();
-  if (!empresaId) {
-    throw new Error('Não foi possível identificar a empresa do usuário');
-  }
+  const empresaId = await getEmpresaAtivaIdOuFalha();
 
   const { data, error } = await supabase
     .from('movimentacoes_bancarias')
@@ -334,10 +329,7 @@ export const realizarTransferenciaBancaria = async (
   }
 
   // Obter empresa do usuário atual
-  const empresaId = await getEmpresaAtivaId();
-  if (!empresaId) {
-    throw new Error('Não foi possível identificar a empresa do usuário');
-  }
+  const empresaId = await getEmpresaAtivaIdOuFalha();
 
   const { data, error } = await supabase.rpc('transferencia_bancaria_atomica', {
     p_empresa_id: empresaId,
@@ -442,21 +434,7 @@ export const obterEstatisticasMovimentacoes = async (
   filtros?: FiltrosMovimentacoes
 ): Promise<EstatisticasMovimentacoes> => {
 
-  const empresaId = await getEmpresaAtivaId();
-  if (!empresaId) {
-    return {
-      total_movimentacoes: 0,
-      total_depositos: 0,
-      total_saques: 0,
-      total_transferencias: 0,
-      total_ajustes: 0,
-      valor_total_entradas: 0,
-      valor_total_saidas: 0,
-      saldo_liquido: 0,
-      movimentacoes_conciliadas: 0,
-      movimentacoes_estornadas: 0,
-    };
-  }
+  const empresaId = await getEmpresaAtivaIdOuFalha();
 
   let query = supabase
     .from('movimentacoes_bancarias')
@@ -560,8 +538,7 @@ export const obterDocumentosMovimentacao = async (
   movimentacaoId: string
 ): Promise<DocumentoMovimentacao[]> => {
 
-  const empresaId = await getEmpresaAtivaId();
-  if (!empresaId) return [];
+  const empresaId = await getEmpresaAtivaIdOuFalha();
 
   const { data, error } = await supabase
     .from('documentos_movimentacoes_bancarias')

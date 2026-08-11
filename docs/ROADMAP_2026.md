@@ -6,7 +6,7 @@ critérios de saída estão comprovados.
 
 ## Regras de execução e continuidade
 
-- Prioridade atual: **Programa Financeiro Robusto — Fase FIN-0**.
+- Prioridade atual: **Programa Financeiro Robusto — Fase FIN-1** (FIN-0 concluída em 2026-08-11).
 - Cada entrega deve caber em um checkpoint verificável e deixar o sistema executável.
 - Nenhuma operação financeira composta pode depender de compensação manual entre chamadas.
 - Alterações de schema/RLS/constraints exigem validação contra o banco real antes da migration.
@@ -27,7 +27,7 @@ sem expor complexidade corporativa para quem não precisa dela.
 
 ### FIN-0 — Integridade e segurança transacional
 
-**Estado:** `[~]` iniciado em 2026-08-11.
+**Estado:** `[x]` concluída em 2026-08-11.
 
 - [x] Unificar status de UI e banco em baixa, estorno e cancelamento.
 - [~] Validar no banco real constraints, triggers, FKs e policies de todas as tabelas financeiras
@@ -41,7 +41,7 @@ sem expor complexidade corporativa para quem não precisa dela.
 - [x] Suportar baixa parcial real (`PARCIAL`) e impedir valor acima do saldo.
 - [x] Adicionar chave de idempotência e proteção contra concorrência/duplo clique no banco.
 - [x] Eliminar caminhos duplicados de liquidação e manter um serviço canônico.
-- [ ] Diferenciar erro técnico de lista vazia; falhas não podem virar zeros silenciosos.
+- [x] Diferenciar erro técnico de lista vazia; falhas não podem virar zeros silenciosos.
 - [x] Aplicar permissões financeiras reais na UI, serviço/RPC e RLS.
 - [x] Bloquear exclusão física de título já movimentado; correção deve ocorrer por estorno.
 - [x] Provar isolamento entre empresas em leitura e escrita.
@@ -201,12 +201,17 @@ por configuração declarada.
 
 ## Sequência executiva atual
 
-1. **FIN-0:** status canônicos e baseline de regressão.
-2. **FIN-0:** auditoria do banco real e desenho das RPCs transacionais.
-3. **FIN-0:** liquidação atômica ponta a ponta.
-4. **FIN-0:** estorno/cancelamento + permissões reais.
-5. **FIN-1:** ligar todos os fluxos atualmente apenas visuais.
-6. Retomar a próxima frente conforme dependências, mantendo FIN-2+ como metas obrigatórias.
+FIN-0 concluída em 2026-08-11: integridade transacional, autorização real, isolamento entre
+empresas provado e falhas que não viram mais zero silencioso.
+
+1. **FIN-1:** renegociação de título, substituindo um título por novas parcelas com
+   rastreabilidade (`gerarParcelas` já existe e está coberto por testes).
+2. **FIN-1:** vincular movimentação bancária existente ou criar e conciliar uma nova.
+3. **FIN-1:** cadastro rápido de entidade nos consumidores financeiros; filtros de conta
+   bancária e usuário; upload de documentos aguardando a mutation; operações em lote.
+4. **FIN-1:** testes E2E do ciclo completo — criar, editar, liquidar, cancelar, estornar,
+   conciliar.
+5. Retomar a próxima frente conforme dependências, mantendo FIN-2+ como metas obrigatórias.
 
 ## Riscos ativos
 

@@ -13,11 +13,13 @@ interface MetricProps {
   icon: React.ElementType;
   value: string;
   loading: boolean;
+  /** Consulta falhou: mostra traço em vez de um número que não é verdade. */
+  erro?: boolean;
   subtitle?: string;
   valueClassName?: string;
 }
 
-const MetricCard: React.FC<MetricProps> = ({ title, icon: Icon, value, loading, subtitle, valueClassName }) => (
+const MetricCard: React.FC<MetricProps> = ({ title, icon: Icon, value, loading, erro, subtitle, valueClassName }) => (
   <Card>
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
       <CardTitle className="text-sm font-medium">{title}</CardTitle>
@@ -28,10 +30,16 @@ const MetricCard: React.FC<MetricProps> = ({ title, icon: Icon, value, loading, 
     <CardContent>
       {loading ? (
         <Skeleton className="h-8 w-32" />
+      ) : erro ? (
+        <div className="text-2xl font-bold text-muted-foreground">—</div>
       ) : (
         <div className={`text-2xl font-bold ${valueClassName ?? ''}`}>{value}</div>
       )}
-      {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+      {erro ? (
+        <p className="text-xs text-destructive mt-1">Não foi possível carregar</p>
+      ) : (
+        subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
+      )}
     </CardContent>
   </Card>
 );
@@ -54,12 +62,14 @@ const Dashboard: React.FC = () => {
           title="Clientes Ativos"
           icon={Users}
           loading={clientes.isLoading}
+          erro={clientes.isError}
           value={String(clientes.data ?? 0)}
         />
         <MetricCard
           title="Contas a Pagar"
           icon={ArrowDown}
           loading={pagar.isLoading}
+          erro={pagar.isError}
           value={brl(pagar.data ?? 0)}
           subtitle="Pendentes"
           valueClassName="text-[hsl(var(--status-production))]"
@@ -68,6 +78,7 @@ const Dashboard: React.FC = () => {
           title="Contas a Receber"
           icon={ArrowUp}
           loading={receber.isLoading}
+          erro={receber.isError}
           value={brl(receber.data ?? 0)}
           subtitle="Pendentes"
           valueClassName="text-[hsl(var(--status-delivered))]"
@@ -76,6 +87,7 @@ const Dashboard: React.FC = () => {
           title="Saldo Bancário"
           icon={Landmark}
           loading={saldo.isLoading}
+          erro={saldo.isError}
           value={brl(saldo.data ?? 0)}
           subtitle="Contas ativas"
           valueClassName={(saldo.data ?? 0) >= 0 ? 'text-[hsl(var(--status-delivered))]' : 'text-[hsl(var(--status-cancelled))]'}
