@@ -380,7 +380,12 @@ serve(async (req) => {
     let result: unknown;
     switch (payload.table.toLowerCase()) {
       case 'clientes':
-        result = await syncCliente(supabase, payload, empresaId);
+        // Compat: satélite ainda não migrado manda table:'clientes' sem
+        // `papeis` — trata como CLIENTE (mesmo comportamento de sempre).
+        result = await syncEntidade(supabase, payload, empresaId, ['CLIENTE']);
+        break;
+      case 'entidades':
+        result = await syncEntidade(supabase, payload, empresaId);
         break;
       case 'vendas':
         result = await syncVenda(supabase, payload, empresaId);
@@ -457,20 +462,24 @@ serve(async (req) => {
 // Domain sync helpers (unchanged behaviour from previous version)
 // ============================================================
 
-async function ensurePapelCliente(supabase: SupabaseClient, entidadeId: string, empresaId: string) {
+async function ensurePapeis(supabase: SupabaseClient, entidadeId: string, empresaId: string, papeis: string[]) {
   await supabase
     .from('entidade_papeis')
     .upsert(
-      { entidade_id: entidadeId, empresa_representada_id: empresaId, papel: 'CLIENTE' },
+      papeis.map((papel) => ({ entidade_id: entidadeId, empresa_representada_id: empresaId, papel })),
       { onConflict: 'entidade_id,papel', ignoreDuplicates: true },
     );
 }
 
-async function syncCliente(supabase: SupabaseClient, payload: WebhookPayload, empresaId: string) {
+// `papeisDefault` cobre o caso table:'clientes' (satélite ainda não migrado,
+// payload sem `papeis` — sempre CLIENTE). Em table:'entidades', `data.papeis`
+// é a fonte de verdade.
+async function syncEntidade(supabase: SupabaseClient, payload: WebhookPayload, empresaId: string, papeisDefault?: string[]) {
   const { event, data } = payload;
+  const papeis = (Array.isArray(data.papeis) ? data.papeis as string[] : papeisDefault) ?? ['CLIENTE'];
   const cpf = (data.cpf as string) || undefined;
   const cnpj = (data.cnpj as string) || undefined;
-  let existingCliente: { id: string } | null = null;
+  let existingEntidade: { id: string } | null = null;
   if (cpf || cnpj) {
     const filters = [cpf && `cpf.eq.${cpf}`, cnpj && `cnpj.eq.${cnpj}`].filter(Boolean).join(',');
     const { data: found } = await supabase
@@ -479,41 +488,41 @@ async function syncCliente(supabase: SupabaseClient, payload: WebhookPayload, em
       .eq('empresa_representada_id', empresaId)
       .or(filters)
       .maybeSingle();
-    existingCliente = found;
+    existingEntidade = found;
   }
 
   switch (event) {
     case 'insert':
     case 'sync':
     case 'update': {
-      if (existingCliente) {
+      if (existingEntidade) {
         const result = await supabase
           .from('entidades')
           .update({
-            ...(await mapClienteData(data, payload.source_system, empresaId)),
+            ...(await mapEntidadeData(data, payload.source_system, empresaId)),
             updated_at: new Date().toISOString(),
           })
-          .eq('id', existingCliente.id)
+          .eq('id', existingEntidade.id)
           .eq('empresa_representada_id', empresaId)
           .select()
           .single();
-        await ensurePapelCliente(supabase, existingCliente.id, empresaId);
+        await ensurePapeis(supabase, existingEntidade.id, empresaId, papeis);
         return result;
       }
       const result = await supabase
         .from('entidades')
-        .insert(await mapClienteData(data, payload.source_system, empresaId))
+        .insert(await mapEntidadeData(data, payload.source_system, empresaId))
         .select()
         .single();
-      if (result.data?.id) await ensurePapelCliente(supabase, result.data.id, empresaId);
+      if (result.data?.id) await ensurePapeis(supabase, result.data.id, empresaId, papeis);
       return result;
     }
     case 'delete':
-      if (!existingCliente) return { data: null, error: null };
+      if (!existingEntidade) return { data: null, error: null };
       return await supabase
         .from('entidades')
         .update({ ativo: false, updated_at: new Date().toISOString() })
-        .eq('id', existingCliente.id)
+        .eq('id', existingEntidade.id)
         .eq('empresa_representada_id', empresaId)
         .select()
         .single();
@@ -720,7 +729,7 @@ async function syncFinanceiro(supabase: SupabaseClient, payload: WebhookPayload,
 // tipo_pessoa/cpf/cnpj/endereço-flat "novo"). Endereço entra achatado nas
 // colunas reais; campos ausentes no payload não entram no objeto (update
 // parcial não apaga dado que um humano digitou na tela do ERP).
-async function mapClienteData(data: Record<string, unknown>, sourceSystem: string, empresaId: string) {
+async function mapEntidadeData(data: Record<string, unknown>, sourceSystem: string, empresaId: string) {
   const cpf = (data.cpf as string) || null;
   const cnpj = (data.cnpj as string) || null;
   const tipoPessoa = (data.tipo_pessoa as string) || (cpf ? 'PF' : cnpj ? 'PJ' : null);

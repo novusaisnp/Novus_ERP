@@ -139,8 +139,27 @@ cadastro de pessoa novo. Fica registrado aqui pra não se perder, não é escopo
     config só pra testar seria gerar dado de produção sem pedido. Verificação ficou em: simulação SQL da
     lógica exata (dedup por CPF, upsert de papel, FKs reais) + deploy sem erro.
 
-**Próximo passo**: Fase 3 formal (payload rico de Entidade + janela expand-contract pro `table:'entidades'`)
-e Fase 4 (UI `FormEntidade.tsx` consolidada no ERP) — Educacional (Fases 5-8) ainda nem começou.
+12. **Fase 3 (concluída)**: `_shared/canonical/entities.ts` ganhou `entidadeCanonicalObjectSchema`/
+    `entidadeCanonicalSchema` — mesmos campos de `entidades` + `papeis: array().min(1)`, com `superRefine`
+    validando CPF/CNPJ (reusa `isValidCPF`/`isValidCNPJ`) e papel × `tipo_pessoa` (espelha o trigger do banco,
+    validação client-side redundante de propósito). Registrado em `canonicalSchemas`/`canonicalObjectSchemas`
+    sob a chave `entidades`, mantendo `clientes` intocado (janela expand-contract). `sync-webhook/index.ts`:
+    `syncCliente`→`syncEntidade` (aceita `papeis` do payload, default `['CLIENTE']` quando chamado via
+    `table:'clientes'` — satélite não migrado não quebra), `mapClienteData`→`mapEntidadeData`, novo
+    `case 'entidades'` no dispatch ao lado do `case 'clientes'` existente. `ensurePapelCliente`→`ensurePapeis`
+    (aceita lista, não só um papel fixo).
+13. **Verificação real de edge function, incomum pra este repo**: `deno check`/`deno test` rodados via
+    Docker (`denoland/deno:latest`) — algo que normalmente não é possível aqui (ponto cego documentado,
+    edge functions não têm typecheck/test automatizado). 18/18 testes Deno passando em
+    `entities.test.ts` (5 novos pro schema de Entidade, 13 preexistentes intactos). `deno check
+    sync-webhook/index.ts` apontou 2 erros, ambos em `hmacSha256Hex`/`sha256Hex` — helpers de
+    criptografia **não tocados nesta sessão**, incompatibilidade de tipo `Uint8Array`/`BufferSource`
+    pré-existente da versão de lib do Deno CLI usada no teste local (o deploy real via
+    `supabase functions deploy`, que já rodou com sucesso, usa outro pipeline e não acusa isso).
+14. **Redeploy**: `sync-webhook` deployado de novo (mudou depois do primeiro deploy desta sessão).
+
+**Próximo passo**: Fase 4 (UI `FormEntidade.tsx` consolidada no ERP, substitui os 3 forms separados) —
+Educacional (Fases 5-8) ainda nem começou.
 
 ## 🔖 Checkpoint de sessão (2026-08-10 — responsividade mobile, aditiva)
 

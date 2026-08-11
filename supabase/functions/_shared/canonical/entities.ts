@@ -42,6 +42,73 @@ export const clienteCanonicalSchema = clienteCanonicalObjectSchema.superRefine((
   }
 });
 
+// -------------------- Entidade (Cadastro Unificado) --------------------
+// Substitui Cliente como contrato-alvo pro Cadastro Unificado de Entidades
+// (ver docs/CONTRATOS_CANONICOS_ERP.md e o plano da refatoração). Cliente
+// continua aceito (janela expand-contract: satélites que ainda mandam
+// `table:'clientes'` não quebram) até todos migrarem pra `table:'entidades'`
+// com `papeis` explícito.
+const PAPEL_CODIGOS = ['CLIENTE', 'FORNECEDOR', 'PRESTADOR', 'COLABORADOR', 'SOCIO', 'REPRESENTANTE_LEGAL', 'PROCURADOR'] as const;
+const PAPEL_TIPO_PERMITIDO: Record<(typeof PAPEL_CODIGOS)[number], 'PF' | 'PJ' | 'AMBOS'> = {
+  CLIENTE: 'AMBOS',
+  FORNECEDOR: 'AMBOS',
+  PRESTADOR: 'AMBOS',
+  COLABORADOR: 'PF',
+  SOCIO: 'PF',
+  REPRESENTANTE_LEGAL: 'PF',
+  PROCURADOR: 'PF',
+};
+
+export const entidadeCanonicalObjectSchema = z.object({
+  empresa_representada_id: z.string().uuid(),
+  tipo_pessoa: z.enum(['PF', 'PJ']),
+  nome: z.string().min(1, 'nome é obrigatório'),
+  razao_social: z.string().optional().nullable(),
+  nome_fantasia: z.string().optional().nullable(),
+  apelido: z.string().optional().nullable(),
+  cpf: z.string().regex(/^\d{11}$/, 'CPF deve conter 11 dígitos numéricos').optional().nullable(),
+  cnpj: z.string().regex(/^\d{14}$/, 'CNPJ deve conter 14 dígitos numéricos').optional().nullable(),
+  rg: z.string().optional().nullable(),
+  inscricao_estadual: z.string().optional().nullable(),
+  inscricao_municipal: z.string().optional().nullable(),
+  email: z.string().email().optional().nullable(),
+  email_secundario: z.string().email().optional().nullable(),
+  telefone: z.string().optional().nullable(),
+  telefone_secundario: z.string().optional().nullable(),
+  celular: z.string().optional().nullable(),
+  whatsapp: z.string().optional().nullable(),
+  website: z.string().optional().nullable(),
+  cep: z.string().optional().nullable(),
+  logradouro: z.string().optional().nullable(),
+  numero: z.string().optional().nullable(),
+  complemento: z.string().optional().nullable(),
+  bairro: z.string().optional().nullable(),
+  cidade: z.string().optional().nullable(),
+  estado: z.string().optional().nullable(),
+  banco: z.string().optional().nullable(),
+  agencia: z.string().optional().nullable(),
+  conta: z.string().optional().nullable(),
+  tipo_conta: z.string().optional().nullable(),
+  observacoes: z.string().optional().nullable(),
+  ativo: z.boolean().default(true),
+  papeis: z.array(z.enum(PAPEL_CODIGOS)).min(1, 'entidade precisa de pelo menos um papel'),
+}).merge(origemEnvelopeSchema);
+
+export const entidadeCanonicalSchema = entidadeCanonicalObjectSchema.superRefine((e, ctx) => {
+  if (e.tipo_pessoa === 'PJ' && e.cnpj && !isValidCNPJ(e.cnpj)) {
+    ctx.addIssue({ code: 'custom', path: ['cnpj'], message: 'CNPJ inválido (dígito verificador não confere)' });
+  }
+  if (e.tipo_pessoa === 'PF' && e.cpf && !isValidCPF(e.cpf)) {
+    ctx.addIssue({ code: 'custom', path: ['cpf'], message: 'CPF inválido (dígito verificador não confere)' });
+  }
+  for (const papel of e.papeis) {
+    const permitido = PAPEL_TIPO_PERMITIDO[papel];
+    if (permitido !== 'AMBOS' && permitido !== e.tipo_pessoa) {
+      ctx.addIssue({ code: 'custom', path: ['papeis'], message: `papel ${papel} não permite entidade do tipo ${e.tipo_pessoa} (permitido: ${permitido})` });
+    }
+  }
+});
+
 // -------------------- Produto --------------------
 // Mesma nota do Cliente: envelope de origem é contrato-alvo, não persistido
 // ainda em `produtos`.
@@ -203,6 +270,7 @@ export const liquidacaoCanonicalSchema = liquidacaoCanonicalObjectSchema.superRe
 // Schemas completos (com regras cruzadas) — usados para validar inserts.
 export const canonicalSchemas = {
   clientes: clienteCanonicalSchema,
+  entidades: entidadeCanonicalSchema,
   produtos: produtoCanonicalSchema,
   vendas: vendaCanonicalSchema,
   contratos: contratoCanonicalSchema,
@@ -215,6 +283,7 @@ export const canonicalSchemas = {
 // validar updates parciais, onde campos obrigatórios podem estar ausentes.
 export const canonicalObjectSchemas = {
   clientes: clienteCanonicalObjectSchema,
+  entidades: entidadeCanonicalObjectSchema,
   produtos: produtoCanonicalObjectSchema,
   vendas: vendaCanonicalObjectSchema,
   contratos: contratoCanonicalObjectSchema,

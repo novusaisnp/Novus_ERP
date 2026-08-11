@@ -1,6 +1,7 @@
 import { assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts';
 import {
   clienteCanonicalSchema,
+  entidadeCanonicalSchema,
   produtoCanonicalSchema,
   vendaCanonicalSchema,
   contaReceberCanonicalSchema,
@@ -37,6 +38,61 @@ Deno.test('clienteCanonicalSchema rejeita CPF em cliente tipo J', () => {
     nome: 'Fulano',
     tipo: 'J',
     cpf_cnpj: '52998224725', // CPF válido, mas inválido para tipo J
+  });
+  assertEquals(result.success, false);
+});
+
+Deno.test('entidadeCanonicalSchema aceita PJ com papel CLIENTE', () => {
+  const result = entidadeCanonicalSchema.safeParse({
+    empresa_representada_id: EMPRESA,
+    tipo_pessoa: 'PJ',
+    nome: 'ACME LTDA',
+    cnpj: '11222333000181',
+    papeis: ['CLIENTE'],
+  });
+  assertEquals(result.success, true);
+});
+
+Deno.test('entidadeCanonicalSchema rejeita papel COLABORADOR em entidade PJ', () => {
+  const result = entidadeCanonicalSchema.safeParse({
+    empresa_representada_id: EMPRESA,
+    tipo_pessoa: 'PJ',
+    nome: 'ACME LTDA',
+    cnpj: '11222333000181',
+    papeis: ['COLABORADOR'],
+  });
+  assertEquals(result.success, false);
+});
+
+Deno.test('entidadeCanonicalSchema aceita PF com papel COLABORADOR + CLIENTE simultâneos', () => {
+  const result = entidadeCanonicalSchema.safeParse({
+    empresa_representada_id: EMPRESA,
+    tipo_pessoa: 'PF',
+    nome: 'Fulano',
+    cpf: '52998224725',
+    papeis: ['COLABORADOR', 'CLIENTE'],
+  });
+  assertEquals(result.success, true);
+});
+
+Deno.test('entidadeCanonicalSchema exige ao menos um papel', () => {
+  const result = entidadeCanonicalSchema.safeParse({
+    empresa_representada_id: EMPRESA,
+    tipo_pessoa: 'PF',
+    nome: 'Fulano',
+    cpf: '52998224725',
+    papeis: [],
+  });
+  assertEquals(result.success, false);
+});
+
+Deno.test('entidadeCanonicalSchema rejeita CPF com dígito verificador inválido', () => {
+  const result = entidadeCanonicalSchema.safeParse({
+    empresa_representada_id: EMPRESA,
+    tipo_pessoa: 'PF',
+    nome: 'Fulano',
+    cpf: '52998224799',
+    papeis: ['CLIENTE'],
   });
   assertEquals(result.success, false);
 });
