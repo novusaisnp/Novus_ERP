@@ -1,6 +1,6 @@
 export type TipoTitulo = 'CONTAS_PAGAR' | 'CONTAS_RECEBER';
 
-export type StatusTitulo = 'ABERTA' | 'PAGA' | 'RECEBIDA' | 'VENCIDA' | 'CANCELADA';
+export type StatusTitulo = 'ABERTA' | 'PARCIAL' | 'PAGA' | 'RECEBIDA' | 'VENCIDA' | 'CANCELADA';
 
 export type TipoMovimentacao = 'LIQUIDACAO' | 'ESTORNO' | 'EDICAO' | 'CANCELAMENTO';
 
@@ -140,4 +140,24 @@ export interface EstatisticasMovimentacao {
   valor_total_aberto: number;
   valor_total_pago: number;
   valor_total_vencido: number;
+}
+
+export interface LiquidacaoRegistrada {
+  id: string;
+  conta_bancaria_id?: string | null;
+  data_pagamento: string;
+  valor_pago: number;
+  forma_pagamento?: string;
+  observacoes?: string;
+  conta_bancaria?: {
+    id: string;
+    numero_conta: string;
+    nome_titular?: string;
+  } | null;
+}
+
+export interface EstornoLiquidacao {
+  liquidacao_id: string;
+  motivo: string;
+  idempotency_key: string;
 }

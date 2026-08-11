@@ -26,6 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { MovimentacoesGestaoPopup } from './MovimentacoesGestaoPopup';
 import { LiquidacaoTituloModal } from './LiquidacaoTituloModal';
+import { EstornoLiquidacaoModal } from './EstornoLiquidacaoModal';
 import { 
   TituloFinanceiro, 
   FiltrosMovimentacao, 
@@ -54,6 +55,7 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
   const [tituloSelecionado, setTituloSelecionado] = useState<TituloFinanceiro | null>(null);
   const [isGestaoPopupOpen, setIsGestaoPopupOpen] = useState(false);
   const [isLiquidacaoModalOpen, setIsLiquidacaoModalOpen] = useState(false);
+  const [isEstornoModalOpen, setIsEstornoModalOpen] = useState(false);
   const [tabAtiva, setTabAtiva] = useState('lista');
 
   const {
@@ -85,7 +87,7 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
   const handlePopupClose = () => {
     setIsGestaoPopupOpen(false);
     // [LOTE 3B] Mantém tituloSelecionado se liquidação foi aberta em cadeia.
-    if (!isLiquidacaoModalOpen) {
+    if (!isLiquidacaoModalOpen && !isEstornoModalOpen) {
       setTituloSelecionado(null);
     }
     refetch();
@@ -100,6 +102,17 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
     refetch(); // Recarregar dados após liquidação
   };
 
+  const handleEstornoClose = () => {
+    setIsEstornoModalOpen(false);
+    setTituloSelecionado(null);
+  };
+
+  const handleEstornarFromPopup = (t: TituloFinanceiro) => {
+    setTituloSelecionado(t);
+    setIsGestaoPopupOpen(false);
+    setIsEstornoModalOpen(true);
+  };
+
   // [LOTE 3B] Popup delega liquidação para o modal único.
   const handleLiquidarFromPopup = (t: TituloFinanceiro) => {
     setTituloSelecionado(t);
@@ -110,6 +123,7 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
   const getStatusBadge = (situacao: StatusTitulo) => {
     const variants = {
       'ABERTA': 'default',
+      'PARCIAL': 'default',
       'PAGA': 'secondary',
       'RECEBIDA': 'secondary', 
       'VENCIDA': 'destructive',
@@ -186,6 +200,7 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
                     <SelectContent>
                       <SelectItem value="TODOS">Todos os Status</SelectItem>
                       <SelectItem value="ABERTA">Aberta</SelectItem>
+                      <SelectItem value="PARCIAL">Parcial</SelectItem>
                       <SelectItem value="PAGA">Paga</SelectItem>
                       <SelectItem value="RECEBIDA">Recebida</SelectItem>
                       <SelectItem value="VENCIDA">Vencida</SelectItem>
@@ -276,7 +291,7 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
                                 >
                                   <Eye className="w-4 h-4" />
                                 </Button>
-                                {permissoes.pode_liquidar && (titulo.situacao === 'ABERTA' || titulo.situacao === 'VENCIDA') && (
+                                {permissoes.pode_liquidar && (titulo.situacao === 'ABERTA' || titulo.situacao === 'PARCIAL' || titulo.situacao === 'VENCIDA') && (
                                   <Button 
                                     size="sm" 
                                     variant="default"
@@ -427,6 +442,7 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
           titulo={tituloSelecionado}
           permissoes={permissoes}
           onLiquidar={handleLiquidarFromPopup}
+          onEstornar={handleEstornarFromPopup}
         />
       )}
 
@@ -437,6 +453,15 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
           onClose={handleLiquidacaoClose}
           titulo={tituloSelecionado}
           onSuccess={handleLiquidacaoSuccess}
+        />
+      )}
+
+      {tituloSelecionado && (
+        <EstornoLiquidacaoModal
+          isOpen={isEstornoModalOpen}
+          onClose={handleEstornoClose}
+          titulo={tituloSelecionado}
+          onSuccess={refetch}
         />
       )}
     </>

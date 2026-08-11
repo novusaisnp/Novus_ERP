@@ -1,6 +1,85 @@
 # Status do projeto — NOVUS ERP
 
-**Última atualização: 2026-08-11 (Programa Financeiro Robusto — FIN-0, checkpoint 2).**
+**Última atualização: 2026-08-11 (Programa Financeiro Robusto — FIN-0, checkpoint 3).**
+
+## 🔖 Checkpoint atual — FIN-0.3 estorno transacional implantado (2026-08-11)
+
+**Objetivo desta entrega:** estornar uma liquidação específica sem desfazer outras baixas do mesmo
+título e sem deixar título, banco ou histórico em estados divergentes.
+
+### Concluído
+
+1. Migration `20260811130000_financeiro_estorno_liquidacao_atomico.sql` aplicada somente após
+   validação com rollback no projeto ERP confirmado:
+   - adiciona chave própria de idempotência do estorno;
+   - cria `financeiro_estornar_liquidacao` com bloqueio da liquidação e do título;
+   - rejeita outro tenant, motivo curto, liquidação já estornada por outra operação e movimento
+     conciliado;
+   - estorna apenas a liquidação escolhida e seus movimentos vinculados;
+   - recalcula valor acumulado, data e status do título pelas demais liquidações ativas;
+   - atualiza saldo bancário pelos triggers existentes e grava histórico na mesma transação;
+   - retry com a mesma chave retorna sucesso sem repetir efeitos.
+2. O serviço deixou de executar o antigo estorno amplo por várias chamadas e agora usa somente a
+   RPC para uma liquidação identificada.
+3. O botão de estorno abriu um submodal funcional: lista as baixas ativas, mostra valor, data,
+   forma e conta, exige motivo e confirma somente a baixa selecionada.
+4. O status `PARCIAL` passou a ser preservado na UI. Uma segunda baixa usa o saldo remanescente,
+   e títulos parcialmente pagos permitem tanto nova baixa quanto estorno.
+
+### Validação deste checkpoint
+
+- Migration executada dentro de `BEGIN ... ROLLBACK` antes da aplicação → passou.
+- Smoke test real com rollback: baixas de 40 + 60, estorno da baixa de 40, título `PARCIAL` com
+  60, saldo bancário 60, movimento estornado inativo e retry idempotente → passou.
+- Consulta pós-teste → zero contas e zero títulos temporários persistidos.
+- Verificação pós-aplicação → migration registrada, função e coluna presentes.
+- `npm.cmd run typecheck` → limpo.
+- Testes focados → 2 arquivos e 4 testes passaram.
+- Suíte completa → 44 arquivos e 342/342 testes passaram.
+- `npm.cmd run build` → passou; apenas avisos de chunks já conhecidos.
+- Validação no navegador local com dados reais temporários → `PARCIAL`, saldo remanescente,
+  botões Baixar/Estornar, seleção da baixa, conta, forma e validação do motivo corretos; zero erros
+  no console. Todos os registros temporários foram removidos e a tela voltou ao estado vazio.
+- A validação revelou que `liquidacoes_titulos.conta_bancaria_id` não possui FK para embed do
+  PostgREST. O serviço passou a buscar as contas em lote e o modal agora mostra erro técnico em vez
+  de convertê-lo em lista vazia.
+
+### Riscos e decisões
+
+- Movimento conciliado deve ser desconciliado antes do estorno; a RPC bloqueia esse caso.
+- A data efetiva do estorno é gerada no servidor. Data contábil retroativa permanece na FIN-1,
+  junto das regras de período fechado; não será aceita livremente no cliente.
+- Cancelamento de título ainda é composto no cliente e permanece a próxima operação crítica.
+- O gatilho `registrar_historico_movimentacao` torna `DELETE` físico de movimento impossível: ao
+  excluir, tenta inserir histórico com FK para o movimento já removido. Não afeta estorno, que usa
+  atualização auditável; deve ser corrigido antes de qualquer rotina legítima de purga.
+- Rollback da migration é possível removendo função, índice e coluna, mas a coluna não deve ser
+  removida após existirem estornos reais sem antes preservar suas chaves de idempotência.
+
+### Próxima ação única
+
+**Criar o checkpoint Git e iniciar `financeiro_cancelar_titulo`.** Antes da migration, auditar
+como cancelamento deve tratar título sem baixa, parcialmente liquidado e totalmente liquidado.
+
+### Arquivos desta entrega
+
+- `supabase/migrations/20260811130000_financeiro_estorno_liquidacao_atomico.sql`
+- `src/components/financeiro/EstornoLiquidacaoModal.tsx`
+- `src/components/financeiro/MovimentacoesGestaoPopup.tsx`
+- `src/components/financeiro/MovimentacoesModal.tsx`
+- `src/components/financeiro/LiquidacaoTituloModal.tsx`
+- `src/hooks/useMovimentacoesCompletas.ts`
+- `src/hooks/useMovimentacoesFinanceiras.ts`
+- `src/services/movimentacoesService.ts`
+- `src/services/movimentacoesService.test.ts`
+- `src/types/movimentacoesFinanceiras.ts`
+- `src/lib/statusMappers.ts`
+- `src/lib/statusMappers.test.ts`
+- `src/integrations/supabase/types.ts`
+- `docs/ROADMAP_2026.md`
+- `docs/STATUS.md`
+
+---
 
 ## 🔖 Checkpoint atual — FIN-0.2 liquidação atômica implantada (2026-08-11)
 

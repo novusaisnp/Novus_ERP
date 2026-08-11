@@ -3619,6 +3619,7 @@ export type Database = {
           data_liquidacao: string
           data_pagamento: string | null
           empresa_representada_id: string
+          estorno_idempotency_key: string | null
           estornado: boolean
           forma_pagamento: string | null
           historico: string | null
@@ -3653,6 +3654,7 @@ export type Database = {
           data_liquidacao: string
           data_pagamento?: string | null
           empresa_representada_id: string
+          estorno_idempotency_key?: string | null
           estornado?: boolean
           forma_pagamento?: string | null
           historico?: string | null
@@ -3687,6 +3689,7 @@ export type Database = {
           data_liquidacao?: string
           data_pagamento?: string | null
           empresa_representada_id?: string
+          estorno_idempotency_key?: string | null
           estornado?: boolean
           forma_pagamento?: string | null
           historico?: string | null
@@ -6851,6 +6854,14 @@ export type Database = {
         Returns: Json
       }
       estornar_estoque_venda: { Args: { p_venda_id: string }; Returns: Json }
+      financeiro_estornar_liquidacao: {
+        Args: {
+          p_idempotency_key: string
+          p_liquidacao_id: string
+          p_motivo: string
+        }
+        Returns: Json
+      }
       financeiro_liquidar_titulo: {
         Args: {
           p_conta_bancaria_id?: string

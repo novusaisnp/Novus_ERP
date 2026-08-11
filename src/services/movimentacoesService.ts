@@ -5,7 +5,9 @@ import type {
   LiquidacaoTitulo,
   EdicaoTitulo,
   CancelamentoTitulo,
-  HistoricoMovimentacao
+  HistoricoMovimentacao,
+  LiquidacaoRegistrada,
+  EstornoLiquidacao,
 } from '@/types/movimentacoesFinanceiras';
 import { getEmpresaAtivaIdOuFalha as getEmpresaIdAtual } from '@/lib/empresaAtiva';
 import { uiStatusPagarToDb, uiStatusReceberToDb } from '@/lib/statusMappers';
@@ -51,53 +53,48 @@ export const movimentacoesService = {
     }
   },
 
-  // Estornar título
-  async estornarTitulo(dados: { titulo_id: string; tipo_titulo: string; motivo: string }): Promise<void> {
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Usuário não autenticado');
+  async getLiquidacoesTitulo(tituloId: string, tipoTitulo: string): Promise<LiquidacaoRegistrada[]> {
+    const colunaLegada = tipoTitulo === 'CONTAS_PAGAR' ? 'conta_pagar_id' : 'conta_receber_id';
+    const { data, error } = await supabase
+      .from('liquidacoes_titulos')
+      .select(`
+        id, data_pagamento, data_liquidacao, valor_pago, forma_pagamento, observacoes,
+        conta_bancaria_id
+      `)
+      .or(`titulo_id.eq.${tituloId},${colunaLegada}.eq.${tituloId}`)
+      .eq('estornado', false)
+      .eq('cancelada', false)
+      .order('data_pagamento', { ascending: false });
 
+    if (error) throw new Error(`Erro ao buscar liquidações: ${error.message}`);
+    const contaIds = [...new Set((data || []).map((item) => item.conta_bancaria_id).filter(Boolean))] as string[];
+    const { data: contas, error: contasError } = contaIds.length
+      ? await supabase
+          .from('contas_bancarias')
+          .select('id, numero_conta, nome_titular')
+          .in('id', contaIds)
+      : { data: [], error: null };
+    if (contasError) throw new Error(`Erro ao buscar contas das liquidações: ${contasError.message}`);
+    const contasPorId = new Map((contas || []).map((conta) => [conta.id, conta]));
+
+    return (data || []).map((item) => ({
+      ...item,
+      data_pagamento: item.data_pagamento || item.data_liquidacao,
+      conta_bancaria: item.conta_bancaria_id ? contasPorId.get(item.conta_bancaria_id) : null,
+    })) as unknown as LiquidacaoRegistrada[];
+  },
+
+  async estornarLiquidacao(dados: EstornoLiquidacao): Promise<void> {
     try {
-      // 1. Marcar liquidação como estornada
-      const { error: estornoError } = await supabase
-        .from('liquidacoes_titulos')
-        .update({
-          estornado: true,
-          data_estorno: new Date().toISOString(),
-          motivo_estorno: dados.motivo,
-          usuario_estorno_id: user.id,
-        })
-        .eq('titulo_id', dados.titulo_id)
-        .eq('tipo_titulo', dados.tipo_titulo)
-        .eq('estornado', false);
-
-      if (estornoError) throw estornoError;
-
-      // 2. Reverter status do título para ABERTA
-      const { error: updateError } = dados.tipo_titulo === 'CONTAS_RECEBER'
-        ? await supabase
-            .from('contas_receber')
-            .update({ status: uiStatusReceberToDb('ABERTA'), data_recebimento: null, valor_recebido: 0 })
-            .eq('id', dados.titulo_id)
-        : await supabase
-            .from('contas_pagar')
-            .update({ status: uiStatusPagarToDb('ABERTA'), data_pagamento: null })
-            .eq('id', dados.titulo_id);
-
-      if (updateError) throw updateError;
-
-      // 3. Registrar no histórico
-      await this.registrarHistorico({
-        titulo_id: dados.titulo_id,
-        tipo_titulo: dados.tipo_titulo,
-        tipo_operacao: 'ESTORNO',
-        dados_novos: dados,
-        observacoes: `Título estornado: ${dados.motivo}`,
+      const { error } = await supabase.rpc('financeiro_estornar_liquidacao', {
+        p_liquidacao_id: dados.liquidacao_id,
+        p_motivo: dados.motivo,
+        p_idempotency_key: dados.idempotency_key,
       });
-
+      if (error) throw error;
     } catch (error) {
-      console.error('[MovimentacoesService] Erro ao estornar título:', error);
-      throw new Error(`Erro ao estornar título: ${error.message}`);
+      console.error('[MovimentacoesService] Erro ao estornar liquidação:', error);
+      throw new Error(`Erro ao estornar liquidação: ${error instanceof Error ? error.message : 'falha desconhecida'}`);
     }
   },
 

@@ -44,6 +44,7 @@ interface MovimentacoesGestaoPopupProps {
   permissoes: PermissoesMovimentacao;
   /** [LOTE 3B] Delegar liquidação exclusivamente ao LiquidacaoTituloModal. */
   onLiquidar?: (titulo: TituloFinanceiro) => void;
+  onEstornar?: (titulo: TituloFinanceiro) => void;
 }
 
 export const MovimentacoesGestaoPopup = ({
@@ -52,6 +53,7 @@ export const MovimentacoesGestaoPopup = ({
   titulo,
   permissoes,
   onLiquidar,
+  onEstornar,
 }: MovimentacoesGestaoPopupProps) => {
   console.log('[MovimentacoesGestaoPopup] Renderizando popup para título:', titulo.id);
 
@@ -62,6 +64,7 @@ export const MovimentacoesGestaoPopup = ({
   const getStatusBadge = (situacao: StatusTitulo) => {
     const variants = {
       'ABERTA': 'default',
+      'PARCIAL': 'default',
       'PAGA': 'secondary',
       'RECEBIDA': 'secondary', 
       'VENCIDA': 'destructive',
@@ -92,9 +95,9 @@ export const MovimentacoesGestaoPopup = ({
   const podeRealizar = (operacao: string) => {
     switch (operacao) {
       case 'liquidar':
-        return permissoes.pode_liquidar && (titulo.situacao === 'ABERTA' || titulo.situacao === 'VENCIDA');
+        return permissoes.pode_liquidar && (titulo.situacao === 'ABERTA' || titulo.situacao === 'PARCIAL' || titulo.situacao === 'VENCIDA');
       case 'estornar':
-        return permissoes.pode_estornar && (titulo.situacao === 'PAGA' || titulo.situacao === 'RECEBIDA');
+        return permissoes.pode_estornar && (titulo.situacao === 'PARCIAL' || titulo.situacao === 'PAGA' || titulo.situacao === 'RECEBIDA');
       case 'editar':
         return permissoes.pode_editar && titulo.situacao !== 'CANCELADA';
       case 'cancelar':
@@ -145,6 +148,10 @@ export const MovimentacoesGestaoPopup = ({
         });
         break;
       case 'estornar':
+        if (onEstornar) {
+          onEstornar(titulo);
+          return;
+        }
         toast({
           title: "Estornar Título",
           description: "Modal de estorno será implementado em breve",

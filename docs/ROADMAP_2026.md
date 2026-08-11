@@ -35,7 +35,7 @@ sem expor complexidade corporativa para quem não precisa dela.
 - [x] Criar RPC transacional e idempotente para liquidar título.
 - [x] Na mesma transação: bloquear título, validar saldo, gravar liquidação, atualizar título,
   gerar/vincular movimentação bancária e registrar histórico.
-- [ ] Criar RPC transacional para estornar uma liquidação específica.
+- [x] Criar RPC transacional para estornar uma liquidação específica.
 - [ ] Criar RPC transacional para cancelar título, impedindo cancelamento incompatível com baixas.
 - [ ] Tornar criação/edição de título + rateios atômica em pagar e receber.
 - [x] Suportar baixa parcial real (`PARCIAL`) e impedir valor acima do saldo.
@@ -52,7 +52,8 @@ duas baixas concorrentes não duplicam pagamento e nenhum usuário opera fora do
 ### FIN-1 — Completar fluxos atualmente parciais ou apenas visuais
 
 - [ ] Submodal de cancelamento com motivo obrigatório, impacto e confirmação.
-- [ ] Submodal de estorno escolhendo a liquidação, motivo, data e conta afetada.
+- [~] Submodal de estorno escolhendo a liquidação, motivo, data e conta afetada
+  (seleção, motivo e conta concluídos; data efetiva controlada pelo servidor; data contábil manual pendente).
 - [ ] Submodal de baixa parcial com juros, multa, desconto e saldo posterior.
 - [ ] Divisão da baixa entre múltiplas contas/meios de pagamento.
 - [ ] Renegociação: substituir título por novas parcelas preservando rastreabilidade.

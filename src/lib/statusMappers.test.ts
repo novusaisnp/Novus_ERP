@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  dbStatusPagarToUi,
+  dbStatusReceberToUi,
   uiStatusPagarToDb,
   uiStatusReceberToDb,
 } from './statusMappers';
@@ -12,5 +14,10 @@ describe('statusMappers — operações financeiras', () => {
     expect(uiStatusReceberToDb('ABERTA')).toBe('PENDENTE');
     expect(uiStatusPagarToDb('CANCELADA')).toBe('CANCELADO');
     expect(uiStatusReceberToDb('CANCELADA')).toBe('CANCELADO');
+  });
+
+  it('preserva baixa parcial na UI', () => {
+    expect(dbStatusPagarToUi('PARCIAL')).toBe('PARCIAL');
+    expect(dbStatusReceberToUi('PARCIAL')).toBe('PARCIAL');
   });
 });

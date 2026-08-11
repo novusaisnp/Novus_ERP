@@ -42,7 +42,7 @@ export const useMovimentacoesCompletas = () => {
 
   // Hook para estorno de títulos
   const estornoMutation = useMutation({
-    mutationFn: movimentacoesService.estornarTitulo,
+    mutationFn: movimentacoesService.estornarLiquidacao,
     onSuccess: (_data, variables: any) => {
       invalidarPorTipo(queryClient, variables?.tipo_titulo);
       toast({

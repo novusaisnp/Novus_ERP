@@ -40,7 +40,7 @@ export const LiquidacaoTituloModal = ({
   const idempotencyKey = useRef(crypto.randomUUID());
 
   const [formData, setFormData] = useState({
-    valor_pago: titulo.valor_original,
+    valor_pago: titulo.valor_atual ?? titulo.valor_original,
     data_pagamento: format(new Date(), 'yyyy-MM-dd'),
     forma_pagamento: 'DINHEIRO' as FormaPagamento,
     conta_bancaria_id: '',
@@ -51,13 +51,13 @@ export const LiquidacaoTituloModal = ({
     if (!isOpen) return;
     idempotencyKey.current = crypto.randomUUID();
     setFormData({
-      valor_pago: titulo.valor_original,
+      valor_pago: titulo.valor_atual ?? titulo.valor_original,
       data_pagamento: format(new Date(), 'yyyy-MM-dd'),
       forma_pagamento: 'DINHEIRO',
       conta_bancaria_id: '',
       observacoes: '',
     });
-  }, [isOpen, titulo.id, titulo.valor_original]);
+  }, [isOpen, titulo.id, titulo.valor_atual, titulo.valor_original]);
 
   // Buscar contas bancárias
   const { data: contasBancarias = [], isLoading: loadingContas } = useQuery({

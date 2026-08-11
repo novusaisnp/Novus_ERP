@@ -43,4 +43,21 @@ describe('movimentacoesService.liquidarTitulo', () => {
       p_multi_baixa: [],
     });
   });
+
+  it('estorna uma liquidacao especifica pela RPC idempotente', async () => {
+    rpc.mockResolvedValue({ data: { idempotente: false }, error: null });
+
+    await movimentacoesService.estornarLiquidacao({
+      liquidacao_id: 'liquidacao-1',
+      motivo: 'Pagamento duplicado',
+      idempotency_key: 'chave-estorno-1',
+    });
+
+    expect(rpc).toHaveBeenCalledOnce();
+    expect(rpc).toHaveBeenCalledWith('financeiro_estornar_liquidacao', {
+      p_liquidacao_id: 'liquidacao-1',
+      p_motivo: 'Pagamento duplicado',
+      p_idempotency_key: 'chave-estorno-1',
+    });
+  });
 });

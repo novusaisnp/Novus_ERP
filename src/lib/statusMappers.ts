@@ -25,7 +25,7 @@ const UI_TO_DB_PAGAR: Record<string, DBStatusPagar> = {
 const DB_TO_UI_PAGAR: Record<string, UIStatusPagar> = {
   PENDENTE: 'ABERTA',
   PAGO: 'PAGA',
-  PARCIAL: 'ABERTA',
+  PARCIAL: 'PARCIAL',
   VENCIDO: 'VENCIDA',
   CANCELADO: 'CANCELADA',
 };
@@ -46,7 +46,7 @@ const UI_TO_DB_RECEBER: Record<string, DBStatusReceber> = {
 const DB_TO_UI_RECEBER: Record<string, UIStatusReceber> = {
   PENDENTE: 'ABERTA',
   RECEBIDO: 'RECEBIDA',
-  PARCIAL: 'ABERTA',
+  PARCIAL: 'PARCIAL',
   VENCIDO: 'VENCIDA',
   CANCELADO: 'CANCELADA',
 };

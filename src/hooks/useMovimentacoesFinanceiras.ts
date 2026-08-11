@@ -98,6 +98,7 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
                 Number(conta.valor_original || 0) - Number(conta.valor_pago || 0),
                 0,
               ),
+              valor_pago: conta.valor_pago != null ? Number(conta.valor_pago) : undefined,
               data_emissao: conta.data_emissao,
               data_vencimento: conta.data_vencimento,
               situacao: dbStatusPagarToUi(conta.status) as StatusTitulo,
@@ -175,6 +176,10 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
               tipo: 'CONTAS_RECEBER',
               numero_documento: conta.numero_documento,
               valor_original: Number(conta.valor_original),
+              valor_atual: Math.max(
+                Number(conta.valor_original || 0) - Number(conta.valor_recebido || 0),
+                0,
+              ),
               valor_pago: conta.valor_recebido != null
                 ? Number(conta.valor_recebido)
                 : undefined,
@@ -240,6 +245,7 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
       
       switch (titulo.situacao) {
         case 'ABERTA':
+        case 'PARCIAL':
           if (dataVencimento < hoje) {
             stats.total_vencidos++;
             stats.valor_total_vencido += titulo.valor_original;
