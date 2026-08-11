@@ -16,6 +16,7 @@ export interface SupabaseMockChain {
   update(payload: unknown): SupabaseMockChain;
   delete(): SupabaseMockChain;
   eq(col: string, val: unknown): SupabaseMockChain;
+  is(col: string, val: unknown): SupabaseMockChain;
   order(col: string, o?: { ascending?: boolean }): Promise<MockResult>;
   single(): Promise<MockResult>;
   maybeSingle(): Promise<MockResult>;
@@ -72,6 +73,10 @@ export function createSupabaseMock(opts: {
     },
     eq(col: string, val: unknown) {
       calls.push({ table: currentTable, op: 'eq', args: { col, val } });
+      return chain;
+    },
+    is(col: string, val: unknown) {
+      calls.push({ table: currentTable, op: 'is', args: { col, val } });
       return chain;
     },
     order(col: string, o?: { ascending?: boolean }) {

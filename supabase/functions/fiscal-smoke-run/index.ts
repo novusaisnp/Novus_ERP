@@ -90,7 +90,7 @@ Deno.serve(async (req: Request) => {
     if (!empresa?.id) return { error: 'nenhuma empresa ativa disponível para criar fixture fiscal mock' };
 
     const { data: clienteExistente, error: clienteSelectErr } = await client
-      .from('clientes')
+      .from('entidades')
       .select('id')
       .eq('empresa_representada_id', empresa.id)
       .eq('nome', 'Cliente Fiscal Smoke Mock')
@@ -103,7 +103,7 @@ Deno.serve(async (req: Request) => {
     let clienteId = clienteExistente?.id as string | undefined;
     if (!clienteId) {
       const { data: clienteNovo, error: clienteInsertErr } = await client
-        .from('clientes')
+        .from('entidades')
         .insert({
           empresa_representada_id: empresa.id,
           tipo_pessoa: 'PJ',
@@ -124,6 +124,9 @@ Deno.serve(async (req: Request) => {
         .single();
       if (clienteInsertErr || !clienteNovo?.id) return { error: clienteInsertErr?.message ?? 'falha ao criar cliente fiscal mock' };
       clienteId = clienteNovo.id;
+      await client
+        .from('entidade_papeis')
+        .insert({ entidade_id: clienteId, empresa_representada_id: empresa.id, papel: 'CLIENTE' });
     }
 
     const { data: vendaExistente, error: vendaSelectErr } = await client

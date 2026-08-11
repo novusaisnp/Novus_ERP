@@ -882,7 +882,7 @@ export type Database = {
             foreignKeyName: "cliente_modalidades_bloqueadas_cliente_id_fkey"
             columns: ["cliente_id"]
             isOneToOne: false
-            referencedRelation: "clientes"
+            referencedRelation: "entidades"
             referencedColumns: ["id"]
           },
           {
@@ -945,193 +945,7 @@ export type Database = {
             foreignKeyName: "cliente_politica_pagamento_cliente_id_fkey"
             columns: ["cliente_id"]
             isOneToOne: true
-            referencedRelation: "clientes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      clientes: {
-        Row: {
-          apelido: string | null
-          atividade_principal: string | null
-          ativo: boolean
-          bairro: string | null
-          celular: string | null
-          cep: string | null
-          cidade: string | null
-          cnae: string | null
-          cnpj: string | null
-          complemento: string | null
-          contato_empresa: Json | null
-          contatos: Json | null
-          cpf: string | null
-          cpf_cnpj: string | null
-          created_at: string
-          dados_pessoais: Json | null
-          data_fundacao: string | null
-          data_nascimento: string | null
-          deleted_at: string | null
-          documentos: Json | null
-          email: string | null
-          email_secundario: string | null
-          emails: string[] | null
-          empresa_representada_id: string
-          endereco: Json | null
-          estado: string | null
-          externo_id: string | null
-          forma_atuacao: string | null
-          hash_payload: string | null
-          id: string
-          idempotency_key: string | null
-          inscricao_estadual: string | null
-          inscricao_municipal: string | null
-          limite_credito: number | null
-          logradouro: string | null
-          nome: string
-          nome_fantasia: string | null
-          numero: string | null
-          observacoes: string | null
-          origem_canal: string | null
-          origem_sistema: string | null
-          qualificacao_fiscal: Json | null
-          razao_social: string | null
-          rg: string | null
-          setor_id: string | null
-          site: string | null
-          telefone: string | null
-          telefone_secundario: string | null
-          telefones: string[] | null
-          tipo: string | null
-          tipo_pessoa: string | null
-          updated_at: string
-          website: string | null
-          whatsapp: string | null
-        }
-        Insert: {
-          apelido?: string | null
-          atividade_principal?: string | null
-          ativo?: boolean
-          bairro?: string | null
-          celular?: string | null
-          cep?: string | null
-          cidade?: string | null
-          cnae?: string | null
-          cnpj?: string | null
-          complemento?: string | null
-          contato_empresa?: Json | null
-          contatos?: Json | null
-          cpf?: string | null
-          cpf_cnpj?: string | null
-          created_at?: string
-          dados_pessoais?: Json | null
-          data_fundacao?: string | null
-          data_nascimento?: string | null
-          deleted_at?: string | null
-          documentos?: Json | null
-          email?: string | null
-          email_secundario?: string | null
-          emails?: string[] | null
-          empresa_representada_id: string
-          endereco?: Json | null
-          estado?: string | null
-          externo_id?: string | null
-          forma_atuacao?: string | null
-          hash_payload?: string | null
-          id?: string
-          idempotency_key?: string | null
-          inscricao_estadual?: string | null
-          inscricao_municipal?: string | null
-          limite_credito?: number | null
-          logradouro?: string | null
-          nome: string
-          nome_fantasia?: string | null
-          numero?: string | null
-          observacoes?: string | null
-          origem_canal?: string | null
-          origem_sistema?: string | null
-          qualificacao_fiscal?: Json | null
-          razao_social?: string | null
-          rg?: string | null
-          setor_id?: string | null
-          site?: string | null
-          telefone?: string | null
-          telefone_secundario?: string | null
-          telefones?: string[] | null
-          tipo?: string | null
-          tipo_pessoa?: string | null
-          updated_at?: string
-          website?: string | null
-          whatsapp?: string | null
-        }
-        Update: {
-          apelido?: string | null
-          atividade_principal?: string | null
-          ativo?: boolean
-          bairro?: string | null
-          celular?: string | null
-          cep?: string | null
-          cidade?: string | null
-          cnae?: string | null
-          cnpj?: string | null
-          complemento?: string | null
-          contato_empresa?: Json | null
-          contatos?: Json | null
-          cpf?: string | null
-          cpf_cnpj?: string | null
-          created_at?: string
-          dados_pessoais?: Json | null
-          data_fundacao?: string | null
-          data_nascimento?: string | null
-          deleted_at?: string | null
-          documentos?: Json | null
-          email?: string | null
-          email_secundario?: string | null
-          emails?: string[] | null
-          empresa_representada_id?: string
-          endereco?: Json | null
-          estado?: string | null
-          externo_id?: string | null
-          forma_atuacao?: string | null
-          hash_payload?: string | null
-          id?: string
-          idempotency_key?: string | null
-          inscricao_estadual?: string | null
-          inscricao_municipal?: string | null
-          limite_credito?: number | null
-          logradouro?: string | null
-          nome?: string
-          nome_fantasia?: string | null
-          numero?: string | null
-          observacoes?: string | null
-          origem_canal?: string | null
-          origem_sistema?: string | null
-          qualificacao_fiscal?: Json | null
-          razao_social?: string | null
-          rg?: string | null
-          setor_id?: string | null
-          site?: string | null
-          telefone?: string | null
-          telefone_secundario?: string | null
-          telefones?: string[] | null
-          tipo?: string | null
-          tipo_pessoa?: string | null
-          updated_at?: string
-          website?: string | null
-          whatsapp?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "clientes_empresa_representada_id_fkey"
-            columns: ["empresa_representada_id"]
-            isOneToOne: false
-            referencedRelation: "empresas_representadas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "clientes_setor_id_fkey"
-            columns: ["setor_id"]
-            isOneToOne: false
-            referencedRelation: "setores_empresa"
+            referencedRelation: "entidades"
             referencedColumns: ["id"]
           },
         ]
@@ -1601,7 +1415,7 @@ export type Database = {
             foreignKeyName: "contas_receber_cliente_id_fkey"
             columns: ["cliente_id"]
             isOneToOne: false
-            referencedRelation: "clientes"
+            referencedRelation: "entidades"
             referencedColumns: ["id"]
           },
           {
@@ -1768,7 +1582,7 @@ export type Database = {
             foreignKeyName: "contratos_cliente_id_fkey"
             columns: ["cliente_id"]
             isOneToOne: false
-            referencedRelation: "clientes"
+            referencedRelation: "entidades"
             referencedColumns: ["id"]
           },
           {
@@ -2422,24 +2236,32 @@ export type Database = {
       entidades: {
         Row: {
           agencia: string | null
+          apelido: string | null
+          atividade_principal: string | null
           ativo: boolean
           bairro: string | null
           banco: string | null
           celular: string | null
           cep: string | null
           cidade: string | null
+          cnae: string | null
           cnpj: string | null
           complemento: string | null
           conta: string | null
+          contato_empresa: Json | null
+          contatos: Json | null
           cpf: string | null
           created_at: string
+          dados_pessoais: Json | null
           data_fundacao: string | null
           data_nascimento: string | null
           deleted_at: string | null
+          documentos: Json | null
           email: string | null
           email_secundario: string | null
           empresa_representada_id: string
           estado: string | null
+          forma_atuacao: string | null
           id: string
           inscricao_estadual: string | null
           inscricao_municipal: string | null
@@ -2451,8 +2273,11 @@ export type Database = {
           observacoes: string | null
           pix: string | null
           prazo_entrega: number | null
+          qualificacao_fiscal: Json | null
           razao_social: string | null
           rg: string | null
+          setor_id: string | null
+          site: string | null
           telefone: string | null
           telefone_secundario: string | null
           tipo_conta: string | null
@@ -2463,24 +2288,32 @@ export type Database = {
         }
         Insert: {
           agencia?: string | null
+          apelido?: string | null
+          atividade_principal?: string | null
           ativo?: boolean
           bairro?: string | null
           banco?: string | null
           celular?: string | null
           cep?: string | null
           cidade?: string | null
+          cnae?: string | null
           cnpj?: string | null
           complemento?: string | null
           conta?: string | null
+          contato_empresa?: Json | null
+          contatos?: Json | null
           cpf?: string | null
           created_at?: string
+          dados_pessoais?: Json | null
           data_fundacao?: string | null
           data_nascimento?: string | null
           deleted_at?: string | null
+          documentos?: Json | null
           email?: string | null
           email_secundario?: string | null
           empresa_representada_id: string
           estado?: string | null
+          forma_atuacao?: string | null
           id?: string
           inscricao_estadual?: string | null
           inscricao_municipal?: string | null
@@ -2492,8 +2325,11 @@ export type Database = {
           observacoes?: string | null
           pix?: string | null
           prazo_entrega?: number | null
+          qualificacao_fiscal?: Json | null
           razao_social?: string | null
           rg?: string | null
+          setor_id?: string | null
+          site?: string | null
           telefone?: string | null
           telefone_secundario?: string | null
           tipo_conta?: string | null
@@ -2504,24 +2340,32 @@ export type Database = {
         }
         Update: {
           agencia?: string | null
+          apelido?: string | null
+          atividade_principal?: string | null
           ativo?: boolean
           bairro?: string | null
           banco?: string | null
           celular?: string | null
           cep?: string | null
           cidade?: string | null
+          cnae?: string | null
           cnpj?: string | null
           complemento?: string | null
           conta?: string | null
+          contato_empresa?: Json | null
+          contatos?: Json | null
           cpf?: string | null
           created_at?: string
+          dados_pessoais?: Json | null
           data_fundacao?: string | null
           data_nascimento?: string | null
           deleted_at?: string | null
+          documentos?: Json | null
           email?: string | null
           email_secundario?: string | null
           empresa_representada_id?: string
           estado?: string | null
+          forma_atuacao?: string | null
           id?: string
           inscricao_estadual?: string | null
           inscricao_municipal?: string | null
@@ -2533,8 +2377,11 @@ export type Database = {
           observacoes?: string | null
           pix?: string | null
           prazo_entrega?: number | null
+          qualificacao_fiscal?: Json | null
           razao_social?: string | null
           rg?: string | null
+          setor_id?: string | null
+          site?: string | null
           telefone?: string | null
           telefone_secundario?: string | null
           tipo_conta?: string | null
@@ -2549,6 +2396,13 @@ export type Database = {
             columns: ["empresa_representada_id"]
             isOneToOne: false
             referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entidades_setor_id_fkey"
+            columns: ["setor_id"]
+            isOneToOne: false
+            referencedRelation: "setores_empresa"
             referencedColumns: ["id"]
           },
         ]
@@ -4673,7 +4527,7 @@ export type Database = {
             foreignKeyName: "orcamentos_venda_cliente_id_fkey"
             columns: ["cliente_id"]
             isOneToOne: false
-            referencedRelation: "clientes"
+            referencedRelation: "entidades"
             referencedColumns: ["id"]
           },
           {
@@ -6666,7 +6520,7 @@ export type Database = {
             foreignKeyName: "vendas_cliente_id_fkey"
             columns: ["cliente_id"]
             isOneToOne: false
-            referencedRelation: "clientes"
+            referencedRelation: "entidades"
             referencedColumns: ["id"]
           },
           {

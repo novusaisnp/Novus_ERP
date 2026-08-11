@@ -163,9 +163,9 @@ export const syncService = {
   },
 
   async validateClienteSync(clienteData: Record<string, unknown>): Promise<boolean> {
-    if (!clienteData.nome || !clienteData.tipo) return false;
-    if (clienteData.tipo === 'J' && !clienteData.cnpj) return false;
-    if (clienteData.tipo === 'F' && !clienteData.cpf) return false;
+    if (!clienteData.nome || !clienteData.tipo_pessoa) return false;
+    if (clienteData.tipo_pessoa === 'PJ' && !clienteData.cnpj) return false;
+    if (clienteData.tipo_pessoa === 'PF' && !clienteData.cpf) return false;
     return true;
   },
 
@@ -174,7 +174,7 @@ export const syncService = {
     targets: Array<{ systemUrl: string; sourceSystem: string; empresaId: string }>,
   ) {
     const { data: cliente, error } = await supabase
-      .from('clientes')
+      .from('entidades')
       .select('*')
       .eq('id', clienteId)
       .single();

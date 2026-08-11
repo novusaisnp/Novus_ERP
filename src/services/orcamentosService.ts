@@ -130,7 +130,7 @@ export const calcItemTotal = (i: OrcamentoItem): number =>
 export const calcTotal = (itens: OrcamentoItem[]): number =>
   itens.reduce((s, i) => s + calcItemTotal(i), 0);
 
-const SELECT = '*, clientes(nome), orcamentos_venda_itens(*)';
+const SELECT = '*, clientes:entidades!orcamentos_venda_cliente_id_fkey(nome), orcamentos_venda_itens(*)';
 
 export const fetchOrcamentos = async (): Promise<Orcamento[]> => {
   const { data, error } = await supabase

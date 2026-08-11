@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
     if (iErr) return json({ error: 'itens_load_failed', details: iErr.message }, 500);
 
     const { data: cliente, error: cErr } = await client
-      .from('clientes')
+      .from('entidades')
       .select('*')
       .eq('id', venda.cliente_id)
       .maybeSingle();

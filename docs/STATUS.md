@@ -1,6 +1,8 @@
 # Status do projeto — NOVUS ERP
 
-**Última atualização: 2026-08-10 (Cadastro Unificado de Entidades — Fase 1 aplicada, refatoração grande em andamento).**
+**Última atualização: 2026-08-10 (Cadastro Unificado de Entidades — Fase 2 completa nos 4 categorias +
+fix urgente no sync-webhook; DEPLOY DE EDGE FUNCTIONS PENDENTE, integração com satélite quebrada em
+produção até isso acontecer — ver checkpoint).**
 Este arquivo deve ser atualizado ao final de cada sessão de trabalho relevante — se estiver desatualizado, ele
 apodrece como `SYSTEM_AUDIT.md`/`ARVORE_PROJETO.md` já apodreceram. Leia primeiro [`../CLAUDE.md`](../CLAUDE.md)
 para contexto de padrões estáveis; este arquivo é sobre o que está pendente **agora**.
@@ -82,9 +84,63 @@ papel (`papeis_catalogo.tipo_pessoa_permitido`), não hardcoded.
    (criar entidade+papel Fornecedor, criar `contas_pagar` real apontando pra ela, confirmar join, cascade
    delete limpo).
 
-**Próximo passo**: Fase 2c (Clientes, 23 arquivos) — a mais arriscada, única com contrato externo de sync
-com satélite (schema duplo legado+novo já documentado) — combinar com Fase 3 (evolução do contrato
-canônico `sync-webhook`).
+8. **Fase 2c (concluída, migrations `20260810234500`/`20260810235000`/`20260810235500`)**: `clientes` →
+   `entidades`+`entidade_papeis` (papel `CLIENTE`). Diferente de Fornecedores, `clientes` **não** era bug —
+   tinha colunas jsonb/array reais e testadas (checkpoint 2026-08-09, "entrada testada de ponta a ponta").
+   `entidades` ganhou extensão aditiva pra acomodar: `apelido`/`cnae`/`site`/`forma_atuacao`/
+   `atividade_principal`/`setor_id` + jsonb (`contato_empresa`/`contatos`/`documentos`/`dados_pessoais`/
+   `qualificacao_fiscal`) + o envelope de idempotência do contrato canônico (`origem_canal`/`origem_sistema`/
+   `externo_id`/`idempotency_key`/`hash_payload` — existia em `clientes`, não capturado na 1ª extensão,
+   corrigido numa 2ª migration aditiva). Backfill trata o schema duplo legado (`tipo`/`cpf_cnpj`/`endereco`
+   jsonb) vs novo (`tipo_pessoa`/`cpf`/`cnpj`/endereço flat) com `COALESCE` priorizando o novo. FKs de
+   `contas_receber`/`vendas`/`contratos`/`orcamentos_venda`/`cliente_politica_pagamento`/
+   `cliente_modalidades_bloqueadas` **e** `centelha.responsaveis.cliente_billing_id` (schema separado)
+   retargeted mantendo nome de coluna. `clienteService.ts` reescrito pra gravar/ler nas colunas reais de
+   `entidades`, sintetizando o formato legado (`tipo` 'F'/'J', `cpf_cnpj`, `endereco` objeto) só na borda do
+   `parseRow`, pra não precisar tocar em `clienteUtils.ts`/`FormCliente.tsx`. 8 pontos de embed PostgREST
+   (`cliente:clientes(...)`) em `useMovimentacoesFinanceiras.ts`/`contasReceber*`/`contratosService.ts`/
+   `fluxoCaixaService.ts`/`vendasService.ts`/`orcamentosService.ts` retargeted com alias preservado. 3
+   consumidores diretos (`dashboardService.ts`/`fiscal/emissaoService.ts`/`syncService.ts`) retargeted —
+   este último (`syncCliente`/`validateClienteSync`) é **código morto** (nunca chamado em lugar nenhum),
+   corrigido só por estar no caminho, não por estar em uso.
+9. **Fix urgente na integração viva com o satélite (mesma fase, não podia esperar Fase 3 formal)**:
+   `supabase/functions/sync-webhook/index.ts` (`syncCliente`/`mapClienteData`/lookups de `syncVenda`/
+   `syncContrato`/`syncFinanceiro`) e `supabase/functions/retry-failed-syncs/index.ts` (duplica a mesma
+   lógica sem importar de um lugar comum — teve que ser corrigido em paralelo) ainda escreviam direto em
+   `clientes`, que a Fase 2c acabou de dropar — sem esse fix, o próximo webhook do Educacional (Porta 1,
+   `upsertClientByCPF`) quebraria com "relation clientes does not exist". Removido o hack de dual-write
+   (colunas legadas `tipo`/`cpf_cnpj`/`endereco` jsonb) — `entidades` é forma canônica única, não precisa
+   mais popular dois formatos. **Bugs pré-existentes achados e corrigidos nesse mesmo caminho**: `syncVenda`
+   e o `mapClienteData` de `retry-failed-syncs` referenciavam colunas que **nunca existiram**
+   (`external_id` — a coluna real sempre foi `externo_id`; `source_system`/`sync_metadata` como colunas
+   soltas em `clientes`, nunca existiram) — significa que reprocessar um evento de cliente via retry, ou
+   sincronizar venda por `cliente_id`, falhava silenciosamente antes desta sessão também. `fiscal-smoke-run`/
+   `fiscal-emitir-nfe` (edge functions de teste/emissão fiscal) também retargeted. Dispatch continua aceitando
+   `table:'clientes'` no payload de entrada (é só a chave do switch/schema Zod, não nome de tabela — Educacional
+   não precisa mudar nada ainda) — a evolução pro payload rico de Entidade fica pra Fase 3 formal.
+   **Edge functions não são cobertas por typecheck/test** (ponto cego documentado) — verificado via simulação
+   SQL direta da lógica (dedup por CPF, upsert de papel, FKs), não via invocação real da function.
+10. **Verificação final**: `npm run typecheck` limpo, `npm run test -- --run` 361/361 (46 arquivos, mesmo
+    baseline do início da sessão). `types.ts` regenerado 3x (uma por migration aplicada). Smoke test SQL
+    ponta a ponta (criar entidade+papel Cliente, dedup por CPF, `contas_receber`+`contratos` reais via FK,
+    cascade limpo).
+
+**Gap futuro anotado pelo usuário, não implementado nesta sessão**: comissionamento de vendedores —
+`vendasService.ts` já tem `vendedor:usuarios(id,nome)`, mas não há nenhum cálculo/registro de comissão hoje.
+Com `usuarios.entidade_id` (Fase 2a) o vendedor já resolve pra uma Entidade com papel `COLABORADOR` — uma
+fatia futura de comissionamento poderia usar isso pra ligar % de comissão à entidade/papel, sem precisar de
+cadastro de pessoa novo. Fica registrado aqui pra não se perder, não é escopo desta refatoração.
+
+**IMPORTANTE — ação pendente fora do meu escopo automático**: `sync-webhook`/`retry-failed-syncs`/
+`fiscal-smoke-run`/`fiscal-emitir-nfe`/`colaborador-preflight` foram corrigidos no código local, mas **edge
+functions exigem deploy manual e separado** (`supabase functions deploy <nome>`, não é `git push` — ponto já
+documentado no `CLAUDE.md` deste repo). Até o deploy acontecer, a versão **antiga** (que ainda escreve em
+`colaboradores`/`clientes`, tabelas que não existem mais) continua rodando em produção — ou seja, **o sync
+Educacional→ERP está quebrado em produção agora mesmo**, até alguém rodar o deploy dessas 5 functions.
+
+**Próximo passo**: deploy das edge functions corrigidas (urgente, integração ao vivo depende disso), depois
+Fase 3 formal (payload rico de Entidade + janela expand-contract) e Fase 4 (UI `FormEntidade.tsx` consolidada
+no ERP) — Educacional (Fases 5-8) ainda nem começou.
 
 ## 🔖 Checkpoint de sessão (2026-08-10 — responsividade mobile, aditiva)
 

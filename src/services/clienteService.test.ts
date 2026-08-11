@@ -47,25 +47,31 @@ beforeEach(() => {
 interface SelectChain {
   select: () => SelectChain;
   eq: () => SelectChain;
+  is: () => SelectChain;
   order: () => Promise<{ data: unknown; error: unknown }>;
 }
 
 describe('clienteService.fetchClientes', () => {
-  it('retorna lista ordenada por nome', async () => {
+  it('retorna lista ordenada por nome (só entidades com papel CLIENTE)', async () => {
     mock._perOp = undefined;
-    const list = [{ id: '1', nome: 'A', tipo: 'F', ativo: true, created_at: '2024-01-01' }];
+    const list = [{ id: '1', nome: 'A', tipo_pessoa: 'PF', ativo: true, created_at: '2024-01-01' }];
     vi.spyOn(mock, 'from').mockImplementationOnce((t: string) => {
       mock._calls.push({ table: t, op: 'from' });
       const chain: SelectChain = {
         select: () => chain,
         eq: () => chain,
+        is: () => chain,
         order: () => Promise.resolve({ data: list, error: null }),
       };
       return chain as unknown as SupabaseMockChain;
     });
 
     const res = await clienteService.fetchClientes('empresa-1');
-    expect(res).toEqual([{ id: '1', nome: 'A', tipo: 'F', ativo: true, created_at: '2024-01-01', contatos: [], documentos: [] }]);
+    expect(res).toEqual([{
+      id: '1', nome: 'A', tipo: 'F', ativo: true, created_at: '2024-01-01',
+      cpf_cnpj: null, contatos: [], documentos: [],
+      endereco: { cep: undefined, logradouro: undefined, numero: undefined, complemento: undefined, bairro: undefined, cidade: undefined, uf: undefined },
+    }]);
   });
 
   it('lança erro em falha', async () => {
@@ -73,6 +79,7 @@ describe('clienteService.fetchClientes', () => {
       const chain: SelectChain = {
         select: () => chain,
         eq: () => chain,
+        is: () => chain,
         order: () => Promise.resolve({ data: null, error: { message: 'x' } }),
       };
       return chain as unknown as SupabaseMockChain;
@@ -86,31 +93,40 @@ describe('clienteService.fetchClientes', () => {
 });
 
 describe('clienteService.createCliente payload shape', () => {
-  it('serializa em snake_case com JSON columns', async () => {
-    let capturedPayload: Record<string, unknown> = {};
-    vi.spyOn(mock, 'from').mockImplementationOnce(() => {
-      const chain = {
+  it('serializa em tipo_pessoa/cpf/cnpj + endereço flat e vincula papel Cliente', async () => {
+    let capturedEntidade: Record<string, unknown> = {};
+    let capturedPapel: Record<string, unknown> = {};
+    vi.spyOn(mock, 'from').mockImplementation((table: string) => {
+      if (table === 'entidades') {
+        return {
+          insert: (p: unknown) => {
+            capturedEntidade = p as Record<string, unknown>;
+            return {
+              select: () => ({
+                single: () => Promise.resolve({ data: { id: 'new-id' }, error: null }),
+              }),
+            };
+          },
+        } as unknown as SupabaseMockChain;
+      }
+      return {
         insert: (p: unknown) => {
-          capturedPayload = p as Record<string, unknown>;
-          return {
-            select: () => ({
-              single: () => Promise.resolve({ data: { id: 'new-id' }, error: null }),
-            }),
-          };
+          capturedPapel = p as Record<string, unknown>;
+          return Promise.resolve({ data: null, error: null });
         },
-      };
-      return chain as unknown as SupabaseMockChain;
+      } as unknown as SupabaseMockChain;
     });
 
     const res = await clienteService.createCliente(cliente, 'empresa-1');
-    expect(res).toEqual({ id: 'new-id', ativo: false, contatos: [], documentos: [] });
-    expect(capturedPayload).toMatchObject({
+    expect(res).toMatchObject({ id: 'new-id', ativo: false });
+    expect(capturedEntidade).toMatchObject({
       empresa_representada_id: 'empresa-1',
+      tipo_pessoa: 'PJ',
       nome: 'ACME',
       apelido: 'AC',
-      tipo: 'J',
-      cpf_cnpj: '11222333000181',
-      email: 'a@a.com',            // primeiro do array
+      cnpj: '11222333000181',
+      cpf: null,
+      email: 'a@a.com', // primeiro do array
       telefone: '11999',
       nome_fantasia: 'AC Fantasia',
       cnae: '1234',
@@ -121,12 +137,11 @@ describe('clienteService.createCliente payload shape', () => {
       setor_id: 'setor-1',
       ativo: true,
     });
-    expect(capturedPayload.emails).toEqual(['a@a.com', 'b@b.com']);
-    expect(capturedPayload.telefones).toEqual(['11999']);
-    expect(capturedPayload.contatos).toEqual([{ nome: 'C1' }]);
-    expect(capturedPayload.documentos).toEqual([{ tipo: 'RG' }]);
-    expect(capturedPayload.qualificacao_fiscal).toEqual({ regime: 'simples' });
-    expect(typeof capturedPayload.updated_at).toBe('string');
+    expect(capturedEntidade.contatos).toEqual([{ nome: 'C1' }]);
+    expect(capturedEntidade.documentos).toEqual([{ tipo: 'RG' }]);
+    expect(capturedEntidade.qualificacao_fiscal).toEqual({ regime: 'simples' });
+    expect(typeof capturedEntidade.updated_at).toBe('string');
+    expect(capturedPapel).toMatchObject({ entidade_id: 'new-id', empresa_representada_id: 'empresa-1', papel: 'CLIENTE' });
   });
 
   it('propaga erro do Supabase', async () => {
@@ -171,17 +186,17 @@ describe('clienteService.updateCliente', () => {
     expect(capturedId).toBe('c-1');
     expect(capturedEmpresaId).toBe('empresa-1');
     expect(capturedPayload.nome).toBe('ACME');
-    expect(capturedPayload.cpf_cnpj).toBe('11222333000181');
-    expect(res).toEqual({ id: 'c-1', ativo: false, contatos: [], documentos: [] });
+    expect(capturedPayload.cnpj).toBe('11222333000181');
+    expect(res).toMatchObject({ id: 'c-1', ativo: false });
   });
 });
 
 describe('clienteService.deleteCliente', () => {
-  it('chama delete().eq(id).eq(empresa) e resolve', async () => {
+  it('faz soft delete via update(deleted_at) e resolve', async () => {
     let capturedId = '';
     let capturedEmpresaId = '';
     vi.spyOn(mock, 'from').mockImplementationOnce(() => ({
-      delete: () => ({
+      update: () => ({
         eq: (_c1: string, v1: string) => {
           capturedId = v1;
           return {
@@ -200,7 +215,7 @@ describe('clienteService.deleteCliente', () => {
 
   it('lança erro quando Supabase falha', async () => {
     vi.spyOn(mock, 'from').mockImplementationOnce(() => ({
-      delete: () => ({
+      update: () => ({
         eq: () => ({
           eq: () => Promise.resolve({ data: null, error: { message: 'FK' } }),
         }),

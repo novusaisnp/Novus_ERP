@@ -23,7 +23,7 @@ export const vendasService = {
     const empresaId = await getEmpresaId();
     let q = supabase
       .from('vendas')
-      .select('*, cliente:clientes(id, nome), vendedor:usuarios(id, nome), itens:itens_venda(*)')
+      .select('*, cliente:entidades!vendas_cliente_id_fkey(id, nome), vendedor:usuarios(id, nome), itens:itens_venda(*)')
       .eq('empresa_representada_id', empresaId)
       .is('deleted_at', null)
       .order('data_venda', { ascending: false });

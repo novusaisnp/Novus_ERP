@@ -112,7 +112,7 @@ export async function getDanfeMockEnrichmentData(params: {
     const clienteId = venda?.cliente_id;
     if (clienteId) {
       let cliQ = supabase
-        .from('clientes')
+        .from('entidades')
         .select('nome, razao_social, tipo_pessoa, cnpj, cpf, inscricao_estadual, email, telefone, logradouro, numero, complemento, bairro, cidade, estado, cep')
         .eq('id', clienteId);
       if (params.empresaRepresentadaId) cliQ = cliQ.eq('empresa_representada_id', params.empresaRepresentadaId);

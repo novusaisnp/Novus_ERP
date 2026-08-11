@@ -189,17 +189,19 @@ async function reprocessCliente(supabase: SupabaseClient, payload: SyncPayload, 
     case 'insert':
     case 'sync': {
       // Verificar se cliente já existe (escopado à empresa)
+      const cpfRetry = (data.cpf as string) || (data.cpf_cnpj as string) || undefined;
+      const cnpjRetry = (data.cnpj as string) || undefined;
       const { data: existingCliente } = await supabase
-        .from('clientes')
+        .from('entidades')
         .select('id')
         .eq('empresa_representada_id', empresaId)
-        .or(`cpf_cnpj.eq.${data.cpf_cnpj},external_id.eq.${data.id}`)
+        .or(`externo_id.eq.${data.id},cpf.eq.${cpfRetry},cnpj.eq.${cnpjRetry}`)
         .maybeSingle();
 
       if (existingCliente) {
         // Se já existe, fazer update
-        return await supabase
-          .from('clientes')
+        const result = await supabase
+          .from('entidades')
           .update({
             ...mapClienteData(data, payload.source_system, empresaId),
             updated_at: new Date().toISOString()
@@ -208,40 +210,53 @@ async function reprocessCliente(supabase: SupabaseClient, payload: SyncPayload, 
           .eq('empresa_representada_id', empresaId)
           .select()
           .single();
+        await ensurePapelCliente(supabase, existingCliente.id, empresaId);
+        return result;
       }
 
       // Se não existe, inserir
-      return await supabase
-        .from('clientes')
+      const inserted = await supabase
+        .from('entidades')
         .insert(mapClienteData(data, payload.source_system, empresaId))
         .select()
         .single();
+      if (inserted.data?.id) await ensurePapelCliente(supabase, inserted.data.id, empresaId);
+      return inserted;
     }
 
     case 'update':
       return await supabase
-        .from('clientes')
+        .from('entidades')
         .update({
           ...mapClienteData(data, payload.source_system, empresaId),
           updated_at: new Date().toISOString()
         })
-        .eq('external_id', data.id)
+        .eq('externo_id', data.id)
         .eq('empresa_representada_id', empresaId)
         .select()
         .single();
 
     case 'delete':
       return await supabase
-        .from('clientes')
+        .from('entidades')
         .update({
           ativo: false,
           updated_at: new Date().toISOString()
         })
-        .eq('external_id', data.id)
+        .eq('externo_id', data.id)
         .eq('empresa_representada_id', empresaId)
         .select()
         .single();
   }
+}
+
+async function ensurePapelCliente(supabase: SupabaseClient, entidadeId: string, empresaId: string) {
+  await supabase
+    .from('entidade_papeis')
+    .upsert(
+      { entidade_id: entidadeId, empresa_representada_id: empresaId, papel: 'CLIENTE' },
+      { onConflict: 'entidade_id,papel', ignoreDuplicates: true },
+    );
 }
 
 async function reprocessVenda(supabase: SupabaseClient, payload: SyncPayload, empresaId: string) {
@@ -251,10 +266,10 @@ async function reprocessVenda(supabase: SupabaseClient, payload: SyncPayload, em
   let clienteId = null;
   if (data.cliente_id) {
     const { data: cliente } = await supabase
-      .from('clientes')
+      .from('entidades')
       .select('id')
       .eq('empresa_representada_id', empresaId)
-      .or(`external_id.eq.${data.cliente_id},cpf_cnpj.eq.${data.cliente_cpf_cnpj}`)
+      .or(`externo_id.eq.${data.cliente_id},cpf.eq.${data.cliente_cpf_cnpj},cnpj.eq.${data.cliente_cpf_cnpj}`)
       .maybeSingle();
 
     clienteId = cliente?.id;
@@ -330,10 +345,10 @@ async function reprocessContrato(supabase: SupabaseClient, payload: SyncPayload,
   let clienteId = null;
   if (data.cliente_id) {
     const { data: cliente } = await supabase
-      .from('clientes')
+      .from('entidades')
       .select('id')
       .eq('empresa_representada_id', empresaId)
-      .or(`external_id.eq.${data.cliente_id},cpf_cnpj.eq.${data.cliente_cpf_cnpj}`)
+      .or(`externo_id.eq.${data.cliente_id},cpf.eq.${data.cliente_cpf_cnpj},cnpj.eq.${data.cliente_cpf_cnpj}`)
       .maybeSingle();
 
     clienteId = cliente?.id;
@@ -408,10 +423,10 @@ async function reprocessFinanceiro(supabase: SupabaseClient, payload: SyncPayloa
 
   if (data.cliente_id) {
     const { data: cliente } = await supabase
-      .from('clientes')
+      .from('entidades')
       .select('id')
       .eq('empresa_representada_id', empresaId)
-      .or(`external_id.eq.${data.cliente_id},cpf_cnpj.eq.${data.cliente_cpf_cnpj}`)
+      .or(`externo_id.eq.${data.cliente_id},cpf.eq.${data.cliente_cpf_cnpj},cnpj.eq.${data.cliente_cpf_cnpj}`)
       .maybeSingle();
     clienteId = cliente?.id;
   }
@@ -500,37 +515,51 @@ async function reprocessFinanceiro(supabase: SupabaseClient, payload: SyncPayloa
     .single();
 }
 
+// Mesmo mapeamento de supabase/functions/sync-webhook/index.ts (não
+// compartilhado entre as duas functions, mas precisa ficar em sincronia —
+// esta é a versão usada só no caminho de retry). `entidades` é a forma
+// canônica única (tipo_pessoa/cpf/cnpj, endereço flat) — sem os campos que
+// nunca existiram de verdade em `clientes` (source_system/external_id/
+// sync_metadata como colunas soltas, emails[]/telefones[] array).
 function mapClienteData(data: Record<string, unknown>, sourceSystem: string, empresaId: string) {
+  const cpf = (data.cpf as string) || null;
+  const cnpj = (data.cnpj as string) || null;
+  const tipoPessoa = (data.tipo_pessoa as string) || (cpf ? 'PF' : cnpj ? 'PJ' : null);
+  const enderecoObj = (data.endereco && typeof data.endereco === 'object') ? (data.endereco as Record<string, unknown>) : {};
+
   return {
     empresa_representada_id: empresaId,
     nome: data.nome || data.razao_social,
-    apelido: data.apelido || data.nome_fantasia,
-    tipo: data.tipo || (data.cpf ? 'F' : 'J'),
-    cpf_cnpj: data.cpf_cnpj || data.cpf || data.cnpj,
+    razao_social: data.razao_social,
+    nome_fantasia: data.nome_fantasia,
+    apelido: data.apelido,
+    tipo_pessoa: tipoPessoa,
+    cpf,
+    cnpj,
     email: data.email,
     telefone: data.telefone,
     rg: data.rg,
     data_nascimento: data.data_nascimento,
-    endereco: data.endereco || {},
-    emails: data.emails || (data.email ? [data.email] : []),
-    telefones: data.telefones || (data.telefone ? [data.telefone] : []),
+    cep: data.cep ?? enderecoObj.cep,
+    logradouro: data.logradouro ?? enderecoObj.logradouro,
+    numero: data.numero ?? enderecoObj.numero,
+    complemento: data.complemento ?? enderecoObj.complemento,
+    bairro: data.bairro ?? enderecoObj.bairro,
+    cidade: data.cidade ?? enderecoObj.cidade,
+    estado: data.uf ?? data.estado ?? enderecoObj.uf,
     contatos: data.contatos || [],
     documentos: data.documentos || [],
     dados_pessoais: data.dados_pessoais || {},
     qualificacao_fiscal: data.qualificacao_fiscal || {},
-    nome_fantasia: data.nome_fantasia,
     cnae: data.cnae,
     site: data.site,
     forma_atuacao: data.forma_atuacao,
     data_fundacao: data.data_fundacao,
     atividade_principal: data.atividade_principal,
     contato_empresa: data.contato_empresa,
-    source_system: sourceSystem,
-    external_id: data.id,
-    sync_metadata: {
-      synchronized_at: new Date().toISOString(),
-      source_data: data
-    },
+    origem_sistema: sourceSystem,
+    origem_canal: 'webhook',
+    externo_id: data.id,
     ativo: data.ativo !== false
   };
 }

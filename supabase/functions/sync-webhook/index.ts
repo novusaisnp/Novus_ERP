@@ -457,6 +457,15 @@ serve(async (req) => {
 // Domain sync helpers (unchanged behaviour from previous version)
 // ============================================================
 
+async function ensurePapelCliente(supabase: SupabaseClient, entidadeId: string, empresaId: string) {
+  await supabase
+    .from('entidade_papeis')
+    .upsert(
+      { entidade_id: entidadeId, empresa_representada_id: empresaId, papel: 'CLIENTE' },
+      { onConflict: 'entidade_id,papel', ignoreDuplicates: true },
+    );
+}
+
 async function syncCliente(supabase: SupabaseClient, payload: WebhookPayload, empresaId: string) {
   const { event, data } = payload;
   const cpf = (data.cpf as string) || undefined;
@@ -465,7 +474,7 @@ async function syncCliente(supabase: SupabaseClient, payload: WebhookPayload, em
   if (cpf || cnpj) {
     const filters = [cpf && `cpf.eq.${cpf}`, cnpj && `cnpj.eq.${cnpj}`].filter(Boolean).join(',');
     const { data: found } = await supabase
-      .from('clientes')
+      .from('entidades')
       .select('id')
       .eq('empresa_representada_id', empresaId)
       .or(filters)
@@ -476,10 +485,10 @@ async function syncCliente(supabase: SupabaseClient, payload: WebhookPayload, em
   switch (event) {
     case 'insert':
     case 'sync':
-    case 'update':
+    case 'update': {
       if (existingCliente) {
-        return await supabase
-          .from('clientes')
+        const result = await supabase
+          .from('entidades')
           .update({
             ...(await mapClienteData(data, payload.source_system, empresaId)),
             updated_at: new Date().toISOString(),
@@ -488,16 +497,21 @@ async function syncCliente(supabase: SupabaseClient, payload: WebhookPayload, em
           .eq('empresa_representada_id', empresaId)
           .select()
           .single();
+        await ensurePapelCliente(supabase, existingCliente.id, empresaId);
+        return result;
       }
-      return await supabase
-        .from('clientes')
+      const result = await supabase
+        .from('entidades')
         .insert(await mapClienteData(data, payload.source_system, empresaId))
         .select()
         .single();
+      if (result.data?.id) await ensurePapelCliente(supabase, result.data.id, empresaId);
+      return result;
+    }
     case 'delete':
       if (!existingCliente) return { data: null, error: null };
       return await supabase
-        .from('clientes')
+        .from('entidades')
         .update({ ativo: false, updated_at: new Date().toISOString() })
         .eq('id', existingCliente.id)
         .eq('empresa_representada_id', empresaId)
@@ -511,10 +525,10 @@ async function syncVenda(supabase: SupabaseClient, payload: WebhookPayload, empr
   let clienteId = null;
   if (data.cliente_id) {
     const { data: cliente } = await supabase
-      .from('clientes')
+      .from('entidades')
       .select('id')
       .eq('empresa_representada_id', empresaId)
-      .or(`external_id.eq.${data.cliente_id},cpf_cnpj.eq.${data.cliente_cpf_cnpj}`)
+      .or(`externo_id.eq.${data.cliente_id},cpf.eq.${data.cliente_cpf_cnpj},cnpj.eq.${data.cliente_cpf_cnpj}`)
       .single();
     clienteId = cliente?.id;
   }
@@ -558,7 +572,7 @@ async function syncContrato(supabase: SupabaseClient, payload: WebhookPayload, e
   if (data.cliente_cpf_cnpj) {
     const cpfCnpj = data.cliente_cpf_cnpj as string;
     const { data: cliente } = await supabase
-      .from('clientes')
+      .from('entidades')
       .select('id')
       .eq('empresa_representada_id', empresaId)
       .or(`cpf.eq.${cpfCnpj},cnpj.eq.${cpfCnpj}`)
@@ -646,7 +660,7 @@ async function syncFinanceiro(supabase: SupabaseClient, payload: WebhookPayload,
   if (data.cliente_cpf_cnpj) {
     const cpfCnpj = data.cliente_cpf_cnpj as string;
     const { data: cliente } = await supabase
-      .from('clientes')
+      .from('entidades')
       .select('id')
       .eq('empresa_representada_id', empresaId)
       .or(`cpf.eq.${cpfCnpj},cnpj.eq.${cpfCnpj}`)
@@ -701,38 +715,16 @@ async function syncFinanceiro(supabase: SupabaseClient, payload: WebhookPayload,
   }
 }
 
-// clientes tem dois conjuntos de coluna coexistindo: as "novas" (tipo_pessoa/
-// cpf/cnpj), escritas aqui desde sempre, e as "legadas" (tipo/cpf_cnpj/
-// endereco/apelido) restauradas pela migration 20260725150000 e lidas pela
-// UI real do ERP (clienteService.ts/FormCliente.tsx). Sem popular as legadas,
-// um cliente criado via satélite existe no banco mas aparece em branco pra
-// quem usa a tela de Clientes do próprio ERP.
-function buildEnderecoLegado(data: Record<string, unknown>): Record<string, unknown> | null {
-  if (data.endereco && typeof data.endereco === 'object') {
-    return data.endereco as Record<string, unknown>;
-  }
-  const camposDiretos = ['cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'pais'] as const;
-  const endereco: Record<string, unknown> = {};
-  let temAlgo = false;
-  for (const campo of camposDiretos) {
-    if (data[campo] !== undefined) {
-      endereco[campo] = data[campo];
-      temAlgo = true;
-    }
-  }
-  const uf = data.uf ?? data.estado;
-  if (uf !== undefined) {
-    endereco.uf = uf;
-    temAlgo = true;
-  }
-  return temAlgo ? endereco : null;
-}
-
+// `entidades` é a forma canônica única — sem o par de colunas dual que
+// `clientes` tinha (tipo/cpf_cnpj/endereco-jsonb "legado" vs.
+// tipo_pessoa/cpf/cnpj/endereço-flat "novo"). Endereço entra achatado nas
+// colunas reais; campos ausentes no payload não entram no objeto (update
+// parcial não apaga dado que um humano digitou na tela do ERP).
 async function mapClienteData(data: Record<string, unknown>, sourceSystem: string, empresaId: string) {
   const cpf = (data.cpf as string) || null;
   const cnpj = (data.cnpj as string) || null;
   const tipoPessoa = (data.tipo_pessoa as string) || (cpf ? 'PF' : cnpj ? 'PJ' : null);
-  const endereco = buildEnderecoLegado(data);
+  const enderecoObj = (data.endereco && typeof data.endereco === 'object') ? (data.endereco as Record<string, unknown>) : {};
 
   const mapped: Record<string, unknown> = {
     empresa_representada_id: empresaId,
@@ -747,12 +739,6 @@ async function mapClienteData(data: Record<string, unknown>, sourceSystem: strin
     telefone: data.telefone,
     observacoes: data.observacoes,
     ativo: data.ativo !== false,
-    // Colunas legadas — tipo/cpf_cnpj são sempre deriváveis do que já chega,
-    // sempre setados. apelido/data_nascimento/endereco só entram quando o
-    // payload realmente traz algo: um update parcial (ex. só e-mail mudou)
-    // não pode apagar dado que um humano digitou na tela do ERP.
-    tipo: tipoPessoa === 'PJ' ? 'J' : 'F',
-    cpf_cnpj: cpf || cnpj || null,
     origem_canal: 'webhook',
     origem_sistema: sourceSystem,
     externo_id: (data.id as string) ?? null,
@@ -763,7 +749,20 @@ async function mapClienteData(data: Record<string, unknown>, sourceSystem: strin
 
   if (data.apelido !== undefined) mapped.apelido = data.apelido;
   if (data.data_nascimento !== undefined) mapped.data_nascimento = data.data_nascimento;
-  if (endereco) mapped.endereco = endereco;
+  const cep = data.cep ?? enderecoObj.cep;
+  const logradouro = data.logradouro ?? enderecoObj.logradouro;
+  const numero = data.numero ?? enderecoObj.numero;
+  const complemento = data.complemento ?? enderecoObj.complemento;
+  const bairro = data.bairro ?? enderecoObj.bairro;
+  const cidade = data.cidade ?? enderecoObj.cidade;
+  const estado = data.uf ?? data.estado ?? enderecoObj.uf;
+  if (cep !== undefined) mapped.cep = cep;
+  if (logradouro !== undefined) mapped.logradouro = logradouro;
+  if (numero !== undefined) mapped.numero = numero;
+  if (complemento !== undefined) mapped.complemento = complemento;
+  if (bairro !== undefined) mapped.bairro = bairro;
+  if (cidade !== undefined) mapped.cidade = cidade;
+  if (estado !== undefined) mapped.estado = estado;
 
   return mapped;
 }

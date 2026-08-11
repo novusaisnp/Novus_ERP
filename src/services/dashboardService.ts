@@ -7,9 +7,10 @@ export const dashboardService = {
       const empresaId = await getEmpresaAtivaId();
       if (!empresaId) return 0;
       const { count, error } = await supabase
-        .from('clientes')
-        .select('id', { count: 'exact', head: true })
+        .from('entidades')
+        .select('id, entidade_papeis!inner(papel)', { count: 'exact', head: true })
         .eq('empresa_representada_id', empresaId)
+        .eq('entidade_papeis.papel', 'CLIENTE')
         .eq('ativo', true)
         .is('deleted_at', null);
       if (error) throw error;

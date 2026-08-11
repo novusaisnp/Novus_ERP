@@ -63,7 +63,7 @@ export class FluxoCaixaService {
           data_emissao,
           status,
           observacoes,
-          cliente:clientes(id, nome)
+          cliente:entidades!contas_receber_cliente_id_fkey(id, nome)
         `)
         .gte('data_vencimento', filtros.data_inicio || '2024-01-01')
         .lte('data_vencimento', filtros.data_fim || '2025-12-31')

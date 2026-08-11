@@ -6,7 +6,7 @@ export const contratosService = {
   async list(filtros: ContratoFiltros = {}): Promise<Contrato[]> {
     let q = supabase
       .from('contratos')
-      .select('*, cliente:clientes(id, nome)')
+      .select('*, cliente:entidades!contratos_cliente_id_fkey(id, nome)')
       .is('deleted_at', null)
       .order('created_at', { ascending: false });
 

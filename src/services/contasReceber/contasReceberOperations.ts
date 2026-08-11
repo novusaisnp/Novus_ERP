@@ -20,7 +20,7 @@ const buildRateiosPayload = (
 
 const selectComRateios = `
   *,
-  cliente:clientes(id, nome, cpf, cnpj),
+  cliente:entidades!contas_receber_cliente_id_fkey(id, nome, cpf, cnpj),
   rateios:rateios_contas_receber (
     id,
     plano_conta_id,
