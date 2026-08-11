@@ -192,7 +192,7 @@ const Login: React.FC = () => {
       {showIntro && <IntroSplash onFinish={finishIntro} />}
       <div className="light min-h-screen flex">
       {/* Login Panel - Left side */}
-      <div className="w-full lg:w-[30%] flex items-center justify-center p-8 bg-white">
+      <div className="w-full lg:w-[30%] flex items-center justify-center p-8 bg-background">
         <Card className="w-full max-w-md shadow-none border-0">
           <CardHeader className="text-center space-y-6 pb-8">
             <div className="mx-auto flex items-center justify-center gap-3">
@@ -203,7 +203,7 @@ const Login: React.FC = () => {
                 className="h-10 w-auto"
               />
             </div>
-            <p className="text-gray-600 text-sm">
+            <p className="text-muted-foreground text-sm">
               {needsPasswordSetup
                 ? 'Cadastre sua senha definitiva para continuar'
                 : 'Entre com suas credenciais para acessar o sistema'}
@@ -214,43 +214,43 @@ const Login: React.FC = () => {
             {needsPasswordSetup ? (
               <form onSubmit={handleNewPasswordSubmit(onSetNewPassword)} className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="newPassword" className="text-sm font-medium text-gray-700">
+                  <Label htmlFor="newPassword" className="text-sm font-medium text-foreground">
                     Nova senha
                   </Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="newPassword"
                       type={showNewPassword ? 'text' : 'password'}
                       placeholder="Digite sua nova senha"
-                      className="pl-10 pr-10 h-11 border-gray-300 focus:border-ring focus:ring-ring"
+                      className="pl-10 pr-10 h-11 focus:border-ring focus:ring-ring"
                       {...registerNewPassword('newPassword')}
                     />
                     <button
                       type="button"
                       onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     >
                       {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                  <p className="text-xs text-gray-500">{PASSWORD_POLICY_MESSAGE}</p>
+                  <p className="text-xs text-muted-foreground">{PASSWORD_POLICY_MESSAGE}</p>
                   {newPasswordErrors.newPassword && (
                     <p className="text-sm text-status-cancelled">{newPasswordErrors.newPassword.message}</p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-foreground">
                     Confirme a nova senha
                   </Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="confirmPassword"
                       type={showNewPassword ? 'text' : 'password'}
                       placeholder="Digite novamente"
-                      className="pl-10 h-11 border-gray-300 focus:border-ring focus:ring-ring"
+                      className="pl-10 h-11 focus:border-ring focus:ring-ring"
                       {...registerNewPassword('confirmPassword')}
                     />
                   </div>
@@ -271,16 +271,16 @@ const Login: React.FC = () => {
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                 {/* Email Field */}
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                  <Label htmlFor="email" className="text-sm font-medium text-foreground">
                     E-mail
                   </Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="email"
                       type="email"
                       placeholder="seu@email.com"
-                      className="pl-10 h-11 border-gray-300 focus:border-ring focus:ring-ring"
+                      className="pl-10 h-11 focus:border-ring focus:ring-ring"
                       {...register('email')}
                     />
                   </div>
@@ -289,22 +289,22 @@ const Login: React.FC = () => {
 
                 {/* Password Field */}
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                  <Label htmlFor="password" className="text-sm font-medium text-foreground">
                     Senha
                   </Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="password"
                       type={showPassword ? 'text' : 'password'}
                       placeholder="Digite sua senha (primeiro acesso: use seu e-mail)"
-                      className="pl-10 pr-10 h-11 border-gray-300 focus:border-ring focus:ring-ring"
+                      className="pl-10 pr-10 h-11 focus:border-ring focus:ring-ring"
                       {...register('password')}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -321,7 +321,7 @@ const Login: React.FC = () => {
                   />
                   <Label
                     htmlFor="rememberMe"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer text-gray-700"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer text-foreground"
                   >
                     Lembrar-me
                   </Label>

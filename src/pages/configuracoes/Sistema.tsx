@@ -71,7 +71,7 @@ const ConfiguracoesSistema: React.FC = () => {
 
       {/* Configurações Futuras */}
       <div>
-        <h2 className="text-xl font-semibold mb-6 text-gray-800">
+        <h2 className="text-xl font-semibold mb-6 text-foreground">
           Funcionalidades Planejadas
         </h2>
         
@@ -80,12 +80,12 @@ const ConfiguracoesSistema: React.FC = () => {
             <Card key={index} className="hover:shadow-lg transition-shadow opacity-75">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <config.icon className="w-5 h-5 text-gray-500" />
+                  <config.icon className="w-5 h-5 text-muted-foreground" />
                   {config.titulo}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600 text-sm mb-4">
+                <p className="text-muted-foreground text-sm mb-4">
                   {config.descricao}
                 </p>
                 <div className="flex items-center justify-between">
@@ -100,14 +100,14 @@ const ConfiguracoesSistema: React.FC = () => {
       </div>
 
       {/* Informações Adicionais */}
-      <Card className="mt-8 bg-gray-50">
+      <Card className="mt-8 bg-muted/50">
         <CardContent className="p-6">
           <div className="text-center">
-            <Settings className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">
+            <Settings className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">
               Configurações Avançadas
             </h3>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <p className="text-muted-foreground max-w-2xl mx-auto">
               As configurações do sistema permitirão personalizar comportamentos avançados, 
               configurar integrações, definir políticas de segurança e muito mais. 
               Acompanhe as atualizações para ser notificado quando estiverem disponíveis.

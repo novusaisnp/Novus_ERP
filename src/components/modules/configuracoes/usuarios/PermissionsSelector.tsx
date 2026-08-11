@@ -183,8 +183,6 @@ const PermissionsSelector: React.FC<PermissionsSelectorProps> = ({
   onModuloToggle,
   readOnly = false
 }) => {
-  console.log('[Perfis] PermissionsSelector - Permissões selecionadas:', permissoesSelecionadas.length, 'ReadOnly:', readOnly);
-
   const getTotalPermissoesSelecionadas = () => {
     return permissoesSelecionadas.length;
   };
@@ -198,21 +196,21 @@ const PermissionsSelector: React.FC<PermissionsSelectorProps> = ({
   return (
     <div className="space-y-6">
       {/* Header com estatísticas */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg">
+      <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
         <div className="flex items-center gap-4">
           <Shield className="w-5 h-5 text-primary" />
           <div>
-            <h3 className="font-semibold text-gray-900">
+            <h3 className="font-semibold text-foreground">
               {readOnly ? 'Permissões do Perfil (Somente Leitura)' : 'Permissões do Perfil'}
             </h3>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               {readOnly ? 'Visualize as permissões configuradas neste perfil' : 'Configure as ações permitidas para este perfil'}
             </p>
           </div>
         </div>
         
         <div className="flex gap-3">
-          <Badge variant="outline" className="bg-white">
+          <Badge variant="outline" className="bg-card">
             {getTotalPermissoesSelecionadas()} permissões selecionadas
           </Badge>
           {getPermissoesCriticas() > 0 && (
@@ -243,12 +241,12 @@ const PermissionsSelector: React.FC<PermissionsSelectorProps> = ({
                   <div className="flex-1">
                     <div className="flex items-center gap-3">
                       <Shield className="w-4 h-4 text-primary" />
-                      <h4 className="font-medium text-gray-900">{modulo.modulo}</h4>
+                      <h4 className="font-medium text-foreground">{modulo.modulo}</h4>
                       <Badge variant="outline" className="text-xs">
                         {permissoesSelecionadasModulo}/{modulo.permissoes.length}
                       </Badge>
                     </div>
-                    <p className="text-sm text-gray-600 mt-1">{modulo.descricao}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{modulo.descricao}</p>
                   </div>
                   
                   {!readOnly && (
@@ -273,8 +271,8 @@ const PermissionsSelector: React.FC<PermissionsSelectorProps> = ({
                         key={permissao.codigo} 
                         className={`
                           flex items-start space-x-3 p-3 rounded-lg border transition-all 
-                          ${readOnly ? 'cursor-default' : 'cursor-pointer hover:bg-gray-50'}
-                          ${isSelected ? 'border-primary bg-primary/5' : 'border-gray-200'}
+                          ${readOnly ? 'cursor-default' : 'cursor-pointer hover:bg-muted/50'}
+                          ${isSelected ? 'border-primary bg-primary/5' : 'border-border'}
                           ${permissao.critica ? 'border-l-4 border-l-status-cancelled' : ''}
                         `}
                         onClick={readOnly ? undefined : () => onPermissaoToggle(permissao.codigo)}
@@ -283,7 +281,7 @@ const PermissionsSelector: React.FC<PermissionsSelectorProps> = ({
                           {isSelected ? (
                             <CheckCircle className="w-4 h-4 text-primary" />
                           ) : (
-                            <Circle className="w-4 h-4 text-gray-400" />
+                            <Circle className="w-4 h-4 text-muted-foreground" />
                           )}
                         </div>
                         
@@ -301,8 +299,8 @@ const PermissionsSelector: React.FC<PermissionsSelectorProps> = ({
                               <Lock className="w-3 h-3 text-status-confirmed" />
                             )}
                           </div>
-                          <p className="text-xs text-gray-600 mt-1">{permissao.descricao}</p>
-                          <code className="text-xs text-gray-500 font-mono bg-gray-100 px-1 rounded">
+                          <p className="text-xs text-muted-foreground mt-1">{permissao.descricao}</p>
+                          <code className="text-xs text-muted-foreground font-mono bg-muted px-1 rounded">
                             {permissao.codigo}
                           </code>
                         </div>

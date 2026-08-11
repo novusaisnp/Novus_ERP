@@ -7,10 +7,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SidebarMenuItem } from './sidebar/SidebarMenuItem';
 import { SidebarMenuGroup } from './sidebar/SidebarMenuGroup';
-import { sidebarItems } from './sidebar/sidebarConfig';
+import { getVisibleSidebarItems } from './sidebar/sidebarVisibility';
 import { useAuth } from '@/contexts/AuthContext';
-
-console.log('[Sidebar] Inicializando AppSidebar com padrão das imagens 2 e 3');
+import { checkHasRole } from '@/utils/authUtils';
 
 interface AppSidebarProps {
   onExpandedChange?: (expanded: boolean) => void;
@@ -23,7 +22,6 @@ export function AppSidebar({
   mobileOpen = false,
   onMobileOpenChange
 }: AppSidebarProps) {
-  console.log('[Sidebar] Renderizando AppSidebar');
   const navigate = useNavigate();
   const {
     setOpenMobile
@@ -32,39 +30,38 @@ export function AppSidebar({
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const { user } = useAuth();
 
-  // Sidebar sempre exibe todos os itens — sem gates de feature flag
-  const visibleItems = sidebarItems;
+  const { data: isAdmin = false } = useQuery({
+    queryKey: ['sidebar-is-admin', user?.id ?? null],
+    enabled: !!user?.id,
+    queryFn: () => checkHasRole(user!.id, 'admin'),
+    staleTime: 60_000,
+  });
+
+  const visibleItems = getVisibleSidebarItems({ isAdmin });
 
   useEffect(() => {
-    console.log('[Sidebar] Estado hover alterado:', isHovered);
     onExpandedChange?.(isHovered);
   }, [isHovered, onExpandedChange]);
 
   const handleNavigation = (url: string) => {
-    console.log('[Sidebar] Navegando para:', url);
     navigate(url);
     setOpenMobile(false);
     onMobileOpenChange?.(false);
   };
 
   const handleMouseEnter = () => {
-    console.log('[Sidebar] Mouse entrou - expandindo');
     setIsHovered(true);
   };
 
   const handleMouseLeave = () => {
-    console.log('[Sidebar] Mouse saiu - recolhendo');
     setIsHovered(false);
   };
 
   const handleGroupToggle = (groupTitle: string) => {
-    console.log('[Sidebar] Toggle do grupo:', groupTitle);
     if (openGroup === groupTitle) {
       setOpenGroup(null);
-      console.log('[Sidebar] Grupo fechado:', groupTitle);
     } else {
       setOpenGroup(groupTitle);
-      console.log('[Sidebar] Grupo aberto:', groupTitle);
     }
   };
 

@@ -36,7 +36,6 @@ export const BancosFilters = ({ onFilter }: BancosFiltersProps) => {
       incluirArquivados: filtros.incluirArquivados,
     };
 
-    console.log('[GestaoBancaria] Aplicando filtros:', filtrosLimpos);
     onFilter(filtrosLimpos);
   };
 
@@ -53,7 +52,7 @@ export const BancosFilters = ({ onFilter }: BancosFiltersProps) => {
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-sm border mb-6">
+    <div className="bg-card text-card-foreground p-4 rounded-lg shadow-sm border mb-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         <div>
           <Label htmlFor="codigo">Código</Label>
