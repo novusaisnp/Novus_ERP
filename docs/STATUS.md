@@ -1,8 +1,7 @@
 # Status do projeto — NOVUS ERP
 
-**Última atualização: 2026-08-10 (Cadastro Unificado de Entidades — Fase 2 completa nos 4 categorias +
-fix urgente no sync-webhook; DEPLOY DE EDGE FUNCTIONS PENDENTE, integração com satélite quebrada em
-produção até isso acontecer — ver checkpoint).**
+**Última atualização: 2026-08-10 (Cadastro Unificado de Entidades — Fase 2 completa nos 4 categorias, fix
+no sync-webhook, 5 edge functions deployadas).**
 Este arquivo deve ser atualizado ao final de cada sessão de trabalho relevante — se estiver desatualizado, ele
 apodrece como `SYSTEM_AUDIT.md`/`ARVORE_PROJETO.md` já apodreceram. Leia primeiro [`../CLAUDE.md`](../CLAUDE.md)
 para contexto de padrões estáveis; este arquivo é sobre o que está pendente **agora**.
@@ -131,16 +130,17 @@ Com `usuarios.entidade_id` (Fase 2a) o vendedor já resolve pra uma Entidade com
 fatia futura de comissionamento poderia usar isso pra ligar % de comissão à entidade/papel, sem precisar de
 cadastro de pessoa novo. Fica registrado aqui pra não se perder, não é escopo desta refatoração.
 
-**IMPORTANTE — ação pendente fora do meu escopo automático**: `sync-webhook`/`retry-failed-syncs`/
-`fiscal-smoke-run`/`fiscal-emitir-nfe`/`colaborador-preflight` foram corrigidos no código local, mas **edge
-functions exigem deploy manual e separado** (`supabase functions deploy <nome>`, não é `git push` — ponto já
-documentado no `CLAUDE.md` deste repo). Até o deploy acontecer, a versão **antiga** (que ainda escreve em
-`colaboradores`/`clientes`, tabelas que não existem mais) continua rodando em produção — ou seja, **o sync
-Educacional→ERP está quebrado em produção agora mesmo**, até alguém rodar o deploy dessas 5 functions.
+11. **Deploy feito** (confirmado com o usuário antes, via `AskUserQuestion`): `sync-webhook`,
+    `retry-failed-syncs`, `fiscal-smoke-run`, `fiscal-emitir-nfe`, `colaborador-preflight` — as 5 edge
+    functions tocadas nesta sessão, via `supabase functions deploy <nome> --project-ref reksodqzemboaeqxnxyy`.
+    Todas com deploy bem-sucedido. Teste HTTP real de `sync-webhook` não foi possível/necessário — não há
+    nenhuma linha em `webhook_configs` pra nenhuma empresa agora (a integração real não está configurada
+    neste momento, provavelmente limpa junto com os outros dados de teste de sessões anteriores) — criar uma
+    config só pra testar seria gerar dado de produção sem pedido. Verificação ficou em: simulação SQL da
+    lógica exata (dedup por CPF, upsert de papel, FKs reais) + deploy sem erro.
 
-**Próximo passo**: deploy das edge functions corrigidas (urgente, integração ao vivo depende disso), depois
-Fase 3 formal (payload rico de Entidade + janela expand-contract) e Fase 4 (UI `FormEntidade.tsx` consolidada
-no ERP) — Educacional (Fases 5-8) ainda nem começou.
+**Próximo passo**: Fase 3 formal (payload rico de Entidade + janela expand-contract pro `table:'entidades'`)
+e Fase 4 (UI `FormEntidade.tsx` consolidada no ERP) — Educacional (Fases 5-8) ainda nem começou.
 
 ## 🔖 Checkpoint de sessão (2026-08-10 — responsividade mobile, aditiva)
 
