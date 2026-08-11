@@ -42,10 +42,14 @@ interface MovimentacoesGestaoPopupProps {
   onClose: () => void;
   titulo: TituloFinanceiro;
   permissoes: PermissoesMovimentacao;
-  /** [LOTE 3B] Delegar liquidação exclusivamente ao LiquidacaoTituloModal. */
-  onLiquidar?: (titulo: TituloFinanceiro) => void;
-  onEstornar?: (titulo: TituloFinanceiro) => void;
-  onCancelar?: (titulo: TituloFinanceiro) => void;
+  /**
+   * Obrigatórios de propósito: cada operação tem um modal próprio e é ele quem manda.
+   * Enquanto eram opcionais, existiam fallbacks de "será implementado em breve" que nenhum
+   * chamador alcançava — o compilador agora garante que ninguém caia nesse buraco.
+   */
+  onLiquidar: (titulo: TituloFinanceiro) => void;
+  onEstornar: (titulo: TituloFinanceiro) => void;
+  onCancelar: (titulo: TituloFinanceiro) => void;
 }
 
 export const MovimentacoesGestaoPopup = ({
@@ -57,8 +61,6 @@ export const MovimentacoesGestaoPopup = ({
   onEstornar,
   onCancelar,
 }: MovimentacoesGestaoPopupProps) => {
-  console.log('[MovimentacoesGestaoPopup] Renderizando popup para título:', titulo.id);
-
   const navigate = useNavigate();
   const [tabAtiva, setTabAtiva] = useState('detalhes');
   const [operacaoAtiva, setOperacaoAtiva] = useState<string | null>(null);
@@ -109,65 +111,25 @@ export const MovimentacoesGestaoPopup = ({
     }
   };
 
-  const handleOperacao = async (operacao: string) => {
-    console.log('[MovimentacoesGestaoPopup] Operação selecionada:', operacao);
+  const handleOperacao = (operacao: string) => {
     setOperacaoAtiva(operacao);
-    
-    // TODO: Implementar modais específicos para cada operação
-    // Por enquanto, mostrar toast de feedback
-    const { toast } = await import('@/hooks/use-toast');
-    
+
     switch (operacao) {
       case 'liquidar':
-        // [LOTE 3B] Único caminho de liquidação: LiquidacaoTituloModal (via parent).
-        if (onLiquidar) {
-          onLiquidar(titulo);
-        } else {
-          toast({
-            title: 'Baixar Título',
-            description: 'Fluxo de liquidação indisponível neste contexto',
-            variant: 'destructive',
-          });
-        }
-        return;
-      case 'editar':
-        // Fechar o modal e navegar para a página de edição
-        onClose();
-        if (titulo.tipo === 'CONTAS_PAGAR') {
-          navigate('/financeiro/contas-pagar', {
-            state: { editarTitulo: titulo.id, origem: 'movimentacoes' }
-          });
-        } else {
-          navigate('/financeiro/contas-receber', {
-            state: { editarTitulo: titulo.id, origem: 'movimentacoes' }
-          });
-        }
-        return;
+        return onLiquidar(titulo);
       case 'cancelar':
-        if (onCancelar) {
-          onCancelar(titulo);
-          return;
-        }
-        toast({
-          title: "Cancelar Título",
-          description: "Modal de cancelamento será implementado em breve",
-        });
-        break;
+        return onCancelar(titulo);
       case 'estornar':
-        if (onEstornar) {
-          onEstornar(titulo);
-          return;
-        }
-        toast({
-          title: "Estornar Título",
-          description: "Modal de estorno será implementado em breve",
-        });
-        break;
-      default:
-        toast({
-          title: "Operação Selecionada",
-          description: `Operação ${operacao} será implementada em breve`,
-        });
+        return onEstornar(titulo);
+      case 'editar':
+        // Edição acontece na página do título, não aqui.
+        onClose();
+        navigate(
+          titulo.tipo === 'CONTAS_PAGAR'
+            ? '/financeiro/contas-pagar'
+            : '/financeiro/contas-receber',
+          { state: { editarTitulo: titulo.id, origem: 'movimentacoes' } },
+        );
     }
   };
 

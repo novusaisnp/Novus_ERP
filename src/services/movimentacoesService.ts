@@ -189,30 +189,29 @@ export const movimentacoesService = {
   // Buscar rateios do título
   async getRateiosTitulo(tituloId: string, tipoTitulo: string): Promise<RateioTitulo[]> {
 
-    try {
-      if (tipoTitulo === 'CONTAS_PAGAR') {
-        
-        const { data, error } = await supabase
-          .from('rateios_contas_pagar')
-          .select(`
-            *,
-            plano_conta:plano_contas(id, codigo, nome),
-            centro_custo:centros_custo(id, codigo, nome)
-          `)
-          .eq('conta_pagar_id', tituloId);
+    // Receber tem rateios reais (`rateios_contas_receber`) e o formulário os grava; antes
+    // esta função devolvia sempre lista vazia para esse lado, então a aba de rateios de um
+    // título a receber parecia sem rateio nenhum.
+    const embeds = `
+      *,
+      plano_conta:plano_contas(id, codigo, nome),
+      centro_custo:centros_custo(id, codigo, nome)
+    `;
 
-        
-        if (error) {
-          console.error('[MovimentacoesService] Erro na consulta:', error);
-          throw error;
-        }
-        
-        return (data || []) as unknown as RateioTitulo[];
+    try {
+      // Os dois ramos são escritos por extenso porque o nome da tabela e o da coluna de
+      // vínculo precisam ser literais para o cliente tipado do Supabase.
+      const { data, error } =
+        tipoTitulo === 'CONTAS_PAGAR'
+          ? await supabase.from('rateios_contas_pagar').select(embeds).eq('conta_pagar_id', tituloId)
+          : await supabase.from('rateios_contas_receber').select(embeds).eq('conta_receber_id', tituloId);
+
+      if (error) {
+        console.error('[MovimentacoesService] Erro na consulta:', error);
+        throw error;
       }
 
-      // Para contas a receber, por enquanto retorna array vazio
-      // TODO: Implementar rateios para contas a receber se necessário
-      return [];
+      return (data || []) as unknown as RateioTitulo[];
     } catch (error) {
       console.error('[MovimentacoesService] Erro ao buscar rateios:', error);
       throw new Error(`Erro ao buscar rateios: ${error.message}`);

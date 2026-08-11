@@ -13,6 +13,47 @@ import { movimentacoesService } from './movimentacoesService';
 import { AutorizacaoRequeridaError } from './autorizacaoFinanceiraService';
 
 const rpc = supabase.rpc as unknown as ReturnType<typeof vi.fn>;
+const from = supabase.from as unknown as ReturnType<typeof vi.fn>;
+
+describe('movimentacoesService.getRateiosTitulo', () => {
+  beforeEach(() => from.mockReset());
+
+  const mockTabela = () => {
+    const eq = vi.fn().mockResolvedValue({ data: [{ id: 'rateio-1' }], error: null });
+    from.mockReturnValue({ select: () => ({ eq }) });
+    return eq;
+  };
+
+  it('busca rateios de contas a pagar na tabela de pagar', async () => {
+    const eq = mockTabela();
+
+    const rateios = await movimentacoesService.getRateiosTitulo('titulo-1', 'CONTAS_PAGAR');
+
+    expect(from).toHaveBeenCalledWith('rateios_contas_pagar');
+    expect(eq).toHaveBeenCalledWith('conta_pagar_id', 'titulo-1');
+    expect(rateios).toHaveLength(1);
+  });
+
+  it('busca rateios de contas a receber em vez de devolver lista vazia', async () => {
+    const eq = mockTabela();
+
+    const rateios = await movimentacoesService.getRateiosTitulo('titulo-1', 'CONTAS_RECEBER');
+
+    expect(from).toHaveBeenCalledWith('rateios_contas_receber');
+    expect(eq).toHaveBeenCalledWith('conta_receber_id', 'titulo-1');
+    expect(rateios).toHaveLength(1);
+  });
+
+  it('propaga falha da consulta em vez de virar lista vazia', async () => {
+    from.mockReturnValue({
+      select: () => ({ eq: () => Promise.resolve({ data: null, error: { message: 'falha' } }) }),
+    });
+
+    await expect(
+      movimentacoesService.getRateiosTitulo('titulo-1', 'CONTAS_RECEBER'),
+    ).rejects.toThrow();
+  });
+});
 
 describe('movimentacoesService.liquidarTitulo', () => {
   beforeEach(() => rpc.mockReset());

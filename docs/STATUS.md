@@ -1,6 +1,69 @@
 # Status do projeto — NOVUS ERP
 
-**Última atualização: 2026-08-11 (dinheiro em ponto flutuante — reavaliado; bug real de parcelamento corrigido).**
+**Última atualização: 2026-08-11 (rateio de contas a receber invisível — corrigido; código morto removido).**
+
+## 🔖 Checkpoint atual — rateios de receber e limpeza de código morto (2026-08-11)
+
+Fecha L6 e L9. A investigação de L6 achou um defeito de funcionalidade maior do que o
+descrito na auditoria.
+
+### Bug encontrado: rateio de conta a receber nunca aparecia
+
+`movimentacoesService.getRateiosTitulo` consultava `rateios_contas_pagar` quando o título era
+a pagar e, para receber, **devolvia lista vazia** com um comentário
+`TODO: Implementar rateios para contas a receber se necessário`.
+
+Mas rateios de contas a receber existem de verdade: a tabela `rateios_contas_receber` está
+lá, o formulário grava neles e a validação de soma no formulário depende deles. O efeito era
+que a aba Rateios de qualquer título a receber aparecia vazia, mesmo com rateios gravados —
+sem erro, sem aviso, exatamente o sintoma de "zero silencioso" que a lacuna L6 descrevia.
+
+Corrigido: os dois lados consultam a própria tabela, com a coluna de vínculo correta. Os dois
+ramos ficaram escritos por extenso porque o cliente tipado do Supabase exige nome de tabela e
+de coluna literais — parametrizar quebrava a tipagem.
+
+### Código morto removido (L9)
+
+`MovimentacoesGestaoPopup` tinha três toasts de "será implementado em breve", um
+`TODO: Implementar modais específicos`, um `console.log` de renderização e um `import`
+dinâmico de toast só para alimentar os fallbacks. Nada disso era alcançável: o único chamador
+sempre passou os três handlers.
+
+Em vez de apagar os fallbacks e torcer para que continuem inalcançáveis, `onLiquidar`,
+`onEstornar` e `onCancelar` deixaram de ser opcionais. Agora é o compilador que garante que
+ninguém caia nesse buraco, e o `handleOperacao` encolheu de cinquenta e poucas linhas para
+vinte, sem `async` desnecessário.
+
+### Validação
+
+- Três testes novos: pagar consulta a tabela de pagar; receber consulta a de receber, com a
+  coluna de vínculo certa; e falha de consulta propaga em vez de virar lista vazia.
+- `npm run typecheck` limpo — inclusive `produtoService.ts`, que estava vermelho no
+  checkpoint anterior por causa do trabalho fiscal paralelo e desde então foi resolvido.
+- `npm run test -- --run` → 46 arquivos, 357/357. `npm run build` passou.
+
+### Pendente
+
+A verificação ao vivo deste item **não foi concluída**: a conexão com o navegador caiu no meio
+do teste. O caminho está coberto pelos três testes acima, mas falta ver a aba Rateios de um
+título a receber real mostrando as linhas na tela. Reproduzir é barato: criar uma conta a
+receber com rateio e abrir a aba Rateios no popup de gestão.
+
+### Arquivos desta entrega
+
+- `src/services/movimentacoesService.ts` + `movimentacoesService.test.ts`
+- `src/components/financeiro/MovimentacoesGestaoPopup.tsx`
+- `docs/ROADMAP_2026.md`
+- `docs/STATUS.md`
+
+### Próxima ação única
+
+**Baixa parcial completa (L12)** — juros, multa e desconto no cálculo, e divisão da baixa
+entre múltiplas contas. É o item que mais pesa para uso real: hoje todo título vencido é
+baixado com valor errado ou resolvido fora do sistema. As colunas `valor_juros`, `valor_multa`
+e `valor_desconto` já existem em `liquidacoes_titulos` e não entram na conta da RPC.
+
+---
 
 ## 🔖 Checkpoint atual — parcela negativa e a decisão sobre L5 (2026-08-11)
 
