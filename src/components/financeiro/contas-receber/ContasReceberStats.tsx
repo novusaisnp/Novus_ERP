@@ -41,10 +41,12 @@ export const ContasReceberStats = ({ estatisticas }: ContasReceberStatsProps) =>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total de Contas</CardTitle>
-          <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          <div className="rounded-md bg-accent-vivid-soft p-1.5">
+            <TrendingUp className="h-4 w-4 text-accent-vivid" />
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{estatisticas.total_contas}</div>
+          <div className="text-2xl font-bold font-tabular">{estatisticas.total_contas}</div>
           <p className="text-xs text-muted-foreground">
             Todas as contas a receber
           </p>
@@ -54,13 +56,15 @@ export const ContasReceberStats = ({ estatisticas }: ContasReceberStatsProps) =>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Em Aberto</CardTitle>
-          <AlertCircle className="h-4 w-4 text-status-confirmed" />
+          <div className="rounded-md bg-status-confirmed/10 p-1.5">
+            <AlertCircle className="h-4 w-4 text-status-confirmed" />
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-status-confirmed">
+          <div className="text-2xl font-bold text-status-confirmed font-tabular">
             {estatisticas.contas_abertas}
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground font-tabular">
             {formatCurrency(estatisticas.valor_total_aberto)}
           </p>
         </CardContent>
@@ -69,13 +73,15 @@ export const ContasReceberStats = ({ estatisticas }: ContasReceberStatsProps) =>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Vencidas</CardTitle>
-          <TrendingDown className="h-4 w-4 text-status-cancelled" />
+          <div className="rounded-md bg-status-cancelled/10 p-1.5">
+            <TrendingDown className="h-4 w-4 text-status-cancelled" />
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-status-cancelled">
+          <div className="text-2xl font-bold text-status-cancelled font-tabular">
             {estatisticas.contas_vencidas}
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground font-tabular">
             {formatCurrency(estatisticas.valor_total_vencido)}
           </p>
         </CardContent>
@@ -84,13 +90,15 @@ export const ContasReceberStats = ({ estatisticas }: ContasReceberStatsProps) =>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Recebidas</CardTitle>
-          <CheckCircle className="h-4 w-4 text-status-delivered" />
+          <div className="rounded-md bg-status-delivered/10 p-1.5">
+            <CheckCircle className="h-4 w-4 text-status-delivered" />
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-status-delivered">
+          <div className="text-2xl font-bold text-status-delivered font-tabular">
             {estatisticas.contas_recebidas}
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground font-tabular">
             {formatCurrency(estatisticas.valor_total_recebido)}
           </p>
         </CardContent>

@@ -153,7 +153,7 @@ export const ContasBancariasModal = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {formData.conta_cofre ? (
-              <Vault className="h-5 w-5 text-purple-600" />
+              <Vault className="h-5 w-5 text-accent-vivid" />
             ) : (
               <CreditCard className="h-5 w-5" />
             )}
@@ -186,7 +186,7 @@ export const ContasBancariasModal = ({
             <div className="flex-1">
               <Label htmlFor="conta_cofre" className="flex items-center gap-2">
                 {formData.conta_cofre ? (
-                  <Vault className="h-4 w-4 text-purple-600" />
+                  <Vault className="h-4 w-4 text-accent-vivid" />
                 ) : (
                   <Building2 className="h-4 w-4" />
                 )}

@@ -75,7 +75,7 @@ export const PlanoContasTreeView: React.FC<PlanoContasTreeViewProps> = ({
         {/* Ícone da conta baseado no tipo analítica/sintética */}
         <div title={conta.analitica ? "Conta Analítica" : "Conta Sintética"}>
           {conta.analitica ? (
-            <FileText className="h-4 w-4 text-blue-600 flex-shrink-0" />
+            <FileText className="h-4 w-4 text-accent-vivid flex-shrink-0" />
           ) : (
             <Folder className="h-4 w-4 text-amber-600 flex-shrink-0" />
           )}

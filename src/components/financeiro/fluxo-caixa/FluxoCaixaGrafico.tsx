@@ -80,29 +80,29 @@ export const FluxoCaixaGrafico = ({ dados, projecao, isLoading }: FluxoCaixaGraf
                 labelFormatter={(label) => `Data: ${formatDate(label)}`}
               />
               <Legend />
-              <Line 
-                type="monotone" 
-                dataKey="entradas" 
-                stroke="#22c55e" 
+              <Line
+                type="monotone"
+                dataKey="entradas"
+                stroke="hsl(var(--status-delivered))"
                 strokeWidth={2}
                 name="Entradas"
-                dot={{ fill: '#22c55e', strokeWidth: 2 }}
+                dot={{ fill: 'hsl(var(--status-delivered))', strokeWidth: 2 }}
               />
-              <Line 
-                type="monotone" 
-                dataKey="saidas" 
-                stroke="#ef4444" 
+              <Line
+                type="monotone"
+                dataKey="saidas"
+                stroke="hsl(var(--status-cancelled))"
                 strokeWidth={2}
                 name="Saídas"
-                dot={{ fill: '#ef4444', strokeWidth: 2 }}
+                dot={{ fill: 'hsl(var(--status-cancelled))', strokeWidth: 2 }}
               />
-              <Line 
-                type="monotone" 
-                dataKey="saldo_acumulado" 
-                stroke="#3b82f6" 
+              <Line
+                type="monotone"
+                dataKey="saldo_acumulado"
+                stroke="hsl(var(--accent-vivid))"
                 strokeWidth={3}
                 name="Saldo Acumulado"
-                dot={{ fill: '#3b82f6', strokeWidth: 2 }}
+                dot={{ fill: 'hsl(var(--accent-vivid))', strokeWidth: 2 }}
               />
             </LineChart>
           </ResponsiveContainer>

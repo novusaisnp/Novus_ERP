@@ -52,7 +52,7 @@ export const CargoCard: React.FC<CargoCardProps> = ({ cargo, onEdit, onDelete })
             <span className="text-sm font-medium text-muted-foreground">
               Salário Base:
             </span>
-            <span className="text-sm font-semibold text-green-600">
+            <span className="text-sm font-semibold text-status-delivered">
               {rhUtils.formatCurrency(cargo.salarioBase)}
             </span>
           </div>

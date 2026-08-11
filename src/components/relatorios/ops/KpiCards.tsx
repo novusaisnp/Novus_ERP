@@ -38,7 +38,7 @@ const KpiCard: React.FC<{ title: string; value: string; hint?: string }> = ({ ti
       <CardTitle className="text-sm text-muted-foreground font-medium">{title}</CardTitle>
     </CardHeader>
     <CardContent>
-      <div className="text-2xl font-semibold">{value}</div>
+      <div className="text-2xl font-semibold font-tabular">{value}</div>
       {hint ? <p className="text-xs text-muted-foreground mt-1">{hint}</p> : null}
     </CardContent>
   </Card>

@@ -196,7 +196,7 @@ const Login: React.FC = () => {
         <Card className="w-full max-w-md shadow-none border-0">
           <CardHeader className="text-center space-y-6 pb-8">
             <div className="mx-auto flex items-center justify-center gap-3">
-              <span className="text-2xl font-bold text-blue-600">ERP</span>
+              <span className="text-2xl font-bold text-primary">ERP</span>
               <img
                 src="/novus-logo.png"
                 alt="NOVUS.AI"
@@ -223,7 +223,7 @@ const Login: React.FC = () => {
                       id="newPassword"
                       type={showNewPassword ? 'text' : 'password'}
                       placeholder="Digite sua nova senha"
-                      className="pl-10 pr-10 h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      className="pl-10 pr-10 h-11 border-gray-300 focus:border-ring focus:ring-ring"
                       {...registerNewPassword('newPassword')}
                     />
                     <button
@@ -250,7 +250,7 @@ const Login: React.FC = () => {
                       id="confirmPassword"
                       type={showNewPassword ? 'text' : 'password'}
                       placeholder="Digite novamente"
-                      className="pl-10 h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      className="pl-10 h-11 border-gray-300 focus:border-ring focus:ring-ring"
                       {...registerNewPassword('confirmPassword')}
                     />
                   </div>
@@ -261,7 +261,7 @@ const Login: React.FC = () => {
 
                 <Button
                   type="submit"
-                  className="w-full h-11 text-base font-medium bg-blue-900 hover:bg-blue-800 text-white"
+                  className="w-full h-11 text-base font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
                   disabled={settingPassword}
                 >
                   {settingPassword ? 'Salvando...' : 'Definir senha'}
@@ -280,7 +280,7 @@ const Login: React.FC = () => {
                       id="email"
                       type="email"
                       placeholder="seu@email.com"
-                      className="pl-10 h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      className="pl-10 h-11 border-gray-300 focus:border-ring focus:ring-ring"
                       {...register('email')}
                     />
                   </div>
@@ -298,7 +298,7 @@ const Login: React.FC = () => {
                       id="password"
                       type={showPassword ? 'text' : 'password'}
                       placeholder="Digite sua senha (primeiro acesso: use seu e-mail)"
-                      className="pl-10 pr-10 h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      className="pl-10 pr-10 h-11 border-gray-300 focus:border-ring focus:ring-ring"
                       {...register('password')}
                     />
                     <button
@@ -332,7 +332,7 @@ const Login: React.FC = () => {
                 {/* Login Button */}
                 <Button
                   type="submit"
-                  className="w-full h-11 text-base font-medium bg-blue-900 hover:bg-blue-800 text-white"
+                  className="w-full h-11 text-base font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (

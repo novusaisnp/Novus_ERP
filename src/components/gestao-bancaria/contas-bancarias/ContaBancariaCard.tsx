@@ -63,7 +63,7 @@ export const ContaBancariaCard = ({
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
         <div className="flex items-center gap-2">
           {conta.conta_cofre ? (
-            <Vault className="h-4 w-4 text-purple-600" />
+            <Vault className="h-4 w-4 text-accent-vivid" />
           ) : (
             getTipoIcon(conta.tipo_conta)
           )}

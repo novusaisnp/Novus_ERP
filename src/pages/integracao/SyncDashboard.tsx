@@ -211,9 +211,9 @@ const SyncDashboard: React.FC = () => {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="success" fill="#22c55e" name="Sucesso" />
-                  <Bar dataKey="error" fill="#ef4444" name="Erro" />
-                  <Bar dataKey="pending" fill="#f59e0b" name="Pendente" />
+                  <Bar dataKey="success" fill="hsl(var(--status-delivered))" name="Sucesso" />
+                  <Bar dataKey="error" fill="hsl(var(--status-cancelled))" name="Erro" />
+                  <Bar dataKey="pending" fill="hsl(var(--status-production))" name="Pendente" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>

@@ -124,12 +124,14 @@ export const FluxoCaixaResumo = ({ resumo, isLoading }: FluxoCaixaResumoProps) =
           <Card key={index} className="relative">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <card.icon className="w-4 h-4" />
+                <div className={`rounded-md p-1.5 ${card.color.replace('text-', 'bg-')}/10`}>
+                  <card.icon className={`w-4 h-4 ${card.color}`} />
+                </div>
                 {card.title}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${card.color}`}>
+              <div className={`text-2xl font-bold font-tabular ${card.color}`}>
                 {card.value}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
@@ -185,10 +187,10 @@ export const FluxoCaixaResumo = ({ resumo, isLoading }: FluxoCaixaResumoProps) =
               <AlertTriangle className="h-4 w-4" />
               <div className="text-sm">
                 {resumo.saldo_atual < resumo.saldo_minimo && (
-                  <p>⚠️ Saldo atual abaixo do mínimo recomendado ({formatCurrency(resumo.saldo_minimo)})</p>
+                  <p>Saldo atual abaixo do mínimo recomendado ({formatCurrency(resumo.saldo_minimo)})</p>
                 )}
                 {resumo.runway_dias < 30 && (
-                  <p>🚨 Runway crítico: apenas {resumo.runway_dias} dias restantes</p>
+                  <p>Runway crítico: apenas {resumo.runway_dias} dias restantes</p>
                 )}
               </div>
             </div>

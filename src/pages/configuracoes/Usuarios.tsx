@@ -57,7 +57,7 @@ const VincularPessoaAction: React.FC<{ usuario: UsuarioComPessoa; onVinculado: (
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger className={badgeVariants({ variant: 'outline' }) + ' text-yellow-700 border-yellow-500/50 cursor-pointer'}>
+      <PopoverTrigger className={badgeVariants({ variant: 'outline' }) + ' text-status-production border-status-production/50 cursor-pointer'}>
         <AlertTriangle className="w-3 h-3 mr-1" />Pendente
       </PopoverTrigger>
       <PopoverContent className="w-72 space-y-3">

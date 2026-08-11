@@ -35,7 +35,7 @@ export const BancoCard = ({
     <Card className={`${isArquivado ? 'opacity-75 bg-status-draft/10' : ''} hover:shadow-md transition-shadow`}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="flex items-center space-x-2">
-          <Building2 className="h-4 w-4 text-blue-600" />
+          <Building2 className="h-4 w-4 text-accent-vivid" />
           <CardTitle className="text-sm font-medium">
             {banco.codigo} - {banco.nome}
           </CardTitle>

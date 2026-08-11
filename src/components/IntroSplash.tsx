@@ -35,7 +35,7 @@ export const IntroSplash: React.FC<IntroSplashProps> = ({ onFinish }) => {
 
   return (
     <div
-      className={`fixed inset-0 z-[100] flex items-center justify-center bg-[#0a1930] transition-opacity duration-300 ${
+      className={`fixed inset-0 z-[100] flex items-center justify-center bg-sidebar transition-opacity duration-300 ${
         fadingOut ? 'opacity-0' : 'opacity-100'
       }`}
       onClick={finish}
