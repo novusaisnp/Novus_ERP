@@ -1144,8 +1144,8 @@ export type Database = {
           cancelamento_idempotency_key: string | null
           centro_custo_id: string | null
           created_at: string
-          data_competencia: string | null
           data_cancelamento: string | null
+          data_competencia: string | null
           data_emissao: string | null
           data_pagamento: string | null
           data_vencimento: string
@@ -1178,8 +1178,8 @@ export type Database = {
           cancelamento_idempotency_key?: string | null
           centro_custo_id?: string | null
           created_at?: string
-          data_competencia?: string | null
           data_cancelamento?: string | null
+          data_competencia?: string | null
           data_emissao?: string | null
           data_pagamento?: string | null
           data_vencimento: string
@@ -1212,8 +1212,8 @@ export type Database = {
           cancelamento_idempotency_key?: string | null
           centro_custo_id?: string | null
           created_at?: string
-          data_competencia?: string | null
           data_cancelamento?: string | null
+          data_competencia?: string | null
           data_emissao?: string | null
           data_pagamento?: string | null
           data_vencimento?: string
@@ -1301,8 +1301,8 @@ export type Database = {
           cliente_id: string | null
           created_at: string
           created_by: string | null
-          data_competencia: string | null
           data_cancelamento: string | null
+          data_competencia: string | null
           data_emissao: string | null
           data_recebimento: string | null
           data_vencimento: string
@@ -1313,8 +1313,8 @@ export type Database = {
           hash_classificacao: string | null
           hash_payload: string | null
           id: string
-          motivo_cancelamento: string | null
           idempotency_key: string | null
+          motivo_cancelamento: string | null
           natureza_id: string | null
           numero_documento: string | null
           numero_parcela: number | null
@@ -1345,8 +1345,8 @@ export type Database = {
           cliente_id?: string | null
           created_at?: string
           created_by?: string | null
-          data_competencia?: string | null
           data_cancelamento?: string | null
+          data_competencia?: string | null
           data_emissao?: string | null
           data_recebimento?: string | null
           data_vencimento: string
@@ -1357,8 +1357,8 @@ export type Database = {
           hash_classificacao?: string | null
           hash_payload?: string | null
           id?: string
-          motivo_cancelamento?: string | null
           idempotency_key?: string | null
+          motivo_cancelamento?: string | null
           natureza_id?: string | null
           numero_documento?: string | null
           numero_parcela?: number | null
@@ -1389,8 +1389,8 @@ export type Database = {
           cliente_id?: string | null
           created_at?: string
           created_by?: string | null
-          data_competencia?: string | null
           data_cancelamento?: string | null
+          data_competencia?: string | null
           data_emissao?: string | null
           data_recebimento?: string | null
           data_vencimento?: string
@@ -1401,8 +1401,8 @@ export type Database = {
           hash_classificacao?: string | null
           hash_payload?: string | null
           id?: string
-          motivo_cancelamento?: string | null
           idempotency_key?: string | null
+          motivo_cancelamento?: string | null
           natureza_id?: string | null
           numero_documento?: string | null
           numero_parcela?: number | null
@@ -3643,8 +3643,8 @@ export type Database = {
           data_liquidacao: string
           data_pagamento: string | null
           empresa_representada_id: string
-          estorno_idempotency_key: string | null
           estornado: boolean
+          estorno_idempotency_key: string | null
           forma_pagamento: string | null
           historico: string | null
           id: string
@@ -3678,8 +3678,8 @@ export type Database = {
           data_liquidacao: string
           data_pagamento?: string | null
           empresa_representada_id: string
-          estorno_idempotency_key?: string | null
           estornado?: boolean
+          estorno_idempotency_key?: string | null
           forma_pagamento?: string | null
           historico?: string | null
           id?: string
@@ -3713,8 +3713,8 @@ export type Database = {
           data_liquidacao?: string
           data_pagamento?: string | null
           empresa_representada_id?: string
-          estorno_idempotency_key?: string | null
           estornado?: boolean
+          estorno_idempotency_key?: string | null
           forma_pagamento?: string | null
           historico?: string | null
           id?: string
@@ -4061,8 +4061,8 @@ export type Database = {
           historico: string | null
           id: string
           ip_origem: unknown
-          lote_id: string | null
           liquidacao_titulo_id: string | null
+          lote_id: string | null
           motivo_estorno: string | null
           movimentacao_estorno_id: string | null
           movimentacao_extrato_id: string | null
@@ -4103,8 +4103,8 @@ export type Database = {
           historico?: string | null
           id?: string
           ip_origem?: unknown
-          lote_id?: string | null
           liquidacao_titulo_id?: string | null
+          lote_id?: string | null
           motivo_estorno?: string | null
           movimentacao_estorno_id?: string | null
           movimentacao_extrato_id?: string | null
@@ -4145,8 +4145,8 @@ export type Database = {
           historico?: string | null
           id?: string
           ip_origem?: unknown
-          lote_id?: string | null
           liquidacao_titulo_id?: string | null
+          lote_id?: string | null
           motivo_estorno?: string | null
           movimentacao_estorno_id?: string | null
           movimentacao_extrato_id?: string | null
@@ -4192,6 +4192,13 @@ export type Database = {
             columns: ["empresa_representada_id"]
             isOneToOne: false
             referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimentacoes_bancarias_liquidacao_titulo_id_fkey"
+            columns: ["liquidacao_titulo_id"]
+            isOneToOne: false
+            referencedRelation: "liquidacoes_titulos"
             referencedColumns: ["id"]
           },
           {
@@ -6895,6 +6902,10 @@ export type Database = {
         }
         Returns: Json
       }
+      financeiro_exigir_permissao: {
+        Args: { p_acao: string }
+        Returns: undefined
+      }
       financeiro_liquidar_titulo: {
         Args: {
           p_conta_bancaria_id?: string
@@ -6909,6 +6920,8 @@ export type Database = {
         }
         Returns: Json
       }
+      financeiro_permissoes: { Args: never; Returns: Json }
+      financeiro_pode: { Args: { p_acao: string }; Returns: boolean }
       fn_curva_abc: {
         Args: {
           p_categoria_id?: string

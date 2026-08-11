@@ -5,11 +5,11 @@ import {
   TituloFinanceiro,
   FiltrosMovimentacao,
   EstatisticasMovimentacao,
-  PermissoesMovimentacao,
   TipoTitulo,
   StatusTitulo
 } from '@/types/movimentacoesFinanceiras';
 import { qk } from '@/lib/queryKeys';
+import { usePermissoesFinanceiras } from '@/hooks/usePermissoesFinanceiras';
 import {
   dbStatusPagarToUi,
   uiStatusPagarToDb,
@@ -272,15 +272,8 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
     return stats;
   }, [titulos]);
 
-  // Permissões (pode ser implementado com contexto de usuário)
-  const permissoes: PermissoesMovimentacao = {
-    pode_liquidar: true,
-    pode_estornar: true,
-    pode_editar: true,
-    pode_cancelar: true,
-    pode_visualizar_historico: true,
-    pode_editar_rateio: true,
-  };
+  // Permissões resolvidas no banco; a UI só reflete o que as RPCs já aplicam.
+  const { permissoes } = usePermissoesFinanceiras();
 
   return {
     titulos,

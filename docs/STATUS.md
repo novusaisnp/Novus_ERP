@@ -1,8 +1,94 @@
 # Status do projeto — NOVUS ERP
 
-**Última atualização: 2026-08-11 (auditoria ponta a ponta do módulo Financeiro).**
+**Última atualização: 2026-08-11 (FIN-0 — autorização financeira real).**
 
-## 🔖 Checkpoint atual — auditoria ponta a ponta do Financeiro (2026-08-11)
+## 🔖 Checkpoint atual — autorização financeira real (2026-08-11)
+
+Fecha a lacuna L1 da auditoria: as permissões da tela de movimentações eram um objeto
+literal com todos os campos `true`. A autorização passa a ser resolvida no banco, e a
+barreira que vale está dentro das próprias RPCs — a UI apenas reflete a capacidade.
+
+### Concluído
+
+- Migration `20260811150000_financeiro_autorizacao.sql` aplicada e marcada no projeto ERP
+  (`reksodqzemboaeqxnxyy`, confirmado antes de qualquer consulta):
+  - `financeiro_pode(p_acao text)` resolve `has_role()` (papéis `admin` e `novus_owner`
+    passam sempre) mais `perfis_acesso.permissoes` via
+    `auth.uid()` → `usuarios.user_id` → `usuarios.perfil_id`;
+  - `financeiro_exigir_permissao(p_acao text)` levanta `42501` quando falta permissão;
+  - `financeiro_permissoes()` devolve o mapa completo numa única chamada, no mesmo shape
+    de `PermissoesMovimentacao`;
+  - as três RPCs financeiras receberam o guard logo após o guard de autenticação, com o
+    restante do corpo inalterado. A migration foi **gerada a partir das definições reais
+    lidas do banco**, não transcrita à mão.
+- Catálogo da UI ganhou os dois códigos que faltavam: `financeiro.liquidar` e
+  `financeiro.cancelamento`, ambos marcados como críticos.
+- `src/services/permissoesFinanceirasService.ts` e `src/hooks/usePermissoesFinanceiras.ts`
+  são novos. O hook nega tudo enquanto carrega ou se a consulta falhar — liberar na dúvida
+  esconderia uma falha de autorização atrás de um botão visível.
+- `useMovimentacoesFinanceiras.ts` perdeu o objeto literal de permissões e passou a
+  consumir o hook. **Nenhum componente precisou mudar**, porque o shape foi preservado.
+
+### Decisão de projeto — por que não houve backfill de dados
+
+O backfill original (acrescentar os dois códigos novos aos perfis existentes) foi rejeitado
+pelo banco: o trigger `protect_perfis_sistema()` torna os três perfis de sistema
+(ADMINISTRADOR, OPERADOR, CONSULTA) imutáveis por design. Em vez de contornar a proteção,
+`financeiro_pode` aceita o código análogo já concedido — quem tem `financeiro.create` pode
+liquidar, quem tem `financeiro.estorno` pode cancelar. Zero alteração de dado, nenhuma
+proteção existente burlada. Perfis novos criados pelo administrador podem conceder os
+códigos novos diretamente, sem depender desse fallback.
+
+### Validação deste checkpoint
+
+- Migration executada dentro de `BEGIN ... ROLLBACK` no banco real antes de aplicar → passou.
+- Seis cenários provados no banco real, sempre dentro de rollback: papel `admin` libera tudo;
+  perfil OPERADOR liquida e edita mas **não** estorna nem cancela; perfil CONSULTA só
+  visualiza; e as três RPCs recusam com `42501` em chamada direta com perfil sem permissão.
+- Sanidade do próprio teste: um assert invertido de propósito falhou como esperado,
+  provando que os asserts realmente executam.
+- Verificação pós-aplicação → migration registrada, três funções presentes, guard presente
+  nas três RPCs.
+- `npm run typecheck` → limpo.
+- `npm run test -- --run` → 45 arquivos, 346/346 testes passaram.
+- Teste focado do serviço novo → 3/3.
+- Validação ao vivo no navegador, logado como o usuário real: `financeiro_permissoes()`
+  chamada pelo próprio cliente da aplicação retornou os seis campos `true`; a tela de
+  movimentações renderizou o botão de baixa na linha do título e, no popup de gestão, os
+  botões Baixar, Editar e Cancelar. Estornar não aparece porque o título estava `ABERTA` —
+  condicional de status preexistente, não efeito desta mudança. Console sem erros.
+- A verificação usou **um título temporário** (`[TEMP-AUTORIZACAO]`, R$ 123,45), já removido:
+  a consulta pós-teste confirmou zero temporários e o banco de volta ao baseline de zero
+  títulos em `contas_receber` e `contas_pagar`.
+
+### Achado de passagem, não corrigido
+
+No detalhe do título, "Data de Emissão" apareceu como `31/12/1969` quando a coluna está
+vazia — data nula caindo no epoch em vez de exibir vazio. É anterior a esta entrega e
+combina com o padrão de bug de data já catalogado; fica anotado para a fatia de limpeza.
+
+### Arquivos desta entrega
+
+- `supabase/migrations/20260811150000_financeiro_autorizacao.sql`
+- `src/services/permissoesFinanceirasService.ts`
+- `src/services/permissoesFinanceirasService.test.ts`
+- `src/hooks/usePermissoesFinanceiras.ts`
+- `src/hooks/useMovimentacoesFinanceiras.ts`
+- `src/components/modules/configuracoes/usuarios/PermissionsSelector.tsx`
+- `src/integrations/supabase/types.ts`
+- `docs/ROADMAP_2026.md`
+- `docs/STATUS.md`
+
+### Próxima ação única
+
+**Iniciar a Fatia 2 — rateio atômico e exclusão protegida (L2, L3).** Antes da migration,
+auditar como `createContaPagar`/`updateContaPagar` e os equivalentes de receber tratam
+rateio, e confirmar no banco quais constraints já existem entre título e liquidação para
+embasar a guarda de exclusão.
+
+---
+
+## 🔖 Checkpoint anterior — auditoria ponta a ponta do Financeiro (2026-08-11)
 
 Sessão de diagnóstico, sem alteração de código, schema ou deploy. O objetivo foi verificar
 **no código e no banco real** o estado do módulo Financeiro, em vez de confiar na

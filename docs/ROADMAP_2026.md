@@ -42,7 +42,7 @@ sem expor complexidade corporativa para quem não precisa dela.
 - [x] Adicionar chave de idempotência e proteção contra concorrência/duplo clique no banco.
 - [x] Eliminar caminhos duplicados de liquidação e manter um serviço canônico.
 - [ ] Diferenciar erro técnico de lista vazia; falhas não podem virar zeros silenciosos.
-- [ ] Aplicar permissões financeiras reais na UI, serviço/RPC e RLS.
+- [x] Aplicar permissões financeiras reais na UI, serviço/RPC e RLS.
 - [ ] Bloquear exclusão física de título já movimentado; correção deve ocorrer por estorno.
 - [ ] Provar isolamento entre empresas em leitura e escrita.
 

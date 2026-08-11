@@ -101,7 +101,9 @@ const PERMISSOES_GRANULARES: PermissionModule[] = [
       { codigo: 'financeiro.read', nome: 'Consultar Financeiro', descricao: 'Visualizar movimentação financeira' },
       { codigo: 'financeiro.update', nome: 'Editar Lançamentos', descricao: 'Modificar lançamentos financeiros' },
       { codigo: 'financeiro.delete', nome: 'Excluir Lançamentos', descricao: 'Remover lançamentos financeiros', critica: true },
+      { codigo: 'financeiro.liquidar', nome: 'Liquidar Títulos', descricao: 'Dar baixa total ou parcial em contas a pagar e receber', critica: true },
       { codigo: 'financeiro.estorno', nome: 'Estornar Lançamentos', descricao: 'Estornar operações financeiras', critica: true },
+      { codigo: 'financeiro.cancelamento', nome: 'Cancelar Títulos', descricao: 'Cancelar títulos financeiros sem baixa', critica: true },
       { codigo: 'financeiro.lancamentoRetroativo', nome: 'Lançamentos Retroativos', descricao: 'Criar lançamentos em datas passadas', critica: true },
       { codigo: 'financeiro.alterarVencimento', nome: 'Alterar Vencimentos', descricao: 'Modificar datas de vencimento' }
     ]
