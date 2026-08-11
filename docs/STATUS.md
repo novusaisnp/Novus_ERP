@@ -1,5 +1,41 @@
 # Status do projeto — NOVUS ERP
 
+## 📌 Checkpoint — colunas configuráveis em Entidades (2026-08-11)
+
+Concluída a Fase 2 piloto do plano de metadados. A lista de Entidades ganhou o botão `Colunas`,
+que permite mostrar ou ocultar Nome, Tipo, CPF/CNPJ, Papéis e Status e também expõe automaticamente
+os campos personalizados ativos. Ações permanecem sempre visíveis.
+
+As escolhas são persistidas em `preferencias_listagem` por usuário, empresa e tela. A constraint
+`UNIQUE (usuario_id, empresa_representada_id, tela)` foi confirmada no banco antes do uso do
+`upsert`; RLS permite que cada usuário leia e altere somente a própria preferência. Sem preferência,
+a tabela mantém exatamente o layout anterior.
+
+Validação ao vivo: uma coluna personalizada temporária foi ligada, exibiu o valor da entidade,
+permaneceu ativa após reload; a coluna fixa Tipo foi ocultada e continuou oculta após outro reload.
+Definição, valor e preferência temporários foram removidos, restaurando o estado inicial. Migration
+`20260811213000` validada em rollback, aplicada e registrada no ERP. Sem erros novos no console.
+
+## 📌 Checkpoint — campos personalizados em entidades (2026-08-11)
+
+Concluída a primeira fase do plano de metadados sem alterar o cadastro consolidado existente.
+`entidades` recebeu apenas a coluna aditiva `campos_extras jsonb`; definições ficam em
+`campos_personalizados`, isoladas por empresa e editáveis somente por administrador.
+
+A tela `Configurações → Campos personalizados` cria, ordena, torna obrigatório e inativa campos
+dos tipos texto, número, data, sim/não e lista. O `FormEntidade` consome somente definições ativas,
+preserva chaves históricas e grava os valores junto da entidade. Chave técnica e tipo não mudam
+depois da criação para não invalidar dados já persistidos.
+
+Validação: migration provada em `BEGIN/ROLLBACK` antes da aplicação; tabela, coluna, três policies
+e constraint única confirmadas no banco ERP. Teste ao vivo criou um campo obrigatório, gravou
+`Varejo validado` numa entidade, reabriu confirmando persistência e inativou a definição sem perder
+o valor. Os dados temporários foram removidos ao final. `npm run typecheck`, 48 arquivos/363 testes,
+build e ESLint focado passaram; navegador sem erros de console.
+
+Próximo incremento do plano de metadados: preferências de colunas somente na lista de Entidades,
+antes de considerar expansão para outras listagens.
+
 ## 📌 Checkpoint — núcleo fiscal NF-e, NFC-e e MDF-e (2026-08-11)
 
 O módulo fiscal chegou ao limite interno anterior à ativação do provedor: contratos,
@@ -36,9 +72,66 @@ certificado/CSC, homologação e deploy manual das Edge Functions.
 Configurar credenciais reais do provedor e executar a homologação controlada de NF-e,
 NFC-e e MDF-e. O deploy das Edge Functions continua manual e separado do `git push`.
 
-**Última atualização: 2026-08-11 (rateio contábil editável no detalhe do título).**
+**Última atualização: 2026-08-11 (isolamento entre empresas provado; falta 1 item para fechar a FIN-0).**
 
-## 🔖 Checkpoint atual — rateio contábil editável no título (2026-08-11)
+## 🔖 Checkpoint atual — isolamento entre empresas provado (2026-08-11)
+
+Último item aberto da FIN-0 e critério de saída da fase: nenhum usuário opera fora do seu
+escopo. Antes havia a crença de que a RLS bastava; agora há prova reproduzível.
+
+### O que ficou versionado
+
+`supabase/sql/fin0_isolamento_entre_empresas.sql`, rodável a qualquer momento dentro de
+`BEGIN ... ROLLBACK`, com as instruções de execução no cabeçalho do próprio arquivo. Cria duas
+empresas com um usuário cada, ambos com o mesmo perfil de permissões financeiras amplas — o
+que os separa é a empresa, não o perfil. Nenhum dos dois é `admin` nem `novus_owner`,
+justamente porque esses papéis atravessam empresas por desenho.
+
+Detalhe que faz a prova valer: o script troca para o papel `authenticated` antes de testar. A
+RLS é avaliada para esse papel, não para o dono da conexão — rodando como proprietário, toda
+policy seria ignorada e o teste passaria sem provar nada.
+
+### Cenários cobertos
+
+Leitura: o usuário da empresa A enxerga apenas o título da própria empresa e não alcança o da
+empresa B nem consultando pelo id.
+
+Escrita, sempre contra o título da outra empresa: edição pela RPC transacional; edição
+informando a empresa da vítima no payload, para tentar forjar o escopo; liquidação;
+cancelamento; e `UPDATE` direto na tabela, sem passar por RPC, para exercitar a RLS sozinha.
+Todos recusados. Ao final, já fora do papel restrito, o script confirma que o título da
+empresa B permaneceu literalmente intacto, e que o dono continua editando o próprio título —
+a trava não pode ter sido obtida quebrando o caminho legítimo.
+
+### Validação
+
+- Todos os cenários passam.
+- Sanidade: o assert de leitura, invertido de propósito, falha — o teste sabe reprovar.
+- Consulta pós-execução: nenhuma empresa, perfil ou título de teste ficou no banco.
+
+### Estado da FIN-0
+
+Entregue nesta sessão, em ordem: autorização financeira real; bloqueio de exclusão de título
+liquidado; gravação atômica de título e rateios; trava de autorização para baixa retroativa,
+estorno e cancelamento; correção do parcelamento com parcela negativa; rateio de contas a
+receber que nunca aparecia; remoção de código morto; baixa com juros, multa, desconto e
+divisão entre contas; rateio contábil editável no título; e esta prova de isolamento.
+
+**Resta um item para fechar a fase:** "diferenciar erro técnico de lista vazia". Foi atacado
+em dois pontos concretos — `getRateiosTitulo`, que devolvia lista vazia para contas a receber,
+e as mensagens de erro do serviço, que descartavam o texto vindo do banco — mas **não houve
+varredura de todos os serviços financeiros**, então o item continua aberto de propósito.
+
+### Próxima ação única
+
+**Concluir "erro técnico diferente de lista vazia"**, varrendo os serviços financeiros atrás
+de `catch` que devolve coleção vazia, `|| []` sobre resultado de consulta com erro e
+`maybeSingle` cujo erro é ignorado. Só então marcar a FIN-0 como concluída. Em seguida,
+FIN-1: renegociação de título, para a qual `gerarParcelas` já existe e está coberto por testes.
+
+---
+
+## 🔖 Checkpoint — rateio contábil editável no título (2026-08-11)
 
 Fecha L7. A aba Rateios mostrava os valores mas não permitia mexer neles: o botão
 "Adicionar" abria um marcador com o texto "Modal de formulário de rateio será implementado",
@@ -2231,6 +2324,15 @@ essa é a regra desde 2026-07-25.**
 
 - ✅ Resolvido em código e implantado: ver seção acima.
 - Nenhum outro item aberto no momento desta atualização.
+
+## ✅ Extensibilidade incremental — Fase 3 (2026-08-11)
+
+- Primeiro webhook de saída ativo: `titulo.liquidado`, configurável na tela já existente de Webhooks.
+- Migrations `20260811220000` a `20260811220300` aplicadas no ERP: `webhook_outbox`, trigger transacional, claim concorrente seguro e cron a cada minuto.
+- Edge Function `process-webhook-outbox` publicada no projeto `reksodqzemboaeqxnxyy`; chamada autenticada real respondeu HTTP 200 com fila vazia.
+- Segredo de invocação do cron armazenado no Vault como `novus_erp_anon_key`; valor não foi gravado no repositório.
+- Prova em transação confirmou criação de item `PENDENTE` com tenant e chave de idempotência no payload; dados de QA revertidos por `ROLLBACK`.
+- Escopo deliberado: sem `titulo.criado`/`nfe.autorizada` até existir consumidor real.
 
 ## Decisões de identidade visual/UX em aberto
 

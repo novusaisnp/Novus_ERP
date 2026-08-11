@@ -19,10 +19,8 @@ DECLARE
   v_perfil uuid;
   v_titulo_a uuid;
   v_titulo_b uuid;
-  v_liq_a uuid;
   v_visiveis integer;
   v_erro text;
-  v_estado text;
 BEGIN
   -- ----------------------------------------------------------------- cenário
   INSERT INTO empresas_representadas (nome, cnpj)
@@ -99,7 +97,7 @@ BEGIN
     PERFORM financeiro_liquidar_titulo(
       v_titulo_b, 'CONTAS_RECEBER', 10, current_date, 'DINHEIRO', gen_random_uuid());
     RAISE EXCEPTION 'E3: liquidacao de titulo de outra empresa deveria ter sido recusada';
-  EXCEPTION WHEN insufficient_privilege OR raise_exception OR no_data_found THEN
+  EXCEPTION WHEN insufficient_privilege OR raise_exception OR no_data_found OR invalid_authorization_specification THEN
     GET STACKED DIAGNOSTICS v_erro = MESSAGE_TEXT;
     ASSERT v_erro NOT LIKE 'E3:%', v_erro;
     RAISE NOTICE 'ok escrita: liquidacao cruzada recusada (%)', v_erro;
@@ -110,7 +108,7 @@ BEGIN
     PERFORM financeiro_cancelar_titulo(
       v_titulo_b, 'CONTAS_RECEBER', 'tentativa de invasao', gen_random_uuid());
     RAISE EXCEPTION 'E4: cancelamento de titulo de outra empresa deveria ter sido recusado';
-  EXCEPTION WHEN insufficient_privilege OR raise_exception OR no_data_found THEN
+  EXCEPTION WHEN insufficient_privilege OR raise_exception OR no_data_found OR invalid_authorization_specification THEN
     GET STACKED DIAGNOSTICS v_erro = MESSAGE_TEXT;
     ASSERT v_erro NOT LIKE 'E4:%', v_erro;
     RAISE NOTICE 'ok escrita: cancelamento cruzado recusado (%)', v_erro;

@@ -44,7 +44,7 @@ sem expor complexidade corporativa para quem não precisa dela.
 - [ ] Diferenciar erro técnico de lista vazia; falhas não podem virar zeros silenciosos.
 - [x] Aplicar permissões financeiras reais na UI, serviço/RPC e RLS.
 - [x] Bloquear exclusão física de título já movimentado; correção deve ocorrer por estorno.
-- [ ] Provar isolamento entre empresas em leitura e escrita.
+- [x] Provar isolamento entre empresas em leitura e escrita.
 
 **Critério de saída:** testes de integração provam que falha intermediária faz rollback total,
 duas baixas concorrentes não duplicam pagamento e nenhum usuário opera fora do seu escopo.
