@@ -1,6 +1,79 @@
 # Status do projeto — NOVUS ERP
 
-**Última atualização: 2026-08-11 (rateio de contas a receber invisível — corrigido; código morto removido).**
+**Última atualização: 2026-08-11 (baixa com juros, multa, desconto e divisão entre contas).**
+
+## 🔖 Checkpoint atual — baixa parcial completa (2026-08-11)
+
+Fecha L12, o item que mais pesava para uso real: sem juros e multa, todo título vencido era
+baixado com valor errado ou resolvido fora do sistema.
+
+### Semântica adotada
+
+O campo de valor continua sendo o **principal** — o que abate o saldo do título. Juros e multa
+acrescem, desconto abate, e o que circula no banco é
+`principal + juros + multa − desconto`.
+
+Um título de R$ 100 pago com R$ 10 de juros fica **quitado**, e R$ 110 entram no caixa. A
+validação "valor excede o saldo" continua valendo sobre o principal, não sobre o total pago.
+
+### Concluído
+
+- Migration `20260811190000_financeiro_baixa_encargos.sql`: `financeiro_liquidar_titulo`
+  ganhou `p_juros`, `p_multa` e `p_desconto`, todos com default zero para não quebrar chamadas
+  existentes. As colunas `valor_juros`, `valor_multa` e `valor_desconto` já existiam em
+  `liquidacoes_titulos` e nunca eram preenchidas; agora são. A migration foi gerada a partir
+  da definição real lida do banco, com sete âncoras verificadas, e o restante do corpo ficou
+  inalterado.
+- A movimentação bancária passa a mover o valor efetivo, não o principal.
+- **Divisão entre contas bancárias ligada na interface.** A RPC já aceitava `p_multi_baixa` e
+  validava cada conta contra a empresa desde a FIN-0.2 — faltava a tela. O modal ganhou
+  "Dividir entre contas", com linhas de conta e valor; com a divisão em uso, a conta única sai
+  de cena. A soma passa a fechar com o **valor efetivo**, não com o principal, porque é
+  dinheiro real distribuído entre contas.
+- O modal mostra "Valor a movimentar no banco" enquanto se digita, e avisa antes de enviar
+  quando a divisão não fecha — o banco recusaria de qualquer forma, mas a ida seria à toa.
+
+### Validação
+
+- Migration em `BEGIN ... ROLLBACK` antes de aplicar → passou.
+- Sete cenários no banco real: principal quita o título e os encargos entram no caixa (banco
+  recebe 115 de um título de 100); desconto reduz o caixa sem deixar saldo no título; desconto
+  maior que principal mais acréscimos é recusado; encargo negativo é recusado; divisão somando
+  o principal em vez do efetivo é recusada; divisão fechando com o efetivo é aceita; e a
+  chamada antiga, sem encargos, se comporta exatamente como antes.
+- Sanidade: o assert que define a semântica, invertido de propósito para esperar 100 no banco,
+  falhou informando 115,00 — prova que mede o comportamento novo.
+- Ao vivo: título de R$ 100 com R$ 10 de juros mostrou "Valor a movimentar no banco
+  R$ 110,00" e, após liquidar, o banco confirmou status `RECEBIDO`, `valor_recebido` 100 e
+  `valor_juros` 10. Sem movimentação bancária porque a forma escolhida foi Dinheiro, que não
+  usa conta — comportamento correto, e o caso com conta está coberto pelo cenário de rollback.
+  Dados temporários removidos.
+- `npm run test -- --run` → 46 arquivos, 358/358. Typecheck limpo nos arquivos desta entrega.
+
+### Pendência de ambiente, não do código
+
+`src/services/produtoService.ts` segue vermelho no typecheck por trabalho fiscal em outra
+frente, agora por incompatibilidade entre `ProdutoDadosFiscais` e o tipo `Json` da coluna
+`dados_fiscais`, que passou a existir no banco. Nenhum arquivo desta entrega aparece nos erros.
+
+### Arquivos desta entrega
+
+- `supabase/migrations/20260811190000_financeiro_baixa_encargos.sql`
+- `src/components/financeiro/LiquidacaoTituloModal.tsx`
+- `src/services/movimentacoesService.ts` + `movimentacoesService.test.ts`
+- `src/types/movimentacoesFinanceiras.ts`
+- `src/integrations/supabase/types.ts`
+- `docs/ROADMAP_2026.md`
+- `docs/STATUS.md`
+
+### Próxima ação única
+
+**Rateio contábil editável no detalhe do título (L7).** `RateiosTab` tem o botão "Adicionar"
+como marcador: hoje o rateio só pode ser montado no formulário do título. Como a gravação
+atômica de título e rateios já existe (`financeiro_salvar_titulo`), a aba pode reusá-la em vez
+de criar caminho novo.
+
+---
 
 ## 🔖 Checkpoint atual — rateios de receber e limpeza de código morto (2026-08-11)
 

@@ -2814,7 +2814,15 @@ export type Database = {
           serie_nfe?: number | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_configuracoes_empresa_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: true
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fiscal_documentos_eletronicos: {
         Row: {
@@ -2952,7 +2960,29 @@ export type Database = {
           venda_id?: string | null
           xml_url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_documentos_cliente_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "entidades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_documentos_empresa_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_documentos_venda_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fiscal_documentos_eletronicos_itens: {
         Row: {
@@ -3066,7 +3096,43 @@ export type Database = {
           valor_total?: number
           valor_unitario?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_documentos_itens_documento_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_documentos_eletronicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_documentos_itens_empresa_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_documentos_itens_produto_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_documentos_itens_produto_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_estoque_ruptura"
+            referencedColumns: ["produto_id"]
+          },
+          {
+            foreignKeyName: "fiscal_documentos_itens_servico_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "servicos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fiscal_eventos: {
         Row: {
@@ -3111,7 +3177,22 @@ export type Database = {
           status?: string
           tipo?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_eventos_documento_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_documentos_eletronicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_eventos_empresa_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fiscal_provedor_credenciais: {
         Row: {
@@ -3198,7 +3279,15 @@ export type Database = {
           tipo?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_sped_empresa_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       folha_pagamento: {
         Row: {
@@ -5088,6 +5177,7 @@ export type Database = {
           comprimento: number | null
           controla_estoque: boolean
           created_at: string
+          dados_fiscais: Json
           deleted_at: string | null
           descricao: string | null
           empresa_representada_id: string
@@ -5119,6 +5209,7 @@ export type Database = {
           comprimento?: number | null
           controla_estoque?: boolean
           created_at?: string
+          dados_fiscais?: Json
           deleted_at?: string | null
           descricao?: string | null
           empresa_representada_id: string
@@ -5150,6 +5241,7 @@ export type Database = {
           comprimento?: number | null
           controla_estoque?: boolean
           created_at?: string
+          dados_fiscais?: Json
           deleted_at?: string | null
           descricao?: string | null
           empresa_representada_id?: string
@@ -6792,7 +6884,15 @@ export type Database = {
           total: number | null
           valor_total: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_documentos_empresa_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mv_estoque_curva_abc: {
         Row: {
@@ -6988,8 +7088,11 @@ export type Database = {
         Args: {
           p_conta_bancaria_id?: string
           p_data_pagamento: string
+          p_desconto?: number
           p_forma_pagamento: string
           p_idempotency_key: string
+          p_juros?: number
+          p_multa?: number
           p_multi_baixa?: Json
           p_observacoes?: string
           p_ticket_autorizacao?: string

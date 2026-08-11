@@ -62,6 +62,13 @@ export interface LiquidacaoTitulo {
   multi_baixa?: MultiBaixa[];
   /** Emitido pelo diálogo de autorização; obrigatório em baixa retroativa além de 24h. */
   ticket_autorizacao?: string;
+  /**
+   * Acréscimos e abatimento da baixa. `valor_pago` é o principal, que abate o saldo do
+   * título; o que circula no banco é principal + juros + multa − desconto.
+   */
+  juros?: number;
+  multa?: number;
+  desconto?: number;
 }
 
 // Para permitir dividir pagamento em múltiplas contas

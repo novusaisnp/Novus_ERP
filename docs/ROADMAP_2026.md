@@ -55,8 +55,8 @@ duas baixas concorrentes não duplicam pagamento e nenhum usuário opera fora do
   (implementado e aguardando validação visual local).
 - [~] Submodal de estorno escolhendo a liquidação, motivo, data e conta afetada
   (seleção, motivo e conta concluídos; data efetiva controlada pelo servidor; data contábil manual pendente).
-- [ ] Submodal de baixa parcial com juros, multa, desconto e saldo posterior.
-- [ ] Divisão da baixa entre múltiplas contas/meios de pagamento.
+- [x] Submodal de baixa parcial com juros, multa, desconto e saldo posterior.
+- [x] Divisão da baixa entre múltiplas contas/meios de pagamento.
 - [ ] Renegociação: substituir título por novas parcelas preservando rastreabilidade.
 - [ ] Gestão de rateios de pagar e receber no detalhe do título.
 - [ ] Vincular uma movimentação bancária existente ou criar e conciliar uma nova.

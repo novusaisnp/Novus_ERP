@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { listarContasBancariasAtivasComAgenciaBanco } from '@/services/contaBancariaService';
 import { movimentacoesService } from '@/services/movimentacoesService';
 import { qk } from '@/lib/queryKeys';
-import { TituloFinanceiro, LiquidacaoTitulo, FormaPagamento } from '@/types/movimentacoesFinanceiras';
+import { TituloFinanceiro, LiquidacaoTitulo, FormaPagamento, MultiBaixa } from '@/types/movimentacoesFinanceiras';
 import { currencyUtils } from '@/utils/currencyUtils';
 import { useAutorizacaoFinanceira } from '@/hooks/useAutorizacaoFinanceira';
 import { AutorizacaoFinanceiraModal } from './AutorizacaoFinanceiraModal';
@@ -47,7 +47,20 @@ export const LiquidacaoTituloModal = ({
     forma_pagamento: 'DINHEIRO' as FormaPagamento,
     conta_bancaria_id: '',
     observacoes: '',
+    juros: 0,
+    multa: 0,
+    desconto: 0,
   });
+
+  /** Divisão do pagamento entre contas bancárias; vazia = uma conta só. */
+  const [divisao, setDivisao] = useState<MultiBaixa[]>([]);
+
+  // O principal abate o saldo do título; o que circula no banco carrega os acréscimos.
+  const valorEfetivo =
+    formData.valor_pago + formData.juros + formData.multa - formData.desconto;
+
+  const somaDivisao = divisao.reduce((total, parte) => total + (parte.valor || 0), 0);
+  const divisaoFecha = Math.abs(somaDivisao - valorEfetivo) < 0.01;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -58,7 +71,11 @@ export const LiquidacaoTituloModal = ({
       forma_pagamento: 'DINHEIRO',
       conta_bancaria_id: '',
       observacoes: '',
+      juros: 0,
+      multa: 0,
+      desconto: 0,
     });
+    setDivisao([]);
   }, [isOpen, titulo.id, titulo.valor_atual, titulo.valor_original]);
 
   // Buscar contas bancárias
@@ -125,13 +142,35 @@ export const LiquidacaoTituloModal = ({
       return; // evita duplo submit por clique rápido
     }
 
-    if (!formData.conta_bancaria_id && formData.forma_pagamento !== 'DINHEIRO') {
+    const usandoDivisao = divisao.length > 0;
+
+    if (!usandoDivisao && !formData.conta_bancaria_id && formData.forma_pagamento !== 'DINHEIRO') {
       toast({
         title: "Erro",
         description: "Selecione uma conta bancária para esta forma de pagamento",
         variant: "destructive",
       });
       return;
+    }
+
+    if (usandoDivisao) {
+      if (divisao.some((parte) => !parte.conta_bancaria_id || parte.valor <= 0)) {
+        toast({
+          title: 'Divisão incompleta',
+          description: 'Cada linha da divisão precisa de conta bancária e valor maior que zero.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      // O banco recusa divisão que não fecha; avisar antes evita uma ida à toa.
+      if (!divisaoFecha) {
+        toast({
+          title: 'Divisão não fecha',
+          description: `A soma das contas (${currencyUtils.formatCurrency(somaDivisao)}) precisa ser igual ao valor a movimentar (${currencyUtils.formatCurrency(valorEfetivo)}).`,
+          variant: 'destructive',
+        });
+        return;
+      }
     }
 
     const dadosLiquidacao: LiquidacaoTitulo = {
@@ -141,8 +180,12 @@ export const LiquidacaoTituloModal = ({
       valor_pago: formData.valor_pago,
       data_pagamento: formData.data_pagamento,
       forma_pagamento: formData.forma_pagamento,
-      conta_bancaria_id: formData.conta_bancaria_id || undefined,
+      conta_bancaria_id: usandoDivisao ? undefined : formData.conta_bancaria_id || undefined,
       observacoes: formData.observacoes || undefined,
+      juros: formData.juros || undefined,
+      multa: formData.multa || undefined,
+      desconto: formData.desconto || undefined,
+      multi_baixa: usandoDivisao ? divisao : undefined,
     };
 
     autorizacao.disparar(dadosLiquidacao);
@@ -160,7 +203,8 @@ export const LiquidacaoTituloModal = ({
     { value: 'DEPOSITO' as FormaPagamento, label: 'Depósito' },
   ];
 
-  const necessitaContaBancaria = formData.forma_pagamento !== 'DINHEIRO';
+  // Com a divisão em uso, a conta é escolhida linha a linha; a conta única sai de cena.
+  const necessitaContaBancaria = formData.forma_pagamento !== 'DINHEIRO' && divisao.length === 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -214,6 +258,9 @@ export const LiquidacaoTituloModal = ({
                 placeholder="R$ 0,00"
                 required
               />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Principal, o que abate do saldo do título.
+              </p>
             </div>
 
             <div>
@@ -277,6 +324,119 @@ export const LiquidacaoTituloModal = ({
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            )}
+          </div>
+
+          {/* Acréscimos e abatimento: não mexem no saldo do título, só no que circula. */}
+          <div className="rounded-md border p-4 space-y-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div>
+                <Label htmlFor="juros">Juros</Label>
+                <CurrencyInput
+                  id="juros"
+                  value={formData.juros}
+                  onValueChange={(v) => setFormData(prev => ({ ...prev, juros: v }))}
+                  placeholder="R$ 0,00"
+                />
+              </div>
+              <div>
+                <Label htmlFor="multa">Multa</Label>
+                <CurrencyInput
+                  id="multa"
+                  value={formData.multa}
+                  onValueChange={(v) => setFormData(prev => ({ ...prev, multa: v }))}
+                  placeholder="R$ 0,00"
+                />
+              </div>
+              <div>
+                <Label htmlFor="desconto">Desconto</Label>
+                <CurrencyInput
+                  id="desconto"
+                  value={formData.desconto}
+                  onValueChange={(v) => setFormData(prev => ({ ...prev, desconto: v }))}
+                  placeholder="R$ 0,00"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between border-t pt-3 text-sm">
+              <span className="text-muted-foreground">Valor a movimentar no banco</span>
+              <span className="font-semibold" data-testid="liquidacao-valor-efetivo">
+                {currencyUtils.formatCurrency(valorEfetivo)}
+              </span>
+            </div>
+          </div>
+
+          {/* Divisão entre contas: a soma tem de fechar com o valor a movimentar. */}
+          <div className="rounded-md border p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>Dividir entre contas</Label>
+                <p className="text-xs text-muted-foreground">
+                  Deixe vazio para usar uma conta só.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setDivisao(prev => [...prev, { conta_bancaria_id: '', valor: 0 }])
+                }
+              >
+                Adicionar conta
+              </Button>
+            </div>
+
+            {divisao.map((parte, indice) => (
+              <div key={indice} className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_10rem_auto]">
+                <Select
+                  value={parte.conta_bancaria_id}
+                  onValueChange={(value) =>
+                    setDivisao(prev =>
+                      prev.map((p, i) => (i === indice ? { ...p, conta_bancaria_id: value } : p)),
+                    )
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma conta" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {contasBancarias.map((conta) => (
+                      <SelectItem key={conta.id} value={conta.id}>
+                        {conta.agencias_bancarias?.bancos?.nome} — CC: {conta.numero_conta}-{conta.digito}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <CurrencyInput
+                  value={parte.valor}
+                  onValueChange={(v) =>
+                    setDivisao(prev => prev.map((p, i) => (i === indice ? { ...p, valor: v } : p)))
+                  }
+                  placeholder="R$ 0,00"
+                />
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setDivisao(prev => prev.filter((_, i) => i !== indice))}
+                >
+                  Remover
+                </Button>
+              </div>
+            ))}
+
+            {divisao.length > 0 && (
+              <div className="flex items-center justify-between border-t pt-3 text-sm">
+                <span className="text-muted-foreground">Soma das contas</span>
+                <span className={divisaoFecha ? 'font-semibold' : 'font-semibold text-destructive'}>
+                  {currencyUtils.formatCurrency(somaDivisao)}
+                  {!divisaoFecha && ` — precisa somar ${currencyUtils.formatCurrency(valorEfetivo)}`}
+                </span>
               </div>
             )}
           </div>

@@ -49,6 +49,9 @@ export const movimentacoesService = {
         p_observacoes: dadosLiquidacao.observacoes,
         p_multi_baixa: (dadosLiquidacao.multi_baixa || []) as unknown as Json,
         p_ticket_autorizacao: dadosLiquidacao.ticket_autorizacao ?? null,
+        p_juros: dadosLiquidacao.juros ?? 0,
+        p_multa: dadosLiquidacao.multa ?? 0,
+        p_desconto: dadosLiquidacao.desconto ?? 0,
       });
       if (error) throw error;
     } catch (error) {

@@ -84,7 +84,31 @@ describe('movimentacoesService.liquidarTitulo', () => {
       p_observacoes: 'Baixa de teste',
       p_multi_baixa: [],
       p_ticket_autorizacao: null,
+      p_juros: 0,
+      p_multa: 0,
+      p_desconto: 0,
     });
+  });
+
+  it('repassa juros, multa e desconto quando informados', async () => {
+    rpc.mockResolvedValue({ data: { valor_efetivo: 115 }, error: null });
+
+    await movimentacoesService.liquidarTitulo({
+      titulo_id: 'titulo-1',
+      tipo_titulo: 'CONTAS_RECEBER',
+      idempotency_key: 'chave-enc',
+      valor_pago: 100,
+      data_pagamento: '2026-08-11',
+      forma_pagamento: 'PIX',
+      juros: 10,
+      multa: 5,
+      desconto: 0,
+    });
+
+    expect(rpc).toHaveBeenCalledWith(
+      'financeiro_liquidar_titulo',
+      expect.objectContaining({ p_valor: 100, p_juros: 10, p_multa: 5, p_desconto: 0 }),
+    );
   });
 
   it('estorna uma liquidacao especifica pela RPC idempotente', async () => {
