@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Users, Plus, Search, Edit, Trash2 } from 'lucide-react';
+import { Columns3, Edit, Plus, RotateCcw, Search, Trash2, Users } from 'lucide-react';
 import type { Entidade, PapelCodigo } from '@/types/entidade';
 import { useEntidades } from '@/hooks/useEntidades';
 import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
@@ -15,6 +16,22 @@ import { FormEntidade } from '@/components/modules/FormEntidade';
 import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
 import { entidadeService } from '@/services/entidadeService';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { camposPersonalizadosService } from '@/services/camposPersonalizadosService';
+import { preferenciasListagemService } from '@/services/preferenciasListagemService';
+import { useAuth } from '@/contexts/AuthContext';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Separator } from '@/components/ui/separator';
+import { toast } from 'sonner';
+import { formatarCampoExtra } from '@/utils/camposExtrasUtils';
+
+const COLUNAS_PADRAO = ['nome', 'tipo', 'documento', 'papeis', 'status'];
+const COLUNAS_FIXAS = [
+  { chave: 'nome', rotulo: 'Nome' },
+  { chave: 'tipo', rotulo: 'Tipo' },
+  { chave: 'documento', rotulo: 'CPF/CNPJ' },
+  { chave: 'papeis', rotulo: 'Papéis' },
+  { chave: 'status', rotulo: 'Status' },
+];
 
 /**
  * Cadastro Unificado de Entidades — único lugar do ERP onde se cria/edita
@@ -28,17 +45,52 @@ const Entidades: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const { data: entidades = [], isLoading: loading } = useQuery({
     queryKey: ['entidades', 'todas', empresaId],
     queryFn: () => entidadeService.fetchEntidades(empresaId!),
     enabled: !!empresaId,
   });
+  const { data: camposPersonalizados = [] } = useQuery({
+    queryKey: ['campos-personalizados-ativos', empresaId],
+    queryFn: () => camposPersonalizadosService.listar(empresaId!, true),
+    enabled: !!empresaId,
+  });
+  const { data: preferenciaColunas } = useQuery({
+    queryKey: ['preferencias-listagem', user?.id, empresaId, 'entidades'],
+    queryFn: () => preferenciasListagemService.obter(user!.id, empresaId!, 'entidades'),
+    enabled: !!user?.id && !!empresaId,
+  });
 
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEntidade, setEditingEntidade] = useState<Entidade | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [colunasVisiveis, setColunasVisiveis] = useState<string[]>(COLUNAS_PADRAO);
+
+  useEffect(() => {
+    setColunasVisiveis(preferenciaColunas ?? COLUNAS_PADRAO);
+  }, [preferenciaColunas]);
+
+  const salvarColunas = async (proximas: string[]) => {
+    if (!user?.id || !empresaId) return;
+    const anteriores = colunasVisiveis;
+    setColunasVisiveis(proximas);
+    try {
+      await preferenciasListagemService.salvar(user.id, empresaId, 'entidades', proximas);
+      queryClient.setQueryData(['preferencias-listagem', user.id, empresaId, 'entidades'], proximas);
+    } catch (error) {
+      setColunasVisiveis(anteriores);
+      toast.error(error instanceof Error ? error.message : 'Não foi possível salvar as colunas.');
+    }
+  };
+
+  const toggleColuna = (chave: string, checked: boolean) => {
+    void salvarColunas(checked
+      ? [...colunasVisiveis, chave]
+      : colunasVisiveis.filter((coluna) => coluna !== chave));
+  };
 
   const papelParam = searchParams.get('papel') as PapelCodigo | null;
   const editParam = searchParams.get('edit');
@@ -142,6 +194,7 @@ const Entidades: React.FC = () => {
                 onSave={save}
                 onCancel={handleCloseDialog}
                 loading={loading}
+                camposPersonalizados={camposPersonalizados}
               />
             )}
           </DialogContent>
@@ -164,6 +217,35 @@ const Entidades: React.FC = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline"><Columns3 className="mr-2 h-4 w-4" /> Colunas</Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-72">
+                <div className="mb-3">
+                  <p className="font-medium">Colunas visíveis</p>
+                  <p className="text-xs text-muted-foreground">Esta escolha vale para você nesta empresa.</p>
+                </div>
+                <div className="space-y-3">
+                  {COLUNAS_FIXAS.map((coluna) => (
+                    <label key={coluna.chave} className="flex cursor-pointer items-center gap-2 text-sm">
+                      <Checkbox checked={colunasVisiveis.includes(coluna.chave)} onCheckedChange={(value) => toggleColuna(coluna.chave, value === true)} />
+                      {coluna.rotulo}
+                    </label>
+                  ))}
+                  {camposPersonalizados.length > 0 && <Separator />}
+                  {camposPersonalizados.map((campo) => (
+                    <label key={campo.id} className="flex cursor-pointer items-center gap-2 text-sm">
+                      <Checkbox checked={colunasVisiveis.includes(`extra:${campo.chave}`)} onCheckedChange={(value) => toggleColuna(`extra:${campo.chave}`, value === true)} />
+                      {campo.rotulo}
+                    </label>
+                  ))}
+                </div>
+                <Button variant="ghost" size="sm" className="mt-3 w-full" onClick={() => void salvarColunas(COLUNAS_PADRAO)}>
+                  <RotateCcw className="mr-2 h-3.5 w-3.5" /> Restaurar padrão
+                </Button>
+              </PopoverContent>
+            </Popover>
           </div>
         </CardHeader>
         <CardContent>
@@ -186,35 +268,41 @@ const Entidades: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>CPF/CNPJ</TableHead>
-                  <TableHead>Papéis</TableHead>
-                  <TableHead>Status</TableHead>
+                  {colunasVisiveis.includes('nome') && <TableHead>Nome</TableHead>}
+                  {colunasVisiveis.includes('tipo') && <TableHead>Tipo</TableHead>}
+                  {colunasVisiveis.includes('documento') && <TableHead>CPF/CNPJ</TableHead>}
+                  {colunasVisiveis.includes('papeis') && <TableHead>Papéis</TableHead>}
+                  {colunasVisiveis.includes('status') && <TableHead>Status</TableHead>}
+                  {camposPersonalizados.filter((campo) => colunasVisiveis.includes(`extra:${campo.chave}`)).map((campo) => (
+                    <TableHead key={campo.id}>{campo.rotulo}</TableHead>
+                  ))}
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.map((entidade) => (
                   <TableRow key={entidade.id}>
-                    <TableCell className="font-medium">
+                    {colunasVisiveis.includes('nome') && <TableCell className="font-medium">
                       <div>{entidade.nome}</div>
                       {entidade.apelido && <div className="text-sm text-muted-foreground">{entidade.apelido}</div>}
-                    </TableCell>
-                    <TableCell>
+                    </TableCell>}
+                    {colunasVisiveis.includes('tipo') && <TableCell>
                       <Badge variant="outline">{entidade.tipoPessoa}</Badge>
-                    </TableCell>
-                    <TableCell>{entidade.cpf || entidade.cnpj || '-'}</TableCell>
-                    <TableCell>
+                    </TableCell>}
+                    {colunasVisiveis.includes('documento') && <TableCell>{entidade.cpf || entidade.cnpj || '-'}</TableCell>}
+                    {colunasVisiveis.includes('papeis') && <TableCell>
                       <div className="flex gap-1 flex-wrap">
                         {entidade.papeis.map((p) => <Badge key={p} variant="secondary" className="text-xs">{p}</Badge>)}
                       </div>
-                    </TableCell>
-                    <TableCell>
+                    </TableCell>}
+                    {colunasVisiveis.includes('status') && <TableCell>
                       <Badge variant={entidade.ativo !== false ? 'default' : 'secondary'}>
                         {entidade.ativo !== false ? 'Ativo' : 'Inativo'}
                       </Badge>
-                    </TableCell>
+                    </TableCell>}
+                    {camposPersonalizados.filter((campo) => colunasVisiveis.includes(`extra:${campo.chave}`)).map((campo) => (
+                      <TableCell key={campo.id}>{formatarCampoExtra(campo.tipo, entidade.camposExtras?.[campo.chave])}</TableCell>
+                    ))}
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Button variant="ghost" size="sm" onClick={() => handleEdit(entidade)}>

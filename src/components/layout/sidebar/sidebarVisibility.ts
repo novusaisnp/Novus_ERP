@@ -37,6 +37,7 @@ export const getVisibleSidebarItems = ({ isAdmin }: Options): MenuItem[] => {
       const filtered = group.items.filter((sub) => {
         if (sub.title === 'Sistema') return featureFlags.sistemaConfig;
         if (sub.url === '/configuracoes/relatorios-ops') return isAdmin;
+        if (sub.url === '/configuracoes/campos-personalizados') return isAdmin;
         return true;
       });
       items.push({ ...group, items: filtered });

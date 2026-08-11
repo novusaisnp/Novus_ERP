@@ -10,6 +10,7 @@ export const WEBHOOK_EVENTOS = [
   'contrato.updated',
   'financeiro.created',
   'financeiro.updated',
+  'titulo.liquidado',
 ] as const;
 
 export type WebhookEvento = (typeof WEBHOOK_EVENTOS)[number];

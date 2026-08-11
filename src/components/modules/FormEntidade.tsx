@@ -17,6 +17,10 @@ import { cargoService } from '@/services/cargoService';
 import { departamentoService } from '@/services/departamentoService';
 import { setorService } from '@/services/setorService';
 import { PAPEIS_CATALOGO, type Entidade, type PapelCodigo, type TipoPessoaEntidade } from '@/types/entidade';
+import { CamposExtrasSection } from '@/components/modules/CamposExtrasSection';
+import { camposExtrasPreenchidos } from '@/utils/camposExtrasUtils';
+import type { CampoPersonalizado } from '@/types/campoPersonalizado';
+import type { Json } from '@/integrations/supabase/types';
 
 interface FormEntidadeProps {
   entidade?: Entidade;
@@ -26,6 +30,7 @@ interface FormEntidadeProps {
   onSave: (entidade: Entidade) => Promise<boolean>;
   onCancel: () => void;
   loading?: boolean;
+  camposPersonalizados?: CampoPersonalizado[];
 }
 
 const EMPTY: Omit<Entidade, 'empresaRepresentadaId'> = {
@@ -42,15 +47,18 @@ export const FormEntidade: React.FC<FormEntidadeProps> = ({
   onSave,
   onCancel,
   loading = false,
+  camposPersonalizados = [],
 }) => {
   const [formData, setFormData] = useState<Entidade>({ ...EMPTY, empresaRepresentadaId, papeis: papeisIniciais });
   const [cepLoading, setCepLoading] = useState(false);
+  const [camposExtrasError, setCamposExtrasError] = useState(false);
 
   const { data: cargos = [] } = useQuery({ queryKey: ['cargos'], queryFn: cargoService.fetchCargos });
   const { data: departamentos = [] } = useQuery({ queryKey: ['departamentos'], queryFn: departamentoService.fetchDepartamentos });
   const { data: setores = [] } = useQuery({ queryKey: ['setores'], queryFn: setorService.fetchSetores });
 
   useEffect(() => {
+    setCamposExtrasError(false);
     if (entidade) {
       setFormData(entidade);
     } else {
@@ -65,6 +73,14 @@ export const FormEntidade: React.FC<FormEntidadeProps> = ({
 
   const handleChange = <K extends keyof Entidade>(field: K, value: Entidade[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleCampoExtraChange = (chave: string, valor: Json) => {
+    setCamposExtrasError(false);
+    setFormData((prev) => ({
+      ...prev,
+      camposExtras: { ...prev.camposExtras, [chave]: valor },
+    }));
   };
 
   const handleTipoPessoaChange = (tipo: TipoPessoaEntidade) => {
@@ -121,6 +137,10 @@ export const FormEntidade: React.FC<FormEntidadeProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.papeis.length === 0) {
+      return;
+    }
+    if (!camposExtrasPreenchidos(camposPersonalizados, formData.camposExtras ?? {})) {
+      setCamposExtrasError(true);
       return;
     }
     const ok = await onSave(formData);
@@ -418,6 +438,15 @@ export const FormEntidade: React.FC<FormEntidadeProps> = ({
             </div>
           </CardContent>
         </Card>
+      )}
+
+      <CamposExtrasSection
+        campos={camposPersonalizados}
+        valores={formData.camposExtras ?? {}}
+        onChange={handleCampoExtraChange}
+      />
+      {camposExtrasError && (
+        <p className="text-sm text-destructive">Preencha todos os campos adicionais obrigatórios.</p>
       )}
 
       <Card>

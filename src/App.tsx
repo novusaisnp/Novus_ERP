@@ -20,6 +20,7 @@ import Sistema from './pages/configuracoes/Sistema';
 import CentrosCusto from './pages/configuracoes/CentrosCusto';
 import Perfil from './pages/configuracoes/Perfil';
 import Webhooks from './pages/configuracoes/Webhooks';
+import CamposPersonalizados from './pages/configuracoes/CamposPersonalizados';
 // P6.1: lazy — página admin de operação do pipeline de relatórios (P5.1).
 const RelatoriosOps = React.lazy(() => import('./pages/configuracoes/RelatoriosOps'));
 
@@ -260,6 +261,7 @@ function App() {
                     <Route path="sistema" element={<Sistema />} />
                     <Route path="perfil" element={<Perfil />} />
                     <Route path="webhooks" element={<Webhooks />} />
+                    <Route path="campos-personalizados" element={<AdminRoute><CamposPersonalizados /></AdminRoute>} />
                     {/* P6.1: admin-only. Gate server-side (AdminRoute) + gate próprio na página. */}
                     <Route
                       path="relatorios-ops"

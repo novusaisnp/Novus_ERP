@@ -279,6 +279,10 @@ export const sidebarItems: MenuItem[] = [
         url: "/configuracoes/webhooks",
       },
       {
+        title: "Campos personalizados",
+        url: "/configuracoes/campos-personalizados",
+      },
+      {
         // P6.1: admin-only. Filtrado em sidebarVisibility quando isAdmin=false.
         title: "Relatórios (Ops)",
         url: "/configuracoes/relatorios-ops",

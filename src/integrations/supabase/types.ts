@@ -815,6 +815,59 @@ export type Database = {
           },
         ]
       }
+      campos_personalizados: {
+        Row: {
+          ativo: boolean
+          chave: string
+          created_at: string
+          empresa_representada_id: string
+          entidade: string
+          id: string
+          obrigatorio: boolean
+          opcoes: Json | null
+          ordem: number
+          rotulo: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          chave: string
+          created_at?: string
+          empresa_representada_id: string
+          entidade?: string
+          id?: string
+          obrigatorio?: boolean
+          opcoes?: Json | null
+          ordem?: number
+          rotulo: string
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          chave?: string
+          created_at?: string
+          empresa_representada_id?: string
+          entidade?: string
+          id?: string
+          obrigatorio?: boolean
+          opcoes?: Json | null
+          ordem?: number
+          rotulo?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campos_personalizados_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       centros_custo: {
         Row: {
           ativo: boolean
@@ -2319,6 +2372,7 @@ export type Database = {
           bairro: string | null
           banco: string | null
           celular: string | null
+          campos_extras: Json
           cep: string | null
           cidade: string | null
           cnae: string | null
@@ -2376,6 +2430,7 @@ export type Database = {
           bairro?: string | null
           banco?: string | null
           celular?: string | null
+          campos_extras?: Json
           cep?: string | null
           cidade?: string | null
           cnae?: string | null
@@ -2433,6 +2488,7 @@ export type Database = {
           bairro?: string | null
           banco?: string | null
           celular?: string | null
+          campos_extras?: Json
           cep?: string | null
           cidade?: string | null
           cnae?: string | null
@@ -5163,6 +5219,44 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vw_estoque_ruptura"
             referencedColumns: ["produto_id"]
+          },
+        ]
+      }
+      preferencias_listagem: {
+        Row: {
+          colunas_visiveis: Json
+          created_at: string
+          empresa_representada_id: string
+          id: string
+          tela: string
+          updated_at: string
+          usuario_id: string
+        }
+        Insert: {
+          colunas_visiveis?: Json
+          created_at?: string
+          empresa_representada_id: string
+          id?: string
+          tela: string
+          updated_at?: string
+          usuario_id: string
+        }
+        Update: {
+          colunas_visiveis?: Json
+          created_at?: string
+          empresa_representada_id?: string
+          id?: string
+          tela?: string
+          updated_at?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "preferencias_listagem_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
           },
         ]
       }

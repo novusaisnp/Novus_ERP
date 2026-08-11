@@ -1,5 +1,16 @@
 # Plano — Campos personalizados, extensibilidade e usabilidade de artefatos
 
+## Estado de execução
+
+- **Fase 1 concluída em 2026-08-11** para o cadastro unificado de entidades.
+- **Fase 2 concluída em 2026-08-11** na lista de Entidades: colunas fixas e personalizadas configuráveis por usuário, empresa e tela.
+- **Fase 3 concluída em 2026-08-11** no primeiro evento `titulo.liquidado`: outbox transacional, HMAC, retry e cron ativos no ERP.
+- Migration `20260811210000_campos_personalizados_entidades.sql` aplicada no ERP.
+- Administração disponível em `Configurações → Campos personalizados`, restrita a admin.
+- `FormEntidade` renderiza as definições ativas, valida obrigatoriedade e persiste os valores em `entidades.campos_extras`.
+- Chave técnica e tipo ficam imutáveis após a criação; inativar uma definição oculta o campo sem apagar valores históricos.
+- O índice GIN inicialmente proposto não foi criado: ainda não há consulta ou filtro por conteúdo de `campos_extras`; adicionar somente quando a Fase 2 introduzir essa necessidade.
+
 Origem: documento de arquitetura ERP (padrão Java/Spring, dicionário de dados dinâmico
 com DDL em background, plugins JAR, mensageria Kafka/RabbitMQ). Este plano extrai só o
 que se adapta ao stack real (Vite+React+TS+Supabase, RLS multi-tenant) e descarta o resto
@@ -46,7 +57,7 @@ CREATE TABLE IF NOT EXISTS campos_personalizados (
 ALTER TABLE campos_personalizados ENABLE ROW LEVEL SECURITY;
 -- policy: só linhas da própria empresa (seguir padrão já usado nas outras tabelas do projeto)
 
-CREATE INDEX IF NOT EXISTS idx_campos_extras_gin ON entidades USING gin (campos_extras);
+-- Índice GIN adiado até existir consulta/filtro por conteúdo de campos_extras.
 ```
 
 Por que não `ALTER TABLE` de verdade em runtime: em RLS multi-tenant, campo de um
@@ -84,6 +95,8 @@ aparece no form de cliente sem deploy, valor salva em `campos_extras.segmento`.
 
 ## Fase 2 — Listagens configuráveis pelo usuário
 
+**Estado: concluída no escopo piloto de Entidades.** A expansão para outras listas continua condicionada ao uso real do piloto.
+
 Objetivo: atacar diretamente "facilidade do usuário com os artefatos" — ganho de UX
 maior que dicionário de dados sozinho, e o documento original nem menciona isso.
 
@@ -103,18 +116,39 @@ renderiza.
 
 ## Fase 3 — Webhooks configuráveis pelo usuário
 
+**Estado: concluída no escopo incremental de `titulo.liquidado`.** Novos eventos só entram quando houver consumidor real.
+
 Objetivo: versão útil do "barramento de eventos" do documento, sem Kafka/RabbitMQ —
 volume do sistema não justifica fila dedicada; `pg_cron` + tabela de outbox já cobre.
 
-- Tabela `webhooks_config` (`empresa_representada_id`, `evento`, `url`, `segredo`,
-  `ativo`). Reaproveita o mecanismo de assinatura HMAC que já existe no lado satélite
+- A tabela existente `webhook_configs` continua como fonte de destino, eventos e segredo.
+  Reaproveita o mecanismo de assinatura HMAC que já existe no lado satélite
   (`edu-erp-webhook`) — mesma lib de assinatura, direção invertida.
-- Eventos iniciais: `titulo.criado`, `titulo.liquidado`, `nfe.autorizada` (já existem
-  como pontos de mutação nos services/edge functions atuais — só adicionar o disparo).
-- Disparo: outbox pattern — trigger de banco insere em `webhooks_outbound`, edge function
+- Evento inicial efetivamente entregue: `titulo.liquidado`. `titulo.criado` e
+  `nfe.autorizada` foram adiados até existir consumidor, evitando contrato especulativo.
+- Disparo: outbox pattern — trigger de banco insere em `webhook_outbox`, edge function
   agendada via `pg_cron` (minuto a minuto) processa pendentes e faz o POST. Evita chamar
   `fetch` dentro de trigger de banco (sem retry, sem observabilidade).
-- Tela de admin: CRUD de `webhooks_config`, sem SDK de plugin.
+- O trigger fica em `liquidacoes_titulos`, ponto comum e atômico de todas as liquidações;
+  a RPC financeira consolidada não foi duplicada nem reescrita.
+- `webhook_deliveries` permanece exclusivo de chamadas recebidas; saídas não contaminam
+  a idempotência e a observabilidade de entrada.
+- A tela existente `Configurações → Webhooks` recebeu o novo evento, sem novo CRUD.
+- Entrega usa corpo JSON estável e headers `x-source-system`, `x-empresa-id`,
+  `x-webhook-event`, `x-webhook-delivery`, `x-webhook-attempt`,
+  `x-webhook-timestamp` e `x-webhook-signature: sha256=<HMAC-SHA256>`.
+- Para o Educacional, o mesmo HMAC também é enviado em `x-erp-signature` e o
+  envelope segue o contrato já implantado (`receivable.paid` ou
+  `receivable.partially_paid`). A correlação nasce no título como
+  `novus-educacional:<organization_id>:<numero_documento>`.
+- Em baixas parciais, `valor_pago` representa o acumulado recebido no título,
+  não apenas o valor da última baixa.
+- Retry exponencial: 1, 2, 4... minutos, limitado a uma hora e ao `max_tentativas` da
+  configuração. Claims concorrentes usam `FOR UPDATE SKIP LOCKED`; processamento preso
+  volta à fila após cinco minutos.
+- Prova real em 2026-08-11: liquidação QA criada no ERP, entregue pelo cron com
+  HTTP 200 na primeira tentativa e persistida no tenant correto do Educacional;
+  todos os registros QA foram removidos depois da validação.
 
 ---
 

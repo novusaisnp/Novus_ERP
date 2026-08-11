@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Entidade, PapelCodigo } from '@/types/entidade';
+import type { Json } from '@/integrations/supabase/types';
 
 function toEntidadeRow(e: Entidade) {
   return {
@@ -42,6 +43,7 @@ function toEntidadeRow(e: Entidade) {
     limite_credito: e.limiteCredito ?? null,
     prazo_entrega: e.prazoEntrega ?? null,
     observacoes: e.observacoes || null,
+    campos_extras: e.camposExtras ?? {},
     ativo: e.ativo,
     updated_at: new Date().toISOString(),
   };
@@ -115,6 +117,7 @@ function fromRow(row: Record<string, unknown>): Entidade {
     limiteCredito: row.limite_credito as number | null,
     prazoEntrega: row.prazo_entrega as number | null,
     observacoes: row.observacoes as string | null,
+    camposExtras: (row.campos_extras as Record<string, Json | undefined> | null) ?? {},
     ativo: Boolean(row.ativo),
     dadosColaborador: dados
       ? {

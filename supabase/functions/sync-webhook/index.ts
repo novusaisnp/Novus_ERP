@@ -704,6 +704,8 @@ async function syncFinanceiro(supabase: SupabaseClient, payload: WebhookPayload,
     observacoes: data.observacoes,
     origem_sistema: payload.source_system,
     externo_id: data.id,
+    idempotency_key:
+      (data.idempotency_key as string) || `${payload.source_system}:${data.numero_documento || data.id}`,
   };
   switch (event) {
     case 'insert':

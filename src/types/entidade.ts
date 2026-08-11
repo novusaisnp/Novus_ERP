@@ -1,3 +1,5 @@
+import type { Json } from '@/integrations/supabase/types';
+
 export type TipoPessoaEntidade = 'PF' | 'PJ';
 
 export type PapelCodigo = 'CLIENTE' | 'FORNECEDOR' | 'PRESTADOR' | 'COLABORADOR' | 'SOCIO' | 'REPRESENTANTE_LEGAL' | 'PROCURADOR';
@@ -72,6 +74,7 @@ export interface Entidade {
   limiteCredito?: number | null;
   prazoEntrega?: number | null;
   observacoes?: string | null;
+  camposExtras?: Record<string, Json | undefined>;
   ativo: boolean;
 
   dadosColaborador?: DadosColaborador;
