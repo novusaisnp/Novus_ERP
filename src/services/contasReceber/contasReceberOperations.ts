@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { transformToSupabase } from './contasReceberTransforms';
+import { getEmpresaAtivaIdOuFalha as getEmpresaIdAtual } from '@/lib/empresaAtiva';
 import type { ContaReceberInput, RateioContaReceber } from '@/types/contasReceber';
 
 
@@ -92,10 +93,12 @@ export const updateContaReceber = async (
   input: ContaReceberInput,
 ) => {
   const payload = transformToSupabase(input);
+  const empresaId = await getEmpresaIdAtual();
   const { data, error } = await supabase
     .from('contas_receber')
     .update(payload)
     .eq('id', id)
+    .eq('empresa_representada_id', empresaId)
     .select('id, empresa_representada_id')
     .single();
 
@@ -161,12 +164,15 @@ export const updateContaReceber = async (
 
 /**
  * Soft delete: marca `deleted_at` para respeitar a política de auditoria.
+ * Título com liquidação ativa é barrado por trigger no banco; a correção é por estorno.
  */
 export const deleteContaReceber = async (id: string): Promise<void> => {
+  const empresaId = await getEmpresaIdAtual();
   const { error } = await supabase
     .from('contas_receber')
     .update({ deleted_at: new Date().toISOString() })
-    .eq('id', id);
+    .eq('id', id)
+    .eq('empresa_representada_id', empresaId);
 
   if (error) {
     console.error('[ContasReceberOperations] Erro ao remover:', error);

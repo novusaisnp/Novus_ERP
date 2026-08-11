@@ -1,6 +1,68 @@
 # Status do projeto — NOVUS ERP
 
-**Última atualização: 2026-08-11 (FIN-0 — autorização financeira real).**
+**Última atualização: 2026-08-11 (FIN-0 — exclusão de título liquidado bloqueada).**
+
+## 🔖 Checkpoint atual — exclusão de título liquidado bloqueada (2026-08-11)
+
+Fecha a lacuna L3 da auditoria. A Fatia 2 tinha dois itens; este é o primeiro. O rateio
+atômico (L2) continua pendente e é a próxima ação.
+
+### Concluído
+
+- Migration `20260811160000_financeiro_bloqueio_exclusao_titulo.sql` aplicada e marcada:
+  `impedir_exclusao_titulo_liquidado()` com trigger `BEFORE UPDATE OR DELETE` em
+  `contas_pagar` e `contas_receber`.
+- **A guarda vive no banco, não no serviço.** Assim vale para todo caminho de escrita —
+  os serviços atuais, RPCs futuras e SQL direto — em vez de repetir a checagem em cada
+  chamador. Correção de título movimentado passa a ser obrigatoriamente por estorno.
+- Cobre as duas formas de exclusão do projeto: o soft delete (`deleted_at` saindo de NULL) e
+  o `DELETE` físico. Considera o vínculo novo (`titulo_id`/`tipo_titulo`) e também o legado
+  (`conta_pagar_id`/`conta_receber_id`), para não deixar passar baixa antiga.
+- Liquidação estornada ou cancelada não bloqueia; `UPDATE` comum de título não é afetado.
+
+### Gap de isolamento entre empresas, corrigido de passagem
+
+`updateContaPagar`, `deleteContaPagar`, `updateContaReceber` e `deleteContaReceber`
+filtravam apenas por `id`, sem `empresa_representada_id`. Para papéis que a RLS libera além
+da empresa ativa (`admin`, `novus_owner`), isso permitia escrever em título de outra empresa
+por id — o mesmo padrão de vazamento já fechado na leitura em 2026-08-10, agora fechado
+também na escrita. Regra do projeto manda corrigir assim que identificado, não adiar.
+
+### Validação deste checkpoint
+
+- Migration executada dentro de `BEGIN ... ROLLBACK` antes de aplicar → passou.
+- Cinco cenários no banco real, dentro de rollback: título sem baixa é excluído; título com
+  baixa ativa tem soft delete recusado; `DELETE` físico também recusado; `UPDATE` comum
+  continua passando; após estornar a baixa, a exclusão é liberada.
+- Sanidade do próprio teste: rodado **sem** a migration, falhou exatamente no cenário 2,
+  provando que detecta o defeito real em vez de passar por acidente.
+- Verificação pós-aplicação → migration registrada e os dois triggers presentes.
+- `npm run typecheck` → limpo. `npm run test -- --run` → 45 arquivos, 346/346.
+
+### Arquivos desta entrega
+
+- `supabase/migrations/20260811160000_financeiro_bloqueio_exclusao_titulo.sql`
+- `src/services/contasPagar/contasPagarOperations.ts`
+- `src/services/contasReceber/contasReceberOperations.ts`
+- `docs/ROADMAP_2026.md`
+- `docs/STATUS.md`
+
+### Próxima ação única
+
+**Rateio atômico (L2).** Hoje `createContaPagar` insere o título e depois os rateios,
+compensando com um `delete` manual em caso de falha; `updateContaPagar` apaga os rateios e
+reinsere **sem compensação alguma**, de modo que uma falha ali deixa o título com zero
+rateios em silêncio. O lado de receber repete o mesmo padrão. Unificar em uma RPC
+transacional que grave título e rateios na mesma transação.
+
+### Escopo novo pedido pelo usuário, ainda não implementado
+
+Trava de baixa retroativa com limite de 24 horas: acima desse limite, exigir autorização de
+um usuário permissionado por diálogo próprio, com o evento auditável. A permissão
+`financeiro.lancamentoRetroativo` já existe no catálogo e deve ser reusada. Decisões de
+desenho ainda em aberto — ver conversa da sessão.
+
+---
 
 ## 🔖 Checkpoint atual — autorização financeira real (2026-08-11)
 

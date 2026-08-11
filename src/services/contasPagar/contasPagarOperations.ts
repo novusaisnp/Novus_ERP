@@ -94,6 +94,7 @@ export const updateContaPagar = async (id: string, input: ContaPagarInput) => {
     .from('contas_pagar')
     .update(buildPayload(input))
     .eq('id', id)
+    .eq('empresa_representada_id', empresaId)
     .select('id')
     .single();
 
@@ -158,11 +159,14 @@ export const updateContaPagar = async (id: string, input: ContaPagarInput) => {
 };
 
 export const deleteContaPagar = async (id: string) => {
-  // Soft delete via deleted_at (coluna real na tabela)
+  const empresaId = await getEmpresaIdAtual();
+  // Soft delete via deleted_at (coluna real na tabela).
+  // Título com liquidação ativa é barrado por trigger no banco; a correção é por estorno.
   const { error } = await supabase
     .from('contas_pagar')
     .update({ deleted_at: new Date().toISOString() })
-    .eq('id', id);
+    .eq('id', id)
+    .eq('empresa_representada_id', empresaId);
 
   if (error) {
     console.error('[ContasPagarOperations] Erro ao remover conta a pagar:', error);
