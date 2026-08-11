@@ -3623,6 +3623,7 @@ export type Database = {
           forma_pagamento: string | null
           historico: string | null
           id: string
+          idempotency_key: string | null
           motivo_cancelamento: string | null
           motivo_estorno: string | null
           natureza_id: string | null
@@ -3656,6 +3657,7 @@ export type Database = {
           forma_pagamento?: string | null
           historico?: string | null
           id?: string
+          idempotency_key?: string | null
           motivo_cancelamento?: string | null
           motivo_estorno?: string | null
           natureza_id?: string | null
@@ -3689,6 +3691,7 @@ export type Database = {
           forma_pagamento?: string | null
           historico?: string | null
           id?: string
+          idempotency_key?: string | null
           motivo_cancelamento?: string | null
           motivo_estorno?: string | null
           natureza_id?: string | null
@@ -4032,6 +4035,7 @@ export type Database = {
           id: string
           ip_origem: unknown
           lote_id: string | null
+          liquidacao_titulo_id: string | null
           motivo_estorno: string | null
           movimentacao_estorno_id: string | null
           movimentacao_extrato_id: string | null
@@ -4073,6 +4077,7 @@ export type Database = {
           id?: string
           ip_origem?: unknown
           lote_id?: string | null
+          liquidacao_titulo_id?: string | null
           motivo_estorno?: string | null
           movimentacao_estorno_id?: string | null
           movimentacao_extrato_id?: string | null
@@ -4114,6 +4119,7 @@ export type Database = {
           id?: string
           ip_origem?: unknown
           lote_id?: string | null
+          liquidacao_titulo_id?: string | null
           motivo_estorno?: string | null
           movimentacao_estorno_id?: string | null
           movimentacao_extrato_id?: string | null
@@ -6845,6 +6851,20 @@ export type Database = {
         Returns: Json
       }
       estornar_estoque_venda: { Args: { p_venda_id: string }; Returns: Json }
+      financeiro_liquidar_titulo: {
+        Args: {
+          p_conta_bancaria_id?: string
+          p_data_pagamento: string
+          p_forma_pagamento: string
+          p_idempotency_key: string
+          p_multi_baixa?: Json
+          p_observacoes?: string
+          p_tipo_titulo: string
+          p_titulo_id: string
+          p_valor: number
+        }
+        Returns: Json
+      }
       fn_curva_abc: {
         Args: {
           p_categoria_id?: string

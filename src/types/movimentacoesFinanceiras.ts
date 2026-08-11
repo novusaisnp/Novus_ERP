@@ -53,6 +53,7 @@ export interface TituloFinanceiro {
 export interface LiquidacaoTitulo {
   titulo_id: string;
   tipo_titulo: TipoTitulo;
+  idempotency_key: string;
   valor_pago: number;
   data_pagamento: string;
   forma_pagamento: FormaPagamento;

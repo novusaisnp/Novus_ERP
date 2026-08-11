@@ -1,7 +1,139 @@
 # Status do projeto — NOVUS ERP
 
-**Última atualização: 2026-08-11 (Fase 4 concluída — `FormEntidade.tsx` + Cadastro de Entidades central;
-checkpoint de urgência, sessão ficando sem tokens — ver bloco logo abaixo antes de qualquer coisa).**
+**Última atualização: 2026-08-11 (Programa Financeiro Robusto — FIN-0, checkpoint 2).**
+
+## 🔖 Checkpoint atual — FIN-0.2 liquidação atômica implantada (2026-08-11)
+
+**Objetivo desta entrega:** substituir a baixa composta no cliente por uma única operação
+transacional, idempotente e protegida contra concorrência.
+
+### Concluído
+
+1. O projeto remoto foi confirmado como `reksodqzemboaeqxnxyy` antes de qualquer consulta ou DDL.
+2. O schema real do núcleo de liquidação foi auditado: colunas, `CHECKs`, FKs/`ON DELETE`, RLS,
+   policies, índices, triggers de saldo e funções auxiliares de `contas_pagar`, `contas_receber`,
+   `contas_bancarias`, `movimentacoes_bancarias`, rateios, liquidações e histórico.
+3. Migration `20260811123000_financeiro_liquidacao_atomica.sql` aplicada e registrada no histórico:
+   - adiciona chave de idempotência em `liquidacoes_titulos` e vínculo da movimentação à liquidação;
+   - cria `financeiro_liquidar_titulo` com bloqueio pessimista do título (`FOR UPDATE`);
+   - valida tenant, estado, conta bancária, valor positivo, saldo e divisão entre contas;
+   - suporta baixa parcial acumulada e impede valor acima do saldo;
+   - grava liquidação, atualiza título, cria movimentação bancária, recalcula saldo pelos triggers
+     existentes e registra histórico na mesma transação;
+   - repetição com a mesma chave retorna a liquidação existente sem duplicar efeitos.
+4. `movimentacoesService.liquidarTitulo` agora chama somente a RPC. O fluxo anterior de várias
+   escritas independentes foi removido.
+5. O modal renova a chave a cada abertura e reinicializa seus campos para o título atual, evitando
+   chave ou valor residual ao alternar títulos.
+
+### Validação deste checkpoint
+
+- Migration executada dentro de `BEGIN ... ROLLBACK` no banco real antes da aplicação → passou.
+- Smoke test com dados temporários e rollback → comprovou `PARCIAL`, retry idempotente, conclusão
+  `RECEBIDO`, movimentação `DEPOSITO` vinculada e atualização do saldo bancário.
+- Consulta posterior ao rollback → zero contas e zero títulos temporários persistidos.
+- Verificação pós-aplicação → migration, função, colunas e índice único presentes.
+- `npm.cmd run test -- src/services/movimentacoesService.test.ts --run` → 1/1 passou; o dublê
+  existe somente no ambiente de teste e não integra o código executado pela aplicação.
+- `npm.cmd run typecheck` → limpo.
+- `npm.cmd run test -- --run` → 44 arquivos, 340/340 testes passaram.
+- `git diff --check` → sem erros; apenas avisos de normalização LF/CRLF.
+- Busca de marcas nos documentos persistentes → nenhuma ocorrência.
+
+### Riscos e pendências
+
+- O histórico remoto possui migrations anteriores a esta sem marcação de aplicação, embora partes
+  do schema correspondente existam. Por segurança, não foi usado `db push`; somente a migration
+  `20260811123000` foi aplicada e marcada. Não executar migrations antigas em lote sem auditoria.
+- Juros, multa e desconto ainda não entram no cálculo do saldo da RPC; permanecem na FIN-1 junto
+  do submodal completo de baixa parcial.
+- Isolamento é validado dentro da função, mas o teste explícito entre dois tenants ainda está
+  pendente para o critério de saída da FIN-0.
+- Estorno e cancelamento continuam em múltiplas chamadas e são os próximos riscos transacionais.
+
+### Próxima ação única
+
+**Criar `financeiro_estornar_liquidacao(p_liquidacao_id, p_motivo, p_idempotency_key)`.** Antes de
+editar, auditar no banco os vínculos da liquidação com uma ou várias movimentações. A RPC deve
+bloquear a liquidação e o título, estornar somente a baixa escolhida, reverter as movimentações e
+o saldo, recalcular o valor acumulado/status do título, registrar histórico e aceitar retry sem
+duplicar o estorno.
+
+### Arquivos desta entrega
+
+- `supabase/migrations/20260811123000_financeiro_liquidacao_atomica.sql`
+- `src/services/movimentacoesService.ts`
+- `src/services/movimentacoesService.test.ts`
+- `src/components/financeiro/LiquidacaoTituloModal.tsx`
+- `src/types/movimentacoesFinanceiras.ts`
+- `src/integrations/supabase/types.ts`
+- `docs/ROADMAP_2026.md`
+- `docs/STATUS.md`
+
+---
+
+## 🔖 Checkpoint atual — FIN-0.1 status canônicos e roadmap obrigatório (2026-08-11)
+
+**Objetivo desta entrega:** transformar a avaliação do Financeiro em roadmap incremental obrigatório
+e iniciar a correção pelo menor defeito bloqueante comprovado, sem criar DDL antes de validar o banco real.
+
+### Concluído
+
+1. `docs/ROADMAP_2026.md` foi reestruturado como fonte de verdade do trabalho futuro:
+   - FIN-0 a FIN-8 cobrem integridade, fluxos completos, escala, caixa simples, contabilidade,
+     grupo/multifilial, multimoeda, integrações e operação contínua;
+   - cada fase possui critérios de saída verificáveis;
+   - frentes anteriores válidas de integração, comercial, fiscal, RH e estoque foram preservadas;
+   - FIN-0 é a prioridade corrente e não pode ser pulada por entrega visual.
+2. Documentação persistente foi tornada agnóstica de ferramenta/fornecedor. Regra registrada no
+   roadmap e em `AGENTS.md`; referências históricas de marca foram neutralizadas nos documentos.
+3. `movimentacoesService.ts` deixou de enviar status de UI inválidos ao banco:
+   - pagar: `PAGA` → `PAGO`, `ABERTA` → `PENDENTE`, `CANCELADA` → `CANCELADO`;
+   - receber: `RECEBIDA` → `RECEBIDO`, `ABERTA` → `PENDENTE`, `CANCELADA` → `CANCELADO`;
+   - conversão reutiliza `src/lib/statusMappers.ts`, já canônico no projeto.
+4. Regressão adicionada em `src/lib/statusMappers.test.ts` cobrindo os seis mapeamentos usados
+   por baixa, estorno e cancelamento.
+
+### Validação deste checkpoint
+
+- `npm.cmd run test -- src/lib/statusMappers.test.ts --run` → 1/1 teste passou.
+- `npm.cmd run typecheck` → limpo.
+- `npm.cmd run test -- --run` → 43 arquivos, 339/339 testes passaram.
+- `git diff --check` → sem erro; apenas avisos de normalização LF/CRLF.
+- Busca de marcas nos documentos persistentes → nenhuma ocorrência restante.
+
+### Limite conhecido — não considerar FIN-0 concluída
+
+A baixa ainda executa liquidação, atualização do título e histórico em chamadas separadas no
+cliente. O ajuste de status impede rejeição imediata pelo `CHECK`, mas **não resolve atomicidade,
+concorrência, movimento bancário ou autorização**. Nenhuma migration, DDL ou deploy foi executado
+neste checkpoint.
+
+### Próxima ação única
+
+**Auditar o schema financeiro no banco real antes de escrever a RPC de liquidação.** A próxima
+sessão deve, a partir deste repositório e confirmando o project ref `reksodqzemboaeqxnxyy`, coletar:
+
+1. colunas, defaults e `CHECKs` de `contas_pagar`, `contas_receber`, `liquidacoes_titulos`,
+   `liquidacoes_multiplas`, `movimentacoes_bancarias` e `historico_movimentacoes_financeiras`;
+2. FKs e comportamento `ON DELETE` dessas tabelas;
+3. policies RLS efetivamente instaladas;
+4. triggers/funções que alteram saldo ou criam movimentação na liquidação;
+5. constraints/índices aptos a suportar idempotência.
+
+Registrar o resultado neste bloco e só então criar uma migration aditiva com a RPC
+`financeiro_liquidar_titulo`. Não aplicar DDL baseado apenas nas migrations históricas.
+
+### Arquivos desta entrega
+
+- `AGENTS.md`
+- `docs/ROADMAP_2026.md`
+- `docs/STATUS.md`
+- `docs/ORIENTAÇÃO GERAL SOBRE DESENVOLVIMENTO DO ERP.MD`
+- `src/services/movimentacoesService.ts`
+- `src/lib/statusMappers.test.ts`
+
+---
 
 ## 🔖 CHECKPOINT DE URGÊNCIA (2026-08-11 — sessão sem tokens, commit forçado)
 
@@ -39,14 +171,14 @@ removidos agora por precaução.
 ---
 
 Este arquivo deve ser atualizado ao final de cada sessão de trabalho relevante — se estiver desatualizado, ele
-apodrece como `SYSTEM_AUDIT.md`/`ARVORE_PROJETO.md` já apodreceram. Leia primeiro [`../CLAUDE.md`](../CLAUDE.md)
+apodrece como `SYSTEM_AUDIT.md`/`ARVORE_PROJETO.md` já apodreceram. Leia primeiro [`../AGENTS.md`](../AGENTS.md)
 para contexto de padrões estáveis; este arquivo é sobre o que está pendente **agora**.
 
 ## 🔖 Checkpoint de sessão (2026-08-10 — Cadastro Unificado de Entidades, Fase 1/8)
 
 **Contexto**: refatoração grande, pedida pelo usuário no repo-mãe (`NovusSaaS`), pra substituir os cadastros
 isolados de Cliente/Fornecedor/Colaborador/Sócio (sem dedup de CPF/CNPJ entre eles hoje) por um cadastro único
-de Entidade com papéis. Plano completo em `C:\Users\maxwe\.claude\plans\tranquil-growing-zephyr.md` — corte seco,
+de Entidade com papéis. Decisão registrada: corte seco,
 sem piloto, 8 fases (4 ERP + 4 Educacional). Ver `novus-ai-educacional-54/docs/STATUS.md` mesma data pro lado
 satélite.
 
@@ -236,7 +368,7 @@ mas nunca usado pelo shell real.
 também, risco alto pro que a sessão proibia mexer.
 
 **Verificação**: `npm run typecheck`/`test` (361/361)/`build` limpos.
-Testado ao vivo via Claude in Chrome com técnica de iframe injetado
+Testado ao vivo em navegador com técnica de iframe injetado
 (viewport 390×844 real) — desktop 1440px pixel-idêntico ao anterior
 (hover-expand confirmado intocado), mobile: hamburger abre `Sheet` com
 navegação completa, grupo expande, item de submenu navega e fecha o
@@ -517,7 +649,7 @@ sem dano). Regra daqui pra frente: **sempre `cd` pro diretório do projeto certo
 - `joao@tacto.com.br` e `mara.d_o@hotmail.com` (contas que já existiam soltas, sem nenhum vínculo)
   ganharam `user_roles.role='admin'` escopado à ALLEGRA. Não ganharam registro em
   `usuarios`/`colaboradores` — exigiria CPF/nome real que não foi fornecido; regra de nunca
-  fabricar dado de identidade (`CLAUDE.md` raiz) se aplica aqui também.
+  fabricar dado de identidade (`AGENTS.md` raiz) se aplica aqui também.
 - "E2E TEST CO" (`empresas_representadas`) confirmado como fixture viva de
   `e2e/fixtures/db-reset.ts`/`e2e-reset` — não é lixo, não foi tocado.
 - Dados `[SEED]`/teste manual dentro da ALLEGRA (6 colaboradores, 8 clientes, mais o resto das 16
@@ -553,8 +685,7 @@ novas) continua pendente — ver checkpoint anterior.
 
 **Contexto**: usuário quer um controle central de clientes/licenças da marca NOVUS (nome: Centelha),
 gerenciando quais clientes usam quais ferramentas (ERP, Educacional, e satélites futuros: PDV, Clínica,
-Mercado...) e como o primeiro admin de cada cliente entra no sistema. Plano completo em
-`~/.claude/plans/estive-pensando-muito-sobre-sleepy-zephyr.md`. Investigação confirmou que o motor de
+Mercado...) e como o primeiro admin de cada cliente entra no sistema. A investigação confirmou que o motor de
 cobrança comercial (`contratos`/`contas_receber` + trigger de recorrência) já existia pronto — não foi
 reconstruído, só reaproveitado com a NOVUS como uma `empresa_representada` normal deste mesmo ERP.
 
@@ -620,9 +751,9 @@ mesmo ponto cego de sempre — revisadas manualmente, não testadas ao vivo aind
 ## 🔖 Checkpoint de sessão (2026-08-09 — 3 gaps de conector ERP↔satélite fechados)
 
 **Contexto**: pergunta do usuário no repo-mãe ("que falta pra efetivar a integração do satélite com o ERP?")
-disparou 3 agentes Explore puxando os dois lados de cada conector (payload que o satélite manda vs. o que o
+disparou 3 análises paralelas dos dois lados de cada conector (payload que o satélite manda vs. o que o
 ERP espera) em vez de responder de memória — achou 3 gaps reais confirmados por leitura direta de código, não
-só de `STATUS.md`. Plano completo em `~/.claude/plans/parallel-baking-narwhal.md`.
+só de `STATUS.md`.
 
 1. **Cliente invisível na tela do próprio ERP — corrigido**: `mapClienteData` (`sync-webhook/index.ts`) só
    escrevia colunas novas (`tipo_pessoa`/`cpf`/`cnpj`); a UI real do ERP (`clienteService.ts`/`FormCliente.tsx`)
@@ -659,7 +790,7 @@ só de `STATUS.md`. Plano completo em `~/.claude/plans/parallel-baking-narwhal.m
    continuou 1 (nenhuma sobrescrita); `contas_receber` com `gera_financeiro:false` → 0 títulos gerados (Fix 2
    confirmado, sem duplicar cobrança). Dados de teste removidos ao final, `remaining=0` confirmado nos dois
    lados (`clientes`/`contratos`).
-6. **Skill `~/.claude/skills/erp-satellite-integration/SKILL.md` atualizada** (pedido explícito do usuário,
+6. **Instruções `erp-satellite-integration` atualizadas** (pedido explícito do usuário,
    meta final desta sessão): seção "Bugs confirmados" (que dizia `syncContrato`/`syncFinanceiro` quebrados)
    estava apodrecida — todos os 3 bugs citados já tinham sido corrigidos numa sessão anterior e a skill nunca
    foi atualizada. Reescrita com o estado real + 4 padrões novos consolidados: dual-schema gotcha em tabelas
@@ -827,7 +958,7 @@ atrasado**: tudo criado a partir de `20260713155404` nunca tinha sido registrado
 ## 🔖 Checkpoint de sessão (2026-08-09 — reforma visual restyle-only + logo por empresa representada)
 
 **Branch `visual-refactor`** (não mergeada em `main` ainda), 6 commits, pushada pra `origin`.
-Ponto de partida foi o doc `.claude/refatoracao_visual` (skill fornecida pelo usuário) — validado
+Ponto de partida foi a especificação de refatoração visual fornecida pelo usuário — validada
 contra o código real (2 claims corrigidos: não havia bug de ícone de lixeira no Saldo Bancário, e a
 sidebar não usava tokens de tema como o doc assumia, ao contrário, tinha cor hardcoded `#1e3a8a`/
 `bg-blue-600` bypassando `--sidebar-*` que já existia). Escopo cresceu ao longo da sessão a pedido do
@@ -842,10 +973,10 @@ sistema.
 3. **Foco de 16 primitivos `ui/`** (Input/Select/Checkbox/Switch/Button/Tabs/Dialog/Toast/Badge...)
    movido de `ring-ring` (navy) pra `accent-vivid` — cobre 100% dos formulários do sistema sem
    precisar tocar tela por tela (maior alavanca de "escopo 100%" pedida pelo usuário).
-4. **Varredura de ~85 arquivos** com cor de status hardcoded (4 agentes em paralelo, escopo restrito
+4. **Varredura de ~85 arquivos** com cor de status hardcoded (4 análises paralelas, escopo restrito
    a className/cor, zero lógica) — migrados pros tokens `--status-*`. Paletas categóricas legítimas
    (tipo de imposto, tipo de arquivo, PF/PJ) e cores sem token equivalente (roxo, teal, cyan-chart)
-   foram deixadas de propósito, listadas nos relatórios dos agentes, não é trabalho esquecido.
+   foram deixadas de propósito, listadas nos relatórios da sessão, não é trabalho esquecido.
 5. **Splash de vídeo no login** (`src/components/IntroSplash.tsx` + `public/intro.mp4`): 1x por
    sessão (`sessionStorage`), muted+autoplay+playsInline, timeout de segurança de 4.8s, clique pra
    pular, respeita `prefers-reduced-motion`.
@@ -867,7 +998,7 @@ sistema.
      `empresa_representada` tem logo agora. Coluna `logo_url` no banco não foi migrada/dropada, só
      parou de ser escrita (decisão consciente, sem `DROP`/`RENAME`).
    - Logo do header ajustada pro tamanho máximo da barra (`h-16`, toca topo/base do header de 64px).
-7. **Testado ao vivo no navegador** (Claude em Chrome) em cada etapa: sidebar hover/rota ativa,
+7. **Testado ao vivo no navegador** em cada etapa: sidebar hover/rota ativa,
    toggle PF/PJ, Dashboard KPIs, upload de logo real (arquivo corrompido → rejeitado limpo sem
    sujar dado; arquivo válido → normaliza, salva, invalida cache, aparece no header).
 
@@ -877,7 +1008,7 @@ sistema.
   num repo não aberto nesta sessão. Precisa de sessão própria lá; o padrão a replicar é o mesmo
   (path + signed URL resolvida na hora, nunca cópia estática).
 - ~65 arquivos com cor hardcoded não-status (decorativo, gráfico, categórico) deliberadamente fora
-  do escopo da varredura — ver relatórios dos 4 agentes na conversa da sessão se precisar retomar.
+  do escopo da varredura — ver o histórico técnico da sessão se precisar retomar.
 - `console.log` de debug em `AppSidebar.tsx`/`AppLayout.tsx` (pré-existentes, não desta sessão) —
   fácil follow-up, não é visual.
 - Merge de `visual-refactor` → `main` não feito ainda, aguardando revisão/aprovação do usuário.
@@ -1151,8 +1282,8 @@ frentes funcionais abaixo — escolhida e concluída nesta sessão.
   pós-inserção (`validar_pagamento_venda`, vocabulário de códigos diferente:
   `CLIENTE_BLOQUEADO`/`CREDIARIO_SEM_LIMITE`). Os dois mecanismos ficam paralelos por ora — unificar
   é trabalho futuro, não bloqueante.
-- **Validado ponta a ponta no navegador real** (via extensão Claude em Chrome, sessão logada
-  manualmente pelo usuário — nunca por mim, credenciais nunca inseridas por mim). Fluxo completo
+- **Validado ponta a ponta no navegador real** (sessão autenticada manualmente pelo usuário;
+  credenciais não foram persistidas). Fluxo completo
   contra o tenant real (`LIGNUM COMERCIO E EXPORTACOES LTDA`, mesmo cliente do smoke test SQL,
   Maxwell Roger de Oliveira, R$165 vencidos): Nova Venda → cliente + plano crediário → aviso
   "venda a prazo" aparece → Salvar → `verificar_autorizacao_venda` bloqueia com
@@ -1188,7 +1319,7 @@ frentes funcionais abaixo — escolhida e concluída nesta sessão.
   Duas empresas com CPF ou número de documento/venda/contrato coincidentes podiam ter uma
   sobrescrevendo o registro da outra via webhook assinado. Detalhe completo na mensagem do commit
   `83d639a`.
-- Sem cobertura de typecheck/teste automatizado nesses arquivos (ver `CLAUDE.md` — pontos cegos
+- Sem cobertura de typecheck/teste automatizado nesses arquivos (ver `AGENTS.md` — pontos cegos
   conhecidos). Verificado por leitura cuidadosa + `eslint` limpo + smoke check manual pós-deploy —
   não há teste automatizado de regressão para isso ainda. Se algo relacionado a ingestão de
   satélite se comportar estranho, comece por aqui.
@@ -1331,7 +1462,7 @@ Orçamentos: menu de ações (⋮) na linha da tabela + diálogo de visualizaç�
   hooks que `Orcamentos.tsx` já usa — `useClientes`, `useEmpresasRepresentadas`,
   `useEmpresasLogosMap`, `useEmpresaAtual`) para montar os dados completos de cliente/empresa que o
   PDF timbrado precisa (o `select` de `vendasService.list()` só trazia `cliente:{id,nome}`).
-- **Testado ao vivo no navegador** (Claude em Chrome, mesma sessão logada): menu de ações abre
+- **Testado ao vivo no navegador** (mesma sessão autenticada): menu de ações abre
   corretamente; "Visualizar" mostra o diálogo com timbrado (logo da LIGNUM carregada), cliente,
   blocos Produtos E Serviços corretamente separados (venda real de teste tinha os dois tipos:
   "Camiseta Uniforme 5 anos" e "Hora Trabalhada - Serviços Gerais"), subtotais e total; "Baixar PDF"

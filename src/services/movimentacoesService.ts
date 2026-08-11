@@ -8,6 +8,7 @@ import type {
   HistoricoMovimentacao
 } from '@/types/movimentacoesFinanceiras';
 import { getEmpresaAtivaIdOuFalha as getEmpresaIdAtual } from '@/lib/empresaAtiva';
+import { uiStatusPagarToDb, uiStatusReceberToDb } from '@/lib/statusMappers';
 
 export interface RateioTitulo {
   id: string;
@@ -31,85 +32,22 @@ export interface DocumentoTitulo {
 export const movimentacoesService = {
   // Liquidar/Baixar título
   async liquidarTitulo(dadosLiquidacao: LiquidacaoTitulo): Promise<void> {
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Usuário não autenticado');
-    const empresaId = await getEmpresaIdAtual();
-
     try {
-      // 1. Criar registro de liquidação
-      const { data: liquidacao, error: liquidacaoError } = await supabase
-        .from('liquidacoes_titulos')
-        .insert({
-          empresa_representada_id: empresaId,
-          data_liquidacao: dadosLiquidacao.data_pagamento,
-          titulo_id: dadosLiquidacao.titulo_id,
-          tipo_titulo: dadosLiquidacao.tipo_titulo,
-          valor_pago: dadosLiquidacao.valor_pago,
-          data_pagamento: dadosLiquidacao.data_pagamento,
-          forma_pagamento: dadosLiquidacao.forma_pagamento,
-          conta_bancaria_id: dadosLiquidacao.conta_bancaria_id,
-          observacoes: dadosLiquidacao.observacoes,
-          valor_original_titulo: dadosLiquidacao.valor_pago, // Assumindo liquidação total
-          usuario_liquidacao_id: user.id,
-        })
-        .select()
-        .single();
-
-      if (liquidacaoError) throw liquidacaoError;
-
-      // 2. Se há múltiplas baixas, inserir os registros
-      if (dadosLiquidacao.multi_baixa && dadosLiquidacao.multi_baixa.length > 0) {
-        const multiBaixas = dadosLiquidacao.multi_baixa.map(baixa => ({
-          empresa_representada_id: empresaId,
-          data_liquidacao: dadosLiquidacao.data_pagamento,
-          valor_total: baixa.valor,
-          liquidacao_principal_id: liquidacao.id,
-          conta_bancaria_id: baixa.conta_bancaria_id,
-          valor: baixa.valor,
-          observacoes: baixa.observacoes,
-        }));
-
-        const { error: multiBaixaError } = await supabase
-          .from('liquidacoes_multiplas')
-          .insert(multiBaixas);
-
-        if (multiBaixaError) throw multiBaixaError;
-      }
-
-      // 3. Atualizar status do título na tabela correspondente
-      const { error: updateError } = dadosLiquidacao.tipo_titulo === 'CONTAS_RECEBER'
-        ? await supabase
-            .from('contas_receber')
-            .update({
-              status: 'RECEBIDA',
-              data_recebimento: dadosLiquidacao.data_pagamento,
-              valor_recebido: dadosLiquidacao.valor_pago,
-            })
-            .eq('id', dadosLiquidacao.titulo_id)
-        : await supabase
-            .from('contas_pagar')
-            .update({
-              status: 'PAGA',
-              data_pagamento: dadosLiquidacao.data_pagamento,
-            })
-            .eq('id', dadosLiquidacao.titulo_id);
-
-      if (updateError) throw updateError;
-
-      // 4. Registrar no histórico
-      await this.registrarHistorico({
-        titulo_id: dadosLiquidacao.titulo_id,
-        tipo_titulo: dadosLiquidacao.tipo_titulo,
-        tipo_operacao: 'LIQUIDACAO',
-        valor_movimentado: dadosLiquidacao.valor_pago,
-        dados_novos: dadosLiquidacao,
-        observacoes: `Título liquidado via ${dadosLiquidacao.forma_pagamento}`,
+      const { error } = await supabase.rpc('financeiro_liquidar_titulo', {
+        p_titulo_id: dadosLiquidacao.titulo_id,
+        p_tipo_titulo: dadosLiquidacao.tipo_titulo,
+        p_valor: dadosLiquidacao.valor_pago,
+        p_data_pagamento: dadosLiquidacao.data_pagamento,
+        p_forma_pagamento: dadosLiquidacao.forma_pagamento,
+        p_idempotency_key: dadosLiquidacao.idempotency_key,
+        p_conta_bancaria_id: dadosLiquidacao.conta_bancaria_id,
+        p_observacoes: dadosLiquidacao.observacoes,
+        p_multi_baixa: (dadosLiquidacao.multi_baixa || []) as unknown as Json,
       });
-
+      if (error) throw error;
     } catch (error) {
       console.error('[MovimentacoesService] Erro ao liquidar título:', error);
-      throw new Error(`Erro ao liquidar título: ${error.message}`);
+      throw new Error(`Erro ao liquidar título: ${error instanceof Error ? error.message : 'falha desconhecida'}`);
     }
   },
 
@@ -139,11 +77,11 @@ export const movimentacoesService = {
       const { error: updateError } = dados.tipo_titulo === 'CONTAS_RECEBER'
         ? await supabase
             .from('contas_receber')
-            .update({ status: 'ABERTA', data_recebimento: null, valor_recebido: 0 })
+            .update({ status: uiStatusReceberToDb('ABERTA'), data_recebimento: null, valor_recebido: 0 })
             .eq('id', dados.titulo_id)
         : await supabase
             .from('contas_pagar')
-            .update({ status: 'ABERTA', data_pagamento: null })
+            .update({ status: uiStatusPagarToDb('ABERTA'), data_pagamento: null })
             .eq('id', dados.titulo_id);
 
       if (updateError) throw updateError;
@@ -198,9 +136,13 @@ export const movimentacoesService = {
     try {
       const tabelaTitulo = dadosCancelamento.tipo_titulo === 'CONTAS_PAGAR' ? 'contas_pagar' : 'contas_receber';
 
+      const statusCancelado = dadosCancelamento.tipo_titulo === 'CONTAS_PAGAR'
+        ? uiStatusPagarToDb('CANCELADA')
+        : uiStatusReceberToDb('CANCELADA');
+
       const { error: updateError } = await supabase
         .from(tabelaTitulo)
-        .update({ status: 'CANCELADA' })
+        .update({ status: statusCancelado })
         .eq('id', dadosCancelamento.titulo_id);
 
       if (updateError) throw updateError;

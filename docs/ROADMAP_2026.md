@@ -1,126 +1,228 @@
 # NOVUS ERP — Roadmap 2026
 
-Backlog priorizado e próximos passos, olhando pra frente. Para o que já foi feito e o histórico
-de cada sessão, ver [`STATUS.md`](./STATUS.md) — não duplicar aqui, esse arquivo é sobre o que
-falta, não sobre o que já foi entregue.
+Fonte de verdade do que falta no ERP. Histórico e checkpoint operacional ficam em
+[`STATUS.md`](./STATUS.md). Este roadmap é incremental: uma fase só avança quando seus
+critérios de saída estão comprovados.
+
+## Regras de execução e continuidade
+
+- Prioridade atual: **Programa Financeiro Robusto — Fase FIN-0**.
+- Cada entrega deve caber em um checkpoint verificável e deixar o sistema executável.
+- Nenhuma operação financeira composta pode depender de compensação manual entre chamadas.
+- Alterações de schema/RLS/constraints exigem validação contra o banco real antes da migration.
+- Ao pausar, atualizar o topo de `STATUS.md` com: concluído, pendente, arquivos, validações,
+  riscos e **próxima ação única**.
+- Documentação e checkpoints são agnósticos de ferramenta: não citar fornecedor, marca, assistente
+  ou ambiente pessoal; registrar apenas evidência técnica reproduzível no repositório.
+- Marcação: `[ ]` pendente, `[~]` em execução, `[x]` concluído, `[!]` bloqueado.
+- Itens deste programa são indispensáveis; podem ser reordenados por dependência, não removidos
+  sem decisão explícita registrada.
 
 ---
 
-## 🚧 Em Progresso — Fase 2 Design
+## Programa Financeiro Robusto
 
-### Camada de Adaptadores por Satélite
-- **Escopo:** tradução de payload de cada satélite → contratos canônicos (Portas 1/2), orquestração de chamadas (Porta 3 antes)
-- **Estado:** desenhado em `CONTRATOS_CANONICOS_ERP.md` §10 Fase 2, não iniciado
-- **Bloqueador:** esperando satélite Educacional real como caso de validação (não abstrair sem dado real)
-- **Esforço:** médio (configurable por `source_system`, reuso de "Regras de Classificação de Receita")
+Objetivo: servir desde operação simples de caixa até grupo econômico multiempresa/multifilial,
+sem expor complexidade corporativa para quem não precisa dela.
 
-### Envelope em Todas as Tabelas (Fase 1b)
-- **Escopo:** `clientes`, `produtos`, `contratos`, `estoque_movimentacoes`, `liquidacoes_titulos` ganham `origem_sistema`, `origem_canal`, `externo_id`, `idempotency_key`, `hash_payload`
-- **Estado:** desenhado, não iniciado
-- **Esforço:** baixo (migração aditiva, nenhuma coluna para remover)
+### FIN-0 — Integridade e segurança transacional
+
+**Estado:** `[~]` iniciado em 2026-08-11.
+
+- [x] Unificar status de UI e banco em baixa, estorno e cancelamento.
+- [~] Validar no banco real constraints, triggers, FKs e policies de todas as tabelas financeiras
+  (núcleo de liquidação auditado; demais domínios continuam pendentes).
+- [x] Criar RPC transacional e idempotente para liquidar título.
+- [x] Na mesma transação: bloquear título, validar saldo, gravar liquidação, atualizar título,
+  gerar/vincular movimentação bancária e registrar histórico.
+- [ ] Criar RPC transacional para estornar uma liquidação específica.
+- [ ] Criar RPC transacional para cancelar título, impedindo cancelamento incompatível com baixas.
+- [ ] Tornar criação/edição de título + rateios atômica em pagar e receber.
+- [x] Suportar baixa parcial real (`PARCIAL`) e impedir valor acima do saldo.
+- [x] Adicionar chave de idempotência e proteção contra concorrência/duplo clique no banco.
+- [x] Eliminar caminhos duplicados de liquidação e manter um serviço canônico.
+- [ ] Diferenciar erro técnico de lista vazia; falhas não podem virar zeros silenciosos.
+- [ ] Aplicar permissões financeiras reais na UI, serviço/RPC e RLS.
+- [ ] Bloquear exclusão física de título já movimentado; correção deve ocorrer por estorno.
+- [ ] Provar isolamento entre empresas em leitura e escrita.
+
+**Critério de saída:** testes de integração provam que falha intermediária faz rollback total,
+duas baixas concorrentes não duplicam pagamento e nenhum usuário opera fora do seu escopo.
+
+### FIN-1 — Completar fluxos atualmente parciais ou apenas visuais
+
+- [ ] Submodal de cancelamento com motivo obrigatório, impacto e confirmação.
+- [ ] Submodal de estorno escolhendo a liquidação, motivo, data e conta afetada.
+- [ ] Submodal de baixa parcial com juros, multa, desconto e saldo posterior.
+- [ ] Divisão da baixa entre múltiplas contas/meios de pagamento.
+- [ ] Renegociação: substituir título por novas parcelas preservando rastreabilidade.
+- [ ] Gestão de rateios de pagar e receber no detalhe do título.
+- [ ] Vincular uma movimentação bancária existente ou criar e conciliar uma nova.
+- [ ] Cadastro rápido de entidade nos consumidores financeiros usando o cadastro central.
+- [ ] Aplicar filtros já declarados de conta bancária e usuário.
+- [ ] Corrigir upload/remoção de documentos para aguardar conclusão real da mutation.
+- [ ] Operações em lote com revisão antes de executar.
+- [ ] Testes E2E: criar, editar, liquidar parcial/total, cancelar, estornar e conciliar.
+
+**Critério de saída:** nenhum botão financeiro termina em “em breve”, no-op ou toast fictício.
+
+### FIN-2 — Workspace financeiro e escala básica
+
+- [ ] Transformar `/financeiro/movimentacoes` em página de trabalho; modal só para ação curta.
+- [ ] Painel lateral de detalhe com histórico, documentos, rateios e conciliação.
+- [ ] Paginação, busca, filtros e ordenação server-side em listas financeiras.
+- [ ] Indicadores e agrupamentos calculados no PostgreSQL, não sobre toda a base no navegador.
+- [ ] Estados acessíveis de loading, erro e vazio; navegação por teclado e foco em diálogos.
+- [ ] Visões salvas, filtros persistentes e exportação do conjunto filtrado.
+- [ ] Relatórios grandes assíncronos; limites e avisos claros de volume.
+
+**Critério de saída:** listas permanecem utilizáveis com pelo menos 1 milhão de títulos no tenant
+de benchmark sem carregar o conjunto completo no cliente.
+
+### FIN-3 — Pequeno negócio e caixa diário
+
+- [ ] Onboarding financeiro simplificado com plano de contas e categorias padrão.
+- [ ] Modo simples que oculta dimensões avançadas sem removê-las do modelo.
+- [ ] Abertura e fechamento de caixa por operador/turno.
+- [ ] Sangria, suprimento, conferência e diferença esperado × contado.
+- [ ] Visão diária: entradas, saídas, saldo, vencimentos e atrasos.
+- [ ] Recorrências monitoradas, com falhas e próxima geração visíveis.
+- [ ] Lembretes de cobrança e comprovantes pelo celular.
+- [ ] Cobrança Pix/boleto/link por adaptador de PSP autorizado.
+- [ ] Importação OFX/CSV com mapeamento assistido e prevenção de duplicidade.
+
+**Critério de saída:** uma empresa de caixa único consegue operar sem configurar contabilidade,
+filiais ou workflow corporativo manualmente.
+
+### FIN-4 — Subledger e contabilidade por partidas dobradas
+
+- [ ] Livro imutável de lançamentos e linhas débito/crédito balanceadas.
+- [ ] Regras de contabilização para títulos, liquidações, tarifas, transferências e estornos.
+- [ ] Períodos contábeis, fechamento, reabertura autorizada e lançamento retroativo auditado.
+- [ ] Plano de contas versionado e mapeamento referencial.
+- [ ] Livro diário, razão, balancete, DRE e balanço derivados do mesmo livro.
+- [ ] Trilhas para ECD/ECF/SPED sem misturar regra fiscal ao núcleo financeiro.
+- [ ] Reconciliação entre subledgers de pagar/receber/bancos e razão geral.
+
+**Critério de saída:** todo evento financeiro contabilizado produz débito = crédito e só pode ser
+corrigido por lançamento reverso auditável.
+
+### FIN-5 — Grupo econômico, multiempresa e multifilial
+
+- [ ] Modelar grupo econômico → empresa legal → estabelecimento matriz/filial.
+- [ ] Separar estabelecimento, unidade de negócio, centro de custo, projeto e canal.
+- [ ] Escopo do usuário por grupo/empresa/filial, aplicado também nas RPCs e relatórios.
+- [ ] Dimensões obrigatórias/configuráveis por empresa e tipo de lançamento.
+- [ ] Tesouraria e contas a pagar centralizadas com operação local controlada.
+- [ ] Workflow de aprovação por valor, categoria, filial e centro de custo.
+- [ ] Segregação solicitante × aprovador × pagador e substituição temporária auditada.
+- [ ] Orçamento, realizado e compromissado por dimensão.
+- [ ] Operações intercompany, contas recíprocas e eliminações.
+- [ ] Relatórios isolados e consolidados por qualquer nível da hierarquia.
+
+**Critério de saída:** grupo com várias empresas e filiais fecha e consolida sem compartilhar dados
+com usuários fora do escopo nem usar centro de custo como filial.
+
+### FIN-6 — Multimoeda e operação internacional
+
+- [ ] Moeda funcional por empresa, moeda da transação e moeda de apresentação.
+- [ ] Taxa, data, fonte e política de câmbio rastreáveis.
+- [ ] Ganhos/perdas cambiais realizados e não realizados.
+- [ ] Consolidação com conversão e eliminações intragrupo.
+- [ ] Calendário, timezone e período fiscal por jurisdição.
+- [ ] Adaptadores fiscais por país desacoplados do subledger.
+
+**Critério de saída:** transações e consolidação multimoeda são reproduzíveis a partir das taxas
+registradas, sem sobrescrever o valor original.
+
+### FIN-7 — Integrações financeiras e automação
+
+- [ ] Inbox/outbox transacional, retry com backoff, fila de falhas e replay auditado.
+- [ ] Idempotência obrigatória nas Portas Título, Liquidação e Autorização.
+- [ ] CNAB 240 para remessa/retorno conforme provedores priorizados.
+- [ ] Open Finance para contas, saldos e transações via integração autorizada.
+- [ ] Adaptadores Pix, boleto, adquirentes e gateways sem acoplar o domínio ao provedor.
+- [ ] Modelo canônico compatível com conceitos de cash management/ISO 20022.
+- [ ] Observabilidade por origem: volume, latência, erro, duplicidade e atraso.
+
+**Critério de saída:** qualquer evento externo pode ser reprocessado com segurança e sua origem é
+rastreável até o lançamento financeiro/contábil resultante.
+
+### FIN-8 — Operação, segurança e conformidade contínua
+
+- [ ] Baseline OWASP ASVS 5.0 para autenticação, autorização, validação e auditoria.
+- [ ] MFA/step-up para ações críticas configuráveis.
+- [ ] Alertas de alteração bancária, pagamento duplicado e comportamento anômalo.
+- [ ] Logs sem segredos ou dados pessoais/financeiros desnecessários.
+- [ ] SLOs para baixa, conciliação, jobs e integrações; alertas acionáveis.
+- [ ] Backup, restauração e disaster recovery testados periodicamente.
+- [ ] Testes de propriedade para dinheiro, concorrência, isolamento e invariantes contábeis.
+- [ ] Particionamento/arquivamento apenas guiado por medição.
+
+**Critério de saída:** controles, recuperação e auditoria são comprovados por exercício, não apenas
+por configuração declarada.
 
 ---
 
-## 📋 Backlog — Fase 3+ (Priorizado)
+## Demais frentes indispensáveis do ERP
 
-### Tier 1 — Bloqueantes para Satélite Educacional Real
+### Integração hub ↔ satélites
 
-1. **Webhook de Saída + Catálogo de Eventos** (2-3 dias)
-   - Infraestrutura já existe (`Webhooks.tsx`, `WebhookConfigModal`)
-   - Falta: lista de eventos (`novo_cliente_cadastrado`, `estoque_baixo`, `pagamento_recebido`, etc.)
-   - Falta: disparo automático dos eventos quando os eventos de negócio acontecem
-   - **Impacto:** Educacional precisa ser notificado de mudanças em alunos, pagamentos, etc.
+- [ ] Completar envelope canônico onde ainda faltar, validando consumidores reais.
+- [ ] Catálogo de eventos e webhook de saída para fatos de negócio.
+- [ ] Adaptador do Educacional como primeiro caso real; não criar adaptador genérico especulativo.
+- [ ] Dashboard por `source_system` com volume, erro, latência e replay.
+- [ ] Manter contrato de 3 portas e HMAC como padrão obrigatório.
 
-2. **Comissionamento de Vendedor** (3-4 dias)
-   - Tabela: `vendedor_comissao` (vendedor_id, tipo_calculo, percent/fixo, data_inicio, data_fim, ativo)
-   - Relatório: comissões por vendedor/período, regras por categoria de produto
-   - **Dependência:** vendedor/operador já existe em Venda, falta só a tabela e lógica de cálculo
+### Comercial e operação de balcão
 
-3. **Fluxo Rápido/Balcão em Vendas** (2-3 dias)
-   - Atalho: venda sem formulário de edição (select cliente, adicionar itens por SKU/código rápido, pagar, pronto)
-   - Não precisa ser "POS full" — é um atalho dentro do fluxo de venda já existente
+- [ ] Comissionamento por vendedor/período, seguido de regras por categoria quando necessário.
+- [ ] Fluxo rápido/balcão dentro de Vendas, reutilizando venda/pagamento/estoque existentes.
+- [ ] Desconto percentual com alçada e auditoria.
+- [ ] NFC-e e evolução fiscal comprovada em homologação real.
 
-4. **Desconto Percentual em Venda** (1-2 dias)
-   - Hoje só aceita desconto fixo
-   - Adicionar coluna `desconto_percent` em `venda_itens`, aplicar na subtotalização
+### Fiscal, RH e estoque especializado
 
-### Tier 2 — Funcionalidade Estendida (depois de Satélite Educacional estável)
+- [ ] Fiscal completo: NFC-e, CCe, contingência e consulta de status.
+- [ ] Folha real ou integração homologada; decidir build × parceiro antes de implementar cálculos.
+- [ ] Bem locável/serializado separado do estoque fungível antes do satélite de locação.
+- [ ] Custom fields somente após caso real; preferir `metadata jsonb` antes de EAV, salvo prova contrária.
 
-5. **Fiscal Completo** (5+ dias, maior)
-   - Hoje: `fiscal-emitir-nfe` (edge function, não testada de verdade)
-   - Adicionar: NFC-e, CCe (carta de correção), contingência DPEC, consulta status
+### Manutenção transversal
 
-6. **RH/Folha de Pagamento** (6+ dias, maior)
-   - Hoje: esqueleto (tabelas `colaboradores`, integração Ponto morta)
-   - Adicionar: cálculo real (base, INSS, IR, FGTS, benefícios), holerite, GPS/DARF, fechamento mensal
-   - **Dependência:** comissionamento (Tier 1 item 2) já precisa de `usuarios.vendedor_id`, folha precisa de `colaborador.comissao`
-   - **Padrão:** risco de complexidade, considerar outsource (Omie API, BHub) vs. in-house
-
-7. **Estoque de Bem Locável** (4-5 dias, design + schema)
-   - Gap identificado: modelo atual é "quantidade fungível", não "unidade serializada"
-   - Precisa: bem + serial, status (disponível/locado/revisão), devolução esperada
-   - Tabela: `estoque_bens_locaveis` (bem_id uuid, serial, status, cliente_atual_id, data_devolucao_prevista, ...)
-   - **Bloqueante para:** satélite de locação de equipamentos (Fase 4 de `CONTRATOS_CANONICOS_ERP.md`)
-
-8. **Custom Fields por Tenant** (4+ dias, decisão grande)
-   - Hoje: schema fixo em todas as tabelas core
-   - Opções: coluna `metadata jsonb` por tabela vs. tabela EAV separada
-   - **Bloqueador:** decisão de arquitetura + schema, não é "adicionar biblioteca"
-
-### Tier 3 — Observabilidade e Manutenção
-
-9. **Dashboard de Saúde de Integração** (2-3 dias)
-   - `SyncDashboard` hoje mede por webhook, não por satélite/source_system
-   - Adicionar: volume de eventos ingeridos por satélite, taxa de erro, latência média, últimas falhas
-   - Padrão: reaproveitar `sync_webhook_events` log table já existente
-
-10. **Remover erros `@typescript-eslint/no-explicit-any`** (2 dias)
-    - Pré-existentes, não prioridade crítica — mas acumula dívida técnica
-    - Planejado: arquivo por arquivo, com typecheck + suíte entre cada um
+- [ ] Remover chamadas Supabase de componentes/hooks e respeitar `src/services/**`.
+- [ ] Eliminar logs de debug e `any` por área, mantendo gates verdes.
+- [ ] Manter rotas canônicas, estados vazios úteis e seletores escaláveis.
+- [ ] Revisar RLS, UNIQUE/onConflict, CHECKs e FKs no banco real em cada frente.
 
 ---
 
-## 🎯 Próximos Sprints (Sugerido)
+## Sequência executiva atual
 
-### Sprint 1
-1. **Webhook de Saída + Catálogo de Eventos** — destravar notificações do Educacional
-2. **Comissionamento** — resolve vendedor + gerenciamento de comissão
+1. **FIN-0:** status canônicos e baseline de regressão.
+2. **FIN-0:** auditoria do banco real e desenho das RPCs transacionais.
+3. **FIN-0:** liquidação atômica ponta a ponta.
+4. **FIN-0:** estorno/cancelamento + permissões reais.
+5. **FIN-1:** ligar todos os fluxos atualmente apenas visuais.
+6. Retomar a próxima frente conforme dependências, mantendo FIN-2+ como metas obrigatórias.
 
-### Sprint 2
-1. **Envelope em Todas as Tabelas (Fase 1b)** — paridade de ingestão
-2. **Desconto Percentual em Vendas** — simples, alto impacto UX
-3. **Fluxo Rápido/Balcão** — maior ganho pra pequeno negócio
+## Riscos ativos
 
-### Sprint 3
-1. **Adaptador Satélite Educacional (Fase 2)** — testa de verdade o design de integração
-2. **Dashboard de Saúde de Integração** — observabilidade
+| Risco | Nível | Mitigação obrigatória |
+|---|---:|---|
+| Operações financeiras compostas no cliente | crítico | RPC transacional + rollback + teste de concorrência |
+| Status UI/DB divergentes | crítico | vocabulário canônico central + regressão |
+| Permissões financeiras decorativas | crítico | autorização no banco; UI apenas reflete capacidade |
+| Schema real divergir das migrations | alto | consultar banco real antes de qualquer DDL |
+| Listas/relatórios client-side | alto | paginação e agregação server-side |
+| Modelo plano de empresas | alto | grupo/empresa/estabelecimento antes de consolidação |
+| Vendor lock-in Supabase | médio | manter domínio atrás de `src/services/**`; abstrair só com alternativa real |
+| Complexidade exposta ao pequeno negócio | médio | progressive disclosure e defaults, não outro produto |
 
----
+## Decisões que só serão abertas quando a fase exigir
 
-## ⚠️ Riscos Conhecidos (fora do que já vive em `CLAUDE.md`)
-
-| Risco | Nível | Status | Mitigação |
-|-------|-------|--------|---|
-| **Vendor Lock-in Supabase** | alto | 📝 registrado | Fronteira de serviço (`src/services/**`) reduz escopo de migração; não abrir abstração sem alternativa real |
-| **Coluna PRIMARY KEY faltando em migração aplicada fora do fluxo** | médio | ✅ achado e corrigido 2026-08-09 | Ver `STATUS.md` — se aparecer de novo, checar `ALTER TABLE ... ADD PRIMARY KEY` |
-| **Async sync de CPF/CNPJ com satélite** | médio | 📝 identificado | Nunca fabricar CPF/CNPJ placeholder — colide cliente distinto no mesmo registro do ERP; skill `erp-satellite-integration` |
-| **Conciliação bancária (funções stub)** | baixo | 📝 P15 ainda não implementada | `sugerir_matches_extrato`, `confirmar_match`, etc. retornam `NOT_IMPLEMENTED_P15_1` |
-| **Relação Venda↔Orçamento** | baixo | 🟡 parcial | Dois fluxos com validação em paralelo + gap de exceção auditada; documentado em `CONTRATOS_CANONICOS_ERP.md` §6 |
-
-## 🎲 Completude por Fase
-
-| Fase | Objetivo | Estado |
-|------|----------|--------|
-| **Fase 1** | Contratos formalizados, Porta 3 crédito | ✅ concluído |
-| **Fase 1b** | Envelope em todas tabelas | 🔴 não iniciado |
-| **Fase 2** | Adaptador satélite genérico | 🟡 design pronto, não iniciado |
-| **Fase 3** | Crédito/inadimplência operacional; Comissionamento | 🟡 crédito ok, comissão pendente |
-| **Fase 4** | Bem locável (para locadora) | 🔴 não iniciado |
-| **Fase 5** | Observabilidade multi-origem | 🔴 não iniciado |
-
-## 📞 Decisões Pendentes do Usuário
-
-1. **Próxima frente funcional após Tier 1?** — Tier 2 sugerido (fiscal/folha), confirmar prioridade
-2. **Custom fields: arquitetura?** — `metadata jsonb` vs. EAV, decidir antes de começar
-3. **Fluxo rápido de Estoque/Vendas — formato?** — atalho dentro de Vendas vs. "modo balcão" separado?
-4. **Comissionamento — complexidade?** — percentual fixo por vendedor vs. regras por categoria/período?
+1. Provedor inicial de Pix/boleto/Open Finance.
+2. Matriz de alçadas e segregação por perfil de cliente.
+3. Profundidade fiscal/contábil entregue internamente versus parceiros.
+4. País/moeda inicial após BRL para validar FIN-6.
+5. Estratégia de custom fields após primeiro caso concreto.

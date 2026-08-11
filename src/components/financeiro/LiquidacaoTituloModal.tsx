@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
 import { CreditCard, X } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -37,6 +37,7 @@ export const LiquidacaoTituloModal = ({
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const idempotencyKey = useRef(crypto.randomUUID());
 
   const [formData, setFormData] = useState({
     valor_pago: titulo.valor_original,
@@ -45,6 +46,18 @@ export const LiquidacaoTituloModal = ({
     conta_bancaria_id: '',
     observacoes: '',
   });
+
+  useEffect(() => {
+    if (!isOpen) return;
+    idempotencyKey.current = crypto.randomUUID();
+    setFormData({
+      valor_pago: titulo.valor_original,
+      data_pagamento: format(new Date(), 'yyyy-MM-dd'),
+      forma_pagamento: 'DINHEIRO',
+      conta_bancaria_id: '',
+      observacoes: '',
+    });
+  }, [isOpen, titulo.id, titulo.valor_original]);
 
   // Buscar contas bancárias
   const { data: contasBancarias = [], isLoading: loadingContas } = useQuery({
@@ -116,6 +129,7 @@ export const LiquidacaoTituloModal = ({
     const dadosLiquidacao: LiquidacaoTitulo = {
       titulo_id: titulo.id,
       tipo_titulo: titulo.tipo,
+      idempotency_key: idempotencyKey.current,
       valor_pago: formData.valor_pago,
       data_pagamento: formData.data_pagamento,
       forma_pagamento: formData.forma_pagamento,
