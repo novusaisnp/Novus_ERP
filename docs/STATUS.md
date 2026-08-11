@@ -42,12 +42,10 @@ vinte, sem `async` desnecessário.
   checkpoint anterior por causa do trabalho fiscal paralelo e desde então foi resolvido.
 - `npm run test -- --run` → 46 arquivos, 357/357. `npm run build` passou.
 
-### Pendente
-
-A verificação ao vivo deste item **não foi concluída**: a conexão com o navegador caiu no meio
-do teste. O caminho está coberto pelos três testes acima, mas falta ver a aba Rateios de um
-título a receber real mostrando as linhas na tela. Reproduzir é barato: criar uma conta a
-receber com rateio e abrir a aba Rateios no popup de gestão.
+- Verificado ao vivo, com título a receber temporário e um rateio de R$ 100: a aba Rateios
+  mostrou a linha, "Valor Rateado R$ 100,00 / 100.0% do total", "Valor Restante R$ 0,00" e o
+  gráfico de distribuição populado. Antes dessa correção a mesma aba vinha sempre vazia.
+  Dados temporários removidos; banco de volta a zero.
 
 ### Arquivos desta entrega
 
