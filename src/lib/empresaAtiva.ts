@@ -9,7 +9,27 @@ const STORAGE_KEY = 'novus_representada_ativa_id';
 export async function getEmpresaAtivaId(): Promise<string | null> {
   const { data } = await supabase.rpc('get_user_empresa_id');
   if (data) return data;
-  return localStorage.getItem(STORAGE_KEY);
+
+  const storedId = localStorage.getItem(STORAGE_KEY);
+  if (!storedId) return null;
+
+  const { data: empresa, error } = await supabase
+    .from('empresas_representadas')
+    .select('id')
+    .eq('id', storedId)
+    .maybeSingle();
+
+  if (error) {
+    console.warn('[EmpresaAtiva] Não foi possível validar a empresa ativa:', error);
+    return storedId;
+  }
+
+  if (!empresa) {
+    clearEmpresaAtivaId();
+    return null;
+  }
+
+  return storedId;
 }
 
 export async function getEmpresaAtivaIdOuFalha(): Promise<string> {
