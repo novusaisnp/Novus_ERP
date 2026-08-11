@@ -25,7 +25,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onMenuClick }) => {
   };
 
   return (
-    <header className="h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center px-4 gap-4">
+    <header className="min-h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center px-4 gap-4 py-1">
       <Button
         variant="ghost"
         size="icon"
@@ -52,7 +52,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onMenuClick }) => {
             <img
               src={logoUrl}
               alt={empresa?.nome || 'Logo da empresa'}
-              className="h-12 max-w-[280px] object-contain"
+              className="h-[72px] max-w-[420px] object-contain"
             />
           </div>
         ) : empresa?.nome ? (
