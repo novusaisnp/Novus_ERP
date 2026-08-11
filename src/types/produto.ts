@@ -19,6 +19,8 @@ export interface Produto {
 
   ncm?: string;
   cest?: string;
+  origem_produto?: string;
+  dados_fiscais?: ProdutoDadosFiscais;
 
   estoque_atual?: number;
   estoque_minimo?: number;
@@ -69,6 +71,8 @@ export interface SupabaseProduto {
   imagem_url?: string | null;
   ncm?: string | null;
   cest?: string | null;
+  origem_produto?: string | null;
+  dados_fiscais?: ProdutoDadosFiscais;
   estoque_atual?: number | null;
   estoque_minimo?: number | null;
   estoque_maximo?: number | null;
@@ -76,6 +80,20 @@ export interface SupabaseProduto {
   ativo: boolean;
   created_at: string;
   updated_at?: string | null;
+}
+
+export interface ProdutoDadosFiscais {
+  icms_situacao_tributaria: string;
+  icms_aliquota: number;
+  pis_situacao_tributaria: string;
+  pis_aliquota: number;
+  cofins_situacao_tributaria: string;
+  cofins_aliquota: number;
+  ibs_cbs_situacao_tributaria: string;
+  ibs_cbs_classificacao_tributaria: string;
+  ibs_uf_aliquota: number;
+  ibs_mun_aliquota: number;
+  cbs_aliquota: number;
 }
 
 export interface SupabaseProdutoFornecedor {

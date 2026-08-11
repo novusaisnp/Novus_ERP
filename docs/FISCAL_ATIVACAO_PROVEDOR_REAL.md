@@ -1,110 +1,85 @@
-# Ativação do Provedor Fiscal Real (Focus NFe)
+# Ativação fiscal real — Focus NFe
 
-> Guia passo-a-passo para sair do modo mock (`FISCAL_MOCK=true`) e ativar a
-> comunicação real com o provedor fiscal em ambiente de homologação.
+Estado interno em 2026-08-11: NF-e, NFC-e e MDF-e rodoviário têm emissão, consulta, cancelamento, eventos aplicáveis, arquivamento, RLS e integridade implementados. O que resta abaixo depende de credenciais, cadastros e homologação externos.
 
-> **Nota — smoke test em mock:** para exercitar o pipeline fiscal sem provedor
-> real, use o botão **"Rodar smoke mock"** no **Dashboard Fiscal**
-> (`/fiscal/dashboard`, admin-only). Ele dispara a edge function
-> `fiscal-smoke-run` que executa `emitir → CC-e → cancelar` para uma venda
-> faturada e popula `fiscal_documentos_eletronicos` + `fiscal_eventos`.
-> O script `scripts/fiscal/smoke-mock.mjs` continua disponível para automação
-> externa (ver [`docs/fiscal/RUNBOOK.md`](./fiscal/RUNBOOK.md)).
+## 1. Preparar a Focus NFe
 
+1. Cadastrar a empresa emitente na Focus, primeiro em homologação.
+2. Vincular e validar o certificado A1 no painel da Focus. O ERP não guarda senha ou arquivo do certificado.
+3. Configurar CSC da NFC-e e habilitar NF-e/NFC-e/MDF-e para o CNPJ.
+4. Obter os tokens de homologação e produção.
 
-## 1. Pré-requisitos
+Referências oficiais: [autenticação](https://doc.focusnfe.com.br/reference/autenticacao), [NF-e](https://doc.focusnfe.com.br/reference/emitir_nfe), [NFC-e](https://doc.focusnfe.com.br/reference/emitir_nfce) e [MDF-e](https://doc.focusnfe.com.br/reference/emitir_mdfe).
 
-- Conta ativa na **Focus NFe** (ou provedor equivalente) com CNPJ de homologação já provisionado.
-- Certificado A1 (.pfx) da empresa emissora já carregado via tela **Fiscal → Certificados** (Fase 1).
-- Empresa representada com regime tributário, CNAE, endereço completo e IE preenchidos.
-- Acesso admin ao painel do provedor para configurar webhooks.
+## 2. Configurar secrets das Edge Functions
 
-## 2. Cadastrar secrets no backend
-
-No painel de secrets da Lovable Cloud (Backend → Secrets), adicione:
-
-| Nome | Descrição |
-| --- | --- |
-| `FISCAL_PROVIDER_API_KEY_HOM` | Token da API Focus NFe (ambiente de homologação). |
-| `FISCAL_WEBHOOK_SECRET` | Gere um valor aleatório com `openssl rand -hex 32`. Este mesmo valor será colado no painel Focus. |
-| `FISCAL_PROVIDER_BASE_URL` | Opcional. Default: `https://homologacao.focusnfe.com.br`. |
-
-> Nenhuma alteração de código é necessária — as edge functions leem essas variáveis em runtime.
-
-## 3. Desligar o modo mock
-
-Também nos secrets, defina:
-
-```
+```text
+FISCAL_PROVIDER_API_KEY_HOM=<token de homologação>
+FISCAL_PROVIDER_API_KEY_PROD=<token de produção>
 FISCAL_MOCK=false
 ```
 
-Não remova o secret: mantê-lo explícito facilita rollback.
+Não cadastrar tokens no frontend ou no banco. `FISCAL_MOCK` deve permanecer `true` até o início formal da homologação.
 
-## 4. Registrar o webhook no painel Focus NFe
+## 3. Configurar a empresa no ERP
 
-1. Acesse **Focus NFe → Configurações → Webhooks**.
-2. Cadastre a URL:
-   ```
-   https://<project-ref>.functions.supabase.co/fiscal-webhook
-   ```
-3. Cole em "Secret" o mesmo valor de `FISCAL_WEBHOOK_SECRET`.
-4. Marque os eventos: `autorizado`, `cancelado`, `rejeitado`, `denegado`, `cce_registrada`.
-5. Salve e dispare o "Testar webhook" — deve responder 200.
+Em **Fiscal → Tributos → Configurações**:
 
-## 5. Smoke test de ativação real
+- ambiente `HOMOLOGACAO`;
+- provedor Focus NFe;
+- CNPJ e Inscrição Estadual do emitente;
+- regime tributário;
+- séries autorizadas e RNTRC com 8 dígitos para MDF-e. A numeração fiscal fica sob controle do provedor; número de venda nunca é reaproveitado como número fiscal.
 
-Após 5 a 10 minutos (propagação do secret):
+O cadastro do cliente exige indicador de IE e consumidor final. Cada produto exige NCM, origem, CST/CSOSN, PIS, COFINS e classificação/alíquotas IBS/CBS. A emissão bloqueia dados incompletos; não há valores fiscais inventados.
 
-1. Abra uma venda faturada em ambiente de homologação (dados sintéticos).
-2. Clique **Emitir NF-e** → confirme.
-3. Aguarde badge mudar para **autorizada** em até 2 min.
-4. Abra o drawer → verifique XML e DANFE (URLs reais, não mais `mock://`).
-5. Execute CC-e com correção de teste → confirme evento na timeline.
-6. Execute cancelamento → status deve virar `cancelada`.
+## 4. Publicar as funções
 
-## 6. Rollback
+Deploy separado do Git:
 
-Se o comportamento real estiver instável:
+```text
+fiscal-emitir-nfe
+fiscal-consultar-nfe
+fiscal-cancelar-nfe
+fiscal-cce-nfe
+fiscal-emitir-mdfe
+fiscal-evento-mdfe
+fiscal-signed-url
+fiscal-smoke-run
+```
 
-1. Voltar `FISCAL_MOCK=true` nos secrets.
-2. Comunicar usuários no canal `#erp-fiscal`.
-3. Abrir issue com:
-   - `documento_id` afetado
-   - Logs estruturados das edge functions (`supabase functions logs`)
-   - Resposta do provedor (payload_provedor da tabela)
+## 5. Homologar
 
-## 7. Troubleshooting
+1. Criar cliente, produto e pagamentos sintéticos, com enquadramento fornecido pela contabilidade.
+2. Emitir NF-e em homologação.
+3. Confirmar autorização após emissão ou consulta assíncrona.
+4. Baixar XML e DANFE dos buckets privados.
+5. Registrar CC-e permitida.
+6. Cancelar dentro do prazo da UF.
+7. Conferir timeline, protocolo, código/motivo SEFAZ e resposta bruta do provedor.
+8. Emitir NFC-e com pagamento realista; conferir QR Code/DANFCE e cancelar dentro do prazo aplicável.
+9. Emitir MDF-e com NF-e autorizada, seguro, veículo e condutor; consultar até autorização, incluir condutor, encerrar e testar cancelamento em documento separado.
 
-| Erro | Causa provável | Ação |
-| --- | --- | --- |
-| `401` do provedor | Token expirado/incorreto | Rotacionar `FISCAL_PROVIDER_API_KEY_HOM`. |
-| `422` (validação) | Payload incompleto | Revisar mapper `vendaToNFePayload` + dados da venda. |
-| Timeout | Provedor lento | Retry automático já cobre; se persistir, escalar. |
-| Certificado expirado | Alerta `fiscal_certificado_expira` disparado | Reupload via **Fiscal → Certificados**. |
-| Webhook 401 | HMAC inválido | Conferir se o secret cadastrado no painel Focus é idêntico ao da Lovable Cloud. |
+Não há dependência de webhook para consistência: o ERP consulta a Focus enquanto o documento estiver em processamento. Webhook pode ser adicionado depois como redução de latência, seguindo o mecanismo de autenticação efetivamente disponibilizado pelo provedor; não presumir HMAC inexistente.
 
-## 8. Escalonamento
+## 6. Virar produção
 
-- **Time interno:** `#erp-fiscal` (Slack).
-- **Provedor:** suporte Focus NFe — SLA 4h em horário comercial.
+Somente após aceite escrito da contabilidade:
 
-## 9. Arquivamento de XML/DANFE (Fase 3 concluída)
+1. conferir série/numeração e cadastro da empresa na Focus Produção;
+2. garantir `FISCAL_PROVIDER_API_KEY_PROD`;
+3. alterar o ambiente da configuração para `PRODUCAO`;
+4. emitir uma operação real controlada;
+5. conciliar chave, protocolo, XML, DANFE e valores com o portal/contabilidade.
 
-Ao autorizar uma NF-e em modo real (`FISCAL_MOCK=false`), a Edge Function
-`fiscal-emitir-nfe` executa automaticamente:
+Rollback operacional: voltar a configuração para homologação ou `FISCAL_MOCK=true`. Isso interrompe chamadas novas; nunca altera documentos já autorizados.
 
-1. `provider.downloadXml(result.xmlUrl)` — baixa o XML autorizado do provedor.
-2. `provider.downloadDanfe(result.danfeUrl)` — baixa o PDF do DANFE.
-3. Upload para os buckets privados:
-   - `fiscal-xml/{empresa_id}/{YYYY-MM}/{chave_acesso}.xml`
-   - `fiscal-danfe/{empresa_id}/{YYYY-MM}/{chave_acesso}.pdf`
-4. Grava o **path** (não a URL do provedor) em
-   `fiscal_documentos_eletronicos.xml_url` / `danfe_url` / `pdf_danfe_url`.
+## Fora do escopo seguro atual
 
-O UI usa `fiscal-signed-url` (TTL 5 min) para baixar. Falhas de upload são
-logadas mas **não invalidam a autorização** — as URLs originais do provedor
-ficam persistidas como fallback.
+- NFS-e, importação, devolução e substituição tributária avançada;
+- NFC-e anônima/PDV e contingência offline ainda não aparecem na UI; o contrato do provedor já suporta contingência, mas exige controle local de numeração/código único antes de uso real;
+- MDF-e nos modais aéreo, aquaviário e ferroviário, CIOT, vale-pedágio, reboques e produto perigoso;
+- inutilização de faixa numérica;
+- geração válida de EFD ICMS/IPI, ECD e ECF.
 
-Em modo mock (`FISCAL_MOCK=true`) o upload é pulado e paths `mock://` são
-rejeitados por `fiscal-signed-url`.
+Esses fluxos exigem modelos próprios e não podem reaproveitar a venda normal por aproximação.

@@ -1,23 +1,23 @@
 
 export interface ConfiguracaoFiscal {
-  id: string;
+  id?: string;
   empresaRepresentadaId: string;
-  ambiente: 'Teste' | 'Producao';
-  certificadoDigital?: string;
-  senhaCertificado?: string;
-  regimeTributario: 'Simples Nacional' | 'Lucro Presumido' | 'Lucro Real';
-  aliquotaIcmsPadrao: number;
-  aliquotaIpiPadrao: number;
-  aliquotaPisPadrao: number;
-  aliquotaCofinsPadrao: number;
-  aliquotaIssPadrao: number;
-  serieNfe: string;
-  numeroUltimoNfe: number;
-  serieNfce: string;
-  numeroUltimoNfce: number;
+  ambiente: 'HOMOLOGACAO' | 'PRODUCAO';
+  provedor: 'FOCUS_NFE';
+  regimeTributario: 'SIMPLES_NACIONAL' | 'LUCRO_PRESUMIDO' | 'LUCRO_REAL' | 'MEI';
+  cnpjEmitente: string;
+  inscricaoEstadual: string;
+  inscricaoMunicipal?: string;
+  serieNfe: number;
+  proximoNumeroNfe?: number;
+  serieNfce?: number;
+  proximoNumeroNfce?: number;
+  serieMdfe?: number;
+  proximoNumeroMdfe?: number;
+  rntrc?: string;
   ativo: boolean;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface NaturezaOperacao {
@@ -84,9 +84,10 @@ export interface NCM {
 }
 
 export const REGIMES_TRIBUTARIOS = [
-  'Simples Nacional',
-  'Lucro Presumido',
-  'Lucro Real'
+  'SIMPLES_NACIONAL',
+  'LUCRO_PRESUMIDO',
+  'LUCRO_REAL',
+  'MEI',
 ] as const;
 
 export const TIPOS_OPERACAO = [

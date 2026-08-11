@@ -6,6 +6,15 @@ const findConfig = (items: ReturnType<typeof getVisibleSidebarItems>) =>
   items.find((g) => g.title === "Configurações");
 
 describe("sidebarVisibility — Relatórios (Ops)", () => {
+  it("expõe o módulo Fiscal e restringe só o dashboard ao admin", () => {
+    const comum = getVisibleSidebarItems({ isAdmin: false }).find((grupo) => grupo.title === 'Fiscal');
+    expect(comum?.items?.map((item) => item.url)).toEqual([
+      '/fiscal/notas-fiscais', '/fiscal/mdfe', '/fiscal/sped', '/fiscal/tributos',
+    ]);
+    const admin = getVisibleSidebarItems({ isAdmin: true }).find((grupo) => grupo.title === 'Fiscal');
+    expect(admin?.items?.map((item) => item.url)).toContain('/fiscal/dashboard');
+  });
+
   it("expõe o item para admin", () => {
     const groups = getVisibleSidebarItems({ isAdmin: true });
     const config = findConfig(groups);

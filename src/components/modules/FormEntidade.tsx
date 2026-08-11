@@ -147,6 +147,33 @@ export const FormEntidade: React.FC<FormEntidadeProps> = ({
         </CardContent>
       </Card>
 
+      {formData.papeis.includes('CLIENTE') && (
+        <Card>
+          <CardHeader><CardTitle className="text-lg">Qualificação fiscal para NF-e</CardTitle></CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>Indicador de Inscrição Estadual *</Label>
+              <Select value={formData.indicadorIe || ''} onValueChange={(value) => handleChange('indicadorIe', value as Entidade['indicadorIe'])}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 — Contribuinte de ICMS</SelectItem>
+                  <SelectItem value="2">2 — Contribuinte isento</SelectItem>
+                  <SelectItem value="9">9 — Não contribuinte</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2 pt-7">
+              <Checkbox
+                id="consumidorFinal"
+                checked={formData.consumidorFinal === true}
+                onCheckedChange={(value) => handleChange('consumidorFinal', value === true)}
+              />
+              <Label htmlFor="consumidorFinal">Consumidor final</Label>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Papéis</CardTitle>

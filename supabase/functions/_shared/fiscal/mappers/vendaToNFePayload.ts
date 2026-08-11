@@ -1,13 +1,5 @@
-// Converte uma Venda (com itens, cliente, empresa e config fiscal) em payload
-// compatível com a interface FiscalProvider.
-//
-// Todo dado obrigatório para SEFAZ é validado com Zod ANTES da chamada ao provedor,
-// evitando ida-e-volta com rejeição por dados cadastrais incompletos.
-
 import { z } from 'https://esm.sh/zod@3.23.8';
-import type { NFeEmitPayload } from '../providers/FiscalProvider.ts';
-
-// -------------------- Schemas de entrada --------------------
+import type { NFeEmitPayload, NFCePagamentoPayload } from '../providers/FiscalProvider.ts';
 
 const enderecoSchema = z.object({
   logradouro: z.string().min(1, 'logradouro obrigatório'),
@@ -16,7 +8,7 @@ const enderecoSchema = z.object({
   bairro: z.string().min(1, 'bairro obrigatório'),
   cidade: z.string().min(1, 'cidade obrigatória'),
   estado: z.string().length(2, 'UF deve ter 2 caracteres'),
-  cep: z.string().regex(/^\d{8}$/, 'CEP deve ter 8 dígitos numéricos'),
+  cep: z.string().transform(v => v.replace(/\D/g, '')).refine(v => v.length === 8, 'CEP deve ter 8 dígitos'),
 });
 
 export const clienteSchema = z.object({
@@ -28,14 +20,16 @@ export const clienteSchema = z.object({
   cnpj: z.string().optional().nullable(),
   inscricao_estadual: z.string().optional().nullable(),
   email: z.string().email().optional().nullable(),
-}).and(enderecoSchema.partial()).superRefine((c, ctx) => {
-  const doc = (c.tipo_pessoa === 'juridica' ? c.cnpj : c.cpf) ?? '';
-  const clean = doc.replace(/\D/g, '');
-  if (c.tipo_pessoa === 'juridica' && clean.length !== 14) {
-    ctx.addIssue({ code: 'custom', message: 'CNPJ do cliente inválido' });
-  }
-  if (c.tipo_pessoa === 'fisica' && clean.length !== 11) {
-    ctx.addIssue({ code: 'custom', message: 'CPF do cliente inválido' });
+  qualificacao_fiscal: z.object({
+    indicador_ie: z.enum(['1', '2', '9']),
+    consumidor_final: z.boolean(),
+  }),
+}).and(enderecoSchema).superRefine((cliente, ctx) => {
+  const documento = (cliente.tipo_pessoa === 'juridica' ? cliente.cnpj : cliente.cpf)?.replace(/\D/g, '') ?? '';
+  const tamanho = cliente.tipo_pessoa === 'juridica' ? 14 : 11;
+  if (documento.length !== tamanho) ctx.addIssue({ code: 'custom', message: 'CPF/CNPJ do cliente inválido' });
+  if (cliente.qualificacao_fiscal.indicador_ie === '1' && !cliente.inscricao_estadual) {
+    ctx.addIssue({ code: 'custom', message: 'Inscrição Estadual obrigatória para contribuinte de ICMS' });
   }
 });
 
@@ -43,6 +37,21 @@ export const empresaSchema = z.object({
   id: z.string().uuid(),
   nome: z.string().min(1),
   cnpj: z.string().transform(v => v.replace(/\D/g, '')).refine(v => v.length === 14, 'CNPJ da empresa inválido'),
+  estado: z.string().length(2, 'UF da empresa deve ter 2 caracteres'),
+});
+
+const dadosFiscaisSchema = z.object({
+  icms_situacao_tributaria: z.string().regex(/^\d{2,4}$/),
+  icms_aliquota: z.coerce.number().min(0).max(100),
+  pis_situacao_tributaria: z.string().regex(/^\d{2}$/),
+  pis_aliquota: z.coerce.number().min(0).max(100),
+  cofins_situacao_tributaria: z.string().regex(/^\d{2}$/),
+  cofins_aliquota: z.coerce.number().min(0).max(100),
+  ibs_cbs_situacao_tributaria: z.string().regex(/^\d{3}$/),
+  ibs_cbs_classificacao_tributaria: z.string().regex(/^\d{6}$/),
+  ibs_uf_aliquota: z.coerce.number().min(0).max(100),
+  ibs_mun_aliquota: z.coerce.number().min(0).max(100),
+  cbs_aliquota: z.coerce.number().min(0).max(100),
 });
 
 export const itemVendaSchema = z.object({
@@ -52,12 +61,14 @@ export const itemVendaSchema = z.object({
   unidade: z.string().min(1).default('UN'),
   preco_unitario: z.coerce.number().nonnegative(),
   valor_total_item: z.coerce.number().nonnegative(),
-  produto_codigo: z.string().optional().nullable(),
-  produto_ncm: z.string().optional().nullable(),
-  cfop: z.string().optional().nullable(),
-  cst: z.string().optional().nullable(),
-  origem: z.string().optional().nullable(),
-  aliquota_icms: z.coerce.number().optional().nullable(),
+  tipo_item: z.enum(['P', 'S']).default('P'),
+  produto: z.object({
+    codigo: z.string().optional().nullable(),
+    ncm: z.string().transform(v => v.replace(/\D/g, '')).refine(v => v.length === 8, 'NCM deve ter 8 dígitos'),
+    origem_produto: z.string().regex(/^[0-8]$/),
+    dados_fiscais: dadosFiscaisSchema,
+  }),
+  cfop: z.string().regex(/^\d{4}$/).optional().nullable(),
 });
 
 export const vendaSchema = z.object({
@@ -71,25 +82,21 @@ export const vendaSchema = z.object({
 });
 
 export const configFiscalSchema = z.object({
-  serieNfe: z.coerce.number().default(1),
-  cfopPadraoInterno: z.string().default('5102'),
-  cfopPadraoInterestadual: z.string().default('6102'),
-  ncmPadrao: z.string().default('00000000'),
-  naturezaOperacao: z.string().default('Venda de mercadoria'),
+  serieNfe: z.coerce.number().int().min(1).max(999),
+  cfopPadraoInterno: z.string().regex(/^\d{4}$/).default('5102'),
+  cfopPadraoInterestadual: z.string().regex(/^\d{4}$/).default('6102'),
+  naturezaOperacao: z.string().min(1).default('Venda de mercadoria'),
+  regimeTributario: z.enum(['SIMPLES_NACIONAL', 'LUCRO_PRESUMIDO', 'LUCRO_REAL', 'MEI']),
+  cnpjEmitente: z.string().transform(v => v.replace(/\D/g, '')).refine(v => v.length === 14, 'CNPJ emitente inválido'),
+  inscricaoEstadual: z.string().min(1, 'Inscrição Estadual emitente obrigatória'),
 });
-
-export type VendaInput = z.infer<typeof vendaSchema>;
-export type ClienteInput = z.infer<typeof clienteSchema>;
-export type EmpresaInput = z.infer<typeof empresaSchema>;
-export type ItemVendaInput = z.infer<typeof itemVendaSchema>;
-export type ConfigFiscalInput = z.infer<typeof configFiscalSchema>;
 
 export interface VendaToNFeContext {
   venda: unknown;
   cliente: unknown;
   empresa: unknown;
   itens: unknown[];
-  configFiscal?: unknown;
+  configFiscal: unknown;
 }
 
 export class VendaMapperError extends Error {
@@ -99,67 +106,124 @@ export class VendaMapperError extends Error {
   }
 }
 
-// -------------------- Mapper --------------------
+const FORMAS_PAGAMENTO_NFCE = {
+  DINHEIRO: '01',
+  CARTAO_CREDITO: '03',
+  CARTAO_DEBITO: '04',
+  BOLETO: '15',
+  PIX: '17',
+  TRANSFERENCIA: '18',
+  CREDIARIO: '21',
+} as const;
+
+const pagamentoSchema = z.object({
+  valor_liquido: z.coerce.number().positive(),
+  bandeira: z.string().optional().nullable(),
+  autorizacao_nsu: z.string().optional().nullable(),
+  modalidade: z.object({ codigo: z.string() }),
+});
+
+export function pagamentosToNFCe(pagamentos: unknown[], valorTotal: number): NFCePagamentoPayload[] {
+  const parsed = pagamentos.map((pagamento, index) => {
+    const result = pagamentoSchema.safeParse(pagamento);
+    if (!result.success) throw new VendaMapperError(`Dados inválidos: pagamentos[${index}]`, result.error.flatten());
+    const formaPagamento = FORMAS_PAGAMENTO_NFCE[result.data.modalidade.codigo as keyof typeof FORMAS_PAGAMENTO_NFCE];
+    if (!formaPagamento) {
+      throw new VendaMapperError('Modalidade de pagamento sem código fiscal para NFC-e', { codigo: result.data.modalidade.codigo });
+    }
+    return {
+      formaPagamento,
+      valorPagamento: result.data.valor_liquido,
+      bandeiraOperadora: result.data.bandeira ?? undefined,
+      numeroAutorizacao: result.data.autorizacao_nsu ?? undefined,
+    };
+  });
+  if (!parsed.length) throw new VendaMapperError('NFC-e exige ao menos uma forma de pagamento', { pagamentos: 'vazio' });
+  const total = parsed.reduce((soma, pagamento) => soma + pagamento.valorPagamento, 0);
+  if (Math.abs(total - valorTotal) > 0.01) {
+    throw new VendaMapperError('Total dos pagamentos difere do total da venda', { totalPagamentos: total, totalVenda: valorTotal });
+  }
+  return parsed;
+}
 
 export function vendaToNFePayload(ctx: VendaToNFeContext): NFeEmitPayload {
-  const parseSafe = <T>(schema: z.ZodType<T>, data: unknown, label: string): T => {
-    const r = schema.safeParse(data);
-    if (!r.success) {
-      throw new VendaMapperError(`Dados inválidos: ${label}`, r.error.flatten());
-    }
-    return r.data;
+  const parse = <T>(schema: z.ZodType<T>, data: unknown, label: string): T => {
+    const result = schema.safeParse(data);
+    if (!result.success) throw new VendaMapperError(`Dados inválidos: ${label}`, result.error.flatten());
+    return result.data;
   };
 
-  const venda = parseSafe(vendaSchema, ctx.venda, 'venda');
-  const cliente = parseSafe(clienteSchema, ctx.cliente, 'cliente');
-  const empresa = parseSafe(empresaSchema, ctx.empresa, 'empresa');
-  const config = parseSafe(configFiscalSchema, ctx.configFiscal ?? {}, 'configFiscal');
-  const itens = ctx.itens.map((it, i) => parseSafe(itemVendaSchema, it, `itens[${i}]`));
+  const venda = parse(vendaSchema, ctx.venda, 'venda');
+  const cliente = parse(clienteSchema, ctx.cliente, 'cliente');
+  const empresa = parse(empresaSchema, ctx.empresa, 'empresa');
+  const config = parse(configFiscalSchema, ctx.configFiscal, 'configuração fiscal');
+  const itens = ctx.itens.map((item, index) => parse(itemVendaSchema, item, `itens[${index}]`));
 
-  if (itens.length === 0) {
-    throw new VendaMapperError('Venda sem itens não pode gerar NF-e', { itens: 'vazio' });
+  if (!itens.length) throw new VendaMapperError('Venda sem itens não pode gerar NF-e', { itens: 'vazio' });
+  if (itens.some(item => item.tipo_item !== 'P')) throw new VendaMapperError('NF-e aceita apenas produtos; serviços exigem NFS-e', { itens: 'contém serviço' });
+  const totalItens = itens.reduce((total, item) => total + item.valor_total_item, 0);
+  if (Math.abs(totalItens - venda.valor_total) > 0.01) {
+    throw new VendaMapperError('Total dos itens difere do total da venda', { totalItens, totalVenda: venda.valor_total });
+  }
+  if (empresa.cnpj !== config.cnpjEmitente) {
+    throw new VendaMapperError('CNPJ da configuração fiscal difere da empresa emitente', { empresa: empresa.cnpj, configuracao: config.cnpjEmitente });
   }
 
-  const docCliente = ((cliente.tipo_pessoa === 'juridica' ? cliente.cnpj : cliente.cpf) ?? '').replace(/\D/g, '');
-  const ufEmitente = 'SP'; // TODO: derivar de empresas_representadas.estado quando disponível
-  const ufDestino = cliente.estado ?? ufEmitente;
+  const documento = ((cliente.tipo_pessoa === 'juridica' ? cliente.cnpj : cliente.cpf) ?? '').replace(/\D/g, '');
+  const ufEmitente = empresa.estado.toUpperCase();
+  const ufDestino = cliente.estado.toUpperCase();
   const cfopPadrao = ufDestino === ufEmitente ? config.cfopPadraoInterno : config.cfopPadraoInterestadual;
+  const crt = config.regimeTributario === 'SIMPLES_NACIONAL' ? 1 : config.regimeTributario === 'MEI' ? 4 : 3;
 
   return {
     idempotencyKey: `venda-${venda.id}`,
     naturezaOperacao: config.naturezaOperacao,
     serie: config.serieNfe,
-    numero: typeof venda.numero_venda === 'number' ? venda.numero_venda : undefined,
-    dataEmissao: new Date(venda.data_venda).toISOString(),
+    // Numeração fiscal fica com o provedor; número da venda não é número de NF.
+    dataEmissao: new Date().toISOString(),
     finalidade: 'normal',
     presencaComprador: 1,
+    emitente: { cnpj: config.cnpjEmitente, inscricaoEstadual: config.inscricaoEstadual, regimeTributario: crt },
+    localDestino: ufDestino === ufEmitente ? 1 : 2,
+    consumidorFinal: cliente.qualificacao_fiscal.consumidor_final ? 1 : 0,
+    indicadorIeDestinatario: Number(cliente.qualificacao_fiscal.indicador_ie) as 1 | 2 | 9,
+    modalidadeFrete: 9,
     destinatario: {
-      cnpjCpf: docCliente,
+      cnpjCpf: documento,
       nome: cliente.razao_social || cliente.nome,
       ie: cliente.inscricao_estadual || undefined,
       email: cliente.email || undefined,
       endereco: {
-        logradouro: cliente.logradouro ?? '',
-        numero: cliente.numero ?? 'S/N',
+        logradouro: cliente.logradouro,
+        numero: cliente.numero,
         complemento: cliente.complemento ?? undefined,
-        bairro: cliente.bairro ?? '',
-        municipio: cliente.cidade ?? '',
-        uf: (cliente.estado ?? ufEmitente).toUpperCase(),
-        cep: (cliente.cep ?? '').replace(/\D/g, ''),
+        bairro: cliente.bairro,
+        municipio: cliente.cidade,
+        uf: ufDestino,
+        cep: cliente.cep,
       },
     },
-    itens: itens.map((it) => ({
-      codigo: it.produto_codigo || it.id.slice(0, 8),
-      descricao: it.descricao,
-      ncm: (it.produto_ncm || config.ncmPadrao).replace(/\D/g, '').padStart(8, '0'),
-      cfop: it.cfop || cfopPadrao,
-      unidade: it.unidade,
-      quantidade: it.quantidade,
-      valorUnitario: it.preco_unitario,
-      valorTotal: it.valor_total_item,
-      cst: it.cst || '00',
-      origem: it.origem || '0',
-      aliquotaIcms: it.aliquota_icms ?? 0,
+    itens: itens.map(item => ({
+      codigo: item.produto.codigo || item.id.slice(0, 8),
+      descricao: item.descricao,
+      ncm: item.produto.ncm,
+      cfop: item.cfop || cfopPadrao,
+      unidade: item.unidade,
+      quantidade: item.quantidade,
+      valorUnitario: item.preco_unitario,
+      valorTotal: item.valor_total_item,
+      origem: item.produto.origem_produto,
+      icmsSituacaoTributaria: item.produto.dados_fiscais.icms_situacao_tributaria,
+      aliquotaIcms: item.produto.dados_fiscais.icms_aliquota,
+      pisSituacaoTributaria: item.produto.dados_fiscais.pis_situacao_tributaria,
+      aliquotaPis: item.produto.dados_fiscais.pis_aliquota,
+      cofinsSituacaoTributaria: item.produto.dados_fiscais.cofins_situacao_tributaria,
+      aliquotaCofins: item.produto.dados_fiscais.cofins_aliquota,
+      ibsCbsSituacaoTributaria: item.produto.dados_fiscais.ibs_cbs_situacao_tributaria,
+      ibsCbsClassificacaoTributaria: item.produto.dados_fiscais.ibs_cbs_classificacao_tributaria,
+      aliquotaIbsUf: item.produto.dados_fiscais.ibs_uf_aliquota,
+      aliquotaIbsMunicipio: item.produto.dados_fiscais.ibs_mun_aliquota,
+      aliquotaCbs: item.produto.dados_fiscais.cbs_aliquota,
     })),
     valorTotal: venda.valor_total,
     observacoes: venda.observacoes ?? undefined,

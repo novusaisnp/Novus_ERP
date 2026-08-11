@@ -8,12 +8,16 @@ import { TributosTab } from "@/components/modules/fiscal/TributosTab";
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
+  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calculator } from "lucide-react";
+import { useConfiguracoesFiscais } from '@/hooks/useFiscal';
+import type { ConfiguracaoFiscal } from '@/types/fiscal';
 
 console.log('[Fiscal] Inicializando página de Tributos refatorada');
 
@@ -21,6 +25,8 @@ const Tributos: React.FC = () => {
   const [activeTab, setActiveTab] = useState('configuracoes');
   const [showConfigForm, setShowConfigForm] = useState(false);
   const [showNaturezaForm, setShowNaturezaForm] = useState(false);
+  const [configuracaoEditando, setConfiguracaoEditando] = useState<ConfiguracaoFiscal>();
+  const { data: configuracoes = [] } = useConfiguracoesFiscais();
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -52,27 +58,39 @@ const Tributos: React.FC = () => {
             </div>
             <Dialog open={showConfigForm} onOpenChange={setShowConfigForm}>
               <DialogTrigger asChild>
-                <Button>
+                <Button onClick={() => setConfiguracaoEditando(undefined)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Nova Configuração
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                <FiscalConfigForm onClose={() => setShowConfigForm(false)} />
+                <DialogHeader><DialogTitle>Configuração fiscal</DialogTitle></DialogHeader>
+                <FiscalConfigForm configuracao={configuracaoEditando} onClose={() => setShowConfigForm(false)} />
               </DialogContent>
             </Dialog>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="border-dashed">
-              <CardContent className="flex flex-col items-center justify-center p-6 min-h-[200px]">
-                <Calculator className="h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-4 text-lg font-semibold">Nenhuma Configuração</h3>
-                <p className="mt-2 text-sm text-muted-foreground text-center">
-                  Clique em "Nova Configuração" para começar
-                </p>
-              </CardContent>
-            </Card>
+            {configuracoes.length === 0 ? (
+              <Card className="border-dashed">
+                <CardContent className="flex flex-col items-center justify-center p-6 min-h-[200px]">
+                  <Calculator className="h-12 w-12 text-muted-foreground" />
+                  <h3 className="mt-4 text-lg font-semibold">Nenhuma configuração</h3>
+                  <p className="mt-2 text-sm text-muted-foreground text-center">Cadastre a empresa emitente para liberar a emissão.</p>
+                </CardContent>
+              </Card>
+            ) : configuracoes.map((config) => (
+              <Card key={config.id}>
+                <CardHeader>
+                  <CardTitle className="text-lg">{config.cnpjEmitente}</CardTitle>
+                  <CardDescription>{config.ambiente === 'PRODUCAO' ? 'Produção' : 'Homologação'} · Focus NFe</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm">Série {config.serieNfe} · {config.regimeTributario.replace(/_/g, ' ')}</p>
+                  <Button variant="outline" size="sm" onClick={() => { setConfiguracaoEditando(config); setShowConfigForm(true); }}>Editar</Button>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </TabsContent>
 
@@ -122,12 +140,6 @@ const Tributos: React.FC = () => {
           <TributosTab />
         </TabsContent>
       </Tabs>
-
-      <Dialog open={showConfigForm} onOpenChange={setShowConfigForm}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <FiscalConfigForm onClose={() => setShowConfigForm(false)} />
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={showNaturezaForm} onOpenChange={setShowNaturezaForm}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">

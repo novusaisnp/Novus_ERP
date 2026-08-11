@@ -12,6 +12,7 @@ import { PrecosSection } from './FormProduto/PrecosSection';
 import { ImagemSection } from './FormProduto/ImagemSection';
 import { EstoqueSection } from './FormProduto/EstoqueSection';
 import { FornecedoresSection } from './FormProduto/FornecedoresSection';
+import { FiscalSection } from './FormProduto/FiscalSection';
 
 interface FormProdutoProps {
   produto?: Produto;
@@ -96,12 +97,13 @@ export const FormProduto: React.FC<FormProdutoProps> = ({
 
         <form onSubmit={handleSubmit} className="flex flex-col h-full">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
-            <TabsList className="grid w-full grid-cols-6 mb-4 bg-transparent p-0 border-b rounded-none">
+            <TabsList className="grid w-full grid-cols-7 mb-4 bg-transparent p-0 border-b rounded-none">
               <TabsTrigger value="dados" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(var(--accent-vivid))] data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium">Dados</TabsTrigger>
               <TabsTrigger value="medidas" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(var(--accent-vivid))] data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium">Medidas</TabsTrigger>
               <TabsTrigger value="precos" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(var(--accent-vivid))] data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium">Preços</TabsTrigger>
               <TabsTrigger value="imagem" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(var(--accent-vivid))] data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium">Imagem</TabsTrigger>
               <TabsTrigger value="estoque" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(var(--accent-vivid))] data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium">Estoque</TabsTrigger>
+              <TabsTrigger value="fiscal" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(var(--accent-vivid))] data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium">Fiscal</TabsTrigger>
               <TabsTrigger value="fornecedores" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(var(--accent-vivid))] data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium">Fornecedores</TabsTrigger>
             </TabsList>
 
@@ -133,6 +135,10 @@ export const FormProduto: React.FC<FormProdutoProps> = ({
 
               <TabsContent value="estoque" className="space-y-4">
                 <EstoqueSection formData={formData} onChange={handleInputChange} />
+              </TabsContent>
+
+              <TabsContent value="fiscal" className="space-y-4">
+                <FiscalSection formData={formData} onChange={handleInputChange} />
               </TabsContent>
 
               <TabsContent value="fornecedores" className="space-y-4">

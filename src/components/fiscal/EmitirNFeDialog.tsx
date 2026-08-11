@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader2, FileText, AlertTriangle } from "lucide-react";
+import { Loader2, FileText } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { useEmitirNFe } from "@/hooks/fiscal/useEmissaoNFe";
 import { cn } from "@/lib/utils";
@@ -27,7 +26,7 @@ interface EmitirNFeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   venda: VendaResumo | null;
-  environment?: 'homologation' | 'production';
+  tipo?: 'NFE' | 'NFCE';
   onEmitida?: (documentoId: string) => void;
 }
 
@@ -38,9 +37,10 @@ const EmitirNFeDialog = ({
   open,
   onOpenChange,
   venda,
-  environment = 'homologation',
+  tipo = 'NFE',
   onEmitida,
 }: EmitirNFeDialogProps) => {
+  const label = tipo === 'NFCE' ? 'NFC-e' : 'NF-e';
   const [confirmando, setConfirmando] = useState(false);
   const emitir = useEmitirNFe();
 
@@ -48,7 +48,7 @@ const EmitirNFeDialog = ({
     if (!venda) return;
     setConfirmando(true);
     try {
-      const result = await emitir.mutateAsync({ vendaId: venda.id, environment });
+      const result = await emitir.mutateAsync({ vendaId: venda.id, tipo });
       onEmitida?.(result.documento_id);
       onOpenChange(false);
     } catch {
@@ -64,21 +64,16 @@ const EmitirNFeDialog = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
-            Emitir NF-e
+            Emitir {label}
           </DialogTitle>
           <DialogDescription>
             Revise os dados da venda antes de transmitir à SEFAZ.
           </DialogDescription>
         </DialogHeader>
 
-        {environment === 'homologation' && (
-          <Alert>
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              Ambiente de <strong>homologação</strong> — as notas emitidas não têm valor fiscal.
-            </AlertDescription>
-          </Alert>
-        )}
+        <p className="text-xs text-muted-foreground">
+          Ambiente e provedor seguem a configuração fiscal ativa da empresa.
+        </p>
 
         {venda ? (
           <div className="space-y-3 text-sm">

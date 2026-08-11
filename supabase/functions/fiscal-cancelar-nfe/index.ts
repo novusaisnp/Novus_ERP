@@ -1,10 +1,9 @@
-// Edge Function: fiscal-cancelar-nfe (Fase 3 mock — sem API externa)
-//
-// Valida documento, aplica UPDATE de status e registra evento em fiscal_eventos.
-// Quando FISCAL_MOCK=false (futuro), delegará a provider.cancelNFe().
+// Edge Function: fiscal-cancelar-nfe.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { resolveFiscalProvider } from '../_shared/fiscal/providers/resolveFiscalProvider.ts';
+import type { FiscalEnvironment, FiscalProviderName } from '../_shared/fiscal/providers/FiscalProvider.ts';
 
 interface CancelarRequest {
   documentoId: string;
@@ -45,22 +44,48 @@ Deno.serve(async (req) => {
 
     const { data: doc, error: docErr } = await client
       .from('fiscal_documentos_eletronicos')
-      .select('id, empresa_representada_id, status, provider_ref, provider')
+      .select('id, empresa_representada_id, tipo, status, provider_ref, provider, ambiente')
       .eq('id', body.documentoId)
       .maybeSingle();
     if (docErr || !doc) return json({ error: 'documento_not_found' }, 404);
     if (String(doc.status).toUpperCase() !== 'AUTORIZADA') {
-      return json({ error: 'invalid_status', message: `Somente NF-e autorizada pode ser cancelada (atual: ${doc.status}).` }, 409);
+      return json({ error: 'invalid_status', message: `Somente documento autorizado pode ser cancelado (atual: ${doc.status}).` }, 409);
     }
 
     const useMock = (Deno.env.get('FISCAL_MOCK') ?? 'true').toLowerCase() !== 'false';
-    const protocolo = useMock ? `MOCK-CANC-${Date.now()}` : `PROV-${crypto.randomUUID()}`;
+    if (!useMock && !doc.provider_ref) {
+      return json({ error: 'provider_ref_missing', message: 'Documento sem referência no provedor.' }, 409);
+    }
+    const providerResult = useMock
+      ? { status: 'cancelada', raw: { mock: true } }
+      : await (() => {
+        const provider = resolveFiscalProvider(
+          (doc.provider ?? 'focusnfe') as FiscalProviderName,
+          (doc.ambiente === 'PRODUCAO' ? 'production' : 'homologation') as FiscalEnvironment,
+        );
+        const payload = { providerRef: doc.provider_ref!, justificativa: just };
+        return doc.tipo === 'NFCE'
+          ? provider.cancelNFCe(payload)
+          : doc.tipo === 'MDFE'
+            ? provider.cancelMDFe(payload)
+            : provider.cancelNFe(payload);
+      })();
+    if (providerResult.status !== 'cancelada') {
+      return json({ error: 'cancelamento_nao_confirmado', status: providerResult.status, details: providerResult.motivo }, 502);
+    }
+    const raw = providerResult.raw as Record<string, unknown>;
+    const protocolo = useMock
+      ? `MOCK-CANC-${Date.now()}`
+      : String(raw.protocolo_cancelamento ?? raw.protocolo ?? '');
 
     const { error: upErr } = await client
       .from('fiscal_documentos_eletronicos')
       .update({ status: 'CANCELADA', motivo_rejeicao: null })
       .eq('id', body.documentoId);
     if (upErr) return json({ error: 'db_update_failed', details: upErr.message }, 500);
+    if (doc.tipo === 'MDFE') {
+      await client.from('fiscal_mdfe_operacoes').update({ status: 'CANCELADA' }).eq('documento_id', doc.id);
+    }
 
     const { data: evento, error: evErr } = await client
       .from('fiscal_eventos')
@@ -71,7 +96,7 @@ Deno.serve(async (req) => {
         justificativa: just,
         protocolo,
         status: 'cancelada',
-        payload_provedor: { mock: useMock },
+        payload_provedor: providerResult.raw,
         created_by: userData.user.id,
       })
       .select('id')

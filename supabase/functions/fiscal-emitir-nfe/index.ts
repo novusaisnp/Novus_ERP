@@ -13,18 +13,18 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
-import { vendaToNFePayload, VendaMapperError } from '../_shared/fiscal/mappers/vendaToNFePayload.ts';
+import { pagamentosToNFCe, vendaToNFePayload, VendaMapperError } from '../_shared/fiscal/mappers/vendaToNFePayload.ts';
 import { resolveFiscalProvider } from '../_shared/fiscal/providers/resolveFiscalProvider.ts';
 import type {
   FiscalEnvironment,
   FiscalProviderName,
   NFeEmitResult,
+  NFCeEmitPayload,
 } from '../_shared/fiscal/providers/FiscalProvider.ts';
 
 interface EmitirRequest {
   vendaId: string;
-  provider?: FiscalProviderName; // padrão: focusnfe
-  environment?: FiscalEnvironment; // padrão: homologation
+  tipo?: 'NFE' | 'NFCE';
 }
 
 Deno.serve(async (req) => {
@@ -53,9 +53,8 @@ Deno.serve(async (req) => {
 
     const body = (await req.json()) as EmitirRequest;
     if (!body?.vendaId) return json({ error: 'invalid_input', missing: ['vendaId'] }, 400);
-
-    const providerName: FiscalProviderName = body.provider ?? 'focusnfe';
-    const environment: FiscalEnvironment = body.environment ?? 'homologation';
+    const tipo = body.tipo ?? 'NFE';
+    if (!['NFE', 'NFCE'].includes(tipo)) return json({ error: 'invalid_tipo' }, 400);
 
     // 1) Carrega dados
     const { data: venda, error: vErr } = await client
@@ -67,7 +66,7 @@ Deno.serve(async (req) => {
 
     const { data: itens, error: iErr } = await client
       .from('itens_venda')
-      .select('*')
+      .select('*, produto:produtos(codigo,ncm,origem_produto,dados_fiscais)')
       .eq('venda_id', body.vendaId)
       .order('ordem', { ascending: true });
     if (iErr) return json({ error: 'itens_load_failed', details: iErr.message }, 500);
@@ -86,10 +85,51 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (eErr || !empresa) return json({ error: 'empresa_not_found', details: eErr?.message }, 404);
 
+    const useMock = (Deno.env.get('FISCAL_MOCK') ?? 'true').toLowerCase() !== 'false';
+    const { data: configFiscal, error: cfgErr } = await client
+      .from('fiscal_configuracoes')
+      .select('serie_nfe, serie_nfce, ambiente, provedor, regime_tributario, cnpj_emitente, inscricao_estadual')
+      .eq('empresa_representada_id', venda.empresa_representada_id)
+      .eq('ativo', true)
+      .is('deleted_at', null)
+      .maybeSingle();
+    if (cfgErr) return json({ error: 'fiscal_config_load_failed', details: cfgErr.message }, 500);
+    if (!useMock && !configFiscal) {
+      return json({ error: 'fiscal_config_missing', message: 'Configure a empresa em Fiscal antes de emitir.' }, 422);
+    }
+
+    const { data: natureza } = await client
+      .from('natureza_operacao')
+      .select('descricao, cfop_dentro_estado, cfop_fora_estado')
+      .eq('empresa_representada_id', venda.empresa_representada_id)
+      .eq('tipo', 'venda')
+      .eq('ativo', true)
+      .is('deleted_at', null)
+      .limit(1)
+      .maybeSingle();
+    const providerName: FiscalProviderName = configFiscal?.provedor === 'FOCUS_NFE' || !configFiscal
+      ? 'focusnfe'
+      : (() => { throw new Error(`Provedor fiscal não implementado: ${configFiscal.provedor}`); })();
+    const environment: FiscalEnvironment = configFiscal?.ambiente === 'PRODUCAO' ? 'production' : 'homologation';
+
     // 2) Mapper
     let payload;
     try {
-      payload = vendaToNFePayload({ venda, cliente, empresa, itens: itens ?? [] });
+      payload = vendaToNFePayload({
+        venda,
+        cliente,
+        empresa,
+        itens: itens ?? [],
+        configFiscal: {
+          serieNfe: configFiscal?.serie_nfe ?? 1,
+          naturezaOperacao: natureza?.descricao ?? 'Venda de mercadoria',
+          cfopPadraoInterno: natureza?.cfop_dentro_estado ?? '5102',
+          cfopPadraoInterestadual: natureza?.cfop_fora_estado ?? '6102',
+          regimeTributario: configFiscal?.regime_tributario,
+          cnpjEmitente: configFiscal?.cnpj_emitente,
+          inscricaoEstadual: configFiscal?.inscricao_estadual,
+        },
+      });
     } catch (err) {
       if (err instanceof VendaMapperError) {
         return json({ error: 'mapper_validation_failed', issues: err.issues, message: err.message }, 422);
@@ -97,11 +137,38 @@ Deno.serve(async (req) => {
       throw err;
     }
 
+    if (tipo === 'NFCE') {
+      const { data: pagamentos, error: pagamentosErr } = await client
+        .from('venda_pagamento')
+        .select('valor_liquido, bandeira, autorizacao_nsu, modalidade:modalidades_pagamento(codigo)')
+        .eq('venda_id', venda.id)
+        .eq('empresa_representada_id', venda.empresa_representada_id)
+        .is('deleted_at', null);
+      if (pagamentosErr) return json({ error: 'pagamentos_load_failed', details: pagamentosErr.message }, 500);
+      try {
+        payload = {
+          ...payload,
+          idempotencyKey: `nfce-venda-${venda.id}`,
+          naturezaOperacao: 'VENDA AO CONSUMIDOR',
+          serie: configFiscal?.serie_nfce ?? 1,
+          dataEmissao: new Date().toISOString(),
+          consumidorFinal: 1,
+          pagamentos: pagamentosToNFCe(pagamentos ?? [], payload.valorTotal),
+        } satisfies NFCeEmitPayload;
+      } catch (err) {
+        if (err instanceof VendaMapperError) {
+          return json({ error: 'payment_validation_failed', issues: err.issues, message: err.message }, 422);
+        }
+        throw err;
+      }
+    }
+
     // 3) Insere documento em status "processando" (idempotente por chave)
     const idempotencyKey = payload.idempotencyKey;
     const { data: docExistente } = await client
       .from('fiscal_documentos_eletronicos')
       .select('id, status')
+      .eq('empresa_representada_id', venda.empresa_representada_id)
       .eq('idempotency_key', idempotencyKey)
       .maybeSingle();
 
@@ -109,17 +176,20 @@ Deno.serve(async (req) => {
     if (docExistente && ['AUTORIZADA', 'EM_PROCESSAMENTO'].includes(statusExistente)) {
       return json({
         error: 'duplicate_emission',
-        message: 'Já existe NF-e em processamento ou autorizada para esta venda.',
+        message: `Já existe ${tipo === 'NFCE' ? 'NFC-e' : 'NF-e'} em processamento ou autorizada para esta venda.`,
         documento_id: docExistente.id,
       }, 409);
     }
 
+    const tax = (base: number, aliquota: number) => Math.round(base * aliquota) / 100;
+    const totalTributo = (field: 'aliquotaIcms' | 'aliquotaPis' | 'aliquotaCofins') =>
+      payload.itens.reduce((total, item) => total + tax(item.valorTotal, item[field]), 0);
     const docBase = {
       empresa_representada_id: venda.empresa_representada_id,
       venda_id: venda.id,
       cliente_id: venda.cliente_id,
-      tipo: 'NFE',
-      modelo: 55,
+      tipo,
+      modelo: tipo === 'NFCE' ? 65 : 55,
       serie: payload.serie,
       ambiente: environment === 'production' ? 'PRODUCAO' : 'HOMOLOGACAO',
       data_emissao: payload.dataEmissao,
@@ -128,11 +198,11 @@ Deno.serve(async (req) => {
       valor_desconto: 0,
       valor_outras_despesas: 0,
       valor_total: payload.valorTotal,
-      valor_icms: 0,
+      valor_icms: totalTributo('aliquotaIcms'),
       valor_icms_st: 0,
       valor_ipi: 0,
-      valor_pis: 0,
-      valor_cofins: 0,
+      valor_pis: totalTributo('aliquotaPis'),
+      valor_cofins: totalTributo('aliquotaCofins'),
       status: 'EM_PROCESSAMENTO',
       provider: providerName,
       idempotency_key: idempotencyKey,
@@ -159,8 +229,50 @@ Deno.serve(async (req) => {
       documentoId = data.id;
     }
 
+    const { error: snapshotDeleteErr } = await client
+      .from('fiscal_documentos_eletronicos_itens')
+      .delete()
+      .eq('documento_id', documentoId);
+    if (snapshotDeleteErr) return json({ error: 'snapshot_delete_failed', details: snapshotDeleteErr.message }, 500);
+    const { error: snapshotInsertErr } = await client
+      .from('fiscal_documentos_eletronicos_itens')
+      .insert(payload.itens.map((item, index) => ({
+        empresa_representada_id: venda.empresa_representada_id,
+        documento_id: documentoId,
+        produto_id: itens?.[index]?.produto_id,
+        ordem: index + 1,
+        descricao: item.descricao,
+        ncm: item.ncm,
+        cfop: item.cfop,
+        unidade: item.unidade,
+        quantidade: item.quantidade,
+        valor_unitario: item.valorUnitario,
+        valor_total: item.valorTotal,
+        origem_mercadoria: item.origem,
+        icms_cst: item.icmsSituacaoTributaria,
+        icms_base: item.valorTotal,
+        icms_aliquota: item.aliquotaIcms,
+        icms_valor: tax(item.valorTotal, item.aliquotaIcms),
+        pis_cst: item.pisSituacaoTributaria,
+        pis_aliquota: item.aliquotaPis,
+        pis_valor: tax(item.valorTotal, item.aliquotaPis),
+        cofins_cst: item.cofinsSituacaoTributaria,
+        cofins_aliquota: item.aliquotaCofins,
+        cofins_valor: tax(item.valorTotal, item.aliquotaCofins),
+        dados_fiscais: {
+          ibs_cbs_situacao_tributaria: item.ibsCbsSituacaoTributaria,
+          ibs_cbs_classificacao_tributaria: item.ibsCbsClassificacaoTributaria,
+          ibs_uf_aliquota: item.aliquotaIbsUf,
+          ibs_uf_valor: tax(item.valorTotal, item.aliquotaIbsUf),
+          ibs_mun_aliquota: item.aliquotaIbsMunicipio,
+          ibs_mun_valor: tax(item.valorTotal, item.aliquotaIbsMunicipio),
+          cbs_aliquota: item.aliquotaCbs,
+          cbs_valor: tax(item.valorTotal, item.aliquotaCbs),
+        },
+      })));
+    if (snapshotInsertErr) return json({ error: 'snapshot_insert_failed', details: snapshotInsertErr.message }, 500);
+
     // 4) Chama provider (mockado por padrão)
-    const useMock = (Deno.env.get('FISCAL_MOCK') ?? 'true').toLowerCase() !== 'false';
     let result: NFeEmitResult;
     let provider: ReturnType<typeof resolveFiscalProvider> | null = null;
     try {
@@ -169,7 +281,9 @@ Deno.serve(async (req) => {
         console.log('[fiscal-emitir-nfe] MOCK ativo — nenhuma chamada real ao provedor.');
       } else {
         provider = resolveFiscalProvider(providerName, environment);
-        result = await provider.emitNFe(payload);
+        result = tipo === 'NFCE'
+          ? await provider.emitNFCe(payload as NFCeEmitPayload)
+          : await provider.emitNFe(payload);
       }
     } catch (err) {
       const message = (err as Error).message ?? 'erro desconhecido';
@@ -311,6 +425,7 @@ function toDocumentoStatus(status: string): string {
     autorizada: 'AUTORIZADA',
     rejeitada: 'REJEITADA',
     cancelada: 'CANCELADA',
+    encerrada: 'ENCERRADA',
     denegada: 'DENEGADA',
     inutilizada: 'INUTILIZADA',
     erro: 'REJEITADA',

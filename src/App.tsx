@@ -71,6 +71,7 @@ import ConciliacaoRelatorios from './pages/gestao-bancaria/conciliacao/relatorio
 import NotasFiscais from './pages/fiscal/NotasFiscais';
 import SPED from './pages/fiscal/SPED';
 import Tributos from './pages/fiscal/Tributos';
+import MDFe from './pages/fiscal/MDFe';
 const DashboardFiscal = React.lazy(() => import('./pages/fiscal/DashboardFiscal'));
 
 
@@ -220,6 +221,7 @@ function App() {
                       }
                     />
                     <Route path="notas-fiscais" element={<NotasFiscais />} />
+                    <Route path="mdfe" element={<MDFe />} />
                     <Route path="sped" element={<SPED />} />
                     <Route path="tributos" element={<Tributos />} />
                   </Route>

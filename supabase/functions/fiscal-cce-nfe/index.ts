@@ -1,10 +1,9 @@
-// Edge Function: fiscal-cce-nfe (Fase 3 mock — sem API externa)
-//
-// Registra evento de Carta de Correção em fiscal_eventos. Documento
-// permanece 'autorizada'. Sequência é auto-incremental por documento.
+// Edge Function: fiscal-cce-nfe. Documento permanece autorizado.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { resolveFiscalProvider } from '../_shared/fiscal/providers/resolveFiscalProvider.ts';
+import type { FiscalEnvironment, FiscalProviderName } from '../_shared/fiscal/providers/FiscalProvider.ts';
 
 interface CCeRequest {
   documentoId: string;
@@ -43,7 +42,7 @@ Deno.serve(async (req) => {
 
     const { data: doc, error: docErr } = await client
       .from('fiscal_documentos_eletronicos')
-      .select('id, empresa_representada_id, status, provider')
+      .select('id, empresa_representada_id, status, provider, provider_ref, ambiente')
       .eq('id', body.documentoId)
       .maybeSingle();
     if (docErr || !doc) return json({ error: 'documento_not_found' }, 404);
@@ -65,7 +64,22 @@ Deno.serve(async (req) => {
     }
 
     const useMock = (Deno.env.get('FISCAL_MOCK') ?? 'true').toLowerCase() !== 'false';
-    const protocolo = useMock ? `MOCK-CCE-${proxSeq}-${Date.now()}` : `PROV-${crypto.randomUUID()}`;
+    if (!useMock && !doc.provider_ref) {
+      return json({ error: 'provider_ref_missing', message: 'Documento sem referência no provedor.' }, 409);
+    }
+    const providerResult = useMock
+      ? { status: 'autorizada', raw: { mock: true } }
+      : await resolveFiscalProvider(
+        (doc.provider ?? 'focusnfe') as FiscalProviderName,
+        (doc.ambiente === 'PRODUCAO' ? 'production' : 'homologation') as FiscalEnvironment,
+      ).sendCCe({ providerRef: doc.provider_ref!, correcao, sequencia: proxSeq });
+    if (providerResult.status !== 'autorizada') {
+      return json({ error: 'cce_nao_confirmada', status: providerResult.status, details: providerResult.motivo }, 502);
+    }
+    const raw = providerResult.raw as Record<string, unknown>;
+    const protocolo = useMock
+      ? `MOCK-CCE-${proxSeq}-${Date.now()}`
+      : String(raw.protocolo_carta_correcao ?? raw.protocolo ?? '');
 
     const { data: evento, error: evErr } = await client
       .from('fiscal_eventos')
@@ -77,7 +91,7 @@ Deno.serve(async (req) => {
         justificativa: correcao,
         protocolo,
         status: 'autorizada',
-        payload_provedor: { mock: useMock },
+        payload_provedor: providerResult.raw,
         created_by: userData.user.id,
       })
       .select('id')

@@ -19,9 +19,11 @@ interface CancelarNFeDialogProps {
   onOpenChange: (open: boolean) => void;
   documentoId: string | null;
   numero?: number | null;
+  tipo?: string;
 }
 
-const CancelarNFeDialog = ({ open, onOpenChange, documentoId, numero }: CancelarNFeDialogProps) => {
+const CancelarNFeDialog = ({ open, onOpenChange, documentoId, numero, tipo }: CancelarNFeDialogProps) => {
+  const label = tipo === 'NFCE' ? 'NFC-e' : tipo === 'MDFE' ? 'MDF-e' : 'NF-e';
   const [justificativa, setJustificativa] = useState("");
   const cancelar = useCancelarNFe();
   const valid = justificativa.trim().length >= 15 && justificativa.trim().length <= 255;
@@ -39,7 +41,7 @@ const CancelarNFeDialog = ({ open, onOpenChange, documentoId, numero }: Cancelar
     <Dialog open={open} onOpenChange={(o) => { if (!o) setJustificativa(""); onOpenChange(o); }}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Cancelar NF-e {numero ? `#${numero}` : ""}</DialogTitle>
+          <DialogTitle>Cancelar {label} {numero ? `#${numero}` : ""}</DialogTitle>
           <DialogDescription>Esta ação é irreversível e será registrada em auditoria.</DialogDescription>
         </DialogHeader>
 

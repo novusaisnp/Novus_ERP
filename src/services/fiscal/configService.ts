@@ -1,113 +1,87 @@
+import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
+import type { ConfiguracaoFiscal } from '@/types/fiscal';
 
-import { supabase } from "@/integrations/supabase/client";
-import { ConfiguracaoFiscal } from "@/types/fiscal";
+type ConfigInsert = Database['public']['Tables']['fiscal_configuracoes']['Insert'];
+type ConfigMDFeWrite = { serie_mdfe?: number | null; proximo_numero_mdfe?: number | null; rntrc?: string | null };
 
-console.log('[Fiscal] Inicializando serviço de configurações fiscais');
+type ConfigRow = {
+  id: string;
+  empresa_representada_id: string;
+  ambiente: string;
+  provedor: string;
+  regime_tributario: string;
+  cnpj_emitente: string | null;
+  inscricao_estadual: string | null;
+  inscricao_municipal: string | null;
+  serie_nfe: number | null;
+  proximo_numero_nfe: number | null;
+  serie_nfce: number | null;
+  proximo_numero_nfce: number | null;
+  serie_mdfe?: number | null;
+  proximo_numero_mdfe?: number | null;
+  rntrc?: string | null;
+  ativo: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+const fromRow = (item: ConfigRow): ConfiguracaoFiscal => ({
+  id: item.id,
+  empresaRepresentadaId: item.empresa_representada_id,
+  ambiente: item.ambiente as ConfiguracaoFiscal['ambiente'],
+  provedor: item.provedor as ConfiguracaoFiscal['provedor'],
+  regimeTributario: item.regime_tributario as ConfiguracaoFiscal['regimeTributario'],
+  cnpjEmitente: item.cnpj_emitente || '',
+  inscricaoEstadual: item.inscricao_estadual || '',
+  inscricaoMunicipal: item.inscricao_municipal || undefined,
+  serieNfe: item.serie_nfe || 1,
+  proximoNumeroNfe: item.proximo_numero_nfe || undefined,
+  serieNfce: item.serie_nfce || undefined,
+  proximoNumeroNfce: item.proximo_numero_nfce || undefined,
+  serieMdfe: item.serie_mdfe || undefined,
+  proximoNumeroMdfe: item.proximo_numero_mdfe || undefined,
+  rntrc: item.rntrc || undefined,
+  ativo: item.ativo,
+  createdAt: item.created_at,
+  updatedAt: item.updated_at,
+});
 
 export const fetchConfiguracoesFiscais = async (): Promise<ConfiguracaoFiscal[]> => {
-  console.log('[Fiscal] Buscando configurações fiscais');
   const { data, error } = await supabase
-    .from('configuracoes_fiscais')
+    .from('fiscal_configuracoes')
     .select('*')
+    .is('deleted_at', null)
     .order('created_at', { ascending: false });
-  
-  if (error) {
-    console.error('[Fiscal] Erro ao buscar configurações fiscais:', error);
-    throw error;
-  }
-  
-  if (!data) return [];
-  
-  return data.map((item) => ({
-    id: item.id,
-    empresaRepresentadaId: item.empresa_representada_id,
-    ambiente: item.ambiente as ConfiguracaoFiscal['ambiente'],
-    certificadoDigital: item.certificado_digital,
-    senhaCertificado: item.senha_certificado,
-    regimeTributario: item.regime_tributario as ConfiguracaoFiscal['regimeTributario'],
-    aliquotaIcmsPadrao: Number(item.aliquota_icms_padrao || 0),
-    aliquotaIpiPadrao: Number(item.aliquota_ipi_padrao || 0),
-    aliquotaPisPadrao: Number(item.aliquota_pis_padrao || 0),
-    aliquotaCofinsPadrao: Number(item.aliquota_cofins_padrao || 0),
-    aliquotaIssPadrao: Number(item.aliquota_iss_padrao || 0),
-    serieNfe: item.serie_nfe,
-    numeroUltimoNfe: item.numero_ultimo_nfe,
-    serieNfce: item.serie_nfce,
-    numeroUltimoNfce: item.numero_ultimo_nfce,
-    ativo: item.ativo,
-    createdAt: item.created_at,
-    updatedAt: item.updated_at
-  }));
+  if (error) throw error;
+  return ((data || []) as ConfigRow[]).map(fromRow);
 };
 
-export const createConfiguracaoFiscal = async (config: Omit<ConfiguracaoFiscal, 'id' | 'createdAt' | 'updatedAt'>): Promise<ConfiguracaoFiscal> => {
-  console.log('[Fiscal] Criando configuração fiscal:', config);
+export const createConfiguracaoFiscal = async (config: ConfiguracaoFiscal): Promise<ConfiguracaoFiscal> => {
+  const payload: ConfigInsert & ConfigMDFeWrite = {
+    empresa_representada_id: config.empresaRepresentadaId,
+    ambiente: config.ambiente,
+    provedor: config.provedor,
+    regime_tributario: config.regimeTributario,
+    cnpj_emitente: config.cnpjEmitente.replace(/\D/g, ''),
+    inscricao_estadual: config.inscricaoEstadual,
+    inscricao_municipal: config.inscricaoMunicipal || null,
+    serie_nfe: config.serieNfe,
+    proximo_numero_nfe: config.proximoNumeroNfe || null,
+    serie_nfce: config.serieNfce || null,
+    proximo_numero_nfce: config.proximoNumeroNfce || null,
+    serie_mdfe: config.serieMdfe || null,
+    proximo_numero_mdfe: config.proximoNumeroMdfe || null,
+    rntrc: config.rntrc || null,
+    ativo: config.ativo,
+    deleted_at: null,
+    updated_at: new Date().toISOString(),
+  };
   const { data, error } = await supabase
-    .from('configuracoes_fiscais')
-    .insert([{
-      empresa_representada_id: config.empresaRepresentadaId,
-      ambiente: config.ambiente,
-      certificado_digital: config.certificadoDigital,
-      senha_certificado: config.senhaCertificado,
-      regime_tributario: config.regimeTributario,
-      aliquota_icms_padrao: config.aliquotaIcmsPadrao,
-      aliquota_ipi_padrao: config.aliquotaIpiPadrao,
-      aliquota_pis_padrao: config.aliquotaPisPadrao,
-      aliquota_cofins_padrao: config.aliquotaCofinsPadrao,
-      aliquota_iss_padrao: config.aliquotaIssPadrao,
-      serie_nfe: config.serieNfe,
-      numero_ultimo_nfe: config.numeroUltimoNfe,
-      serie_nfce: config.serieNfce,
-      numero_ultimo_nfce: config.numeroUltimoNfce,
-      ativo: config.ativo
-    }])
+    .from('fiscal_configuracoes')
+    .upsert(payload as ConfigInsert, { onConflict: 'empresa_representada_id' })
     .select()
     .single();
-  
-  if (error) {
-    console.error('[Fiscal] Erro ao criar configuração fiscal:', error);
-    throw error;
-  }
-  
-  if (!data) {
-    throw new Error('Nenhum dados retornado após inserção');
-  }
-  
-  const item = data;
-  return {
-    id: item.id,
-    empresaRepresentadaId: item.empresa_representada_id,
-    ambiente: item.ambiente as ConfiguracaoFiscal['ambiente'],
-    certificadoDigital: item.certificado_digital,
-    senhaCertificado: item.senha_certificado,
-    regimeTributario: item.regime_tributario as ConfiguracaoFiscal['regimeTributario'],
-    aliquotaIcmsPadrao: Number(item.aliquota_icms_padrao || 0),
-    aliquotaIpiPadrao: Number(item.aliquota_ipi_padrao || 0),
-    aliquotaPisPadrao: Number(item.aliquota_pis_padrao || 0),
-    aliquotaCofinsPadrao: Number(item.aliquota_cofins_padrao || 0),
-    aliquotaIssPadrao: Number(item.aliquota_iss_padrao || 0),
-    serieNfe: item.serie_nfe,
-    numeroUltimoNfe: item.numero_ultimo_nfe,
-    serieNfce: item.serie_nfce,
-    numeroUltimoNfce: item.numero_ultimo_nfce,
-    ativo: item.ativo,
-    createdAt: item.created_at,
-    updatedAt: item.updated_at
-  };
-};
-
-export const validarCertificadoDigital = (arquivo: File): Promise<boolean> => {
-  console.log('[Fiscal] Validando certificado digital:', arquivo.name);
-  return new Promise((resolve) => {
-    const extensoesValidas = ['.pfx', '.p12', '.pem'];
-    const extensao = arquivo.name.toLowerCase().substring(arquivo.name.lastIndexOf('.'));
-    
-    if (extensoesValidas.includes(extensao)) {
-      console.log('[Fiscal] Certificado digital válido');
-      resolve(true);
-    } else {
-      console.warn('[Fiscal] Certificado digital inválido - extensão não suportada');
-      resolve(false);
-    }
-  });
+  if (error) throw error;
+  return fromRow(data as ConfigRow);
 };

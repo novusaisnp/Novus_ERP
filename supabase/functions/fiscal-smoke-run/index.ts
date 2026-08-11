@@ -80,14 +80,27 @@ Deno.serve(async (req: Request) => {
   const ensureSmokeFixture = async (): Promise<{ venda?: VendaSmokeCandidate; error?: string }> => {
     const { data: empresa, error: empresaErr } = await client
       .from('empresas_representadas')
-      .select('id')
+      .select('id, cnpj, estado')
       .eq('ativo', true)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
     if (empresaErr) return { error: empresaErr.message };
-    if (!empresa?.id) return { error: 'nenhuma empresa ativa disponível para criar fixture fiscal mock' };
+    if (!empresa?.id || !empresa.cnpj || !empresa.estado) return { error: 'empresa ativa precisa de CNPJ e UF para o smoke fiscal' };
+
+    const { error: configErr } = await client.from('fiscal_configuracoes').upsert({
+      empresa_representada_id: empresa.id,
+      regime_tributario: 'LUCRO_PRESUMIDO',
+      ambiente: 'HOMOLOGACAO',
+      provedor: 'FOCUS_NFE',
+      cnpj_emitente: empresa.cnpj.replace(/\D/g, ''),
+      inscricao_estadual: 'SMOKE-IE',
+      serie_nfe: 1,
+      ativo: true,
+      deleted_at: null,
+    }, { onConflict: 'empresa_representada_id' });
+    if (configErr) return { error: configErr.message };
 
     const { data: clienteExistente, error: clienteSelectErr } = await client
       .from('entidades')
@@ -101,6 +114,7 @@ Deno.serve(async (req: Request) => {
     if (clienteSelectErr) return { error: clienteSelectErr.message };
 
     let clienteId = clienteExistente?.id as string | undefined;
+    const qualificacaoFiscal = { indicador_ie: '2', consumidor_final: true };
     if (!clienteId) {
       const { data: clienteNovo, error: clienteInsertErr } = await client
         .from('entidades')
@@ -117,7 +131,8 @@ Deno.serve(async (req: Request) => {
           numero: '100',
           bairro: 'Se',
           cidade: 'Sao Paulo',
-          estado: 'SP',
+          estado: empresa.estado,
+          qualificacao_fiscal: qualificacaoFiscal,
           ativo: true,
         })
         .select('id')
@@ -127,6 +142,40 @@ Deno.serve(async (req: Request) => {
       await client
         .from('entidade_papeis')
         .insert({ entidade_id: clienteId, empresa_representada_id: empresa.id, papel: 'CLIENTE' });
+    } else {
+      await client.from('entidades').update({ qualificacao_fiscal: qualificacaoFiscal }).eq('id', clienteId);
+    }
+
+    const { data: produtoExistente } = await client
+      .from('produtos')
+      .select('id')
+      .eq('empresa_representada_id', empresa.id)
+      .eq('codigo', 'SMOKE-FISCAL')
+      .limit(1)
+      .maybeSingle();
+    let produtoId = produtoExistente?.id as string | undefined;
+    const dadosFiscaisSmoke = {
+      icms_situacao_tributaria: '00', icms_aliquota: 18,
+      pis_situacao_tributaria: '01', pis_aliquota: 1.65,
+      cofins_situacao_tributaria: '01', cofins_aliquota: 7.6,
+      ibs_cbs_situacao_tributaria: '000', ibs_cbs_classificacao_tributaria: '000001',
+      ibs_uf_aliquota: 0.1, ibs_mun_aliquota: 0, cbs_aliquota: 0.9,
+    };
+    if (!produtoId) {
+      const { data: produtoNovo, error: produtoErr } = await client.from('produtos').insert({
+        empresa_representada_id: empresa.id,
+        codigo: 'SMOKE-FISCAL',
+        nome: 'Produto smoke fiscal mock',
+        preco_venda: 1117.9,
+        ncm: '49019900',
+        origem_produto: '0',
+        dados_fiscais: dadosFiscaisSmoke,
+        ativo: true,
+      }).select('id').single();
+      if (produtoErr || !produtoNovo?.id) return { error: produtoErr?.message ?? 'falha ao criar produto fiscal mock' };
+      produtoId = produtoNovo.id;
+    } else {
+      await client.from('produtos').update({ ncm: '49019900', origem_produto: '0', dados_fiscais: dadosFiscaisSmoke }).eq('id', produtoId);
     }
 
     const { data: vendaExistente, error: vendaSelectErr } = await client
@@ -179,8 +228,11 @@ Deno.serve(async (req: Request) => {
         valor_total_item: 1117.9,
         ordem: 1,
         tipo_item: 'P',
+        produto_id: produtoId,
       });
       if (itemInsertErr) return { error: itemInsertErr.message };
+    } else {
+      await client.from('itens_venda').update({ produto_id: produtoId, tipo_item: 'P' }).eq('venda_id', venda.id);
     }
 
     return { venda };

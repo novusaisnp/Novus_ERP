@@ -28,6 +28,7 @@ const currency = (v?: number | null) =>
 const NotasFiscais = () => {
   const [tab, setTab] = useState("dashboard");
   const [emitirVenda, setEmitirVenda] = useState<VendaEmitivel | null>(null);
+  const [emitirTipo, setEmitirTipo] = useState<'NFE' | 'NFCE'>('NFE');
   const [detalheDocId, setDetalheDocId] = useState<string | null>(null);
   const [filtroStatus, setFiltroStatus] = useState<string>("todos");
   const [busca, setBusca] = useState("");
@@ -109,8 +110,7 @@ const NotasFiscais = () => {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Notas Fiscais</h1>
           <p className="text-muted-foreground">
-            Emissão, consulta e relatórios de NF-e / NFC-e (modo mock enquanto o provedor real
-            não está integrado)
+            Emissão, consulta e relatórios de NF-e e NFC-e.
           </p>
         </div>
       </div>
@@ -135,7 +135,7 @@ const NotasFiscais = () => {
               <div>
                 <CardTitle>Vendas prontas para emissão</CardTitle>
                 <CardDescription>
-                  Selecione uma venda confirmada, em produção, faturada ou entregue e emita a NF-e. A emissão roda em modo mock quando
+                  Selecione uma venda confirmada, em produção, faturada ou entregue. A emissão roda em modo simulação quando
                   <code className="mx-1">FISCAL_MOCK=true</code>.
                 </CardDescription>
               </div>
@@ -178,10 +178,14 @@ const NotasFiscais = () => {
                         <TableCell>{v.status ?? "—"}</TableCell>
                         <TableCell>{currency(v.valor_total)}</TableCell>
                         <TableCell className="text-right">
-                          <Button size="sm" onClick={() => setEmitirVenda(v)}>
-                            <Send className="h-3.5 w-3.5 mr-1" />
-                            Emitir NF-e
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            <Button size="sm" onClick={() => { setEmitirTipo('NFE'); setEmitirVenda(v); }}>
+                              <Send className="h-3.5 w-3.5 mr-1" /> NF-e
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => { setEmitirTipo('NFCE'); setEmitirVenda(v); }}>
+                              <Send className="h-3.5 w-3.5 mr-1" /> NFC-e
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -367,6 +371,7 @@ const NotasFiscais = () => {
 
       <EmitirNFeDialog
         open={!!emitirVenda}
+        tipo={emitirTipo}
         onOpenChange={(o) => !o && setEmitirVenda(null)}
         venda={
           emitirVenda

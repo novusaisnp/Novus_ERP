@@ -1,11 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
+import { empresasRepresentadasService } from "@/services/empresasRepresentadasService";
 
 console.log('[Fiscal] Inicializando emissaoService');
 
 export interface EmitirNFeInput {
   vendaId: string;
-  provider?: 'focusnfe' | 'plugnotas' | 'enotas' | 'nfeio';
-  environment?: 'homologation' | 'production';
+  tipo?: 'NFE' | 'NFCE';
 }
 
 export interface EmitirNFeResult {
@@ -46,6 +46,40 @@ export interface CartaCorrecaoResult {
   mock?: boolean;
 }
 
+export interface FiscalDocumento {
+  id: string;
+  empresa_representada_id: string;
+  tipo: string;
+  venda_id: string | null;
+  numero: number | null;
+  serie: number | null;
+  status: string;
+  chave_acesso: string | null;
+  protocolo_autorizacao: string | null;
+  motivo_rejeicao: string | null;
+  codigo_status_sefaz: string | null;
+  xml_url: string | null;
+  danfe_url: string | null;
+  pdf_danfe_url: string | null;
+  data_emissao: string | null;
+  valor_total: number | null;
+  provider: string | null;
+  ambiente: string | null;
+  tentativas: number;
+}
+
+export interface FiscalEvento {
+  id: string;
+  documento_id: string;
+  tipo: string;
+  sequencia: number | null;
+  justificativa: string | null;
+  protocolo: string | null;
+  status: string | null;
+  motivo_rejeicao: string | null;
+  created_at: string;
+}
+
 async function invokeOrThrow<T>(fn: string, body: unknown): Promise<T> {
   const { data, error } = await supabase.functions.invoke<T>(fn, { body });
   if (error) {
@@ -65,6 +99,30 @@ export const cancelarNFe = (input: CancelarNFeInput) =>
 export const enviarCartaCorrecao = (input: CartaCorrecaoInput) =>
   invokeOrThrow<CartaCorrecaoResult>('fiscal-cce-nfe', input);
 
+export const consultarNFe = (documentoId: string) =>
+  invokeOrThrow<{ ok: boolean; status: string; mock?: boolean }>('fiscal-consultar-nfe', { documentoId });
+
+export async function getFiscalDocumento(documentoId: string): Promise<FiscalDocumento | null> {
+  let result = await supabase.from('fiscal_documentos_eletronicos').select('*').eq('id', documentoId).maybeSingle();
+  if (result.error) throw result.error;
+  if (['processando', 'em_processamento'].includes(result.data?.status?.toLowerCase() ?? '')) {
+    await consultarNFe(documentoId);
+    result = await supabase.from('fiscal_documentos_eletronicos').select('*').eq('id', documentoId).maybeSingle();
+    if (result.error) throw result.error;
+  }
+  return result.data as FiscalDocumento | null;
+}
+
+export async function getFiscalEventos(documentoId: string): Promise<FiscalEvento[]> {
+  const { data, error } = await supabase
+    .from('fiscal_eventos')
+    .select('*')
+    .eq('documento_id', documentoId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as FiscalEvento[];
+}
+
 export const getFiscalSignedUrl = (bucket: string, path: string) =>
   invokeOrThrow<{ url: string; expires_in: number }>('fiscal-signed-url', { bucket, path });
 
@@ -72,12 +130,17 @@ export interface DanfeMockEnrichmentData {
   emitente: Record<string, unknown>;
   destinatario: Record<string, unknown>;
   itens: Array<{
+    codigo?: string | null;
     descricao: string | null;
     quantidade: number | null;
     unidade: string | null;
     preco_unitario: number | null;
     valor_total_item: number | null;
+    ncm?: string | null;
+    cfop?: string | null;
   }>;
+  pagamentos: Array<{ nome: string | null; valor: number | null }>;
+  mdfe: Record<string, unknown> | null;
   naturezaOperacao: string | null;
 }
 
@@ -88,21 +151,70 @@ export interface DanfeMockEnrichmentData {
 export async function getDanfeMockEnrichmentData(params: {
   empresaRepresentadaId?: string | null;
   vendaId?: string | null;
+  documentoId?: string | null;
 }): Promise<DanfeMockEnrichmentData> {
   const result: DanfeMockEnrichmentData = {
     emitente: {},
     destinatario: {},
     itens: [],
+    pagamentos: [],
+    mdfe: null,
     naturezaOperacao: null,
   };
 
   if (params.empresaRepresentadaId) {
-    const { data: emp } = await supabase
-      .from('empresas_representadas')
-      .select('nome, cnpj, telefone, email, endereco, cidade, estado, cep')
-      .eq('id', params.empresaRepresentadaId)
-      .maybeSingle();
-    if (emp) result.emitente = emp;
+    const [{ data: emp }, { data: fiscal }] = await Promise.all([
+      supabase.from('empresas_representadas')
+        .select('nome, cnpj, telefone, email, endereco, cidade, estado, cep, configuracoes')
+        .eq('id', params.empresaRepresentadaId).maybeSingle(),
+      supabase.from('fiscal_configuracoes').select('inscricao_estadual')
+        .eq('empresa_representada_id', params.empresaRepresentadaId).maybeSingle(),
+    ]);
+    if (emp) {
+      const config = emp.configuracoes && typeof emp.configuracoes === 'object' && !Array.isArray(emp.configuracoes)
+        ? emp.configuracoes as Record<string, unknown>
+        : {};
+      const logoPath = typeof config.logo_path === 'string' ? config.logo_path : '';
+      const logoUrl = logoPath
+        ? await empresasRepresentadasService.getSignedUrl('empresa-logos', logoPath, 3600)
+        : null;
+      result.emitente = {
+        ...emp,
+        razao_social: emp.nome,
+        nome_fantasia: emp.nome,
+        logradouro: emp.endereco,
+        inscricao_estadual: fiscal?.inscricao_estadual,
+        logo_url: logoUrl,
+      };
+    }
+  }
+
+  if (params.documentoId) {
+    const { data: snapshot } = await supabase.from('fiscal_documentos_eletronicos_itens')
+      .select('ordem, produto_id, descricao, quantidade, unidade, valor_unitario, valor_total, ncm, cfop')
+      .eq('documento_id', params.documentoId).order('ordem');
+    if (snapshot?.length) {
+      result.itens = snapshot.map(item => ({
+        codigo: item.produto_id?.slice(0, 8) ?? null,
+        descricao: item.descricao,
+        quantidade: item.quantidade,
+        unidade: item.unidade,
+        preco_unitario: item.valor_unitario,
+        valor_total_item: item.valor_total,
+        ncm: item.ncm,
+        cfop: item.cfop,
+      }));
+    }
+
+    const { data: mdfeOperation } = await supabase.from('fiscal_mdfe_operacoes' as never)
+      .select('*').eq('documento_id', params.documentoId).maybeSingle();
+    if (mdfeOperation) {
+      const operation = mdfeOperation as unknown as Record<string, unknown>;
+      const { data: linkedDocuments } = await supabase.from('fiscal_mdfe_documentos' as never)
+        .select('tipo, chave_acesso, nome_municipio_descarregamento')
+        .eq('operacao_id', String(operation.id));
+      result.mdfe = { ...operation, documentos: linkedDocuments ?? [] };
+    }
   }
 
   if (params.vendaId) {
@@ -119,13 +231,21 @@ export async function getDanfeMockEnrichmentData(params: {
       const { data: cli } = await cliQ.maybeSingle();
       if (cli) result.destinatario = cli;
     }
-    let itensQ = supabase
-      .from('itens_venda')
-      .select('descricao, quantidade, unidade, preco_unitario, valor_total_item, ordem')
-      .eq('venda_id', params.vendaId);
-    if (params.empresaRepresentadaId) itensQ = itensQ.eq('empresa_representada_id', params.empresaRepresentadaId);
-    const { data: rows } = await itensQ.order('ordem', { ascending: true });
-    result.itens = rows ?? [];
+    if (!result.itens.length) {
+      let itensQ = supabase.from('itens_venda')
+        .select('descricao, quantidade, unidade, preco_unitario, valor_total_item, ordem')
+        .eq('venda_id', params.vendaId);
+      if (params.empresaRepresentadaId) itensQ = itensQ.eq('empresa_representada_id', params.empresaRepresentadaId);
+      const { data: rows } = await itensQ.order('ordem', { ascending: true });
+      result.itens = rows ?? [];
+    }
+    const { data: payments } = await supabase.from('venda_pagamento')
+      .select('valor_liquido, modalidade:modalidades_pagamento(nome)')
+      .eq('venda_id', params.vendaId).is('deleted_at', null);
+    result.pagamentos = (payments ?? []).map(payment => ({
+      nome: payment.modalidade?.nome ?? null,
+      valor: payment.valor_liquido,
+    }));
   }
 
   return result;

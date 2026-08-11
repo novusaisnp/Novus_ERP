@@ -1,5 +1,41 @@
 # Status do projeto — NOVUS ERP
 
+## 📌 Checkpoint — núcleo fiscal NF-e, NFC-e e MDF-e (2026-08-11)
+
+O módulo fiscal chegou ao limite interno anterior à ativação do provedor: contratos,
+persistência, validações, idempotência, eventos, arquivos privados e interfaces estão
+preparados para NF-e, NFC-e e MDF-e. A próxima fronteira é operacional — credenciais,
+certificado/CSC, homologação e deploy manual das Edge Functions.
+
+### Entregue
+
+- NF-e modelo 55: emissão, consulta, cancelamento, CC-e, snapshot fiscal imutável e
+  validação de emitente, destinatário e produtos antes do envio.
+- NFC-e modelo 65: emissão pelo mesmo núcleo, pagamentos, contingência e operações de
+  consulta/cancelamento, mantendo contrato específico do provedor.
+- MDF-e modelo 58 rodoviário: formulário, veículo, condutores, seguro, percurso, carga,
+  documentos vinculados, emissão, consulta, cancelamento, inclusão de condutor e
+  encerramento.
+- Sidebar e rotas fiscais acessíveis; SPED não simula arquivo oficial inexistente.
+- DANFE, DANFCE e DAMDFE simulados com leiautes próprios, logo da representada e dados
+  congelados da emissão. Código de barras e QR fiscal não são falsificados: entram apenas
+  no PDF oficial retornado pelo provedor em homologação/produção.
+- Roadmap separado para futura camada regulatória assistida, mantendo alteração normativa
+  auditável e sujeita a aprovação humana.
+
+### Banco e validação
+
+- Migrations `20260811183000` a `20260811186000` aplicadas e verificadas no projeto ERP.
+- RLS, constraints de integridade e unicidade de idempotência verificadas.
+- `npm run typecheck` limpo; ESLint dos arquivos fiscais limpo.
+- `npm run test -- --run`: 47 arquivos, 362/362 testes.
+- `npm run build`: concluído; permanecem apenas avisos preexistentes de chunks/imports.
+
+### Próxima ação única
+
+Configurar credenciais reais do provedor e executar a homologação controlada de NF-e,
+NFC-e e MDF-e. O deploy das Edge Functions continua manual e separado do `git push`.
+
 **Última atualização: 2026-08-11 (rateio contábil editável no detalhe do título).**
 
 ## 🔖 Checkpoint atual — rateio contábil editável no título (2026-08-11)

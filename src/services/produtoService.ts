@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import type { Database } from '@/integrations/supabase/types';
+import type { Database, Json } from '@/integrations/supabase/types';
 import { Produto, SupabaseProduto } from '@/types/produto';
 import { getEmpresaAtivaIdOuFalha as getEmpresaId } from '@/lib/empresaAtiva';
 
@@ -21,7 +21,7 @@ export const produtoService = {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as unknown as SupabaseProduto[];
   },
 
   async buscarPorId(id: string): Promise<SupabaseProduto | null> {
@@ -38,7 +38,7 @@ export const produtoService = {
       throw error;
     }
 
-    return data;
+    return data as unknown as SupabaseProduto | null;
   },
 
   async criar(produto: Produto): Promise<SupabaseProduto> {
@@ -59,13 +59,15 @@ export const produtoService = {
       imagem_url: produto.imagem_url || null,
       ncm: produto.ncm || null,
       cest: produto.cest || null,
+      origem_produto: produto.origem_produto || '0',
+      dados_fiscais: produto.dados_fiscais as unknown as Json,
       estoque_atual: produto.estoque_atual ?? 0,
       estoque_minimo: produto.estoque_minimo ?? 0,
       ativo: produto.ativo !== false,
     };
     const { data, error } = await supabase
       .from('produtos')
-      .insert(payload)
+      .insert(payload as ProdutoInsert)
       .select()
       .single();
 
@@ -74,7 +76,7 @@ export const produtoService = {
       throw error;
     }
 
-    return data;
+    return data as unknown as SupabaseProduto;
   },
 
   async atualizar(id: string, produto: Produto): Promise<SupabaseProduto> {
@@ -93,6 +95,8 @@ export const produtoService = {
       imagem_url: produto.imagem_url || null,
       ncm: produto.ncm || null,
       cest: produto.cest || null,
+      origem_produto: produto.origem_produto || '0',
+      dados_fiscais: produto.dados_fiscais as unknown as Json,
       estoque_atual: produto.estoque_atual ?? 0,
       estoque_minimo: produto.estoque_minimo ?? 0,
       ativo: produto.ativo !== false,
@@ -100,7 +104,7 @@ export const produtoService = {
     };
     const { data, error } = await supabase
       .from('produtos')
-      .update(payload)
+      .update(payload as ProdutoUpdate)
       .eq('id', id)
       .select()
       .single();
@@ -110,7 +114,7 @@ export const produtoService = {
       throw error;
     }
 
-    return data;
+    return data as unknown as SupabaseProduto;
   },
 
   async excluir(id: string): Promise<void> {
@@ -141,6 +145,6 @@ export const produtoService = {
       throw error;
     }
 
-    return data;
+    return data as unknown as SupabaseProduto | null;
   }
 };

@@ -42,6 +42,8 @@ export interface Entidade {
   rg?: string | null;
   inscricaoEstadual?: string | null;
   inscricaoMunicipal?: string | null;
+  indicadorIe?: '1' | '2' | '9' | null;
+  consumidorFinal?: boolean | null;
   dataNascimento?: string | null;
   dataFundacao?: string | null;
 

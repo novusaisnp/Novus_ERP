@@ -3,7 +3,6 @@
 //
 // Padrão: `false` — módulo oculto do sidebar e das rotas.
 // Para habilitar em preview/dev, defina no `.env`:
-//   VITE_FEATURE_FISCAL=true
 //   VITE_FEATURE_SISTEMA_CONFIG=true
 //   VITE_FEATURE_ESTOQUE_EXT=true
 //   VITE_FEATURE_SYNC_DASHBOARD=true   (também exige role admin)
@@ -16,7 +15,6 @@ const boolFlag = (key: string): boolean => {
 };
 
 export const featureFlags = {
-  fiscal: boolFlag('VITE_FEATURE_FISCAL'),
   sistemaConfig: boolFlag('VITE_FEATURE_SISTEMA_CONFIG'),
   estoqueExt: boolFlag('VITE_FEATURE_ESTOQUE_EXT'),
   syncDashboard: boolFlag('VITE_FEATURE_SYNC_DASHBOARD'),

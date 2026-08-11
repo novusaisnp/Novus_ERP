@@ -1,6 +1,4 @@
-// Implementação parcial do provedor Focus NFe (https://focusnfe.com.br/doc/).
-// Escopo Fase 1: comunicação básica de emissão em homologação.
-// Cancel/CCe/Status ficam com stubs (throw) para serem implementados na Fase 2.
+// Provedor Focus NFe (https://doc.focusnfe.com.br/reference/nfe).
 
 import {
   FiscalAssetDownload,
@@ -13,6 +11,8 @@ import {
   NFeEmitResult,
   NFeStatus,
   NFeStatusResult,
+  NFCeEmitPayload,
+  MDFeEmitPayload,
 } from './FiscalProvider.ts';
 
 const BASE_URLS: Record<FiscalEnvironment, string> = {
@@ -59,6 +59,8 @@ export class FocusNFeProvider implements FiscalProvider {
         return 'processando';
       case 'cancelado':
         return 'cancelada';
+      case 'encerrado':
+        return 'encerrada';
       case 'denegado':
         return 'denegada';
       case 'erro_autorizacao':
@@ -69,7 +71,50 @@ export class FocusNFeProvider implements FiscalProvider {
     }
   }
 
+  private async request(path: string, init: RequestInit): Promise<Record<string, unknown>> {
+    const response = await fetch(`${this.baseUrl}${path}`, {
+      ...init,
+      headers: {
+        Authorization: this.authHeader(),
+        'Content-Type': 'application/json',
+        ...init.headers,
+      },
+    });
+    const text = await response.text();
+    let parsed: unknown;
+    try {
+      parsed = text ? JSON.parse(text) : {};
+    } catch {
+      parsed = { raw: text };
+    }
+    if (!response.ok) {
+      throw new FiscalProviderError(
+        `Focus NFe ${init.method ?? 'GET'} ${path} falhou [${response.status}]`,
+        response.status,
+        parsed,
+      );
+    }
+    return parsed as Record<string, unknown>;
+  }
+
+  private statusResult(data: Record<string, unknown>): NFeStatusResult {
+    const absoluteUrl = (value: unknown) => typeof value === 'string'
+      ? (value.startsWith('http') ? value : `${this.baseUrl}${value}`)
+      : undefined;
+    return {
+      status: this.mapStatus(data.status as string | undefined),
+      codigoStatusSefaz: (data.status_sefaz ?? data.codigo_status_sefaz) as string | undefined,
+      motivo: (data.mensagem_sefaz ?? data.mensagem) as string | undefined,
+      chaveAcesso: (data.chave_nfe ?? data.chave_nfce ?? data.chave_mdfe) as string | undefined,
+      protocoloAutorizacao: (data.protocolo ?? data.protocolo_autorizacao) as string | undefined,
+      xmlUrl: absoluteUrl(data.caminho_xml_nota_fiscal ?? data.caminho_xml_nfce ?? data.caminho_xml_mdfe),
+      danfeUrl: absoluteUrl(data.caminho_danfe ?? data.caminho_danfce ?? data.caminho_damdfe),
+      raw: data,
+    };
+  }
+
   private buildFocusPayload(p: NFeEmitPayload): Record<string, unknown> {
+    const tax = (base: number, aliquota: number) => Math.round(base * aliquota) / 100;
     return {
       natureza_operacao: p.naturezaOperacao,
       data_emissao: p.dataEmissao,
@@ -78,6 +123,13 @@ export class FocusNFeProvider implements FiscalProvider {
       tipo_documento: 1,
       finalidade_emissao: p.finalidade === 'normal' ? 1 : p.finalidade === 'complementar' ? 2 : p.finalidade === 'ajuste' ? 3 : 4,
       presenca_comprador: p.presencaComprador ?? 1,
+      cnpj_emitente: p.emitente.cnpj,
+      inscricao_estadual_emitente: p.emitente.inscricaoEstadual,
+      regime_tributario_emitente: p.emitente.regimeTributario,
+      local_destino: p.localDestino,
+      consumidor_final: p.consumidorFinal,
+      indicador_inscricao_estadual_destinatario: p.indicadorIeDestinatario,
+      modalidade_frete: p.modalidadeFrete,
       cnpj_destinatario: p.destinatario.cnpjCpf.length === 14 ? p.destinatario.cnpjCpf : undefined,
       cpf_destinatario: p.destinatario.cnpjCpf.length === 11 ? p.destinatario.cnpjCpf : undefined,
       nome_destinatario: p.destinatario.nome,
@@ -103,100 +155,139 @@ export class FocusNFeProvider implements FiscalProvider {
         unidade_tributavel: it.unidade,
         quantidade_tributavel: it.quantidade,
         codigo_ncm: it.ncm,
-        icms_origem: it.origem ?? '0',
-        icms_situacao_tributaria: it.cst,
+        icms_origem: it.origem,
+        icms_situacao_tributaria: it.icmsSituacaoTributaria,
         icms_modalidade_base_calculo: 3,
-        icms_aliquota: it.aliquotaIcms ?? 0,
+        icms_base_calculo: it.valorTotal,
+        icms_aliquota: it.aliquotaIcms,
+        icms_valor: tax(it.valorTotal, it.aliquotaIcms),
+        pis_situacao_tributaria: it.pisSituacaoTributaria,
+        pis_base_calculo: it.valorTotal,
+        pis_aliquota_porcentual: it.aliquotaPis,
+        pis_valor: tax(it.valorTotal, it.aliquotaPis),
+        cofins_situacao_tributaria: it.cofinsSituacaoTributaria,
+        cofins_base_calculo: it.valorTotal,
+        cofins_aliquota_porcentual: it.aliquotaCofins,
+        cofins_valor: tax(it.valorTotal, it.aliquotaCofins),
+        ibs_cbs_situacao_tributaria: it.ibsCbsSituacaoTributaria,
+        ibs_cbs_classificacao_tributaria: it.ibsCbsClassificacaoTributaria,
+        ibs_cbs_base_calculo: it.valorTotal,
+        ibs_uf_aliquota: it.aliquotaIbsUf,
+        ibs_uf_valor: tax(it.valorTotal, it.aliquotaIbsUf),
+        ibs_mun_aliquota: it.aliquotaIbsMunicipio,
+        ibs_mun_valor: tax(it.valorTotal, it.aliquotaIbsMunicipio),
+        ibs_valor_total: tax(it.valorTotal, it.aliquotaIbsUf + it.aliquotaIbsMunicipio),
+        cbs_aliquota: it.aliquotaCbs,
+        cbs_valor: tax(it.valorTotal, it.aliquotaCbs),
       })),
     };
   }
 
   async emitNFe(payload: NFeEmitPayload): Promise<NFeEmitResult> {
-    const url = `${this.baseUrl}/v2/nfe?ref=${encodeURIComponent(payload.idempotencyKey)}`;
-    const body = this.buildFocusPayload(payload);
-
-    const response = await fetch(url, {
+    const data = await this.request(`/v2/nfe?ref=${encodeURIComponent(payload.idempotencyKey)}`, {
       method: 'POST',
-      headers: {
-        Authorization: this.authHeader(),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
+      body: JSON.stringify(this.buildFocusPayload(payload)),
     });
-
-    const text = await response.text();
-    let parsed: unknown;
-    try {
-      parsed = text ? JSON.parse(text) : {};
-    } catch {
-      parsed = { raw: text };
-    }
-
-    if (!response.ok) {
-      throw new FiscalProviderError(
-        `Focus NFe emitNFe falhou [${response.status}]`,
-        response.status,
-        parsed,
-      );
-    }
-
-    const data = parsed as Record<string, unknown>;
-    const situacao = data.status as string | undefined;
-    const status = this.mapStatus(situacao);
-
-    return {
-      status,
-      providerRef: payload.idempotencyKey,
-      chaveAcesso: (data.chave_nfe as string | undefined) ?? undefined,
-      protocoloAutorizacao: (data.protocolo as string | undefined) ?? undefined,
-      codigoStatusSefaz: (data.status_sefaz as string | undefined) ?? undefined,
-      motivoRejeicao: (data.mensagem_sefaz as string | undefined) ?? (data.erros ? JSON.stringify(data.erros) : undefined),
-      xmlUrl: (data.caminho_xml_nota_fiscal as string | undefined)
-        ? `${this.baseUrl}${data.caminho_xml_nota_fiscal}`
-        : undefined,
-      danfeUrl: (data.caminho_danfe as string | undefined)
-        ? `${this.baseUrl}${data.caminho_danfe}`
-        : undefined,
-      raw: parsed,
-    };
+    return this.emitResult(data, payload.idempotencyKey);
   }
 
   async consultNFeStatus(providerRef: string): Promise<NFeStatusResult> {
-    const url = `${this.baseUrl}/v2/nfe/${encodeURIComponent(providerRef)}`;
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: { Authorization: this.authHeader() },
-    });
-    const text = await response.text();
-    let parsed: unknown;
-    try {
-      parsed = text ? JSON.parse(text) : {};
-    } catch {
-      parsed = { raw: text };
-    }
-    if (!response.ok) {
-      throw new FiscalProviderError(
-        `Focus NFe consultNFeStatus falhou [${response.status}]`,
-        response.status,
-        parsed,
-      );
-    }
-    const data = parsed as Record<string, unknown>;
+    const data = await this.request(`/v2/nfe/${encodeURIComponent(providerRef)}?completa=1`, { method: 'GET' });
+    return this.statusResult(data);
+  }
+
+  private emitResult(data: Record<string, unknown>, providerRef: string): NFeEmitResult {
+    const status = this.statusResult(data);
     return {
-      status: this.mapStatus(data.status as string | undefined),
-      codigoStatusSefaz: data.status_sefaz as string | undefined,
-      motivo: data.mensagem_sefaz as string | undefined,
-      raw: parsed,
+      status: status.status,
+      providerRef,
+      chaveAcesso: status.chaveAcesso,
+      protocoloAutorizacao: status.protocoloAutorizacao,
+      codigoStatusSefaz: status.codigoStatusSefaz,
+      motivoRejeicao: status.motivo ?? (data.erros ? JSON.stringify(data.erros) : undefined),
+      xmlUrl: status.xmlUrl,
+      danfeUrl: status.danfeUrl,
+      raw: data,
     };
   }
 
-  cancelNFe(_payload: NFeCancelPayload): Promise<NFeStatusResult> {
-    // Implementação prevista para Fase 2.
-    return Promise.reject(new Error('FocusNFeProvider.cancelNFe: não implementado na Fase 1.'));
+  async emitNFCe(payload: NFCeEmitPayload): Promise<NFeEmitResult> {
+    const query = new URLSearchParams({ ref: payload.idempotencyKey, completa: '1' });
+    if (payload.contingenciaOffline) query.set('forma_emissao', 'offline');
+    const data = await this.request(`/v2/nfce?${query}`, {
+      method: 'POST',
+      body: JSON.stringify({
+        ...this.buildFocusPayload(payload),
+        natureza_operacao: payload.naturezaOperacao || 'VENDA AO CONSUMIDOR',
+        formas_pagamento: payload.pagamentos.map(pagamento => ({
+          forma_pagamento: pagamento.formaPagamento,
+          valor_pagamento: pagamento.valorPagamento,
+          bandeira_operadora: pagamento.bandeiraOperadora,
+          numero_autorizacao: pagamento.numeroAutorizacao,
+        })),
+        codigo_unico: payload.contingenciaOffline?.codigoUnico,
+      }),
+    });
+    return this.emitResult(data, payload.idempotencyKey);
   }
 
-  sendCCe(_payload: NFeCCePayload): Promise<NFeStatusResult> {
-    return Promise.reject(new Error('FocusNFeProvider.sendCCe: não implementado na Fase 1.'));
+  async consultNFCeStatus(providerRef: string): Promise<NFeStatusResult> {
+    return this.statusResult(await this.request(`/v2/nfce/${encodeURIComponent(providerRef)}?completa=1`, { method: 'GET' }));
+  }
+
+  async cancelNFCe(payload: NFeCancelPayload): Promise<NFeStatusResult> {
+    const data = await this.request(`/v2/nfce/${encodeURIComponent(payload.providerRef)}`, {
+      method: 'DELETE', body: JSON.stringify({ justificativa: payload.justificativa }),
+    });
+    return { ...this.statusResult(data), status: 'cancelada' };
+  }
+
+  async emitMDFe(payload: MDFeEmitPayload): Promise<NFeEmitResult> {
+    const data = await this.request(`/v2/mdfe?ref=${encodeURIComponent(payload.idempotencyKey)}`, {
+      method: 'POST', body: JSON.stringify(payload.body),
+    });
+    return this.emitResult(data, payload.idempotencyKey);
+  }
+
+  async consultMDFeStatus(providerRef: string): Promise<NFeStatusResult> {
+    return this.statusResult(await this.request(`/v2/mdfe/${encodeURIComponent(providerRef)}`, { method: 'GET' }));
+  }
+
+  async cancelMDFe(payload: NFeCancelPayload): Promise<NFeStatusResult> {
+    const data = await this.request(`/v2/mdfe/${encodeURIComponent(payload.providerRef)}`, {
+      method: 'DELETE', body: JSON.stringify({ justificativa: payload.justificativa }),
+    });
+    return { ...this.statusResult(data), status: 'cancelada' };
+  }
+
+  async closeMDFe(providerRef: string, data: string, uf: string, municipio: string): Promise<NFeStatusResult> {
+    const result = await this.request(`/v2/mdfe/${encodeURIComponent(providerRef)}/encerrar`, {
+      method: 'POST', body: JSON.stringify({ data, sigla_uf: uf, nome_municipio: municipio }),
+    });
+    return { ...this.statusResult(result), status: 'encerrada' };
+  }
+
+  async addMDFeDriver(providerRef: string, nome: string, cpf: string): Promise<NFeStatusResult> {
+    const result = await this.request(`/v2/mdfe/${encodeURIComponent(providerRef)}/inclusao_condutor`, {
+      method: 'POST', body: JSON.stringify({ nome, cpf }),
+    });
+    return { ...this.statusResult(result), status: 'autorizada' };
+  }
+
+  async cancelNFe(payload: NFeCancelPayload): Promise<NFeStatusResult> {
+    const data = await this.request(`/v2/nfe/${encodeURIComponent(payload.providerRef)}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ justificativa: payload.justificativa }),
+    });
+    return { ...this.statusResult(data), status: 'cancelada' };
+  }
+
+  async sendCCe(payload: NFeCCePayload): Promise<NFeStatusResult> {
+    const data = await this.request(`/v2/nfe/${encodeURIComponent(payload.providerRef)}/carta_correcao`, {
+      method: 'POST',
+      body: JSON.stringify({ correcao: payload.correcao }),
+    });
+    return { ...this.statusResult(data), status: 'autorizada' };
   }
 
   private async fetchAsset(refOrUrl: string, fallbackType: string): Promise<FiscalAssetDownload> {

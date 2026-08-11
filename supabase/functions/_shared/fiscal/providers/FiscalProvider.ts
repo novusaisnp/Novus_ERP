@@ -11,6 +11,7 @@ export type NFeStatus =
   | 'autorizada'
   | 'rejeitada'
   | 'cancelada'
+  | 'encerrada'
   | 'denegada'
   | 'inutilizada'
   | 'erro';
@@ -24,13 +25,18 @@ export interface NFeItemPayload {
   quantidade: number;
   valorUnitario: number;
   valorTotal: number;
-  cst?: string;
-  csosn?: string;
-  origem?: string;
-  aliquotaIcms?: number;
-  aliquotaIpi?: number;
-  aliquotaPis?: number;
-  aliquotaCofins?: number;
+  icmsSituacaoTributaria: string;
+  origem: string;
+  aliquotaIcms: number;
+  pisSituacaoTributaria: string;
+  aliquotaPis: number;
+  cofinsSituacaoTributaria: string;
+  aliquotaCofins: number;
+  ibsCbsSituacaoTributaria: string;
+  ibsCbsClassificacaoTributaria: string;
+  aliquotaIbsUf: number;
+  aliquotaIbsMunicipio: number;
+  aliquotaCbs: number;
 }
 
 export interface NFeDestinatarioPayload {
@@ -61,6 +67,15 @@ export interface NFeEmitPayload {
   dataEmissao: string; // ISO
   finalidade: 'normal' | 'complementar' | 'ajuste' | 'devolucao';
   presencaComprador?: number;
+  emitente: {
+    cnpj: string;
+    inscricaoEstadual: string;
+    regimeTributario: 1 | 3 | 4;
+  };
+  localDestino: 1 | 2 | 3;
+  consumidorFinal: 0 | 1;
+  indicadorIeDestinatario: 1 | 2 | 9;
+  modalidadeFrete: 0 | 1 | 2 | 3 | 4 | 9;
   destinatario: NFeDestinatarioPayload;
   itens: NFeItemPayload[];
   valorTotal: number;
@@ -94,7 +109,28 @@ export interface NFeStatusResult {
   status: NFeStatus;
   codigoStatusSefaz?: string;
   motivo?: string;
+  chaveAcesso?: string;
+  protocoloAutorizacao?: string;
+  xmlUrl?: string;
+  danfeUrl?: string;
   raw: unknown;
+}
+
+export interface NFCePagamentoPayload {
+  formaPagamento: string;
+  valorPagamento: number;
+  bandeiraOperadora?: string;
+  numeroAutorizacao?: string;
+}
+
+export interface NFCeEmitPayload extends NFeEmitPayload {
+  pagamentos: NFCePagamentoPayload[];
+  contingenciaOffline?: { codigoUnico: string };
+}
+
+export interface MDFeEmitPayload {
+  idempotencyKey: string;
+  body: Record<string, unknown>;
 }
 
 export interface FiscalAssetDownload {
@@ -107,6 +143,14 @@ export interface FiscalProvider {
   readonly environment: FiscalEnvironment;
 
   emitNFe(payload: NFeEmitPayload): Promise<NFeEmitResult>;
+  emitNFCe(payload: NFCeEmitPayload): Promise<NFeEmitResult>;
+  consultNFCeStatus(providerRef: string): Promise<NFeStatusResult>;
+  cancelNFCe(payload: NFeCancelPayload): Promise<NFeStatusResult>;
+  emitMDFe(payload: MDFeEmitPayload): Promise<NFeEmitResult>;
+  consultMDFeStatus(providerRef: string): Promise<NFeStatusResult>;
+  cancelMDFe(payload: NFeCancelPayload): Promise<NFeStatusResult>;
+  closeMDFe(providerRef: string, data: string, uf: string, municipio: string): Promise<NFeStatusResult>;
+  addMDFeDriver(providerRef: string, nome: string, cpf: string): Promise<NFeStatusResult>;
   cancelNFe(payload: NFeCancelPayload): Promise<NFeStatusResult>;
   consultNFeStatus(providerRef: string): Promise<NFeStatusResult>;
   sendCCe(payload: NFeCCePayload): Promise<NFeStatusResult>;

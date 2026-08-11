@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Download, ExternalLink, FileText, Ban, MailCheck } from "lucide-react";
+import { Download, ExternalLink, FileText, Ban, MailCheck, UserPlus, CircleCheck } from "lucide-react";
 import {
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
@@ -10,10 +10,11 @@ import { toast } from "sonner";
 import { useFiscalDocumento, useFiscalEventos } from "@/hooks/fiscal/useFiscalDocumento";
 import { useFiscalDocumentoRealtime } from "@/hooks/fiscal/useFiscalDocumentoRealtime";
 import { getFiscalSignedUrl, getDanfeMockEnrichmentData } from "@/services/fiscal/emissaoService";
-import { buildDanfeMockHtml, buildNFeMockXml, type DanfeMockData } from "@/utils/danfeMock";
+import { buildDanfeMockHtml, buildDanfceMockHtml, buildDamdfeMockHtml, buildMDFeMockXml, buildNFeMockXml, type DanfeMockData } from "@/utils/danfeMock";
 import EventosTimeline from "./EventosTimeline";
 import CancelarNFeDialog from "./CancelarNFeDialog";
 import CartaCorrecaoDialog from "./CartaCorrecaoDialog";
+import MDFeEventoDialog from "./MDFeEventoDialog";
 
 interface DetalheNFeDrawerProps {
   open: boolean;
@@ -56,6 +57,7 @@ const DetalheNFeDrawer = ({ open, onOpenChange, documentoId }: DetalheNFeDrawerP
 
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cceOpen, setCceOpen] = useState(false);
+  const [mdfeAcao, setMdfeAcao] = useState<'encerrar' | 'incluir_condutor' | null>(null);
 
   const downloadBlob = (content: string, filename: string, mime: string) => {
     const blob = new Blob([content], { type: mime });
@@ -74,31 +76,37 @@ const DetalheNFeDrawer = ({ open, onOpenChange, documentoId }: DetalheNFeDrawerP
     let emitente: DanfeMockData['emitente'] = {};
     let destinatario: DanfeMockData['destinatario'] = {};
     let itens: DanfeMockData['itens'] = [];
+    let pagamentos: DanfeMockData['pagamentos'] = [];
+    let mdfe: DanfeMockData['mdfe'] = null;
     let naturezaOperacao: string | null = null;
 
     try {
       const enrichment = await getDanfeMockEnrichmentData({
         empresaRepresentadaId: d.empresa_representada_id,
         vendaId: d.venda_id,
+        documentoId: d.id,
       });
       emitente = enrichment.emitente as DanfeMockData['emitente'];
       destinatario = enrichment.destinatario as DanfeMockData['destinatario'];
       naturezaOperacao = enrichment.naturezaOperacao;
+      pagamentos = enrichment.pagamentos;
+      mdfe = enrichment.mdfe as DanfeMockData['mdfe'];
       itens = enrichment.itens.map((r, i) => ({
-        codigo: String(i + 1).padStart(3, '0'),
+        codigo: r.codigo ?? String(i + 1).padStart(3, '0'),
         descricao: r.descricao ?? '',
         quantidade: r.quantidade ?? 0,
         unidade: r.unidade ?? 'UN',
         preco_unitario: r.preco_unitario ?? 0,
         valor_total: r.valor_total_item ?? 0,
-        ncm: '00000000',
-        cfop: '5102',
+        ncm: r.ncm,
+        cfop: r.cfop,
       }));
     } catch (err) {
       console.warn('[DANFE mock] falha ao enriquecer dados:', err);
     }
 
     return {
+      tipo: d.tipo === 'NFCE' || d.tipo === 'MDFE' ? d.tipo : 'NFE',
       numero: d.numero,
       serie: d.serie,
       chave_acesso: d.chave_acesso,
@@ -111,6 +119,8 @@ const DetalheNFeDrawer = ({ open, onOpenChange, documentoId }: DetalheNFeDrawerP
       emitente,
       destinatario,
       itens,
+      pagamentos,
+      mdfe,
       observacoes: 'Documento sem validade fiscal — gerado em modo simulação para validação de fluxo.',
     };
   };
@@ -122,9 +132,14 @@ const DetalheNFeDrawer = ({ open, onOpenChange, documentoId }: DetalheNFeDrawerP
       const chave = documento.chave_acesso ?? documento.id;
       const mockData = await loadMockData();
       if (label === 'XML') {
-        downloadBlob(buildNFeMockXml(mockData), `nfe-mock-${chave}.xml`, 'application/xml');
+        const mdfe = documento.tipo === 'MDFE';
+        downloadBlob(mdfe ? buildMDFeMockXml(mockData) : buildNFeMockXml(mockData), `${mdfe ? 'mdfe' : documento.tipo === 'NFCE' ? 'nfce' : 'nfe'}-mock-${chave}.xml`, 'application/xml');
       } else {
-        const html = buildDanfeMockHtml(mockData);
+        const html = documento.tipo === 'NFCE'
+          ? buildDanfceMockHtml(mockData)
+          : documento.tipo === 'MDFE'
+            ? buildDamdfeMockHtml(mockData)
+            : buildDanfeMockHtml(mockData);
         const win = window.open('', '_blank');
         if (win) { win.document.write(html); win.document.close(); }
       }
@@ -151,7 +166,7 @@ const DetalheNFeDrawer = ({ open, onOpenChange, documentoId }: DetalheNFeDrawerP
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
-              NF-e {documento?.numero ? `#${documento.numero}/${documento.serie}` : ''}
+              {documento?.tipo === 'NFCE' ? 'NFC-e' : documento?.tipo === 'MDFE' ? 'MDF-e' : 'NF-e'} {documento?.numero ? `#${documento.numero}/${documento.serie}` : ''}
             </SheetTitle>
             <SheetDescription>Detalhes do documento fiscal eletrônico.</SheetDescription>
           </SheetHeader>
@@ -197,18 +212,24 @@ const DetalheNFeDrawer = ({ open, onOpenChange, documentoId }: DetalheNFeDrawerP
                 <Button variant="outline" onClick={() => handleOpenSigned(documento.xml_url, 'XML')} disabled={!documento.xml_url}>
                   <Download className="h-4 w-4 mr-2" /> Baixar XML
                 </Button>
-                <Button variant="outline" onClick={() => handleOpenSigned(documento.danfe_url ?? documento.pdf_danfe_url, 'DANFE')} disabled={!documento.danfe_url && !documento.pdf_danfe_url}>
-                  <ExternalLink className="h-4 w-4 mr-2" /> Abrir DANFE
+                <Button variant="outline" onClick={() => handleOpenSigned(documento.danfe_url ?? documento.pdf_danfe_url, documento.tipo === 'NFCE' ? 'DANFCE' : documento.tipo === 'MDFE' ? 'DAMDFE' : 'DANFE')} disabled={!documento.danfe_url && !documento.pdf_danfe_url}>
+                  <ExternalLink className="h-4 w-4 mr-2" /> Abrir {documento.tipo === 'NFCE' ? 'DANFCE' : documento.tipo === 'MDFE' ? 'DAMDFE' : 'DANFE'}
                 </Button>
 
                 {documento.status?.toLowerCase() === 'autorizada' && (
                   <div className="grid grid-cols-2 gap-2">
                     <Button variant="destructive" onClick={() => setCancelOpen(true)}>
-                      <Ban className="h-4 w-4 mr-2" /> Cancelar NF-e
+                      <Ban className="h-4 w-4 mr-2" /> Cancelar
                     </Button>
-                    <Button variant="secondary" onClick={() => setCceOpen(true)}>
-                      <MailCheck className="h-4 w-4 mr-2" /> CC-e
-                    </Button>
+                    {documento.tipo === 'NFE' && (
+                      <Button variant="secondary" onClick={() => setCceOpen(true)}>
+                        <MailCheck className="h-4 w-4 mr-2" /> CC-e
+                      </Button>
+                    )}
+                    {documento.tipo === 'MDFE' && <>
+                      <Button variant="secondary" onClick={() => setMdfeAcao('incluir_condutor')}><UserPlus className="h-4 w-4 mr-2" /> Condutor</Button>
+                      <Button onClick={() => setMdfeAcao('encerrar')}><CircleCheck className="h-4 w-4 mr-2" /> Encerrar</Button>
+                    </>}
                   </div>
                 )}
               </div>
@@ -229,6 +250,7 @@ const DetalheNFeDrawer = ({ open, onOpenChange, documentoId }: DetalheNFeDrawerP
         onOpenChange={setCancelOpen}
         documentoId={documentoId}
         numero={documento?.numero ?? null}
+        tipo={documento?.tipo}
       />
       <CartaCorrecaoDialog
         open={cceOpen}
@@ -236,6 +258,12 @@ const DetalheNFeDrawer = ({ open, onOpenChange, documentoId }: DetalheNFeDrawerP
         documentoId={documentoId}
         numero={documento?.numero ?? null}
         proximaSequencia={proxSeqCCe}
+      />
+      <MDFeEventoDialog
+        open={!!mdfeAcao}
+        onOpenChange={(open) => !open && setMdfeAcao(null)}
+        documentoId={documentoId}
+        acao={mdfeAcao ?? 'encerrar'}
       />
     </>
   );

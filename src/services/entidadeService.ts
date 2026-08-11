@@ -14,6 +14,10 @@ function toEntidadeRow(e: Entidade) {
     rg: e.rg || null,
     inscricao_estadual: e.inscricaoEstadual || null,
     inscricao_municipal: e.inscricaoMunicipal || null,
+    qualificacao_fiscal: {
+      indicador_ie: e.indicadorIe || null,
+      consumidor_final: e.consumidorFinal ?? null,
+    },
     data_nascimento: e.dataNascimento || null,
     data_fundacao: e.dataFundacao || null,
     email: e.email || null,
@@ -69,6 +73,7 @@ function fromRow(row: Record<string, unknown>): Entidade {
     ? row.entidade_dados_colaborador[0]
     : row.entidade_dados_colaborador;
   const dados = dadosRaw as Record<string, unknown> | null | undefined;
+  const fiscal = row.qualificacao_fiscal as Record<string, unknown> | null | undefined;
 
   return {
     id: row.id as string,
@@ -84,6 +89,8 @@ function fromRow(row: Record<string, unknown>): Entidade {
     rg: row.rg as string | null,
     inscricaoEstadual: row.inscricao_estadual as string | null,
     inscricaoMunicipal: row.inscricao_municipal as string | null,
+    indicadorIe: fiscal?.indicador_ie as Entidade['indicadorIe'],
+    consumidorFinal: fiscal?.consumidor_final as boolean | null,
     dataNascimento: row.data_nascimento as string | null,
     dataFundacao: row.data_fundacao as string | null,
     email: row.email as string | null,

@@ -189,6 +189,10 @@ export const sidebarItems: MenuItem[] = [
         url: "/fiscal/notas-fiscais",
       },
       {
+        title: "MDF-e",
+        url: "/fiscal/mdfe",
+      },
+      {
         title: "SPED",
         url: "/fiscal/sped",
       },

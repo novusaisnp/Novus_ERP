@@ -20,14 +20,15 @@ export const useEmitirNFe = () => {
   const qc = useQueryClient();
   return useMutation<EmitirNFeResult, Error, EmitirNFeInput>({
     mutationFn: emitirNFe,
-    onSuccess: (result) => {
+    onSuccess: (result, input) => {
       invalidateFiscal(qc);
+      const label = input.tipo === 'NFCE' ? 'NFC-e' : 'NF-e';
       if (result.status === 'autorizada') {
-        toast.success('NF-e autorizada com sucesso!');
+        toast.success(`${label} autorizada com sucesso!`);
       } else if (result.status === 'processando') {
-        toast.info(result.mock ? 'NF-e em processamento (modo simulação).' : 'NF-e em processamento na SEFAZ.');
+        toast.info(result.mock ? `${label} em processamento (modo simulação).` : `${label} em processamento na SEFAZ.`);
       } else {
-        toast.warning(`NF-e com status: ${result.status}`);
+        toast.warning(`${label} com status: ${result.status}`);
       }
     },
     onError: (err) => {
