@@ -13,8 +13,7 @@ export interface UsuarioComPessoa {
   role?: string | null;
   pessoa_tipo?: 'COLABORADOR' | 'SOCIO' | null;
   pessoa_pendente?: boolean | null;
-  colaborador_id?: string | null;
-  socio_id?: string | null;
+  entidade_id?: string | null;
   pessoa_nome?: string | null;
 }
 
@@ -30,10 +29,8 @@ export interface NovoUsuarioPendenteInput {
   nome: string;
   email: string;
   perfil_id: string;
-  pessoa_tipo: 'COLABORADOR' | 'SOCIO';
   pessoa_pendente: true;
-  colaborador_id?: string;
-  socio_id?: string;
+  entidade_id: string;
   ativo: true;
   updated_at: string;
 }
@@ -77,19 +74,20 @@ export const usuarioService = {
     const empresaId = await getEmpresaIdAtual();
     if (!empresaId) return [];
     const { data: colabs } = await supabase
-      .from('colaboradores')
-      .select('id, nome, cpf, email')
+      .from('entidades')
+      .select('id, nome, cpf, email, entidade_papeis!inner(papel)')
+      .eq('entidade_papeis.papel', 'COLABORADOR')
       .eq('ativo', true)
       .eq('empresa_representada_id', empresaId)
       .is('deleted_at', null)
       .order('nome');
     const { data: usados } = await supabase
       .from('usuarios')
-      .select('colaborador_id')
+      .select('entidade_id')
       .eq('empresa_representada_id', empresaId)
-      .not('colaborador_id', 'is', null);
-    const usedIds = new Set((usados ?? []).map((u) => u.colaborador_id));
-    return (colabs ?? []).filter((c) => !usedIds.has(c.id));
+      .not('entidade_id', 'is', null);
+    const usedIds = new Set((usados ?? []).map((u) => u.entidade_id));
+    return (colabs ?? []).filter((c) => !usedIds.has(c.id)).map(({ entidade_papeis: _omit, ...c }) => c);
   },
 
   async criarUsuarioPendente(payload: NovoUsuarioPendenteInput): Promise<{ id: string }> {
@@ -108,32 +106,36 @@ export const usuarioService = {
 
   /**
    * Lista usuários com o vínculo de pessoa (colaborador/sócio) e role resolvidos.
-   * Usado na tela de Configurações > Usuários (vínculo pessoa_tipo/colaborador_id/socio_id).
+   * Usado na tela de Configurações > Usuários (vínculo entidade_id, tipo resolvido via papéis).
    */
   async fetchUsuariosComPessoa(): Promise<UsuarioComPessoa[]> {
     const empresaId = await getEmpresaIdAtual();
     if (!empresaId) return [];
     const { data: usuarios, error } = await supabase
       .from('usuarios')
-      .select('id, user_id, empresa_representada_id, ativo, nome, email, perfil_id, pessoa_tipo, pessoa_pendente, colaborador_id, socio_id')
+      .select('id, user_id, empresa_representada_id, ativo, nome, email, perfil_id, pessoa_pendente, entidade_id')
       .eq('empresa_representada_id', empresaId);
     if (error) {
       console.error('[usuarioService] erro ao carregar usuários:', error);
       return [];
     }
 
-    const colabIds = (usuarios ?? []).map((u) => u.colaborador_id).filter((v): v is string => !!v);
-    const socioIds = (usuarios ?? []).map((u) => u.socio_id).filter((v): v is string => !!v);
-    const colabMap: Record<string, string> = {};
-    const socioMap: Record<string, string> = {};
+    const entidadeIds = (usuarios ?? []).map((u) => u.entidade_id).filter((v): v is string => !!v);
+    const entidadeMap: Record<string, { nome: string; tipo: 'COLABORADOR' | 'SOCIO' }> = {};
 
-    if (colabIds.length) {
-      const { data } = await supabase.from('colaboradores').select('id, nome').in('id', colabIds);
-      (data ?? []).forEach((c) => { colabMap[c.id] = c.nome; });
-    }
-    if (socioIds.length) {
-      const { data } = await supabase.from('socios_representantes').select('id, nome').in('id', socioIds);
-      (data ?? []).forEach((s) => { socioMap[s.id] = s.nome; });
+    if (entidadeIds.length) {
+      const { data: entidades } = await supabase.from('entidades').select('id, nome').in('id', entidadeIds);
+      const { data: papeis } = await supabase
+        .from('entidade_papeis')
+        .select('entidade_id, papel')
+        .in('entidade_id', entidadeIds)
+        .eq('ativo', true);
+      const papeisByEntidade: Record<string, string[]> = {};
+      (papeis ?? []).forEach((p) => { (papeisByEntidade[p.entidade_id] ??= []).push(p.papel); });
+      (entidades ?? []).forEach((e) => {
+        const tem = papeisByEntidade[e.id] ?? [];
+        entidadeMap[e.id] = { nome: e.nome, tipo: tem.includes('COLABORADOR') ? 'COLABORADOR' : 'SOCIO' };
+      });
     }
 
     const userIds = (usuarios ?? []).map((u) => u.user_id).filter((v): v is string => !!v);
@@ -146,7 +148,8 @@ export const usuarioService = {
     return (usuarios ?? []).map((u) => ({
       ...u,
       role: roles[u.user_id] || '-',
-      pessoa_nome: u.colaborador_id ? colabMap[u.colaborador_id] : u.socio_id ? socioMap[u.socio_id] : null,
+      pessoa_tipo: u.entidade_id ? entidadeMap[u.entidade_id]?.tipo ?? null : null,
+      pessoa_nome: u.entidade_id ? entidadeMap[u.entidade_id]?.nome ?? null : null,
     })) as unknown as UsuarioComPessoa[];
   },
 
@@ -161,17 +164,16 @@ export const usuarioService = {
   },
 
   /**
-   * Vincula um usuário "legado" (pessoa_pendente=true, sem colaborador_id/socio_id)
-   * a um colaborador ou sócio já cadastrado, resolvendo a pendência da tela de Usuários.
+   * Vincula um usuário "legado" (pessoa_pendente=true, sem entidade_id)
+   * a uma entidade já cadastrada, resolvendo a pendência da tela de Usuários.
+   * `tipo` não é mais persistido — o papel da entidade já resolve isso.
    */
-  async vincularPessoa(id: string, tipo: 'COLABORADOR' | 'SOCIO', pessoaId: string): Promise<void> {
+  async vincularPessoa(id: string, _tipo: 'COLABORADOR' | 'SOCIO', entidadeId: string): Promise<void> {
     const { error } = await supabase
       .from('usuarios')
       .update({
-        pessoa_tipo: tipo,
         pessoa_pendente: false,
-        colaborador_id: tipo === 'COLABORADOR' ? pessoaId : null,
-        socio_id: tipo === 'SOCIO' ? pessoaId : null,
+        entidade_id: entidadeId,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id);
@@ -209,28 +211,22 @@ export const usuarioService = {
       result.email = (data || []).length > 0;
     }
 
-    // CPF: tabela vinculada conforme pessoa_tipo
+    // CPF: entidades filtradas pelo papel conforme pessoa_tipo
     if (cpfLimpo && params.pessoaTipo) {
-      if (params.pessoaTipo === 'COLABORADOR') {
-        let q = supabase.from('colaboradores').select('id').eq('cpf', cpfLimpo).limit(1);
-        if (empresaId) q = q.eq('empresa_representada_id', empresaId);
-        if (params.exceptPessoaId) q = q.neq('id', params.exceptPessoaId);
-        const { data, error } = await q;
-        if (error) throw error;
-        result.cpfColaborador = (data || []).length > 0;
-      } else {
-        // SOCIO / REPRESENTANTE_LEGAL / PROCURADOR
-        let q = supabase
-          .from('socios_representantes')
-          .select('id')
-          .eq('cpf', cpfLimpo)
-          .limit(1);
-        if (empresaId) q = q.eq('empresa_representada_id', empresaId);
-        if (params.exceptPessoaId) q = q.neq('id', params.exceptPessoaId);
-        const { data, error } = await q;
-        if (error) throw error;
-        result.cpfSocio = (data || []).length > 0;
-      }
+      const papeis = params.pessoaTipo === 'COLABORADOR' ? ['COLABORADOR'] : ['SOCIO', 'REPRESENTANTE_LEGAL', 'PROCURADOR'];
+      let q = supabase
+        .from('entidades')
+        .select('id, entidade_papeis!inner(papel)')
+        .eq('cpf', cpfLimpo)
+        .in('entidade_papeis.papel', papeis)
+        .limit(1);
+      if (empresaId) q = q.eq('empresa_representada_id', empresaId);
+      if (params.exceptPessoaId) q = q.neq('id', params.exceptPessoaId);
+      const { data, error } = await q;
+      if (error) throw error;
+      const found = (data || []).length > 0;
+      if (params.pessoaTipo === 'COLABORADOR') result.cpfColaborador = found;
+      else result.cpfSocio = found;
     }
 
     return result;

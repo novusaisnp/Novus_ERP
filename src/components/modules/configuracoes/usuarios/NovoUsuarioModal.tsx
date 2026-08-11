@@ -85,11 +85,10 @@ const NovoUsuarioModal: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
         nome,
         email,
         perfil_id: perfilId,
-        pessoa_tipo: origem,
         pessoa_pendente: true,
         ativo: true,
         updated_at: new Date().toISOString(),
-        ...(origem === 'COLABORADOR' ? { colaborador_id: pessoaId } : { socio_id: pessoaId }),
+        entidade_id: pessoaId,
       };
 
       // user_id fica NULL até a pessoa aceitar o convite / fazer signup.

@@ -10,7 +10,6 @@ export interface SocioRepresentante {
   tipo: TipoSocio;
   participacao_percentual?: number | null;
   cargo_societario?: string | null;
-  documento_url?: string | null;
   ativo?: boolean;
   created_at?: string;
   updated_at?: string;

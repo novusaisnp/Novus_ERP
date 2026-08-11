@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -11,6 +11,136 @@ export type Database = {
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.15"
+  }
+  centelha: {
+    Tables: {
+      licencas: {
+        Row: {
+          contrato_id: string
+          created_at: string
+          id: string
+          responsavel_id: string
+          satelite_id: string
+          status: string
+          tenant_ref: string | null
+          updated_at: string
+        }
+        Insert: {
+          contrato_id: string
+          created_at?: string
+          id?: string
+          responsavel_id: string
+          satelite_id: string
+          status?: string
+          tenant_ref?: string | null
+          updated_at?: string
+        }
+        Update: {
+          contrato_id?: string
+          created_at?: string
+          id?: string
+          responsavel_id?: string
+          satelite_id?: string
+          status?: string
+          tenant_ref?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "licencas_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "responsaveis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "licencas_satelite_id_fkey"
+            columns: ["satelite_id"]
+            isOneToOne: false
+            referencedRelation: "satelites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      owners: {
+        Row: {
+          user_id: string
+        }
+        Insert: {
+          user_id: string
+        }
+        Update: {
+          user_id?: string
+        }
+        Relationships: []
+      }
+      responsaveis: {
+        Row: {
+          cliente_billing_id: string | null
+          cnpj: string | null
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          cliente_billing_id?: string | null
+          cnpj?: string | null
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          cliente_billing_id?: string | null
+          cnpj?: string | null
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      satelites: {
+        Row: {
+          ativo: boolean
+          base_url: string
+          codigo: string
+          created_at: string
+          id: string
+          nome: string
+          provisioning_secret: string
+        }
+        Insert: {
+          ativo?: boolean
+          base_url: string
+          codigo: string
+          created_at?: string
+          id?: string
+          nome: string
+          provisioning_secret: string
+        }
+        Update: {
+          ativo?: boolean
+          base_url?: string
+          codigo?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          provisioning_secret?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   graphql_public: {
     Tables: {
@@ -455,7 +585,7 @@ export type Database = {
             foreignKeyName: "beneficios_vinculados_colaborador_id_fkey"
             columns: ["colaborador_id"]
             isOneToOne: false
-            referencedRelation: "colaboradores"
+            referencedRelation: "entidades"
             referencedColumns: ["id"]
           },
           {
@@ -848,8 +978,11 @@ export type Database = {
           empresa_representada_id: string
           endereco: Json | null
           estado: string | null
+          externo_id: string | null
           forma_atuacao: string | null
+          hash_payload: string | null
           id: string
+          idempotency_key: string | null
           inscricao_estadual: string | null
           inscricao_municipal: string | null
           limite_credito: number | null
@@ -858,6 +991,8 @@ export type Database = {
           nome_fantasia: string | null
           numero: string | null
           observacoes: string | null
+          origem_canal: string | null
+          origem_sistema: string | null
           qualificacao_fiscal: Json | null
           razao_social: string | null
           rg: string | null
@@ -899,8 +1034,11 @@ export type Database = {
           empresa_representada_id: string
           endereco?: Json | null
           estado?: string | null
+          externo_id?: string | null
           forma_atuacao?: string | null
+          hash_payload?: string | null
           id?: string
+          idempotency_key?: string | null
           inscricao_estadual?: string | null
           inscricao_municipal?: string | null
           limite_credito?: number | null
@@ -909,6 +1047,8 @@ export type Database = {
           nome_fantasia?: string | null
           numero?: string | null
           observacoes?: string | null
+          origem_canal?: string | null
+          origem_sistema?: string | null
           qualificacao_fiscal?: Json | null
           razao_social?: string | null
           rg?: string | null
@@ -950,8 +1090,11 @@ export type Database = {
           empresa_representada_id?: string
           endereco?: Json | null
           estado?: string | null
+          externo_id?: string | null
           forma_atuacao?: string | null
+          hash_payload?: string | null
           id?: string
+          idempotency_key?: string | null
           inscricao_estadual?: string | null
           inscricao_municipal?: string | null
           limite_credito?: number | null
@@ -960,6 +1103,8 @@ export type Database = {
           nome_fantasia?: string | null
           numero?: string | null
           observacoes?: string | null
+          origem_canal?: string | null
+          origem_sistema?: string | null
           qualificacao_fiscal?: Json | null
           razao_social?: string | null
           rg?: string | null
@@ -984,176 +1129,6 @@ export type Database = {
           },
           {
             foreignKeyName: "clientes_setor_id_fkey"
-            columns: ["setor_id"]
-            isOneToOne: false
-            referencedRelation: "setores_empresa"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      colaboradores: {
-        Row: {
-          agencia: string | null
-          ativo: boolean | null
-          bairro: string | null
-          banco: string | null
-          carga_horaria: number | null
-          cargo_id: string | null
-          celular: string | null
-          cep: string | null
-          cidade: string | null
-          complemento: string | null
-          conta: string | null
-          cpf: string | null
-          created_at: string | null
-          ctps: string | null
-          data_admissao: string | null
-          data_demissao: string | null
-          data_nascimento: string | null
-          deleted_at: string | null
-          departamento_id: string | null
-          email: string | null
-          email_corporativo: string | null
-          empresa_representada_id: string
-          escolaridade: string | null
-          estado: string | null
-          estado_civil: string | null
-          foto_url: string | null
-          id: string
-          logradouro: string | null
-          nome: string
-          numero: string | null
-          observacoes: string | null
-          pis: string | null
-          pix: string | null
-          regime_trabalho: string | null
-          rg: string | null
-          salario: number | null
-          serie_ctps: string | null
-          setor_id: string | null
-          sexo: string | null
-          telefone: string | null
-          tipo_conta: string | null
-          tipo_contrato: string | null
-          updated_at: string | null
-          whatsapp: string | null
-        }
-        Insert: {
-          agencia?: string | null
-          ativo?: boolean | null
-          bairro?: string | null
-          banco?: string | null
-          carga_horaria?: number | null
-          cargo_id?: string | null
-          celular?: string | null
-          cep?: string | null
-          cidade?: string | null
-          complemento?: string | null
-          conta?: string | null
-          cpf?: string | null
-          created_at?: string | null
-          ctps?: string | null
-          data_admissao?: string | null
-          data_demissao?: string | null
-          data_nascimento?: string | null
-          deleted_at?: string | null
-          departamento_id?: string | null
-          email?: string | null
-          email_corporativo?: string | null
-          empresa_representada_id: string
-          escolaridade?: string | null
-          estado?: string | null
-          estado_civil?: string | null
-          foto_url?: string | null
-          id?: string
-          logradouro?: string | null
-          nome: string
-          numero?: string | null
-          observacoes?: string | null
-          pis?: string | null
-          pix?: string | null
-          regime_trabalho?: string | null
-          rg?: string | null
-          salario?: number | null
-          serie_ctps?: string | null
-          setor_id?: string | null
-          sexo?: string | null
-          telefone?: string | null
-          tipo_conta?: string | null
-          tipo_contrato?: string | null
-          updated_at?: string | null
-          whatsapp?: string | null
-        }
-        Update: {
-          agencia?: string | null
-          ativo?: boolean | null
-          bairro?: string | null
-          banco?: string | null
-          carga_horaria?: number | null
-          cargo_id?: string | null
-          celular?: string | null
-          cep?: string | null
-          cidade?: string | null
-          complemento?: string | null
-          conta?: string | null
-          cpf?: string | null
-          created_at?: string | null
-          ctps?: string | null
-          data_admissao?: string | null
-          data_demissao?: string | null
-          data_nascimento?: string | null
-          deleted_at?: string | null
-          departamento_id?: string | null
-          email?: string | null
-          email_corporativo?: string | null
-          empresa_representada_id?: string
-          escolaridade?: string | null
-          estado?: string | null
-          estado_civil?: string | null
-          foto_url?: string | null
-          id?: string
-          logradouro?: string | null
-          nome?: string
-          numero?: string | null
-          observacoes?: string | null
-          pis?: string | null
-          pix?: string | null
-          regime_trabalho?: string | null
-          rg?: string | null
-          salario?: number | null
-          serie_ctps?: string | null
-          setor_id?: string | null
-          sexo?: string | null
-          telefone?: string | null
-          tipo_conta?: string | null
-          tipo_contrato?: string | null
-          updated_at?: string | null
-          whatsapp?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "colaboradores_cargo_id_fkey"
-            columns: ["cargo_id"]
-            isOneToOne: false
-            referencedRelation: "cargos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "colaboradores_departamento_id_fkey"
-            columns: ["departamento_id"]
-            isOneToOne: false
-            referencedRelation: "departamentos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "colaboradores_empresa_representada_id_fkey"
-            columns: ["empresa_representada_id"]
-            isOneToOne: false
-            referencedRelation: "empresas_representadas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "colaboradores_setor_id_fkey"
             columns: ["setor_id"]
             isOneToOne: false
             referencedRelation: "setores_empresa"
@@ -1699,11 +1674,16 @@ export type Database = {
           descricao: string | null
           dia_vencimento: number | null
           empresa_representada_id: string
+          externo_id: string | null
           gera_financeiro: boolean | null
+          hash_payload: string | null
           id: string
+          idempotency_key: string | null
           natureza_receita_id: string | null
           numero_contrato: string | null
           observacoes: string | null
+          origem_canal: string | null
+          origem_sistema: string | null
           plano_conta_receita_id: string | null
           plano_pagamento_id: string | null
           renovacao_automatica: boolean | null
@@ -1725,11 +1705,16 @@ export type Database = {
           descricao?: string | null
           dia_vencimento?: number | null
           empresa_representada_id: string
+          externo_id?: string | null
           gera_financeiro?: boolean | null
+          hash_payload?: string | null
           id?: string
+          idempotency_key?: string | null
           natureza_receita_id?: string | null
           numero_contrato?: string | null
           observacoes?: string | null
+          origem_canal?: string | null
+          origem_sistema?: string | null
           plano_conta_receita_id?: string | null
           plano_pagamento_id?: string | null
           renovacao_automatica?: boolean | null
@@ -1751,11 +1736,16 @@ export type Database = {
           descricao?: string | null
           dia_vencimento?: number | null
           empresa_representada_id?: string
+          externo_id?: string | null
           gera_financeiro?: boolean | null
+          hash_payload?: string | null
           id?: string
+          idempotency_key?: string | null
           natureza_receita_id?: string | null
           numero_contrato?: string | null
           observacoes?: string | null
+          origem_canal?: string | null
+          origem_sistema?: string | null
           plano_conta_receita_id?: string | null
           plano_pagamento_id?: string | null
           renovacao_automatica?: boolean | null
@@ -1854,7 +1844,7 @@ export type Database = {
             foreignKeyName: "fk_departamentos_responsavel"
             columns: ["responsavel_id"]
             isOneToOne: false
-            referencedRelation: "colaboradores"
+            referencedRelation: "entidades"
             referencedColumns: ["id"]
           },
         ]
@@ -2217,6 +2207,95 @@ export type Database = {
           },
         ]
       }
+      entidade_dados_colaborador: {
+        Row: {
+          carga_horaria: number | null
+          cargo_id: string | null
+          ctps: string | null
+          data_admissao: string | null
+          data_demissao: string | null
+          departamento_id: string | null
+          entidade_id: string
+          escolaridade: string | null
+          estado_civil: string | null
+          foto_url: string | null
+          pis: string | null
+          regime_trabalho: string | null
+          salario: number | null
+          serie_ctps: string | null
+          setor_id: string | null
+          sexo: string | null
+          tipo_contrato: string | null
+        }
+        Insert: {
+          carga_horaria?: number | null
+          cargo_id?: string | null
+          ctps?: string | null
+          data_admissao?: string | null
+          data_demissao?: string | null
+          departamento_id?: string | null
+          entidade_id: string
+          escolaridade?: string | null
+          estado_civil?: string | null
+          foto_url?: string | null
+          pis?: string | null
+          regime_trabalho?: string | null
+          salario?: number | null
+          serie_ctps?: string | null
+          setor_id?: string | null
+          sexo?: string | null
+          tipo_contrato?: string | null
+        }
+        Update: {
+          carga_horaria?: number | null
+          cargo_id?: string | null
+          ctps?: string | null
+          data_admissao?: string | null
+          data_demissao?: string | null
+          departamento_id?: string | null
+          entidade_id?: string
+          escolaridade?: string | null
+          estado_civil?: string | null
+          foto_url?: string | null
+          pis?: string | null
+          regime_trabalho?: string | null
+          salario?: number | null
+          serie_ctps?: string | null
+          setor_id?: string | null
+          sexo?: string | null
+          tipo_contrato?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entidade_dados_colaborador_cargo_id_fkey"
+            columns: ["cargo_id"]
+            isOneToOne: false
+            referencedRelation: "cargos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entidade_dados_colaborador_departamento_id_fkey"
+            columns: ["departamento_id"]
+            isOneToOne: false
+            referencedRelation: "departamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entidade_dados_colaborador_entidade_id_fkey"
+            columns: ["entidade_id"]
+            isOneToOne: true
+            referencedRelation: "entidades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entidade_dados_colaborador_setor_id_fkey"
+            columns: ["setor_id"]
+            isOneToOne: false
+            referencedRelation: "setores_empresa"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entidade_dependencias: {
         Row: {
           ativo: boolean
@@ -2255,6 +2334,224 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      entidade_id_map: {
+        Row: {
+          entidade_id: string
+          id_origem: string
+          tabela_origem: string
+        }
+        Insert: {
+          entidade_id: string
+          id_origem: string
+          tabela_origem: string
+        }
+        Update: {
+          entidade_id?: string
+          id_origem?: string
+          tabela_origem?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entidade_id_map_entidade_id_fkey"
+            columns: ["entidade_id"]
+            isOneToOne: false
+            referencedRelation: "entidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entidade_papeis: {
+        Row: {
+          ativado_em: string
+          ativo: boolean
+          cargo_societario: string | null
+          desativado_em: string | null
+          empresa_representada_id: string
+          entidade_id: string
+          id: string
+          papel: string
+          participacao_percentual: number | null
+        }
+        Insert: {
+          ativado_em?: string
+          ativo?: boolean
+          cargo_societario?: string | null
+          desativado_em?: string | null
+          empresa_representada_id: string
+          entidade_id: string
+          id?: string
+          papel: string
+          participacao_percentual?: number | null
+        }
+        Update: {
+          ativado_em?: string
+          ativo?: boolean
+          cargo_societario?: string | null
+          desativado_em?: string | null
+          empresa_representada_id?: string
+          entidade_id?: string
+          id?: string
+          papel?: string
+          participacao_percentual?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entidade_papeis_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entidade_papeis_entidade_id_fkey"
+            columns: ["entidade_id"]
+            isOneToOne: false
+            referencedRelation: "entidades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entidade_papeis_papel_fkey"
+            columns: ["papel"]
+            isOneToOne: false
+            referencedRelation: "papeis_catalogo"
+            referencedColumns: ["codigo"]
+          },
+        ]
+      }
+      entidades: {
+        Row: {
+          agencia: string | null
+          ativo: boolean
+          bairro: string | null
+          banco: string | null
+          celular: string | null
+          cep: string | null
+          cidade: string | null
+          cnpj: string | null
+          complemento: string | null
+          conta: string | null
+          cpf: string | null
+          created_at: string
+          data_fundacao: string | null
+          data_nascimento: string | null
+          deleted_at: string | null
+          email: string | null
+          email_secundario: string | null
+          empresa_representada_id: string
+          estado: string | null
+          id: string
+          inscricao_estadual: string | null
+          inscricao_municipal: string | null
+          limite_credito: number | null
+          logradouro: string | null
+          nome: string
+          nome_fantasia: string | null
+          numero: string | null
+          observacoes: string | null
+          pix: string | null
+          prazo_entrega: number | null
+          razao_social: string | null
+          rg: string | null
+          telefone: string | null
+          telefone_secundario: string | null
+          tipo_conta: string | null
+          tipo_pessoa: string
+          updated_at: string
+          website: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          agencia?: string | null
+          ativo?: boolean
+          bairro?: string | null
+          banco?: string | null
+          celular?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
+          complemento?: string | null
+          conta?: string | null
+          cpf?: string | null
+          created_at?: string
+          data_fundacao?: string | null
+          data_nascimento?: string | null
+          deleted_at?: string | null
+          email?: string | null
+          email_secundario?: string | null
+          empresa_representada_id: string
+          estado?: string | null
+          id?: string
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          limite_credito?: number | null
+          logradouro?: string | null
+          nome: string
+          nome_fantasia?: string | null
+          numero?: string | null
+          observacoes?: string | null
+          pix?: string | null
+          prazo_entrega?: number | null
+          razao_social?: string | null
+          rg?: string | null
+          telefone?: string | null
+          telefone_secundario?: string | null
+          tipo_conta?: string | null
+          tipo_pessoa: string
+          updated_at?: string
+          website?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          agencia?: string | null
+          ativo?: boolean
+          bairro?: string | null
+          banco?: string | null
+          celular?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
+          complemento?: string | null
+          conta?: string | null
+          cpf?: string | null
+          created_at?: string
+          data_fundacao?: string | null
+          data_nascimento?: string | null
+          deleted_at?: string | null
+          email?: string | null
+          email_secundario?: string | null
+          empresa_representada_id?: string
+          estado?: string | null
+          id?: string
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          limite_credito?: number | null
+          logradouro?: string | null
+          nome?: string
+          nome_fantasia?: string | null
+          numero?: string | null
+          observacoes?: string | null
+          pix?: string | null
+          prazo_entrega?: number | null
+          razao_social?: string | null
+          rg?: string | null
+          telefone?: string | null
+          telefone_secundario?: string | null
+          tipo_conta?: string | null
+          tipo_pessoa?: string
+          updated_at?: string
+          website?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entidades_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       estoque_inventario_itens: {
         Row: {
@@ -3017,7 +3314,7 @@ export type Database = {
             foreignKeyName: "folha_pagamento_colaborador_id_fkey"
             columns: ["colaborador_id"]
             isOneToOne: false
-            referencedRelation: "colaboradores"
+            referencedRelation: "entidades"
             referencedColumns: ["id"]
           },
           {
@@ -4566,6 +4863,27 @@ export type Database = {
           },
         ]
       }
+      papeis_catalogo: {
+        Row: {
+          ativo: boolean
+          codigo: string
+          nome_exibicao: string
+          tipo_pessoa_permitido: string
+        }
+        Insert: {
+          ativo?: boolean
+          codigo: string
+          nome_exibicao: string
+          tipo_pessoa_permitido: string
+        }
+        Update: {
+          ativo?: boolean
+          codigo?: string
+          nome_exibicao?: string
+          tipo_pessoa_permitido?: string
+        }
+        Relationships: []
+      }
       perfis: {
         Row: {
           ativo: boolean
@@ -5251,7 +5569,7 @@ export type Database = {
             foreignKeyName: "registros_ponto_colaborador_id_fkey"
             columns: ["colaborador_id"]
             isOneToOne: false
-            referencedRelation: "colaboradores"
+            referencedRelation: "entidades"
             referencedColumns: ["id"]
           },
           {
@@ -5700,65 +6018,6 @@ export type Database = {
           },
         ]
       }
-      socios_representantes: {
-        Row: {
-          ativo: boolean
-          cargo_societario: string | null
-          cpf: string | null
-          created_at: string
-          deleted_at: string | null
-          documento_url: string | null
-          email: string | null
-          empresa_representada_id: string
-          id: string
-          nome: string
-          participacao_percentual: number | null
-          telefone: string | null
-          tipo: string
-          updated_at: string
-        }
-        Insert: {
-          ativo?: boolean
-          cargo_societario?: string | null
-          cpf?: string | null
-          created_at?: string
-          deleted_at?: string | null
-          documento_url?: string | null
-          email?: string | null
-          empresa_representada_id: string
-          id?: string
-          nome: string
-          participacao_percentual?: number | null
-          telefone?: string | null
-          tipo: string
-          updated_at?: string
-        }
-        Update: {
-          ativo?: boolean
-          cargo_societario?: string | null
-          cpf?: string | null
-          created_at?: string
-          deleted_at?: string | null
-          documento_url?: string | null
-          email?: string | null
-          empresa_representada_id?: string
-          id?: string
-          nome?: string
-          participacao_percentual?: number | null
-          telefone?: string | null
-          tipo?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "socios_representantes_empresa_representada_id_fkey"
-            columns: ["empresa_representada_id"]
-            isOneToOne: false
-            referencedRelation: "empresas_representadas"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       sync_logs: {
         Row: {
           created_at: string
@@ -6048,60 +6307,47 @@ export type Database = {
       usuarios: {
         Row: {
           ativo: boolean
-          colaborador_id: string | null
           created_at: string
           email: string
           empresa_representada_id: string | null
+          entidade_id: string | null
           id: string
           nome: string
           perfil_id: string | null
           pessoa_pendente: boolean
-          pessoa_tipo: string | null
-          socio_id: string | null
           ultimo_acesso: string | null
           updated_at: string
           user_id: string | null
         }
         Insert: {
           ativo?: boolean
-          colaborador_id?: string | null
           created_at?: string
           email: string
           empresa_representada_id?: string | null
+          entidade_id?: string | null
           id?: string
           nome: string
           perfil_id?: string | null
           pessoa_pendente?: boolean
-          pessoa_tipo?: string | null
-          socio_id?: string | null
           ultimo_acesso?: string | null
           updated_at?: string
           user_id?: string | null
         }
         Update: {
           ativo?: boolean
-          colaborador_id?: string | null
           created_at?: string
           email?: string
           empresa_representada_id?: string | null
+          entidade_id?: string | null
           id?: string
           nome?: string
           perfil_id?: string | null
           pessoa_pendente?: boolean
-          pessoa_tipo?: string | null
-          socio_id?: string | null
           ultimo_acesso?: string | null
           updated_at?: string
           user_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "usuarios_colaborador_id_fkey"
-            columns: ["colaborador_id"]
-            isOneToOne: false
-            referencedRelation: "colaboradores"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "usuarios_empresa_representada_id_fkey"
             columns: ["empresa_representada_id"]
@@ -6110,17 +6356,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "usuarios_entidade_id_fkey"
+            columns: ["entidade_id"]
+            isOneToOne: false
+            referencedRelation: "entidades"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "usuarios_perfil_id_fkey"
             columns: ["perfil_id"]
             isOneToOne: false
             referencedRelation: "perfis_acesso"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "usuarios_socio_id_fkey"
-            columns: ["socio_id"]
-            isOneToOne: false
-            referencedRelation: "socios_representantes"
             referencedColumns: ["id"]
           },
         ]
@@ -6836,6 +7082,10 @@ export type Database = {
         Args: { p_extrato_linha_id: string; p_payload?: Json }
         Returns: Json
       }
+      criar_responsavel_centelha: {
+        Args: { p_cnpj: string; p_nome: string }
+        Returns: string
+      }
       desfazer_conciliacao: {
         Args: { p_extrato_linha_id: string }
         Returns: Json
@@ -6941,6 +7191,16 @@ export type Database = {
           usuario_id: string
         }[]
       }
+      get_empresas_disponiveis: {
+        Args: never
+        Returns: {
+          representada_cnpj: string
+          representada_id: string
+          representada_nome: string
+          responsavel_id: string
+          responsavel_nome: string
+        }[]
+      }
       get_ultimo_documento_por_venda: {
         Args: { venda_ids: string[] }
         Returns: {
@@ -6948,25 +7208,6 @@ export type Database = {
           status: string
           updated_at: string
           venda_id: string
-        }[]
-      }
-      is_novus_owner: { Args: never; Returns: boolean }
-      criar_responsavel_centelha: {
-        Args: { p_nome: string; p_cnpj: string | null }
-        Returns: string
-      }
-      listar_satelites_disponiveis: {
-        Args: never
-        Returns: { id: string; codigo: string; nome: string }[]
-      }
-      get_empresas_disponiveis: {
-        Args: never
-        Returns: {
-          representada_id: string
-          representada_nome: string
-          representada_cnpj: string | null
-          responsavel_id: string | null
-          responsavel_nome: string | null
         }[]
       }
       get_user_empresa_id: { Args: never; Returns: string }
@@ -6980,6 +7221,23 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      has_role_for_empresa: {
+        Args: {
+          _empresa_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_novus_owner: { Args: never; Returns: boolean }
+      listar_satelites_disponiveis: {
+        Args: never
+        Returns: {
+          codigo: string
+          id: string
+          nome: string
+        }[]
       }
       materializar_recorrencias: {
         Args: { p_dias_antecedencia?: number }
@@ -7086,7 +7344,12 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "gerente" | "operador" | "visualizador"
+      app_role:
+        | "admin"
+        | "gerente"
+        | "operador"
+        | "visualizador"
+        | "novus_owner"
       report_export_format: "xlsx" | "pdf" | "csv"
       report_run_status: "pending" | "running" | "succeeded" | "failed"
       report_schedule_frequency: "daily" | "weekly" | "monthly"
@@ -7216,12 +7479,15 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  centelha: {
+    Enums: {},
+  },
   graphql_public: {
     Enums: {},
   },
   public: {
     Enums: {
-      app_role: ["admin", "gerente", "operador", "visualizador"],
+      app_role: ["admin", "gerente", "operador", "visualizador", "novus_owner"],
       report_export_format: ["xlsx", "pdf", "csv"],
       report_run_status: ["pending", "running", "succeeded", "failed"],
       report_schedule_frequency: ["daily", "weekly", "monthly"],

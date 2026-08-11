@@ -36,9 +36,34 @@ papel (`papeis_catalogo.tipo_pessoa_permitido`), não hardcoded.
 3. **Aplicado via `supabase db query --linked --file`** (não `db push` — histórico de migrations deste projeto
    está quebrado, workaround já documentado neste arquivo).
 
-**Próximo passo**: Fase 2 (backfill + cutover, ordem Sócios→Colaboradores→Fornecedores→Clientes) — como as
-tabelas de origem estão vazias, o backfill em si é baixo risco, mas o realinhamento de FK (23 arquivos em
-`clientes`, 12 em `fornecedores`, 9 em `colaboradores`) ainda precisa ser feito com cuidado igual.
+4. **Fase 2a (concluída, migration `20260810231500_backfill_cutover_socios_colaboradores.sql`)**: Sócios e
+   Colaboradores migrados juntos — `usuarios_pessoa_xor_chk` acoplava os dois (mesma constraint, mesmo
+   `NovoUsuarioModal`). Backfill `socios_representantes`/`colaboradores` → `entidades`+`entidade_papeis`
+   (+`entidade_dados_colaborador`), preservando `id` original (achado do plano: evita reescrever FK
+   dependente linha a linha). **Insight que reduziu bastante o escopo**: como o `id` é preservado, bastou
+   retargetar as 4 constraints de FK (`folha_pagamento`, `beneficios_vinculados`, `registros_ponto`,
+   `departamentos.responsavel_id`) de `colaboradores(id)` pra `entidades(id)` **mantendo o nome da coluna**
+   (`colaborador_id`/`responsavel_id`) — zero mudança de código nesses 4 consumidores, só quem consultava
+   `colaboradores`/`socios_representantes` **diretamente** precisou mudar: `colaboradorService.ts`,
+   `sociosRepresentantesService.ts`, `usuarioService.ts` (3 funções: `listColaboradoresDisponiveis`,
+   `fetchUsuariosComPessoa`, `checkDuplicidade`), `NovoUsuarioModal.tsx` (payload) e a edge function
+   `colaborador-preflight` (Porta 3, chamada pelo Educacional). `ColaboradorFormModal.tsx` e as páginas de
+   RH (`FolhaPagamento.tsx`/`BeneficiosVinculados.tsx`/`RegistrosPonto.tsx`) **não precisaram mudar** — já
+   passavam pela camada de serviço com uma interface estável. `usuarios` perdeu `colaborador_id`/`socio_id`/
+   `pessoa_tipo`/`usuarios_pessoa_xor_chk` (a trigger `validar_usuario_pessoa_papel` da Fase 1 assume a
+   validação). Tabelas `colaboradores`/`socios_representantes` dropadas (corte seco, sem view de
+   compatibilidade) — confirmado sem view dependente antes de dropar. Campo `socios_representantes.
+   documento_url` não migrado pra `entidades` — grep confirmou zero uso real em qualquer form, só existia
+   na declaração do tipo TS.
+5. **Verificação**: `npm run typecheck` limpo, `npm run test -- --run` 361/361 (46 arquivos). `types.ts`
+   regenerado do schema real (`supabase gen types typescript --linked`). Teste ao vivo via SQL (não só
+   trigger, ponta a ponta: criar entidade+papel+dados_colaborador, replicar exatamente a query de
+   `fetchColaboradores`/`colaborador-preflight`, `DELETE` e confirmar cascade limpou as 3 tabelas). Padrão
+   `!inner` em embed do PostgREST já usado nesta base (`contaBancariaService.ts`), não é sintaxe nova.
+
+**Próximo passo**: Fase 2b (Fornecedores, 12 arquivos) e Fase 2c (Clientes, 23 arquivos + contrato de sync
+com satélite) — mesmo padrão de retargetar FK mantendo nome de coluna onde possível, reescrever só quem
+consulta as tabelas legadas direto.
 
 ## 🔖 Checkpoint de sessão (2026-08-10 — responsividade mobile, aditiva)
 

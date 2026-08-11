@@ -100,10 +100,11 @@ serve(async (req) => {
     }
 
     const { data: colaborador, error: colError } = await supabase
-      .from('colaboradores')
-      .select('id, ativo, deleted_at, data_demissao')
+      .from('entidades')
+      .select('id, ativo, deleted_at, entidade_papeis!inner(papel), entidade_dados_colaborador(data_demissao)')
       .eq('empresa_representada_id', empresaId)
       .eq('cpf', cpf)
+      .eq('entidade_papeis.papel', 'COLABORADOR')
       .maybeSingle()
 
     if (colError) {
@@ -117,7 +118,10 @@ serve(async (req) => {
     if (colaborador.deleted_at || !colaborador.ativo) {
       return jsonResponse(bloqueio('COLABORADOR_INATIVO', 'Colaborador encontrado, mas está inativo ou foi removido'), 200)
     }
-    if (colaborador.data_demissao && new Date(colaborador.data_demissao) <= new Date()) {
+    const dadosColaborador = Array.isArray(colaborador.entidade_dados_colaborador)
+      ? colaborador.entidade_dados_colaborador[0]
+      : colaborador.entidade_dados_colaborador
+    if (dadosColaborador?.data_demissao && new Date(dadosColaborador.data_demissao) <= new Date()) {
       return jsonResponse(bloqueio('COLABORADOR_DEMITIDO', 'Colaborador encontrado, mas já foi desligado'), 200)
     }
 
