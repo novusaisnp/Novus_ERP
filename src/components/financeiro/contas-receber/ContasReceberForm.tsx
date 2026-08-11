@@ -236,7 +236,7 @@ export const ContasReceberForm: React.FC<ContasReceberFormProps> = ({
                 value={formData.plano_conta_id ?? undefined}
                 onChange={(value) => onInputChange('plano_conta_id', value)}
                 placeholder="Selecione uma conta analítica"
-                label="Conta Contábil"
+                label="Rubrica contábil"
                 required={!useRateio}
                 tipo="RECEITA"
               />
@@ -271,7 +271,7 @@ export const ContasReceberForm: React.FC<ContasReceberFormProps> = ({
 
           {useRateio && (
             <p className="text-sm text-muted-foreground">
-              Configuração de rateio disponível na aba "Rateio".
+              Configuração de rateio disponível na aba "Rateio contábil".
             </p>
           )}
         </CardContent>

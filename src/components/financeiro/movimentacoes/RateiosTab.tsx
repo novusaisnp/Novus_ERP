@@ -36,7 +36,7 @@ export const RateiosTab = ({ titulo, podeEditar }: RateiosTabProps) => {
 
   // Dados para o gráfico de pizza
   const dadosGrafico = rateios.map((rateio, index) => ({
-    name: rateio.plano_conta?.nome || 'Sem conta',
+    name: rateio.plano_conta?.nome || 'Sem rubrica',
     value: Number(rateio.valor || 0),
     color: `hsl(${(index * 137.5) % 360}, 70%, 50%)`,
   }));
@@ -155,7 +155,7 @@ export const RateiosTab = ({ titulo, podeEditar }: RateiosTabProps) => {
             {/* Lista de rateios */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Rateios por Conta</CardTitle>
+                <CardTitle>Rateio contábil por rubrica</CardTitle>
                 {podeEditar && (
                   <Button size="sm" onClick={() => setShowForm(true)}>
                     <Plus className="w-4 h-4 mr-2" />
@@ -221,7 +221,7 @@ export const RateiosTab = ({ titulo, podeEditar }: RateiosTabProps) => {
             {/* Gráfico de distribuição */}
             <Card>
               <CardHeader>
-                <CardTitle>Distribuição dos Rateios</CardTitle>
+                <CardTitle>Distribuição por rubrica</CardTitle>
               </CardHeader>
               <CardContent className="p-4">
                 {dadosGrafico.length > 0 ? (
@@ -272,7 +272,7 @@ export const RateiosTab = ({ titulo, podeEditar }: RateiosTabProps) => {
         {rateios.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Validações de Rateio</CardTitle>
+              <CardTitle>Validações do rateio contábil</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">

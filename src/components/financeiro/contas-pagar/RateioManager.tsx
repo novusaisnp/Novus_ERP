@@ -303,7 +303,7 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h3 className="text-lg font-semibold">Rateio por Plano de Contas</h3>
+          <h3 className="text-lg font-semibold">Rateio contábil por rubrica</h3>
           <p className="text-sm text-muted-foreground">
             Distribua o valor total entre diferentes contas contábeis analíticas
           </p>
@@ -461,7 +461,7 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
                         <ContaContabilAutocomplete
-                          label="Conta Contábil"
+                          label="Rubrica contábil"
                           placeholder="Selecione uma conta analítica"
                           value={rateio.plano_conta_id}
                           onChange={(value, conta) => {

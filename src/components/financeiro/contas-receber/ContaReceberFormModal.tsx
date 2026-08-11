@@ -231,7 +231,7 @@ export function ContaReceberFormModal({
           <Tabs defaultValue="basico" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="basico">Dados da Conta</TabsTrigger>
-              <TabsTrigger value="rateio">Rateio</TabsTrigger>
+              <TabsTrigger value="rateio">Rateio contábil</TabsTrigger>
             </TabsList>
 
             <TabsContent value="basico" className="space-y-4">
