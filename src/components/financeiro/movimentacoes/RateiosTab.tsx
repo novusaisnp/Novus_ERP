@@ -24,10 +24,15 @@ export const RateiosTab = ({ titulo, podeEditar }: RateiosTabProps) => {
   console.log('[RateiosTab] Dados recebidos - rateios:', rateios, 'isLoading:', isLoading, 'error:', error);
   console.log('[RateiosTab] Total rateios encontrados:', rateios?.length || 0);
 
-  // Calcular estatísticas dos rateios
-  const totalRateado = rateios.reduce((acc, rateio) => acc + Number(rateio.valor || 0), 0);
+  // Somar em ponto flutuante deixa resíduo (0,1 + 0,2 = 0,30000000000000004), que na tela
+  // aparece como "R$ -0,00". Arredondar a soma resolve na exibição, único uso aqui.
+  const emCentavos = (v: number) => Math.round(v * 100) / 100;
+
+  const totalRateado = emCentavos(
+    rateios.reduce((acc, rateio) => acc + Number(rateio.valor || 0), 0),
+  );
   const percentualRateado = titulo.valor_original > 0 ? (totalRateado / titulo.valor_original) * 100 : 0;
-  const valorRestante = titulo.valor_original - totalRateado;
+  const valorRestante = emCentavos(titulo.valor_original - totalRateado);
 
   // Dados para o gráfico de pizza
   const dadosGrafico = rateios.map((rateio, index) => ({

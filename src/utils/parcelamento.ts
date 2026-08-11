@@ -67,7 +67,11 @@ export function gerarParcelas(input: ParcelamentoInput): ParcelaCalculada[] {
   }
 
   if (qtdRestantes > 0) {
-    const baseParcela = round2(restante / qtdRestantes);
+    // A parcela base trunca em centavos, nunca arredonda para cima. Arredondar fazia a soma
+    // das parcelas iniciais estourar o total quando o valor era pequeno em relação ao numero
+    // de parcelas, e a ultima parcela absorvia a diferenca ficando negativa
+    // (R$ 0,03 em 6x virava 0,01 cinco vezes e -0,02 na ultima).
+    const baseParcela = Math.floor(round2(restante) * 100 / qtdRestantes) / 100;
     let saldo = restante;
 
     for (let k = 1; k <= qtdRestantes; k++) {

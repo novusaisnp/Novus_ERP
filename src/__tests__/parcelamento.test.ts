@@ -37,4 +37,43 @@ describe('gerarParcelas — FIN-E3', () => {
     expect(p).toHaveLength(1);
     expect(p[0].valor).toBeCloseTo(55.55, 2);
   });
+
+  // Dinheiro é `number` em todo o TypeScript. Em vez de migrar a base inteira para centavos
+  // inteiros, esta varredura prova a propriedade que realmente importa: nenhum centavo se
+  // perde nem se inventa ao dividir. Se algum dia deixar de valer, quebra aqui.
+  it('nenhum centavo se perde ao dividir, em qualquer combinação', () => {
+    const valores = [0.01, 0.03, 1, 9.99, 10, 33.33, 100, 100.01, 1234.56, 99999.99];
+    const quantidades = [1, 2, 3, 4, 6, 7, 11, 12, 13];
+
+    for (const valorLiquido of valores) {
+      for (const qtdParcelas of quantidades) {
+        const parcelas = gerarParcelas({ valorLiquido, qtdParcelas, dataVenda: '2026-01-01' });
+
+        expect(parcelas).toHaveLength(qtdParcelas);
+
+        // Comparar em centavos inteiros: igualdade exata, sem tolerância que esconda erro.
+        const somaCentavos = parcelas.reduce((acc, p) => acc + Math.round(p.valor * 100), 0);
+        expect(somaCentavos).toBe(Math.round(valorLiquido * 100));
+
+        // Nenhuma parcela negativa, mesmo quando o valor não divide de forma exata.
+        expect(parcelas.every((p) => p.valor >= 0)).toBe(true);
+      }
+    }
+  });
+
+  it('nenhum centavo se perde quando há entrada', () => {
+    for (const percentualEntrada of [10, 20, 33.33, 50]) {
+      for (const valorLiquido of [10, 99.99, 1234.56]) {
+        const parcelas = gerarParcelas({
+          valorLiquido,
+          qtdParcelas: 6,
+          percentualEntrada,
+          dataVenda: '2026-01-01',
+        });
+
+        const somaCentavos = parcelas.reduce((acc, p) => acc + Math.round(p.valor * 100), 0);
+        expect(somaCentavos).toBe(Math.round(valorLiquido * 100));
+      }
+    }
+  });
 });

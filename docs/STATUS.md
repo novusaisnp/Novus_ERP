@@ -1,6 +1,72 @@
 # Status do projeto — NOVUS ERP
 
-**Última atualização: 2026-08-11 (FIN-0 — rateio atômico; integridade da FIN-0 fechada).**
+**Última atualização: 2026-08-11 (dinheiro em ponto flutuante — reavaliado; bug real de parcelamento corrigido).**
+
+## 🔖 Checkpoint atual — parcela negativa e a decisão sobre L5 (2026-08-11)
+
+### A lacuna L5 foi reavaliada e não se confirmou como estava descrita
+
+A auditoria classificou "dinheiro é `number` (float) em todo o TypeScript" como risco alto e
+propôs migrar a base para centavos inteiros. Lendo o código de verdade, o risco não se
+sustenta nesses termos:
+
+- `parcelamento.ts` já arredonda a cada passo e joga o resíduo na última parcela;
+- `RateioManager` distribui igualmente com resíduo na última e compara com tolerância;
+- `ContaReceberFormModal` valida a soma dos rateios com tolerância de um centavo;
+- o Postgres usa `numeric`, então a persistência sempre foi exata.
+
+Ou seja: a estratégia "arredonda em duas casas, compara com tolerância" já estava aplicada
+onde importa. Migrar tudo para centavos inteiros seria uma refatoração grande em código de
+dinheiro **sem nenhum defeito observado** — o tipo de mudança que introduz o bug que pretende
+evitar. Decisão: não fazer a migração. No lugar dela, provar a propriedade que interessa.
+
+### O teste que substituiu a refatoração achou um bug real
+
+Uma varredura de valores × números de parcelas, comparando em centavos inteiros (igualdade
+exata, sem tolerância que esconda erro), revelou que **R$ 0,03 em 6 parcelas gerava uma
+parcela de −R$ 0,02**.
+
+Causa: a parcela base arredondava para cima (`0,005` virava `0,01`), cinco parcelas de um
+centavo estouravam o total de três centavos, e a última absorvia a diferença ficando
+negativa. Vale sempre que a base arredondada para cima, multiplicada pelas parcelas
+anteriores, ultrapassa o total — valores pequenos com muitas parcelas.
+
+Correção: a parcela base passa a truncar em centavos, nunca arredondar para cima. Um caractere
+de diferença conceitual, e a soma continua exata com o resíduo na última parcela, preservando
+a semântica documentada e os quatro testes que já existiam.
+
+### Concluído
+
+- `src/utils/parcelamento.ts`: base truncada em centavos.
+- `src/__tests__/parcelamento.test.ts`: duas varreduras novas (com e sem entrada) que
+  comparam em centavos inteiros e exigem que nenhuma parcela seja negativa.
+- `RateiosTab.tsx`: soma dos rateios arredondada antes de exibir, para não mostrar "R$ -0,00"
+  vindo de resíduo de ponto flutuante.
+
+### Validação
+
+- A varredura falhou **antes** do fix, apontando o caso exato, e passa depois.
+- Os quatro testes de parcelamento que já existiam continuam passando, incluindo o que exige
+  o resíduo na última parcela.
+- Nenhuma função SQL de parcelamento existe no banco, apesar do comentário "espelho da regra
+  SQL" no topo do arquivo — o único consumidor é `vendaPagamentoService.ts`, então a correção
+  em um lugar cobre todos os caminhos.
+- `npm run test -- --run` → 46 arquivos, 354/354.
+
+### Se ainda assim quiser a migração para centavos
+
+O caminho continua aberto e está descrito no plano: `src/lib/money.ts` operando em centavos
+inteiros, convertendo só na borda de exibição. A recomendação registrada aqui é não fazer
+enquanto não houver um defeito que a tolerância atual não resolva.
+
+### Próxima ação única
+
+**Erro diferente de lista vazia (L6) e limpeza de código morto (L9).** Falha de query em
+parte dos serviços financeiros é indistinguível de "não há dados"; e
+`MovimentacoesGestaoPopup.tsx` ainda tem toasts de "em breve" inalcançáveis e um `console.log`
+solto.
+
+---
 
 ## 🔖 Checkpoint atual — título e rateios na mesma transação (2026-08-11)
 
