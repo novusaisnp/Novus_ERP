@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { uiStatusPagarToDb } from '@/lib/statusMappers';
 import type { ContaPagarInput } from '@/types/contasPagar';
 import { getEmpresaAtivaIdOuFalha as getEmpresaIdAtual } from '@/lib/empresaAtiva';
@@ -29,46 +30,36 @@ const buildPayload = (input: ContaPagarInput) => {
   };
 };
 
-export const createContaPagar = async (input: ContaPagarInput) => {
-  const empresaId = await getEmpresaIdAtual();
-  const { data: contaData, error: contaError } = await supabase
-    .from('contas_pagar')
-    .insert([{ ...buildPayload(input), empresa_representada_id: empresaId }])
-    .select('id')
-    .single();
+// Rateios no formato que a RPC espera. `descricao` na UI vira `observacoes` na tabela.
+const buildRateios = (input: ContaPagarInput) =>
+  (input.rateios || []).map(rateio => ({
+    plano_conta_id: rateio.plano_conta_id || null,
+    centro_custo_id: rateio.centro_custo_id || null,
+    valor: rateio.valor,
+    percentual: rateio.percentual,
+    observacoes: rateio.descricao || null,
+  }));
 
-  if (contaError) {
-    console.error('[ContasPagarOperations] Erro ao criar conta a pagar:', contaError);
-    throw new Error(`Erro ao criar conta a pagar: ${contaError.message}`);
+// Título e rateios são gravados na mesma transação pela RPC; antes eram chamadas separadas
+// com compensação manual, e uma falha no meio deixava o título sem rateios.
+const salvarTitulo = async (input: ContaPagarInput, id?: string) => {
+  const { data, error } = await supabase.rpc('financeiro_salvar_titulo', {
+    p_tipo_titulo: 'CONTAS_PAGAR',
+    p_dados: buildPayload(input) as unknown as Json,
+    p_rateios: buildRateios(input) as unknown as Json,
+    p_empresa_id: await getEmpresaIdAtual(),
+    ...(id ? { p_titulo_id: id } : {}),
+  });
+
+  if (error) {
+    console.error('[ContasPagarOperations] Erro ao salvar conta a pagar:', error);
+    throw new Error(`Erro ao salvar conta a pagar: ${error.message}`);
   }
+  return data as string;
+};
 
-  // Se há rateios, inserir cada um como linha separada
-  if (input.rateios && input.rateios.length > 0) {
-    
-    const rateiosData = input.rateios.map(rateio => ({
-      conta_pagar_id: contaData.id,
-      empresa_representada_id: empresaId,
-      plano_conta_id: rateio.plano_conta_id,
-      centro_custo_id: rateio.centro_custo_id || null,
-      valor: rateio.valor,
-      percentual: rateio.percentual,
-      observacoes: rateio.descricao || null,
-    }));
-
-    const { error: rateiosError } = await supabase
-      .from('rateios_contas_pagar')
-      .insert(rateiosData);
-
-    if (rateiosError) {
-      console.error('[ContasPagarOperations] Erro ao inserir rateios:', rateiosError);
-      // Reverter a conta criada
-      await supabase.from('contas_pagar').delete().eq('id', contaData.id);
-      throw new Error(`Erro ao inserir rateios: ${rateiosError.message}`);
-    }
-  }
-
-  // Buscar conta completa com relacionamentos
-  const { data: contaCompleta, error: fetchError } = await supabase
+const buscarContaCompleta = async (id: string, empresaId: string) => {
+  const { data, error } = await supabase
     .from('contas_pagar')
     .select(`
       *,
@@ -76,86 +67,27 @@ export const createContaPagar = async (input: ContaPagarInput) => {
       plano_contas!contas_pagar_plano_conta_id_fkey(id, codigo, nome),
       centros_custo!contas_pagar_centro_custo_id_fkey(id, nome, codigo)
     `)
-    .eq('id', contaData.id)
+    .eq('id', id)
     .eq('empresa_representada_id', empresaId)
     .single();
 
-  if (fetchError) {
-    console.error('[ContasPagarOperations] Erro ao buscar conta criada:', fetchError);
-    throw new Error(`Erro ao buscar conta criada: ${fetchError.message}`);
+  if (error) {
+    console.error('[ContasPagarOperations] Erro ao buscar conta:', error);
+    throw new Error(`Erro ao buscar conta: ${error.message}`);
   }
+  return data;
+};
 
-  return contaCompleta;
+export const createContaPagar = async (input: ContaPagarInput) => {
+  const empresaId = await getEmpresaIdAtual();
+  const id = await salvarTitulo(input);
+  return buscarContaCompleta(id, empresaId);
 };
 
 export const updateContaPagar = async (id: string, input: ContaPagarInput) => {
   const empresaId = await getEmpresaIdAtual();
-  const { error: contaError } = await supabase
-    .from('contas_pagar')
-    .update(buildPayload(input))
-    .eq('id', id)
-    .eq('empresa_representada_id', empresaId)
-    .select('id')
-    .single();
-
-  if (contaError) {
-    console.error('[ContasPagarOperations] Erro ao atualizar conta a pagar:', contaError);
-    throw new Error(`Erro ao atualizar conta a pagar: ${contaError.message}`);
-  }
-
-  // Remover rateios existentes
-  const { error: deleteRateiosError } = await supabase
-    .from('rateios_contas_pagar')
-    .delete()
-    .eq('conta_pagar_id', id);
-
-  if (deleteRateiosError) {
-    console.error('[ContasPagarOperations] Erro ao remover rateios existentes:', deleteRateiosError);
-    throw new Error(`Erro ao remover rateios existentes: ${deleteRateiosError.message}`);
-  }
-
-  // Se há rateios, inserir os novos
-  if (input.rateios && input.rateios.length > 0) {
-    
-    const rateiosData = input.rateios.map(rateio => ({
-      conta_pagar_id: id,
-      empresa_representada_id: empresaId,
-      plano_conta_id: rateio.plano_conta_id,
-      centro_custo_id: rateio.centro_custo_id || null,
-      valor: rateio.valor,
-      percentual: rateio.percentual,
-      observacoes: rateio.descricao || null,
-    }));
-
-    const { error: rateiosError } = await supabase
-      .from('rateios_contas_pagar')
-      .insert(rateiosData);
-
-    if (rateiosError) {
-      console.error('[ContasPagarOperations] Erro ao inserir novos rateios:', rateiosError);
-      throw new Error(`Erro ao inserir novos rateios: ${rateiosError.message}`);
-    }
-  }
-
-  // Buscar conta completa com relacionamentos
-  const { data: contaCompleta, error: fetchError } = await supabase
-    .from('contas_pagar')
-    .select(`
-      *,
-      fornecedores:entidades!contas_pagar_fornecedor_id_fkey(id, razao_social, nome_fantasia),
-      plano_contas!contas_pagar_plano_conta_id_fkey(id, codigo, nome),
-      centros_custo!contas_pagar_centro_custo_id_fkey(id, nome, codigo)
-    `)
-    .eq('id', id)
-    .eq('empresa_representada_id', empresaId)
-    .single();
-
-  if (fetchError) {
-    console.error('[ContasPagarOperations] Erro ao buscar conta atualizada:', fetchError);
-    throw new Error(`Erro ao buscar conta atualizada: ${fetchError.message}`);
-  }
-
-  return contaCompleta;
+  await salvarTitulo(input, id);
+  return buscarContaCompleta(id, empresaId);
 };
 
 export const deleteContaPagar = async (id: string) => {

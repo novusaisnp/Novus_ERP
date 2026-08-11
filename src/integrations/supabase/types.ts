@@ -7005,6 +7005,16 @@ export type Database = {
         Args: { p_acao: string; p_user_id: string }
         Returns: boolean
       }
+      financeiro_salvar_titulo: {
+        Args: {
+          p_dados: Json
+          p_empresa_id?: string
+          p_rateios?: Json
+          p_tipo_titulo: string
+          p_titulo_id?: string
+        }
+        Returns: string
+      }
       fn_curva_abc: {
         Args: {
           p_categoria_id?: string

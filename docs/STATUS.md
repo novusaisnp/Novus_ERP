@@ -1,6 +1,91 @@
 # Status do projeto — NOVUS ERP
 
-**Última atualização: 2026-08-11 (trava de autorização em baixa retroativa, estorno e cancelamento).**
+**Última atualização: 2026-08-11 (FIN-0 — rateio atômico; integridade da FIN-0 fechada).**
+
+## 🔖 Checkpoint atual — título e rateios na mesma transação (2026-08-11)
+
+Fecha a lacuna L2, a última crítica da auditoria. **Com ela, todos os itens de integridade
+transacional da FIN-0 estão concluídos.**
+
+### O que estava errado
+
+Criar fazia insert do título e depois insert dos rateios, compensando com um `delete` manual
+em caso de falha — compensação de aplicação, não transação. Editar era pior: apagava os
+rateios e reinseria **sem compensação alguma**, então uma falha na reinserção deixava o
+título com zero rateios, em silêncio. Pagar e receber repetiam o mesmo padrão.
+
+### O que foi feito
+
+- Migration `20260811180000_financeiro_salvar_titulo_atomico.sql` com
+  `financeiro_salvar_titulo(p_tipo_titulo, p_dados, p_rateios, p_titulo_id, p_empresa_id)`:
+  uma única transação para título e rateios, em pagar e receber. `p_titulo_id` nulo cria.
+- Os dois serviços passaram a chamar a RPC. `createContaPagar`/`updateContaPagar` e os
+  equivalentes de receber encolheram para poucas linhas cada, e o `delete` de compensação
+  sumiu junto com o problema que ele tentava remediar.
+- A empresa vem sempre do servidor: `empresa_representada_id`, `id`, `created_at` e
+  `deleted_at` são removidos do payload antes de gravar — o cliente não escolhe em nome de
+  quem se grava, nem sobrescreve chave e datas de controle.
+- Editar valida que o título pertence à empresa em que se está operando, fechando na RPC o
+  mesmo isolamento já aplicado nos serviços.
+
+### Decisão técnica: colunas resolvidas pelo catálogo
+
+A RPC não enumera colunas. Ela cruza as chaves do payload com `information_schema.columns` e
+monta o comando só com as que existem de fato na tabela; chave desconhecida é descartada em
+vez de virar SQL. `jsonb_populate_record` faz a conversão para o tipo real de cada coluna.
+
+O motivo é manutenção: enumerar as ~20 colunas de cada tabela duplicaria, em SQL, a lista que
+o TypeScript já monta em `buildPayload`/`transformToSupabase`, e as duas sairiam de sincronia
+na primeira coluna nova. Duas armadilhas apareceram no caminho e estão resolvidas: inserir a
+linha inteira anula os defaults (`id`, `created_at`), então o INSERT lista apenas as colunas
+presentes; e extrair valores como texto exigiria um cast por coluna, daí o
+`jsonb_populate_record` também no UPDATE.
+
+### Achado durante o teste ao vivo
+
+A primeira versão resolvia a empresa só por `get_user_empresa_id()`, que lê o vínculo em
+`user_roles` e é nulo para quem opera acima de uma empresa — criar falhou ao vivo com
+"Empresa do usuario nao identificada". **É o mesmo achado da entrega anterior, na edge
+function**: neste sistema a empresa da operação é a empresa *ativa*, não um vínculo fixo.
+A RPC passou a aceitar a empresa ativa, validando que o usuário pode operar nela.
+
+### Validação deste checkpoint
+
+- Migration em `BEGIN ... ROLLBACK` antes de aplicar → passou.
+- Cinco cenários no banco real, dentro de rollback: cria título com dois rateios numa chamada;
+  editar substitui rateios e altera o título junto; **falha no meio dos rateios derruba a
+  chamada inteira e preserva título e rateios anteriores**; chave inventada no payload é
+  ignorada; lista vazia limpa os rateios.
+- Sanidade: o assert de atomicidade invertido de propósito falhou, provando que ele mede
+  mesmo o estado preservado.
+- Ao vivo, com sessão real: criar gravou 2 rateios e editar deixou 1, pelo serviço de verdade.
+  Dados temporários removidos; banco de volta a zero em títulos e rateios.
+- `npm run test -- --run` → 46 arquivos, 351/351. Três testes novos cobrem o caminho.
+
+### Pendência de ambiente, não do código
+
+`npm run typecheck` está **vermelho em `src/services/produtoService.ts`**, por trabalho fiscal
+em andamento em outra frente (`produtoService`, `types/produto`, `types/fiscal` modificados no
+diretório e não commitados) que espera uma coluna `dados_fiscais` em `produtos` ainda ausente
+no banco. Nenhum arquivo desta entrega aparece na lista de erros. Esses arquivos fiscais, e o
+`AGENTS.md` não rastreado, foram deixados fora dos commits desta sessão de propósito.
+
+### Arquivos desta entrega
+
+- `supabase/migrations/20260811180000_financeiro_salvar_titulo_atomico.sql`
+- `src/services/contasPagar/contasPagarOperations.ts`
+- `src/services/contasReceber/contasReceberOperations.ts` + `contasReceberOperations.test.ts`
+- `src/integrations/supabase/types.ts`
+- `docs/ROADMAP_2026.md`
+- `docs/STATUS.md`
+
+### Próxima ação única
+
+**Fatia 3 — dinheiro sem float (L5).** Centralizar soma, rateio e parcelamento em
+`src/lib/money.ts` operando em centavos inteiros, sem dependência nova, convertendo só na
+borda de exibição. Teste de propriedade: ratear 100,00 em três partes soma exatamente 100,00.
+
+---
 
 ## 🔖 Checkpoint atual — trava de autorização de operação financeira (2026-08-11)
 

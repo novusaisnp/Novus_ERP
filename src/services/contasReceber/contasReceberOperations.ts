@@ -1,23 +1,37 @@
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { transformToSupabase } from './contasReceberTransforms';
 import { getEmpresaAtivaIdOuFalha as getEmpresaIdAtual } from '@/lib/empresaAtiva';
 import type { ContaReceberInput, RateioContaReceber } from '@/types/contasReceber';
 
 
-const buildRateiosPayload = (
-  contaReceberId: string,
-  empresaId: string,
-  rateios: RateioContaReceber[],
-) =>
+// Rateios no formato que a RPC espera; o vínculo e a empresa são resolvidos no servidor.
+const buildRateiosPayload = (rateios: RateioContaReceber[] = []) =>
   rateios.map((r) => ({
-    conta_receber_id: contaReceberId,
-    empresa_representada_id: empresaId,
-    plano_conta_id: r.plano_conta_id,
+    plano_conta_id: r.plano_conta_id || null,
     centro_custo_id: r.centro_custo_id || null,
     valor: r.valor,
     percentual: r.percentual,
     observacoes: r.observacoes || null,
   }));
+
+// Título e rateios são gravados na mesma transação pela RPC; antes eram chamadas separadas,
+// e uma falha na reinserção deixava o título com zero rateios, em silêncio.
+const salvarTitulo = async (input: ContaReceberInput, id?: string) => {
+  const { data, error } = await supabase.rpc('financeiro_salvar_titulo', {
+    p_tipo_titulo: 'CONTAS_RECEBER',
+    p_dados: transformToSupabase(input) as unknown as Json,
+    p_rateios: buildRateiosPayload(input.rateios) as unknown as Json,
+    p_empresa_id: await getEmpresaIdAtual(),
+    ...(id ? { p_titulo_id: id } : {}),
+  });
+
+  if (error) {
+    console.error('[ContasReceberOperations] Erro ao salvar:', error);
+    throw new Error(error.message || 'Erro ao salvar conta a receber');
+  }
+  return data as string;
+};
 
 const selectComRateios = `
   *,
@@ -34,132 +48,31 @@ const selectComRateios = `
   )
 `;
 
-export const createContaReceber = async (input: ContaReceberInput) => {
-  const payload = transformToSupabase(input);
+const buscarContaCompleta = async (id: string) => {
   const { data, error } = await supabase
     .from('contas_receber')
-    .insert(payload)
-    .select('id, empresa_representada_id')
+    .select(selectComRateios)
+    .eq('id', id)
     .single();
 
   if (error) {
-    console.error('[ContasReceberOperations] Erro ao criar:', error);
-    throw new Error(error.message || 'Erro ao criar conta a receber');
+    console.error('[ContasReceberOperations] Erro ao buscar conta:', error);
+    throw new Error(error.message || 'Erro ao buscar conta a receber');
   }
+  return data;
+};
 
-  if (input.rateios && input.rateios.length > 0) {
-    const rateiosData = buildRateiosPayload(
-      data.id,
-      data.empresa_representada_id,
-      input.rateios,
-    );
-    const { error: rateiosError } = await supabase
-      .from('rateios_contas_receber')
-      .insert(rateiosData);
-
-    if (rateiosError) {
-      console.error(
-        '[ContasReceberOperations] Erro ao inserir rateios:',
-        rateiosError,
-      );
-      await supabase
-        .from('contas_receber')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', data.id);
-      throw new Error(
-        `Erro ao inserir rateios: ${rateiosError.message}`,
-      );
-    }
-  }
-
-  const { data: contaCompleta, error: fetchError } = await supabase
-    .from('contas_receber')
-    .select(selectComRateios)
-    .eq('id', data.id)
-    .single();
-
-  if (fetchError) {
-    console.error(
-      '[ContasReceberOperations] Erro ao buscar conta criada:',
-      fetchError,
-    );
-    throw new Error(fetchError.message || 'Erro ao buscar conta criada');
-  }
-  return contaCompleta;
+export const createContaReceber = async (input: ContaReceberInput) => {
+  const id = await salvarTitulo(input);
+  return buscarContaCompleta(id);
 };
 
 export const updateContaReceber = async (
   id: string,
   input: ContaReceberInput,
 ) => {
-  const payload = transformToSupabase(input);
-  const empresaId = await getEmpresaIdAtual();
-  const { data, error } = await supabase
-    .from('contas_receber')
-    .update(payload)
-    .eq('id', id)
-    .eq('empresa_representada_id', empresaId)
-    .select('id, empresa_representada_id')
-    .single();
-
-  if (error) {
-    console.error('[ContasReceberOperations] Erro ao atualizar:', error);
-    throw new Error(error.message || 'Erro ao atualizar conta a receber');
-  }
-
-  // Substituir rateios (delete + insert)
-  const { error: deleteError } = await supabase
-    .from('rateios_contas_receber')
-    .delete()
-    .eq('conta_receber_id', id);
-
-  if (deleteError) {
-    console.error(
-      '[ContasReceberOperations] Erro ao remover rateios antigos:',
-      deleteError,
-    );
-    throw new Error(
-      `Erro ao remover rateios antigos: ${deleteError.message}`,
-    );
-  }
-
-  if (input.rateios && input.rateios.length > 0) {
-    const rateiosData = buildRateiosPayload(
-      id,
-      data.empresa_representada_id,
-      input.rateios,
-    );
-    const { error: rateiosError } = await supabase
-      .from('rateios_contas_receber')
-      .insert(rateiosData);
-
-    if (rateiosError) {
-      console.error(
-        '[ContasReceberOperations] Erro ao inserir novos rateios:',
-        rateiosError,
-      );
-      throw new Error(
-        `Erro ao inserir novos rateios: ${rateiosError.message}`,
-      );
-    }
-  }
-
-  const { data: contaCompleta, error: fetchError } = await supabase
-    .from('contas_receber')
-    .select(selectComRateios)
-    .eq('id', id)
-    .single();
-
-  if (fetchError) {
-    console.error(
-      '[ContasReceberOperations] Erro ao buscar conta atualizada:',
-      fetchError,
-    );
-    throw new Error(
-      fetchError.message || 'Erro ao buscar conta atualizada',
-    );
-  }
-  return contaCompleta;
+  await salvarTitulo(input, id);
+  return buscarContaCompleta(id);
 };
 
 /**

@@ -37,7 +37,7 @@ sem expor complexidade corporativa para quem não precisa dela.
   gerar/vincular movimentação bancária e registrar histórico.
 - [x] Criar RPC transacional para estornar uma liquidação específica.
 - [x] Criar RPC transacional para cancelar título, impedindo cancelamento incompatível com baixas.
-- [ ] Tornar criação/edição de título + rateios atômica em pagar e receber.
+- [x] Tornar criação/edição de título + rateios atômica em pagar e receber.
 - [x] Suportar baixa parcial real (`PARCIAL`) e impedir valor acima do saldo.
 - [x] Adicionar chave de idempotência e proteção contra concorrência/duplo clique no banco.
 - [x] Eliminar caminhos duplicados de liquidação e manter um serviço canônico.
