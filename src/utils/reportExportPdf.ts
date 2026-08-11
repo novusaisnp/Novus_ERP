@@ -1,7 +1,8 @@
 // Exportação PDF executivo (P4.1). Dynamic import de jspdf + jspdf-autotable.
 import type { ReportExportPayload } from './reportExportShared';
 import { timestampSuffix } from './reportExportShared';
-import { getLogoRenderSize, normalizeReportColor, resolveReportLogo } from './reportBranding';
+import { normalizeReportColor, resolveReportLogo } from './reportBranding';
+import { drawReportHeader, drawReportFooter, BRAND_NAVY } from './pdfReportLayout';
 
 /**
  * Gera PDF executivo 1-2 páginas com filtros, KPIs, insights e top agrupado.
@@ -14,44 +15,19 @@ export async function exportReportToPdf<T>(payload: ReportExportPayload<T>): Pro
 
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   const marginX = 40;
-  let y = 48;
 
   const logo = await resolveReportLogo(payload.branding);
-  if (logo) {
-    const size = getLogoRenderSize(logo, 110, 42);
-    try {
-      doc.addImage(logo.dataUrl, logo.extension.toUpperCase(), marginX, 24, size.width, size.height);
-      y = Math.max(y, 24 + size.height + 24);
-    } catch {
-      y = 48;
-    }
-  }
-
-  if (payload.branding?.companyName) {
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(90);
-    doc.text(payload.branding.companyName, logo ? 165 : marginX, logo ? 39 : 28);
-    doc.setTextColor(0);
-  }
-
-  doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
-  doc.text(payload.title, marginX, y);
-  y += 20;
-
-  if (payload.subtitle) {
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(payload.subtitle, marginX, y);
-    y += 14;
-  }
-
-  doc.setFontSize(9);
-  doc.setTextColor(120);
-  doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, marginX, y);
-  doc.setTextColor(0);
-  y += 16;
+  let y = drawReportHeader(doc, {
+    marginX,
+    docTypeLabel: 'Relatório',
+    title: payload.title,
+    metaLines: [
+      payload.subtitle,
+      `Gerado em: ${new Date().toLocaleString('pt-BR')}`,
+    ].filter((line): line is string => Boolean(line)),
+    branding: payload.branding,
+    logo,
+  });
 
   if (payload.filters.length > 0) {
     autoTable(doc, {
@@ -59,7 +35,7 @@ export async function exportReportToPdf<T>(payload: ReportExportPayload<T>): Pro
       head: [['Filtro', 'Valor']],
       body: payload.filters.map((f) => [f.label, f.value]),
       styles: { fontSize: 9 },
-      headStyles: { fillColor: normalizeReportColor(payload.branding?.primaryColor) ?? [30, 41, 59] },
+      headStyles: { fillColor: normalizeReportColor(payload.branding?.primaryColor) ?? BRAND_NAVY },
       margin: { left: marginX, right: marginX },
     });
     y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 14;
@@ -71,7 +47,7 @@ export async function exportReportToPdf<T>(payload: ReportExportPayload<T>): Pro
       head: [['Indicador', 'Valor', 'Variação']],
       body: payload.kpis.map((k) => [k.label, k.value, k.delta ?? '—']),
       styles: { fontSize: 9 },
-      headStyles: { fillColor: normalizeReportColor(payload.branding?.primaryColor) ?? [30, 41, 59] },
+      headStyles: { fillColor: normalizeReportColor(payload.branding?.primaryColor) ?? BRAND_NAVY },
       margin: { left: marginX, right: marginX },
     });
     y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 14;
@@ -83,7 +59,19 @@ export async function exportReportToPdf<T>(payload: ReportExportPayload<T>): Pro
       head: [['Severidade', 'Insight', 'Detalhe']],
       body: payload.insights.map((i) => [i.severity, i.title, i.description ?? '']),
       styles: { fontSize: 9, cellPadding: 4 },
-      headStyles: { fillColor: normalizeReportColor(payload.branding?.primaryColor) ?? [30, 41, 59] },
+      headStyles: { fillColor: normalizeReportColor(payload.branding?.primaryColor) ?? BRAND_NAVY },
+      margin: { left: marginX, right: marginX },
+    });
+    y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 14;
+  }
+
+  if (payload.detail.rows.length > 0) {
+    autoTable(doc, {
+      startY: y,
+      head: [payload.detail.columns.map((c) => c.header)],
+      body: payload.detail.rows.map((row) => payload.detail.columns.map((c) => String(c.accessor(row)))),
+      styles: { fontSize: 8, cellPadding: 3 },
+      headStyles: { fillColor: normalizeReportColor(payload.branding?.primaryColor) ?? BRAND_NAVY },
       margin: { left: marginX, right: marginX },
     });
     y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 14;
@@ -101,10 +89,11 @@ export async function exportReportToPdf<T>(payload: ReportExportPayload<T>): Pro
         r.percentual.toFixed(2) + '%',
       ]),
       styles: { fontSize: 9 },
-      headStyles: { fillColor: normalizeReportColor(payload.branding?.primaryColor) ?? [30, 41, 59] },
+      headStyles: { fillColor: normalizeReportColor(payload.branding?.primaryColor) ?? BRAND_NAVY },
       margin: { left: marginX, right: marginX },
     });
   }
 
+  drawReportFooter(doc, { marginX });
   doc.save(`${payload.filenameBase}-${timestampSuffix()}.pdf`);
 }

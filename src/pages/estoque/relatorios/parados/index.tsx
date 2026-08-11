@@ -2,14 +2,16 @@
 import React, { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Download, Timer } from 'lucide-react';
+import { Timer } from 'lucide-react';
 import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
 import { useRelatorioParados } from '@/hooks/estoque/useRelatoriosEstoque';
-import { downloadCsv, rowsToCsv } from '@/services/estoque/relatoriosService';
+import { downloadCsv, rowsToCsv, type ParadosRow } from '@/services/estoque/relatoriosService';
+import { ExportMenu } from '@/components/relatorios/ExportMenu';
+import { useReportBranding } from '@/hooks/useReportBranding';
+import type { ReportExportPayload } from '@/utils/reportExportShared';
 
 const money = (n: number) => Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -20,6 +22,7 @@ const ParadosPage: React.FC = () => {
 
   const params = useMemo(() => empresaId ? { empresaId, dias } : null, [empresaId, dias]);
   const { data = [], isLoading } = useRelatorioParados(params);
+  const { branding } = useReportBranding();
 
   const handleExport = () => {
     if (data.length === 0) return;
@@ -27,6 +30,28 @@ const ParadosPage: React.FC = () => {
       'codigo', 'nome', 'saldo_total', 'custo_medio', 'valor_imobilizado', 'ultima_saida', 'dias_parado',
     ]);
     downloadCsv(`produtos_parados_${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  };
+
+  const exportPayload: ReportExportPayload<ParadosRow> = {
+    title: 'Produtos Parados',
+    subtitle: `Sem saída há ${dias} dias`,
+    branding,
+    filters: [],
+    kpis: [],
+    insights: [],
+    detail: {
+      columns: [
+        { header: 'Código', accessor: (r) => r.codigo ?? '—' },
+        { header: 'Produto', accessor: (r) => r.nome },
+        { header: 'Saldo', accessor: (r) => Number(r.saldo_total).toFixed(3) },
+        { header: 'Custo Médio', accessor: (r) => money(Number(r.custo_medio)) },
+        { header: 'Valor Imobilizado', accessor: (r) => money(Number(r.valor_imobilizado)) },
+        { header: 'Última Saída', accessor: (r) => (r.ultima_saida ? new Date(r.ultima_saida).toLocaleDateString('pt-BR') : 'Sem saídas') },
+        { header: 'Dias Parado', accessor: (r) => r.dias_parado },
+      ],
+      rows: data,
+    },
+    filenameBase: 'produtos-parados',
   };
 
   return (
@@ -38,9 +63,7 @@ const ParadosPage: React.FC = () => {
           </h1>
           <p className="text-muted-foreground">Produtos com saldo &gt; 0 sem saída há N dias.</p>
         </div>
-        <Button variant="outline" onClick={handleExport} disabled={data.length === 0}>
-          <Download className="h-4 w-4 mr-2" /> CSV
-        </Button>
+        <ExportMenu payload={exportPayload} onCsv={handleExport} disabled={data.length === 0} />
       </div>
 
       <Card>

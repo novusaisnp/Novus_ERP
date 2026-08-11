@@ -17,6 +17,10 @@ import DashboardFiscal from "./DashboardFiscal";
 import EmitirNFeDialog from "@/components/fiscal/EmitirNFeDialog";
 import DetalheNFeDrawer from "@/components/fiscal/DetalheNFeDrawer";
 import FiscalStatusBadge from "@/components/fiscal/FiscalStatusBadge";
+import { ExportMenu } from "@/components/relatorios/ExportMenu";
+import { useReportBranding } from "@/hooks/useReportBranding";
+import { toCsv, downloadCsv, type CsvColumn } from "@/utils/csvExport";
+import type { ReportExportPayload } from "@/utils/reportExportShared";
 
 const currency = (v?: number | null) =>
   typeof v === "number" ? v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "—";
@@ -68,6 +72,36 @@ const NotasFiscais = () => {
     }
     return Array.from(map.entries()).map(([status, v]) => ({ status, ...v }));
   }, [metrics]);
+
+  const { branding } = useReportBranding();
+
+  const metricsCsvColumns: CsvColumn<MetricRow>[] = [
+    { header: "Dia", accessor: (r) => r.dia },
+    { header: "Provedor", accessor: (r) => r.provider },
+    { header: "Status", accessor: (r) => r.status },
+    { header: "Qtde", accessor: (r) => r.total },
+    { header: "Valor Total", accessor: (r) => currency(r.valor_total) },
+  ];
+
+  const metricsExportPayload: ReportExportPayload<MetricRow> = {
+    title: "Relatório Fiscal — Documentos por Dia",
+    subtitle: "Últimos 30 dias",
+    branding,
+    filters: [],
+    kpis: totaisPorStatus.map((r) => ({ label: r.status, value: `${r.total} (${currency(r.valor)})` })),
+    insights: [],
+    detail: {
+      columns: [
+        { header: "Dia", accessor: (r) => r.dia },
+        { header: "Provedor", accessor: (r) => r.provider },
+        { header: "Status", accessor: (r) => r.status },
+        { header: "Qtde", accessor: (r) => r.total },
+        { header: "Valor Total", accessor: (r) => currency(r.valor_total) },
+      ],
+      rows: metrics,
+    },
+    filenameBase: "relatorio-fiscal-diario",
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -282,11 +316,18 @@ const NotasFiscais = () => {
           </div>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Detalhamento diário</CardTitle>
-              <CardDescription>
-                Métricas agregadas de <code>fiscal_metrics_daily</code> dos últimos 30 dias.
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Detalhamento diário</CardTitle>
+                <CardDescription>
+                  Métricas agregadas de <code>fiscal_metrics_daily</code> dos últimos 30 dias.
+                </CardDescription>
+              </div>
+              <ExportMenu
+                payload={metricsExportPayload}
+                disabled={metrics.length === 0}
+                onCsv={() => downloadCsv("relatorio-fiscal-diario.csv", toCsv(metrics, metricsCsvColumns))}
+              />
             </CardHeader>
             <CardContent>
               {metrics.length === 0 ? (

@@ -15,7 +15,12 @@ export async function exportXlsxServer(input: XlsxExportInput): Promise<Uint8Arr
   const ExcelJS: any = await import("npm:exceljs@4.4.0");
   const WorkbookCtor = ExcelJS.Workbook ?? ExcelJS.default?.Workbook;
   const wb = new WorkbookCtor();
-  const ws = wb.addWorksheet(input.sheetName.slice(0, 31) || "Relatório");
+  const ws = wb.addWorksheet(input.sheetName.slice(0, 31) || "Relatório", {
+    properties: { defaultRowHeight: 15 },
+  });
+  // Sempre paisagem, ajustado à largura — mesma causa raiz corrigida no client
+  // (src/utils/reportExportExcel.ts applyStandardExportLayout).
+  ws.pageSetup = { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 };
 
   let headerRowIndex = 1;
   const branding = input.branding ?? null;

@@ -5,7 +5,9 @@ import { FluxoCaixaItem, FluxoCaixaResumo, FluxoCaixaFiltros } from '@/types/flu
 import { useEmpresasRepresentadas } from '@/hooks/useEmpresasRepresentadas';
 import { useEmpresasLogosMap } from '@/hooks/useEmpresasLogosMap';
 import type { ReportBranding } from '@/utils/reportExportShared';
-import { getLogoRenderSize, normalizeReportColor, resolveReportLogo } from '@/utils/reportBranding';
+import { normalizeReportColor, resolveReportLogo } from '@/utils/reportBranding';
+import { drawReportHeader, drawReportFooter, BRAND_NAVY } from '@/utils/pdfReportLayout';
+import { applyStandardExportLayout } from '@/utils/reportExportExcel';
 
 declare module 'jspdf' {
   interface jsPDF {
@@ -50,42 +52,23 @@ export const useFluxoCaixaExport = () => {
     filtros: FluxoCaixaFiltros,
   ) => {
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-    const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 15;
-    let yPosition = margin;
-    const headerColor = normalizeReportColor(branding?.primaryColor) ?? [59, 130, 246];
+    const headerColor = normalizeReportColor(branding?.primaryColor) ?? BRAND_NAVY;
     const logo = await resolveReportLogo(branding);
 
-    doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
-    doc.rect(0, 0, pageWidth, 25, 'F');
-
-    if (logo) {
-      try {
-        const size = getLogoRenderSize(logo, 34, 14);
-        doc.addImage(logo.dataUrl, logo.extension.toUpperCase(), margin, 5.5, size.width, size.height);
-      } catch {
-        // Logo inválida não deve bloquear geração do relatório.
-      }
-    }
-
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(logo ? 12 : 20);
-    doc.setFont('helvetica', 'bold');
-    doc.text(branding?.companyName || 'NOVUS.AI', logo ? margin + 40 : margin, 15);
-    doc.setFontSize(16);
-    doc.text('Relatório de Fluxo de Caixa', pageWidth - margin - 80, 15);
-    yPosition = 35;
-
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, margin, yPosition);
-    if (branding?.companyName) doc.text(branding.companyName, pageWidth - margin - 80, yPosition);
-    yPosition += 10;
+    let yPosition = drawReportHeader(doc, {
+      marginX: margin,
+      docTypeLabel: 'Relatório',
+      title: 'Fluxo de Caixa',
+      metaLines: [`Gerado em: ${new Date().toLocaleString('pt-BR')}`],
+      branding,
+      logo,
+    });
 
     const filterDesc = getFilterDescription(filtros);
     if (filterDesc) {
+      doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
       doc.text('Filtros Aplicados: ', margin, yPosition);
       doc.setFont('helvetica', 'normal');
@@ -161,13 +144,7 @@ export const useFluxoCaixaExport = () => {
       doc.text('Nenhuma movimentação encontrada com os filtros aplicados.', margin, yPosition);
     }
 
-    const totalPages = doc.internal.pages.length - 1;
-    for (let i = 1; i <= totalPages; i += 1) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.text(`Página ${i} de ${totalPages}`, pageWidth - margin - 20, pageHeight - 10);
-      doc.text('Relatório gerado pelo ERP NOVUS.AI', margin, pageHeight - 10);
-    }
+    drawReportFooter(doc, { marginX: margin });
 
     doc.save(`fluxo_caixa_${new Date().toISOString().split('T')[0]}.pdf`);
   }, [branding]);
@@ -182,10 +159,11 @@ export const useFluxoCaixaExport = () => {
     wb.creator = 'NOVUS ERP';
     wb.created = new Date();
     const logo = await resolveReportLogo(branding);
-    const headerColor = normalizeReportColor(branding?.primaryColor) ?? [59, 130, 246];
+    const headerColor = normalizeReportColor(branding?.primaryColor) ?? BRAND_NAVY;
     const argb = `FF${headerColor.map((value) => value.toString(16).padStart(2, '0')).join('').toUpperCase()}`;
 
-    const wsResumo = wb.addWorksheet('Resumo');
+    const wsResumo = wb.addWorksheet('Resumo', { properties: { defaultRowHeight: 15 } });
+    applyStandardExportLayout(wsResumo);
     let currentRow = 1;
     if (logo) {
       try {
@@ -221,7 +199,8 @@ export const useFluxoCaixaExport = () => {
     }
     wsResumo.columns = [{ width: 30 }, { width: 24 }];
 
-    const wsMovimentacoes = wb.addWorksheet('Movimentações');
+    const wsMovimentacoes = wb.addWorksheet('Movimentações', { properties: { defaultRowHeight: 15 } });
+    applyStandardExportLayout(wsMovimentacoes);
     wsMovimentacoes.columns = [
       { header: 'Data', key: 'data', width: 16 },
       { header: 'Tipo', key: 'tipo', width: 14 },
@@ -251,7 +230,8 @@ export const useFluxoCaixaExport = () => {
       });
     });
 
-    const wsFiltros = wb.addWorksheet('Filtros');
+    const wsFiltros = wb.addWorksheet('Filtros', { properties: { defaultRowHeight: 15 } });
+    applyStandardExportLayout(wsFiltros);
     wsFiltros.columns = [{ width: 26 }, { width: 38 }];
     wsFiltros.addRows([
       ['Filtro', 'Valor'],

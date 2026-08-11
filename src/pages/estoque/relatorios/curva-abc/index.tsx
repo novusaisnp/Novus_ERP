@@ -4,10 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { BarChart3, Download } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
 import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
 import { useRelatorioCurvaAbc } from '@/hooks/estoque/useRelatoriosEstoque';
-import { downloadCsv, rowsToCsv } from '@/services/estoque/relatoriosService';
+import { downloadCsv, rowsToCsv, type CurvaAbcRow } from '@/services/estoque/relatoriosService';
+import { ExportMenu } from '@/components/relatorios/ExportMenu';
+import { useReportBranding } from '@/hooks/useReportBranding';
+import type { ReportExportPayload } from '@/utils/reportExportShared';
 
 const PAGE = 100;
 const money = (n: number) => Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -26,6 +29,7 @@ const CurvaAbcPage: React.FC = () => {
   const rows = data?.rows ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE));
+  const { branding } = useReportBranding();
 
   const handleExport = () => {
     if (rows.length === 0) return;
@@ -33,6 +37,26 @@ const CurvaAbcPage: React.FC = () => {
       'codigo', 'nome', 'qtd_saida', 'valor_saida', 'percentual_acumulado', 'classe',
     ]);
     downloadCsv(`curva_abc_${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  };
+
+  const exportPayload: ReportExportPayload<CurvaAbcRow> = {
+    title: 'Curva ABC',
+    branding,
+    filters: [],
+    kpis: [],
+    insights: [],
+    detail: {
+      columns: [
+        { header: 'Código', accessor: (r) => r.codigo ?? '—' },
+        { header: 'Produto', accessor: (r) => r.nome },
+        { header: 'Qtd Saída', accessor: (r) => Number(r.qtd_saida).toFixed(3) },
+        { header: 'Valor Saída', accessor: (r) => money(Number(r.valor_saida)) },
+        { header: '% Acumulado', accessor: (r) => pct(Number(r.percentual_acumulado)) },
+        { header: 'Classe', accessor: (r) => r.classe },
+      ],
+      rows,
+    },
+    filenameBase: 'curva-abc',
   };
 
   return (
@@ -51,9 +75,7 @@ const CurvaAbcPage: React.FC = () => {
             )}
           </p>
         </div>
-        <Button variant="outline" onClick={handleExport} disabled={rows.length === 0}>
-          <Download className="h-4 w-4 mr-2" /> CSV
-        </Button>
+        <ExportMenu payload={exportPayload} onCsv={handleExport} disabled={rows.length === 0} />
       </div>
 
       <Card>

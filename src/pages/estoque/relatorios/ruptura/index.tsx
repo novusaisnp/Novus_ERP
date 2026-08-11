@@ -1,13 +1,15 @@
 // P14.2: Relatório Ruptura de Estoque
 import React, { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AlertTriangle, Download } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
 import { useRelatorioRuptura } from '@/hooks/estoque/useRelatoriosEstoque';
-import { downloadCsv, rowsToCsv } from '@/services/estoque/relatoriosService';
+import { downloadCsv, rowsToCsv, type RupturaRow } from '@/services/estoque/relatoriosService';
+import { ExportMenu } from '@/components/relatorios/ExportMenu';
+import { useReportBranding } from '@/hooks/useReportBranding';
+import type { ReportExportPayload } from '@/utils/reportExportShared';
 
 const statusBadge: Record<string, string> = {
   RUPTURA: 'bg-destructive/10 text-destructive',
@@ -19,6 +21,7 @@ const RupturaPage: React.FC = () => {
   const { data: empresaId } = useEmpresaAtual();
   const params = useMemo(() => empresaId ? { empresaId } : null, [empresaId]);
   const { data = [], isLoading } = useRelatorioRuptura(params);
+  const { branding } = useReportBranding();
 
   const handleExport = () => {
     if (data.length === 0) return;
@@ -26,6 +29,25 @@ const RupturaPage: React.FC = () => {
       'produto_codigo', 'produto_nome', 'saldo_total', 'estoque_minimo', 'status',
     ]);
     downloadCsv(`ruptura_${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  };
+
+  const exportPayload: ReportExportPayload<RupturaRow> = {
+    title: 'Ruptura de Estoque',
+    branding,
+    filters: [],
+    kpis: [],
+    insights: [],
+    detail: {
+      columns: [
+        { header: 'Status', accessor: (r) => r.status },
+        { header: 'Código', accessor: (r) => r.produto_codigo ?? '—' },
+        { header: 'Produto', accessor: (r) => r.produto_nome },
+        { header: 'Saldo', accessor: (r) => Number(r.saldo_total).toFixed(3) },
+        { header: 'Estoque Mínimo', accessor: (r) => Number(r.estoque_minimo).toFixed(3) },
+      ],
+      rows: data,
+    },
+    filenameBase: 'ruptura-estoque',
   };
 
   return (
@@ -37,9 +59,7 @@ const RupturaPage: React.FC = () => {
           </h1>
           <p className="text-muted-foreground">Produtos com saldo ≤ estoque mínimo.</p>
         </div>
-        <Button variant="outline" onClick={handleExport} disabled={data.length === 0}>
-          <Download className="h-4 w-4 mr-2" /> CSV
-        </Button>
+        <ExportMenu payload={exportPayload} onCsv={handleExport} disabled={data.length === 0} />
       </div>
 
       <Card>

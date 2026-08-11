@@ -5,6 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft } from "lucide-react";
+import { ExportMenu } from "@/components/relatorios/ExportMenu";
+import { useReportBranding } from "@/hooks/useReportBranding";
+import { toCsv, downloadCsv, type CsvColumn } from "@/utils/csvExport";
+import type { ReportExportPayload } from "@/utils/reportExportShared";
+import type { ExtratoImportado } from "@/types/conciliacao";
+
+const money = (n: number | null) =>
+  n === null ? "—" : Number(n).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const dateFmt = (d: string | null) => (d ? new Date(d).toLocaleDateString("pt-BR") : "—");
 
 export default function RelatoriosConciliacaoPage() {
   const navigate = useNavigate();
@@ -21,11 +30,58 @@ export default function RelatoriosConciliacaoPage() {
     };
   }, [extratos]);
 
+  const { branding } = useReportBranding();
+  const rows = extratos ?? [];
+
+  const csvColumns: CsvColumn<ExtratoImportado>[] = [
+    { header: "Arquivo", accessor: (r) => r.nome_arquivo },
+    { header: "Data Inicial", accessor: (r) => dateFmt(r.data_inicial) },
+    { header: "Data Final", accessor: (r) => dateFmt(r.data_final) },
+    { header: "Status", accessor: (r) => r.status },
+    { header: "Lançamentos", accessor: (r) => r.total_lancamentos },
+    { header: "Saldo Inicial", accessor: (r) => money(r.saldo_inicial) },
+    { header: "Saldo Final", accessor: (r) => money(r.saldo_final) },
+  ];
+
+  const exportPayload: ReportExportPayload<ExtratoImportado> = {
+    title: "Relatório de Conciliação Bancária",
+    branding,
+    filters: [],
+    kpis: [
+      { label: "Extratos", value: String(totais.total_extratos) },
+      { label: "Lançamentos", value: String(totais.total_lancamentos) },
+      { label: "Processados", value: String(totais.processados) },
+      { label: "Importados", value: String(totais.importados) },
+      { label: "Com erro", value: String(totais.erro) },
+    ],
+    insights: [],
+    detail: {
+      columns: [
+        { header: "Arquivo", accessor: (r) => r.nome_arquivo },
+        { header: "Data Inicial", accessor: (r) => dateFmt(r.data_inicial) },
+        { header: "Data Final", accessor: (r) => dateFmt(r.data_final) },
+        { header: "Status", accessor: (r) => r.status },
+        { header: "Lançamentos", accessor: (r) => r.total_lancamentos },
+        { header: "Saldo Inicial", accessor: (r) => money(r.saldo_inicial) },
+        { header: "Saldo Final", accessor: (r) => money(r.saldo_final) },
+      ],
+      rows,
+    },
+    filenameBase: "conciliacao-bancaria",
+  };
+
   return (
     <div className="container mx-auto px-4 py-6 space-y-4">
-      <Button variant="ghost" size="sm" onClick={() => navigate("..")}>
-        <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
-      </Button>
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" size="sm" onClick={() => navigate("..")}>
+          <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
+        </Button>
+        <ExportMenu
+          payload={exportPayload}
+          disabled={rows.length === 0}
+          onCsv={() => downloadCsv("conciliacao-bancaria.csv", toCsv(rows, csvColumns))}
+        />
+      </div>
 
       <Card>
         <CardHeader>

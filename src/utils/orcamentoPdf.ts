@@ -2,6 +2,11 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { Orcamento, OrcamentoItem } from '@/services/orcamentosService';
 import { calcItemTotal } from '@/services/orcamentosService';
+import { resolveReportLogo } from '@/utils/reportBranding';
+import { drawReportHeader, drawReportFooter, BRAND_NAVY } from '@/utils/pdfReportLayout';
+import type { ReportBranding } from '@/utils/reportExportShared';
+
+const SERVICOS_COLOR: [number, number, number] = [100, 116, 139];
 
 export interface OrcamentoPdfEmpresa {
   nome?: string | null;
@@ -37,32 +42,6 @@ const TIPO_LABEL: Record<string, string> = {
   H: 'Híbrido (NF-e + NFS-e)',
 };
 
-const fetchImageAsDataUrl = async (
-  url: string,
-): Promise<{ data: string; format: 'PNG' | 'JPEG'; w: number; h: number } | null> => {
-  try {
-    const resp = await fetch(url);
-    if (!resp.ok) return null;
-    const blob = await resp.blob();
-    const data = await new Promise<string>((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => resolve(String(r.result));
-      r.onerror = () => reject(new Error('read fail'));
-      r.readAsDataURL(blob);
-    });
-    const dims = await new Promise<{ w: number; h: number }>((resolve) => {
-      const img = new Image();
-      img.onload = () => resolve({ w: img.width, h: img.height });
-      img.onerror = () => resolve({ w: 0, h: 0 });
-      img.src = data;
-    });
-    const format: 'PNG' | 'JPEG' = /jpe?g/i.test(blob.type) ? 'JPEG' : 'PNG';
-    return { data, format, w: dims.w, h: dims.h };
-  } catch {
-    return null;
-  }
-};
-
 export const buildOrcamentoPdf = async (
   orc: Orcamento,
   empresa?: OrcamentoPdfEmpresa | null,
@@ -71,69 +50,36 @@ export const buildOrcamentoPdf = async (
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const marginX = 15;
-  let y = 15;
 
-  // Timbrado: logo da empresa (se cadastrada) + dados
-  let logoAlturaMm = 0;
-  if (empresa?.logoUrl) {
-    const logo = await fetchImageAsDataUrl(empresa.logoUrl);
-    if (logo && logo.w > 0 && logo.h > 0) {
-      const maxW = 40;
-      const maxH = 22;
-      const ratio = Math.min(maxW / (logo.w * 0.264583), maxH / (logo.h * 0.264583));
-      const w = logo.w * 0.264583 * ratio;
-      const h = logo.h * 0.264583 * ratio;
-      try {
-        doc.addImage(logo.data, logo.format, marginX, y - 3, w, h);
-        logoAlturaMm = h;
-      } catch {
-        /* fallback abaixo */
-      }
-    }
-  }
+  const brandingForPdf: ReportBranding = {
+    companyName: empresa?.nome ?? null,
+    logoUrl: empresa?.logoUrl ?? null,
+    primaryColor: null,
+  };
+  const logo = await resolveReportLogo(brandingForPdf);
 
-  const textoOffsetX = logoAlturaMm > 0 ? marginX + 45 : marginX;
-  doc.setFont('helvetica', 'bold').setFontSize(12);
-  doc.text(empresa?.nome ?? 'Empresa', textoOffsetX, y);
-  doc.setFont('helvetica', 'normal').setFontSize(9);
-  y += 5;
-  const empresaLinhas: string[] = [];
-  if (empresa?.cnpj) empresaLinhas.push(`CNPJ: ${empresa.cnpj}`);
+  const companyExtraLines: string[] = [];
+  if (empresa?.cnpj) companyExtraLines.push(`CNPJ: ${empresa.cnpj}`);
   const end = [empresa?.endereco, empresa?.cidade, empresa?.estado, empresa?.cep]
     .filter(Boolean)
     .join(' - ');
-  if (end) empresaLinhas.push(end);
+  if (end) companyExtraLines.push(end);
   const contato = [empresa?.email, empresa?.telefone].filter(Boolean).join(' | ');
-  if (contato) empresaLinhas.push(contato);
-  empresaLinhas.forEach((l) => {
-    doc.text(l, textoOffsetX, y);
-    y += 4;
-  });
-  if (logoAlturaMm > 0) {
-    y = Math.max(y, 15 + logoAlturaMm + 2);
-  }
+  if (contato) companyExtraLines.push(contato);
 
-  // Título orçamento (direita)
-  doc.setFont('helvetica', 'bold').setFontSize(16);
-  doc.text('ORÇAMENTO', pageWidth - marginX, 17, { align: 'right' });
-  doc.setFont('helvetica', 'normal').setFontSize(10);
-  doc.text(`Nº ${orc.numero}`, pageWidth - marginX, 23, { align: 'right' });
-  doc.setFontSize(9);
-  doc.text(`Emissão: ${fmtDate(orc.dataEmissao)}`, pageWidth - marginX, 28, { align: 'right' });
-  doc.text(
-    `Validade: ${fmtDate(orc.dataValidade)}`,
-    pageWidth - marginX,
-    32,
-    { align: 'right' },
-  );
-  doc.text(`Tipo: ${TIPO_LABEL[orc.tipo] ?? orc.tipo}`, pageWidth - marginX, 36, {
-    align: 'right',
+  let y = drawReportHeader(doc, {
+    marginX,
+    docTypeLabel: 'Orçamento',
+    title: `Nº ${orc.numero}`,
+    metaLines: [
+      `Emissão: ${fmtDate(orc.dataEmissao)}`,
+      `Validade: ${fmtDate(orc.dataValidade)}`,
+      `Tipo: ${TIPO_LABEL[orc.tipo] ?? orc.tipo}`,
+    ],
+    branding: brandingForPdf,
+    logo,
+    companyExtraLines,
   });
-
-  y = Math.max(y, 42);
-  doc.setDrawColor(200);
-  doc.line(marginX, y, pageWidth - marginX, y);
-  y += 5;
 
   // Cliente
   doc.setFont('helvetica', 'bold').setFontSize(10);
@@ -210,8 +156,8 @@ export const buildOrcamentoPdf = async (
   };
 
   let cursor = y;
-  cursor = renderBloco('Produtos', [30, 41, 59], produtos, cursor);
-  cursor = renderBloco('Serviços', [15, 118, 110], servicos, cursor);
+  cursor = renderBloco('Produtos', BRAND_NAVY, produtos, cursor);
+  cursor = renderBloco('Serviços', SERVICOS_COLOR, servicos, cursor);
 
   let yy = cursor + 2;
 
@@ -256,14 +202,10 @@ export const buildOrcamentoPdf = async (
   }
 
   // Rodapé
-  const pageHeight = doc.internal.pageSize.getHeight();
-  doc.setFont('helvetica', 'italic').setFontSize(8).setTextColor(120);
-  doc.text(
-    `Este orçamento é válido até ${fmtDate(orc.dataValidade)}. Documento sem valor fiscal.`,
+  drawReportFooter(doc, {
     marginX,
-    pageHeight - 10,
-  );
-  doc.setTextColor(0);
+    sourceLabel: `Válido até ${fmtDate(orc.dataValidade)} — documento sem valor fiscal`,
+  });
 
   return doc;
 };

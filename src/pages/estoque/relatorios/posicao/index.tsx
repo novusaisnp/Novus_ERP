@@ -1,12 +1,14 @@
 // P14.2: Relatório Posição por Localização
 import React, { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Download, MapPin } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
 import { useRelatorioPosicao } from '@/hooks/estoque/useRelatoriosEstoque';
-import { downloadCsv, rowsToCsv } from '@/services/estoque/relatoriosService';
+import { downloadCsv, rowsToCsv, type PosicaoRow } from '@/services/estoque/relatoriosService';
+import { ExportMenu } from '@/components/relatorios/ExportMenu';
+import { useReportBranding } from '@/hooks/useReportBranding';
+import type { ReportExportPayload } from '@/utils/reportExportShared';
 
 const money = (n: number) => Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -14,6 +16,7 @@ const PosicaoPage: React.FC = () => {
   const { data: empresaId } = useEmpresaAtual();
   const params = useMemo(() => empresaId ? { empresaId } : null, [empresaId]);
   const { data = [], isLoading } = useRelatorioPosicao(params);
+  const { branding } = useReportBranding();
 
   const handleExport = () => {
     if (data.length === 0) return;
@@ -21,6 +24,26 @@ const PosicaoPage: React.FC = () => {
       'produto_codigo', 'produto_nome', 'localizacao_nome', 'quantidade', 'custo_medio', 'valor_total',
     ]);
     downloadCsv(`posicao_estoque_${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  };
+
+  const exportPayload: ReportExportPayload<PosicaoRow> = {
+    title: 'Posição por Localização',
+    branding,
+    filters: [],
+    kpis: [],
+    insights: [],
+    detail: {
+      columns: [
+        { header: 'Código', accessor: (r) => r.produto_codigo ?? '—' },
+        { header: 'Produto', accessor: (r) => r.produto_nome },
+        { header: 'Localização', accessor: (r) => r.localizacao_nome },
+        { header: 'Quantidade', accessor: (r) => Number(r.quantidade).toFixed(3) },
+        { header: 'Custo Médio', accessor: (r) => money(Number(r.custo_medio)) },
+        { header: 'Valor Total', accessor: (r) => money(Number(r.valor_total)) },
+      ],
+      rows: data,
+    },
+    filenameBase: 'posicao-estoque',
   };
 
   return (
@@ -32,9 +55,7 @@ const PosicaoPage: React.FC = () => {
           </h1>
           <p className="text-muted-foreground">Saldo por produto e localização.</p>
         </div>
-        <Button variant="outline" onClick={handleExport} disabled={data.length === 0}>
-          <Download className="h-4 w-4 mr-2" /> CSV
-        </Button>
+        <ExportMenu payload={exportPayload} onCsv={handleExport} disabled={data.length === 0} />
       </div>
 
       <Card>

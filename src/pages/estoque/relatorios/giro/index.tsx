@@ -6,10 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Download, TrendingUp } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
 import { useRelatorioGiro } from '@/hooks/estoque/useRelatoriosEstoque';
-import { downloadCsv, rowsToCsv } from '@/services/estoque/relatoriosService';
+import { downloadCsv, rowsToCsv, type GiroRow } from '@/services/estoque/relatoriosService';
+import { ExportMenu } from '@/components/relatorios/ExportMenu';
+import { useReportBranding } from '@/hooks/useReportBranding';
+import type { ReportExportPayload } from '@/utils/reportExportShared';
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 const daysAgoIso = (d: number) => { const dt = new Date(); dt.setDate(dt.getDate() - d); return dt.toISOString().slice(0, 10); };
@@ -23,6 +26,7 @@ const GiroPage: React.FC = () => {
 
   const params = useMemo(() => empresaId ? { empresaId, dataInicio, dataFim } : null, [empresaId, dataInicio, dataFim]);
   const { data = [], isLoading } = useRelatorioGiro(params);
+  const { branding } = useReportBranding();
 
   const applyFilters = () => setSp({ ini: dataInicio, fim: dataFim });
 
@@ -34,6 +38,28 @@ const GiroPage: React.FC = () => {
     downloadCsv(`giro_${todayIso()}.csv`, csv);
   };
 
+  const exportPayload: ReportExportPayload<GiroRow> = {
+    title: 'Giro de Estoque',
+    subtitle: `Período: ${dataInicio} a ${dataFim}`,
+    branding,
+    filters: [],
+    kpis: [],
+    insights: [],
+    detail: {
+      columns: [
+        { header: 'Código', accessor: (r) => r.codigo ?? '—' },
+        { header: 'Produto', accessor: (r) => r.nome },
+        { header: 'Saída (qtd)', accessor: (r) => fmt(r.qtd_saida) },
+        { header: 'Saldo Inicial', accessor: (r) => fmt(r.saldo_inicial) },
+        { header: 'Saldo Final', accessor: (r) => fmt(r.saldo_final) },
+        { header: 'Estoque Médio', accessor: (r) => fmt(r.estoque_medio) },
+        { header: 'Giro', accessor: (r) => (r.giro !== null ? Number(r.giro).toFixed(2) : '—') },
+      ],
+      rows: data,
+    },
+    filenameBase: 'giro-estoque',
+  };
+
   return (
     <div className="container mx-auto px-6 py-8 space-y-6">
       <div className="flex items-center justify-between">
@@ -43,9 +69,7 @@ const GiroPage: React.FC = () => {
           </h1>
           <p className="text-muted-foreground">Saídas ÷ estoque médio no período.</p>
         </div>
-        <Button variant="outline" onClick={handleExport} disabled={data.length === 0}>
-          <Download className="h-4 w-4 mr-2" /> CSV
-        </Button>
+        <ExportMenu payload={exportPayload} onCsv={handleExport} disabled={data.length === 0} />
       </div>
 
       <Card>

@@ -9,14 +9,17 @@ import { Label } from '@/components/ui/label';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Download, ScrollText } from 'lucide-react';
+import { ArrowLeft, ScrollText } from 'lucide-react';
 import { estoqueService } from '@/services/estoque/estoqueService';
 import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
 import { useKardex } from '@/hooks/estoque/useKardex';
 import {
-  downloadCsv, kardexToCsv,
+  downloadCsv, kardexToCsv, type KardexRow,
 } from '@/services/estoque/relatoriosService';
 import { KardexTable } from './KardexTable';
+import { ExportMenu } from '@/components/relatorios/ExportMenu';
+import { useReportBranding } from '@/hooks/useReportBranding';
+import type { ReportExportPayload } from '@/utils/reportExportShared';
 
 const PAGE_SIZE = 100;
 
@@ -74,6 +77,32 @@ const KardexPage: React.FC = () => {
     downloadCsv(`kardex_${codigo}_${todayIso()}.csv`, csv);
   };
 
+  const { branding } = useReportBranding();
+  const money = (n: number) => Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  const exportPayload: ReportExportPayload<KardexRow> = {
+    title: `Kardex${produto?.nome ? ` — ${produto.nome}` : ''}`,
+    subtitle: `Período: ${dataInicio} a ${dataFim}`,
+    branding,
+    filters: [],
+    kpis: [],
+    insights: [],
+    detail: {
+      columns: [
+        { header: 'Data', accessor: (r) => new Date(r.data_movimento).toLocaleDateString('pt-BR') },
+        { header: 'Tipo', accessor: (r) => r.tipo },
+        { header: 'Documento', accessor: (r) => r.documento_ref ?? '—' },
+        { header: 'Entrada', accessor: (r) => Number(r.qtd_entrada).toFixed(3) },
+        { header: 'Saída', accessor: (r) => Number(r.qtd_saida).toFixed(3) },
+        { header: 'Saldo Acumulado', accessor: (r) => Number(r.saldo_acumulado).toFixed(3) },
+        { header: 'Custo Unitário', accessor: (r) => money(Number(r.custo_unitario)) },
+        { header: 'Custo Total', accessor: (r) => money(Number(r.custo_total)) },
+      ],
+      rows,
+    },
+    filenameBase: `kardex-${produto?.codigo ?? produtoId.slice(0, 8)}`,
+  };
+
   return (
     <div className="container mx-auto px-6 py-8 space-y-6">
       <div className="flex items-center justify-between gap-4">
@@ -98,9 +127,7 @@ const KardexPage: React.FC = () => {
             </p>
           </div>
         </div>
-        <Button variant="outline" onClick={handleExport} disabled={rows.length === 0}>
-          <Download className="h-4 w-4 mr-2" /> Exportar CSV
-        </Button>
+        <ExportMenu payload={exportPayload} onCsv={handleExport} disabled={rows.length === 0} />
       </div>
 
       <Card>

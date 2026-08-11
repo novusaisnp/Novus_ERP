@@ -1,7 +1,16 @@
 // Exportação Excel multi-aba (P4.1). Dynamic import de exceljs no clique.
+import type ExcelJS from 'exceljs';
 import type { ReportExportPayload } from './reportExportShared';
 import { brlPt, percentPt, timestampSuffix } from './reportExportShared';
 import { resolveReportLogo } from './reportBranding';
+
+/**
+ * Layout padrão de impressão/exportação: sempre paisagem, ajustado à largura da
+ * página — causa raiz do "sai desconfigurado" (nenhum gerador definia isso antes).
+ */
+export function applyStandardExportLayout(ws: ExcelJS.Worksheet): void {
+  ws.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 };
+}
 
 /**
  * Dispara download de arquivo Excel com abas Resumo / Detalhado / Agrupado.
@@ -14,8 +23,11 @@ export async function exportReportToExcel<T>(payload: ReportExportPayload<T>): P
   workbook.created = new Date();
   const logo = await resolveReportLogo(payload.branding);
 
+  const HEADER_FILL = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEEF2F9' } } as const;
+
   // ---------- Aba Resumo ----------
-  const resumo = workbook.addWorksheet('Resumo');
+  const resumo = workbook.addWorksheet('Resumo', { properties: { defaultRowHeight: 15 } });
+  applyStandardExportLayout(resumo);
   resumo.columns = [
     { header: '', key: 'a', width: 30 },
     { header: '', key: 'b', width: 30 },
@@ -75,17 +87,20 @@ export async function exportReportToExcel<T>(payload: ReportExportPayload<T>): P
   }
 
   // ---------- Aba Detalhado ----------
-  const detalhe = workbook.addWorksheet('Detalhado');
+  const detalhe = workbook.addWorksheet('Detalhado', { properties: { defaultRowHeight: 15 } });
+  applyStandardExportLayout(detalhe);
   detalhe.columns = payload.detail.columns.map((c) => ({ header: c.header, key: c.header, width: 22 }));
   const headerRow = detalhe.getRow(1);
   headerRow.font = { bold: true };
+  headerRow.fill = HEADER_FILL;
   for (const r of payload.detail.rows) {
     detalhe.addRow(payload.detail.columns.map((c) => c.accessor(r)));
   }
 
   // ---------- Aba Agrupado (opcional) ----------
   if (payload.aggregated && payload.aggregated.rows.length > 0) {
-    const agr = workbook.addWorksheet('Agrupado');
+    const agr = workbook.addWorksheet('Agrupado', { properties: { defaultRowHeight: 15 } });
+    applyStandardExportLayout(agr);
     agr.columns = [
       { header: payload.aggregated.groupLabel, key: 'grupo', width: 30 },
       { header: 'Quantidade', key: 'qtd', width: 15 },
@@ -93,6 +108,7 @@ export async function exportReportToExcel<T>(payload: ReportExportPayload<T>): P
       { header: 'Percentual', key: 'pct', width: 15 },
     ];
     agr.getRow(1).font = { bold: true };
+    agr.getRow(1).fill = HEADER_FILL;
     for (const row of payload.aggregated.rows) {
       agr.addRow([row.label, row.quantidade, brlPt(row.valor_total), percentPt(row.percentual)]);
     }
