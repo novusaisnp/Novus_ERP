@@ -1,9 +1,44 @@
 # Status do projeto — NOVUS ERP
 
-**Última atualização: 2026-08-10 (sidebar mobile aditiva — hamburger+Sheet, desktop intocado).**
+**Última atualização: 2026-08-10 (Cadastro Unificado de Entidades — Fase 1 aplicada, refatoração grande em andamento).**
 Este arquivo deve ser atualizado ao final de cada sessão de trabalho relevante — se estiver desatualizado, ele
 apodrece como `SYSTEM_AUDIT.md`/`ARVORE_PROJETO.md` já apodreceram. Leia primeiro [`../CLAUDE.md`](../CLAUDE.md)
 para contexto de padrões estáveis; este arquivo é sobre o que está pendente **agora**.
+
+## 🔖 Checkpoint de sessão (2026-08-10 — Cadastro Unificado de Entidades, Fase 1/8)
+
+**Contexto**: refatoração grande, pedida pelo usuário no repo-mãe (`NovusSaaS`), pra substituir os cadastros
+isolados de Cliente/Fornecedor/Colaborador/Sócio (sem dedup de CPF/CNPJ entre eles hoje) por um cadastro único
+de Entidade com papéis. Plano completo em `C:\Users\maxwe\.claude\plans\tranquil-growing-zephyr.md` — corte seco,
+sem piloto, 8 fases (4 ERP + 4 Educacional). Ver `novus-ai-educacional-54/docs/STATUS.md` mesma data pro lado
+satélite.
+
+**Decisões travadas** (não reabrir): tabela `entidades` por sistema (sem banco compartilhado); Educacional→ERP
+é push-only (sem endpoint de leitura novo); corte seco (sem views de compatibilidade); regra de PF/PJ é por
+papel (`papeis_catalogo.tipo_pessoa_permitido`), não hardcoded.
+
+1. **Fase 0 (concluída)**: backup completo (schema+dados via `pg_dump` local — `supabase db dump --linked`
+   exigia Docker, que não estava instalado; instalado via `winget install Docker.DockerDesktop` nesta sessão)
+   dos dois projetos (ERP + Educacional) antes de qualquer DDL. Baseline de contagem registrado — **achado
+   importante**: `clientes`/`fornecedores`/`colaboradores`/`socios_representantes`/`usuarios` estão **todos
+   zerados** no ERP agora, o que reduz bastante o risco da Fase 2 (backfill não tem dado real pra migrar,
+   só precisa funcionar corretamente pra dados futuros).
+2. **Fase 1 (concluída, migration `20260810230000_create_entidades_schema.sql`)**: schema aditivo —
+   `entidades` (forma canônica única, sem repetir o par de colunas dual que `clientes` tem hoje),
+   `papeis_catalogo` (seed: CLIENTE/FORNECEDOR/PRESTADOR=`AMBOS`, COLABORADOR/SOCIO/REPRESENTANTE_LEGAL/
+   PROCURADOR=`PF`), `entidade_papeis` (+ trigger `validar_papel_tipo_pessoa` — testado ao vivo, rejeita
+   COLABORADOR numa entidade PJ e aceita CLIENTE numa PJ), `entidade_dados_colaborador` (extensão com FK real
+   pra `cargos`/`departamentos`/`setores_empresa`), `entidade_id_map` (tabela de trabalho só da Fase 2, RLS sem
+   policy de propósito — só `service_role` acessa). `usuarios` ganhou `entidade_id` + trigger
+   `validar_usuario_pessoa_papel` (substituindo o `usuarios_pessoa_xor_chk` original por trigger, já que
+   Postgres não aceita subquery em `CHECK`) — `colaborador_id`/`socio_id`/constraint antiga ficam intactos até
+   a Fase 2 realinhar e dropar.
+3. **Aplicado via `supabase db query --linked --file`** (não `db push` — histórico de migrations deste projeto
+   está quebrado, workaround já documentado neste arquivo).
+
+**Próximo passo**: Fase 2 (backfill + cutover, ordem Sócios→Colaboradores→Fornecedores→Clientes) — como as
+tabelas de origem estão vazias, o backfill em si é baixo risco, mas o realinhamento de FK (23 arquivos em
+`clientes`, 12 em `fornecedores`, 9 em `colaboradores`) ainda precisa ser feito com cuidado igual.
 
 ## 🔖 Checkpoint de sessão (2026-08-10 — responsividade mobile, aditiva)
 
