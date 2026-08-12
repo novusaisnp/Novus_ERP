@@ -124,7 +124,15 @@ const Login: React.FC = () => {
     try {
       setIsSubmitting(true);
 
-      const result = await signIn(data.email, data.password, data.rememberMe, captchaToken ?? undefined);
+      // A senha temporária é o e-mail em minúsculas (ver edge function
+      // enviar-convite-usuario). Senha no Supabase é case-sensitive, e-mail não —
+      // sem isso, digitar "Fulano@x.com" nos dois campos falha no primeiro acesso.
+      const password =
+        data.password.toLowerCase() === data.email.trim().toLowerCase()
+          ? data.password.toLowerCase()
+          : data.password;
+
+      const result = await signIn(data.email, password, data.rememberMe, captchaToken ?? undefined);
 
       if (result.error) {
         toast({
