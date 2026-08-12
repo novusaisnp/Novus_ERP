@@ -33,6 +33,7 @@ import { Loader2 } from 'lucide-react';
 import { PlanoContaCombobox } from '@/components/shared/PlanoContaCombobox';
 import { useCentrosCusto } from '@/hooks/useCentrosCusto';
 import type { Categoria } from '@/services/categoriaService';
+import { QuickAddCentroCusto } from '@/components/shared/QuickAddLookups';
 
 const formSchema = z.object({
   nome: z.string().min(1, 'Nome é obrigatório').max(255),
@@ -56,8 +57,9 @@ interface FormCategoriaProps {
   open: boolean;
   onClose: () => void;
   categoria?: Categoria | null;
-  onSubmit: (data: FormData) => void;
+  onSubmit: (data: FormData) => void | Promise<void>;
   isLoading?: boolean;
+  modal?: boolean;
 }
 
 export const FormCategoria: React.FC<FormCategoriaProps> = ({
@@ -66,6 +68,7 @@ export const FormCategoria: React.FC<FormCategoriaProps> = ({
   categoria,
   onSubmit,
   isLoading = false,
+  modal = true,
 }) => {
   const { centrosCusto } = useCentrosCusto();
 
@@ -106,12 +109,12 @@ export const FormCategoria: React.FC<FormCategoriaProps> = ({
     }
   }, [categoria, form]);
 
-  const handleSubmit = (data: FormData) => {
-    onSubmit(data);
+  const handleSubmit = async (data: FormData) => {
+    await onSubmit(data);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog modal={modal} open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{categoria ? 'Editar Categoria' : 'Nova Categoria'}</DialogTitle>
@@ -121,7 +124,13 @@ export const FormCategoria: React.FC<FormCategoriaProps> = ({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form
+            onSubmit={(event) => {
+              event.stopPropagation();
+              void form.handleSubmit(handleSubmit)(event).catch(() => undefined);
+            }}
+            className="space-y-4"
+          >
             <FormField
               control={form.control}
               name="nome"
@@ -200,24 +209,27 @@ export const FormCategoria: React.FC<FormCategoriaProps> = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Centro de Custo (Receita)</FormLabel>
-                    <Select
-                      value={field.value ?? '__none__'}
-                      onValueChange={(v) => field.onChange(v === '__none__' ? null : v)}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Nenhum" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="__none__">Nenhum</SelectItem>
-                        {centrosCusto.map((cc) => (
-                          <SelectItem key={cc.id} value={cc.id}>
-                            {cc.codigo ? `${cc.codigo} — ` : ''}{cc.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex gap-2">
+                      <Select
+                        value={field.value ?? '__none__'}
+                        onValueChange={(v) => field.onChange(v === '__none__' ? null : v)}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Nenhum" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="__none__">Nenhum</SelectItem>
+                          {centrosCusto.map((cc) => (
+                            <SelectItem key={cc.id} value={cc.id}>
+                              {cc.codigo ? `${cc.codigo} — ` : ''}{cc.nome}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <QuickAddCentroCusto onCreated={({ id }) => field.onChange(id)} />
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -256,24 +268,27 @@ export const FormCategoria: React.FC<FormCategoriaProps> = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Centro de Custo (Despesa)</FormLabel>
-                    <Select
-                      value={field.value ?? '__none__'}
-                      onValueChange={(v) => field.onChange(v === '__none__' ? null : v)}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Nenhum" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="__none__">Nenhum</SelectItem>
-                        {centrosCusto.map((cc) => (
-                          <SelectItem key={cc.id} value={cc.id}>
-                            {cc.codigo ? `${cc.codigo} — ` : ''}{cc.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex gap-2">
+                      <Select
+                        value={field.value ?? '__none__'}
+                        onValueChange={(v) => field.onChange(v === '__none__' ? null : v)}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Nenhum" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="__none__">Nenhum</SelectItem>
+                          {centrosCusto.map((cc) => (
+                            <SelectItem key={cc.id} value={cc.id}>
+                              {cc.codigo ? `${cc.codigo} — ` : ''}{cc.nome}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <QuickAddCentroCusto onCreated={({ id }) => field.onChange(id)} />
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}

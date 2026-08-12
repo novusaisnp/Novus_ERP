@@ -1,5 +1,25 @@
 # Status do projeto — NOVUS ERP
 
+## 📌 Checkpoint — cadastro rápido em lookups (2026-08-12)
+
+Formulários operacionais agora permitem cadastrar Cargo, Departamento, Setor, Categoria,
+Centro de Custo e Localização sem abandonar o preenchimento atual. O registro criado atualiza
+a fonte do select e fica selecionado automaticamente. Categoria reutiliza o `FormCategoria`
+completo; os demais usam um diálogo compartilhado de nome, código opcional e descrição.
+
+Cobertura aplicada em Entidade/Colaborador e contatos de empresa, Produto, Categoria, contas a
+pagar/receber e rateios, Serviço, regras de Conciliação e Classificação, Inventário e
+Movimentação de Estoque. Na Regra de Classificação, os UUIDs crus de Categoria e Centro de
+Custo foram substituídos por selects legíveis. Sem migration ou dependência nova.
+
+O teste ao vivo revelou e corrigiu a propagação de submit e o fechamento indevido do diálogo
+pai em cadastros aninhados. O botão `Novo Colaborador` foi restaurado e abre Entidades como Pessoa
+Física com o papel Colaborador marcado. Reteste no navegador confirmou cancelamento do cadastro
+rápido com retorno ao formulário original, valor digitado preservado e console sem erros; nenhum
+dado de teste foi gravado.
+
+Validação final: `npm run typecheck`, 53 arquivos/383 testes e `npm run build` passaram.
+
 ## 📌 Checkpoint — colunas configuráveis em Entidades (2026-08-11)
 
 Concluída a Fase 2 piloto do plano de metadados. A lista de Entidades ganhou o botão `Colunas`,

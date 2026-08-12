@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Users, UserCheck, UserX } from 'lucide-react';
+import { Plus, Search, Users, UserCheck, UserX } from 'lucide-react';
 import { useEntidades } from '@/hooks/useEntidades';
 import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
 import type { Entidade } from '@/types/entidade';
@@ -100,6 +100,10 @@ const Colaboradores: React.FC = () => {
             Entidades com o papel Colaborador — cadastro novo em Cadastros → Entidades
           </p>
         </div>
+        <Button onClick={() => navigate('/cadastros/entidades?papel=COLABORADOR')}>
+          <Plus className="mr-2 h-4 w-4" />
+          Novo Colaborador
+        </Button>
       </div>
 
       {/* Cards de Estatísticas */}

@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { estoqueService } from '@/services/estoque/estoqueService';
 import { useCriarInventario } from '@/hooks/estoque/useEstoque';
 import { useToast } from '@/hooks/use-toast';
+import { QuickAddLocalizacao } from '@/components/shared/QuickAddLookups';
 
 interface Props {
   empresaId: string;
@@ -59,12 +60,15 @@ export const NovoInventarioDialog: React.FC<Props> = ({ empresaId, open, onClose
           </div>
           <div className="space-y-2">
             <Label>Localização *</Label>
+            <div className="flex gap-2">
             <Select value={localizacaoId} onValueChange={setLocalizacaoId}>
               <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
               <SelectContent>
                 {locs.map((l) => <SelectItem key={l.id} value={l.id}>{l.nome}</SelectItem>)}
               </SelectContent>
             </Select>
+              <QuickAddLocalizacao empresaId={empresaId} onCreated={({ id }) => setLocalizacaoId(id)} />
+            </div>
           </div>
           <div className="space-y-2">
             <Label>Observações</Label>

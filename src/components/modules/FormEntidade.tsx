@@ -12,6 +12,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Building2, User, Loader2 } from 'lucide-react';
 import { CpfInput } from '@/components/shared/CpfInput';
 import { CnpjLookupInput } from '@/components/shared/CnpjLookupInput';
+import { QuickAddCargo, QuickAddDepartamento, QuickAddSetor } from '@/components/shared/QuickAddLookups';
 import { EnderecoSection, type EnderecoValue } from '@/components/modules/shared/EnderecoSection';
 import { cargoService } from '@/services/cargoService';
 import { departamentoService } from '@/services/departamentoService';
@@ -49,7 +50,12 @@ export const FormEntidade: React.FC<FormEntidadeProps> = ({
   loading = false,
   camposPersonalizados = [],
 }) => {
-  const [formData, setFormData] = useState<Entidade>({ ...EMPTY, empresaRepresentadaId, papeis: papeisIniciais });
+  const [formData, setFormData] = useState<Entidade>({
+    ...EMPTY,
+    tipoPessoa: papeisIniciais.includes('COLABORADOR') ? 'PF' : 'PJ',
+    empresaRepresentadaId,
+    papeis: papeisIniciais,
+  });
   const [cepLoading, setCepLoading] = useState(false);
   const [camposExtrasError, setCamposExtrasError] = useState(false);
 
@@ -62,7 +68,12 @@ export const FormEntidade: React.FC<FormEntidadeProps> = ({
     if (entidade) {
       setFormData(entidade);
     } else {
-      setFormData({ ...EMPTY, empresaRepresentadaId, papeis: papeisIniciais });
+      setFormData({
+        ...EMPTY,
+        tipoPessoa: papeisIniciais.includes('COLABORADOR') ? 'PF' : 'PJ',
+        empresaRepresentadaId,
+        papeis: papeisIniciais,
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entidade, empresaRepresentadaId]);
@@ -368,30 +379,42 @@ export const FormEntidade: React.FC<FormEntidadeProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="cargoId">Cargo</Label>
-                <Select value={formData.dadosColaborador?.cargoId || ''} onValueChange={(v) => handleDadosColaboradorChange('cargoId', v)}>
-                  <SelectTrigger><SelectValue placeholder="Selecione o cargo" /></SelectTrigger>
-                  <SelectContent>
-                    {cargos.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                  <Select value={formData.dadosColaborador?.cargoId || ''} onValueChange={(v) => handleDadosColaboradorChange('cargoId', v)}>
+                    <SelectTrigger><SelectValue placeholder="Selecione o cargo" /></SelectTrigger>
+                    <SelectContent>
+                      {cargos.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <QuickAddCargo onCreated={({ id }) => handleDadosColaboradorChange('cargoId', id)} />
+                </div>
               </div>
               <div>
                 <Label htmlFor="departamentoId">Departamento</Label>
-                <Select value={formData.dadosColaborador?.departamentoId || ''} onValueChange={(v) => handleDadosColaboradorChange('departamentoId', v)}>
-                  <SelectTrigger><SelectValue placeholder="Selecione o departamento" /></SelectTrigger>
-                  <SelectContent>
-                    {departamentos.map((d) => <SelectItem key={d.id} value={d.id}>{d.nome}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                  <Select value={formData.dadosColaborador?.departamentoId || ''} onValueChange={(v) => handleDadosColaboradorChange('departamentoId', v)}>
+                    <SelectTrigger><SelectValue placeholder="Selecione o departamento" /></SelectTrigger>
+                    <SelectContent>
+                      {departamentos.map((d) => <SelectItem key={d.id} value={d.id}>{d.nome}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <QuickAddDepartamento onCreated={({ id }) => handleDadosColaboradorChange('departamentoId', id)} />
+                </div>
               </div>
               <div>
                 <Label htmlFor="setorId">Setor</Label>
-                <Select value={formData.dadosColaborador?.setorId || ''} onValueChange={(v) => handleDadosColaboradorChange('setorId', v)}>
-                  <SelectTrigger><SelectValue placeholder="Selecione o setor" /></SelectTrigger>
-                  <SelectContent>
-                    {setores.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                  <Select value={formData.dadosColaborador?.setorId || ''} onValueChange={(v) => handleDadosColaboradorChange('setorId', v)}>
+                    <SelectTrigger><SelectValue placeholder="Selecione o setor" /></SelectTrigger>
+                    <SelectContent>
+                      {setores.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <QuickAddSetor
+                    departamentoId={formData.dadosColaborador?.departamentoId}
+                    onCreated={({ id }) => handleDadosColaboradorChange('setorId', id)}
+                  />
+                </div>
               </div>
               <div>
                 <Label htmlFor="dataAdmissao">Data de Admissão</Label>

@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Trash2, Users, UserPlus } from 'lucide-react';
 import { ContatoEmpresa } from '@/types/contato';
 import { useSetores } from '@/hooks/useSetores';
+import { QuickAddSetor } from '@/components/shared/QuickAddLookups';
 
 interface ContatoEmpresaManagerProps {
   contatos: ContatoEmpresa[];
@@ -20,7 +21,7 @@ export const ContatoEmpresaManager: React.FC<ContatoEmpresaManagerProps> = ({
   onChange,
   className = ''
 }) => {
-  const { setores } = useSetores();
+  const { setores, refetch } = useSetores();
 
   const adicionarContato = () => {
     console.log('[ContatoEmpresaManager] Adicionando novo contato');
@@ -173,21 +174,27 @@ export const ContatoEmpresaManager: React.FC<ContatoEmpresaManagerProps> = ({
                     {/* Setor */}
                     <div className="space-y-2">
                       <Label htmlFor={`setor-${index}`}>Setor</Label>
-                      <Select 
-                        value={contato.setorId || ''} 
-                        onValueChange={(value) => atualizarContato(index, 'setorId', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecionar setor" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {setores.map((setor) => (
-                            <SelectItem key={setor.id} value={setor.id}>
-                              {setor.codigo} - {setor.descricao}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex gap-2">
+                        <Select
+                          value={contato.setorId || ''}
+                          onValueChange={(value) => atualizarContato(index, 'setorId', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecionar setor" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {setores.map((setor) => (
+                              <SelectItem key={setor.id} value={setor.id}>
+                                {setor.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <QuickAddSetor
+                          onRefresh={refetch}
+                          onCreated={({ id }) => atualizarContato(index, 'setorId', id)}
+                        />
+                      </div>
                     </div>
 
                     {/* Cargo */}

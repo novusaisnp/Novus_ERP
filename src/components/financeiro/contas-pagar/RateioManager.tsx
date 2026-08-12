@@ -14,6 +14,7 @@ import { RateioContaPagar } from '@/types/contasPagar';
 import { useToast } from '@/hooks/use-toast';
 import { ContaContabilAutocomplete } from './ContaContabilAutocomplete';
 import { cn } from '@/lib/utils';
+import { QuickAddCentroCusto } from '@/components/shared/QuickAddLookups';
 
 interface RateioManagerProps {
   valorTotal: number;
@@ -488,6 +489,7 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
 
                       <div>
                         <Label>Centro de Custo</Label>
+                        <div className="flex gap-2">
                         <Select
                           value={rateio.centro_custo_id || 'sem-centro'}
                           onValueChange={(value) => {
@@ -510,6 +512,8 @@ export const RateioManager = ({ valorTotal, rateios, onRateiosChange, tipo = 'DE
                             ))}
                           </SelectContent>
                         </Select>
+                          <QuickAddCentroCusto onCreated={({ id }) => atualizarRateio(index, 'centro_custo_id', id)} />
+                        </div>
                       </div>
 
                       <div>

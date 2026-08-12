@@ -6,6 +6,8 @@ vi.mock('@/hooks/useCategorias', () => ({
   useCategorias: () => ({ data: [] }),
 }));
 
+vi.mock('@/components/shared/QuickAddCategoria', () => ({ QuickAddCategoria: () => null }));
+
 vi.mock('../ProdutoFornecedorList', () => ({
   ProdutoFornecedorList: () => <div data-testid="produto-fornecedor-list" />,
 }));

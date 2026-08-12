@@ -35,6 +35,7 @@ import type {
   TipoRegra,
   ContraparteTipo,
 } from "@/types/conciliacao";
+import { QuickAddCentroCusto } from "@/components/shared/QuickAddLookups";
 
 const NONE = "__none__";
 
@@ -303,6 +304,7 @@ export function RegraForm({ open, onOpenChange, regra }: Props) {
 
             <div>
               <Label>Centro de custo</Label>
+              <div className="flex gap-2">
               <Select
                 value={form.watch("centro_custo_id") ?? NONE}
                 onValueChange={(v) =>
@@ -321,6 +323,10 @@ export function RegraForm({ open, onOpenChange, regra }: Props) {
                   ))}
                 </SelectContent>
               </Select>
+                <QuickAddCentroCusto
+                  onCreated={({ id }) => form.setValue("centro_custo_id", id)}
+                />
+              </div>
             </div>
 
             <div className="md:col-span-2">

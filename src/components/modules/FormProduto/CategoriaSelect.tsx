@@ -5,6 +5,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { AlertTriangle } from 'lucide-react';
+import { QuickAddCategoria } from '@/components/shared/QuickAddCategoria';
 
 export type CategoriaOption = {
   id: string;
@@ -33,6 +34,7 @@ export const CategoriaSelect: React.FC<CategoriaSelectProps> = ({
   return (
     <div className="space-y-2">
       <Label htmlFor="categoria_id">Categoria</Label>
+      <div className="flex gap-2">
       <Select
         value={categoriaId ?? '__none__'}
         onValueChange={(v) => onChange(v === '__none__' ? null : v)}
@@ -55,6 +57,8 @@ export const CategoriaSelect: React.FC<CategoriaSelectProps> = ({
           })}
         </SelectContent>
       </Select>
+        <QuickAddCategoria onCreated={({ id }) => onChange(id)} />
+      </div>
 
       {!categoriaId && (
         <div className="flex items-start gap-2 rounded-md border border-status-production/50 bg-status-production/10 p-2 text-xs text-status-production">

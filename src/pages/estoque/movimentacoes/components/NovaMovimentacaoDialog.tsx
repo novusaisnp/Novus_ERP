@@ -12,6 +12,7 @@ import { estoqueService } from '@/services/estoque/estoqueService';
 import { useCriarMovimentacao } from '@/hooks/estoque/useEstoque';
 import { useToast } from '@/hooks/use-toast';
 import type { EstoqueMovimentacaoTipo } from '@/types/estoque';
+import { QuickAddLocalizacao } from '@/components/shared/QuickAddLookups';
 
 interface Props {
   empresaId: string;
@@ -136,24 +137,30 @@ export const NovaMovimentacaoDialog: React.FC<Props> = ({ empresaId, open, onClo
               {(t === 'SAIDA' || t === 'TRANSFERENCIA') && (
                 <div className="space-y-2">
                   <Label>Localização de Origem *</Label>
+                  <div className="flex gap-2">
                   <Select value={origemId} onValueChange={setOrigemId}>
                     <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                     <SelectContent>
                       {locs.map((l) => <SelectItem key={l.id} value={l.id}>{l.nome}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                    <QuickAddLocalizacao empresaId={empresaId} onCreated={({ id }) => setOrigemId(id)} />
+                  </div>
                 </div>
               )}
 
               {(t === 'ENTRADA' || t === 'TRANSFERENCIA') && (
                 <div className="space-y-2">
                   <Label>Localização de Destino *</Label>
+                  <div className="flex gap-2">
                   <Select value={destinoId} onValueChange={setDestinoId}>
                     <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                     <SelectContent>
                       {locs.map((l) => <SelectItem key={l.id} value={l.id}>{l.nome}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                    <QuickAddLocalizacao empresaId={empresaId} onCreated={({ id }) => setDestinoId(id)} />
+                  </div>
                 </div>
               )}
 

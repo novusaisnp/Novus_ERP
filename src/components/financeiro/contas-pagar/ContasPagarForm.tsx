@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { ContaContabilAutocomplete } from './ContaContabilAutocomplete';
+import { QuickAddCentroCusto } from '@/components/shared/QuickAddLookups';
 import { FornecedorAutocomplete } from './FornecedorAutocomplete';
 import { useCentrosCusto } from '@/hooks/useCentrosCusto';
 import type { ContaPagarInput, RateioContaPagar } from '@/types/contasPagar';
@@ -173,6 +174,7 @@ export const ContasPagarForm: React.FC<ContasPagarFormProps> = ({
 
               <div className="space-y-2">
                 <Label htmlFor="centro_custo_id">Centro de Custo</Label>
+                <div className="flex gap-2">
                 <Select
                   value={formData.centro_custo_id || 'nenhum'}
                   onValueChange={(value) => onInputChange('centro_custo_id', value === 'nenhum' ? undefined : value)}
@@ -189,6 +191,8 @@ export const ContasPagarForm: React.FC<ContasPagarFormProps> = ({
                     ))}
                   </SelectContent>
                 </Select>
+                  <QuickAddCentroCusto onCreated={({ id }) => onInputChange('centro_custo_id', id)} />
+                </div>
               </div>
             </div>
           )}

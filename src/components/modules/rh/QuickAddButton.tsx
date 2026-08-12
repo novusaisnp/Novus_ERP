@@ -25,6 +25,7 @@ export const QuickAddButton: React.FC<QuickAddButtonProps> = ({
             size="icon"
             onClick={onClick}
             disabled={disabled}
+            aria-label={tooltip}
             className="shrink-0 hover:bg-primary hover:text-primary-foreground transition-colors"
           >
             <Plus className="h-4 w-4" />

@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Wrench, Plus, Search, Edit, Trash2 } from 'lucide-react';
 import { servicoService, type Servico, type ClassificacaoOption as Option } from '@/services/servicoService';
 import { useToast } from '@/hooks/use-toast';
+import { QuickAddCentroCusto } from '@/components/shared/QuickAddLookups';
 
 const NONE = '__none__';
 
@@ -143,6 +144,7 @@ const Servicos: React.FC = () => {
   ) => (
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
+      <div className="flex gap-2">
       <Select value={value || NONE} onValueChange={(v) => onChange(v === NONE ? '' : v)}>
         <SelectTrigger id={id}>
           <SelectValue placeholder={placeholder} />
@@ -156,6 +158,13 @@ const Servicos: React.FC = () => {
           ))}
         </SelectContent>
       </Select>
+        {id === 'centro_custo_id' && (
+          <QuickAddCentroCusto onCreated={async ({ id: createdId }) => {
+            onChange(createdId);
+            await fetchClassificacoes();
+          }} />
+        )}
+      </div>
     </div>
   );
 

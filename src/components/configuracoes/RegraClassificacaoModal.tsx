@@ -6,6 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import type { AlvoTipoRegra, RegraClassificacaoInput, RegraClassificacaoReceita } from '@/types/classificacaoReceita';
+import { useCategorias } from '@/hooks/useCategorias';
+import { useCentrosCusto } from '@/hooks/useCentrosCusto';
+import { QuickAddCategoria } from '@/components/shared/QuickAddCategoria';
+import { QuickAddCentroCusto } from '@/components/shared/QuickAddLookups';
 
 interface Props {
   open: boolean;
@@ -17,6 +21,8 @@ interface Props {
 const ALVOS: AlvoTipoRegra[] = ['PRODUTO', 'SERVICO', 'CONTRATO', 'CATEGORIA', 'TIPO', 'EMPRESA'];
 
 export const RegraClassificacaoModal: React.FC<Props> = ({ open, onOpenChange, regra, onSubmit }) => {
+  const { data: categorias = [] } = useCategorias();
+  const { centrosCusto } = useCentrosCusto();
   const [form, setForm] = useState<RegraClassificacaoInput>({
     empresa_representada_id: '',
     alvo_tipo: 'PRODUTO',
@@ -90,8 +96,22 @@ export const RegraClassificacaoModal: React.FC<Props> = ({ open, onOpenChange, r
             <Input value={form.alvo_id || ''} onChange={(e) => setForm((p) => ({ ...p, alvo_id: e.target.value || null }))} />
           </div>
           <div>
-            <Label>Categoria ID</Label>
-            <Input value={form.categoria_id || ''} onChange={(e) => setForm((p) => ({ ...p, categoria_id: e.target.value || null }))} />
+            <Label>Categoria</Label>
+            <div className="flex gap-2">
+              <Select
+                value={form.categoria_id || '__none__'}
+                onValueChange={(value) => setForm((p) => ({ ...p, categoria_id: value === '__none__' ? null : value }))}
+              >
+                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Nenhuma</SelectItem>
+                  {categorias.map((categoria) => (
+                    <SelectItem key={categoria.id} value={categoria.id}>{categoria.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <QuickAddCategoria onCreated={({ id }) => setForm((p) => ({ ...p, categoria_id: id }))} />
+            </div>
           </div>
 
           <div>
@@ -99,8 +119,24 @@ export const RegraClassificacaoModal: React.FC<Props> = ({ open, onOpenChange, r
             <Input value={form.plano_conta_id || ''} onChange={(e) => setForm((p) => ({ ...p, plano_conta_id: e.target.value || null }))} />
           </div>
           <div>
-            <Label>Centro de Custo ID</Label>
-            <Input value={form.centro_custo_id || ''} onChange={(e) => setForm((p) => ({ ...p, centro_custo_id: e.target.value || null }))} />
+            <Label>Centro de Custo</Label>
+            <div className="flex gap-2">
+              <Select
+                value={form.centro_custo_id || '__none__'}
+                onValueChange={(value) => setForm((p) => ({ ...p, centro_custo_id: value === '__none__' ? null : value }))}
+              >
+                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Nenhum</SelectItem>
+                  {centrosCusto.map((centro) => (
+                    <SelectItem key={centro.id} value={centro.id}>
+                      {centro.codigo ? `${centro.codigo} - ` : ''}{centro.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <QuickAddCentroCusto onCreated={({ id }) => setForm((p) => ({ ...p, centro_custo_id: id }))} />
+            </div>
           </div>
 
           <div>

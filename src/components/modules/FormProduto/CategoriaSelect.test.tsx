@@ -3,6 +3,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CategoriaSelect, CategoriaOption } from './CategoriaSelect';
 
+vi.mock('@/components/shared/QuickAddCategoria', () => ({ QuickAddCategoria: () => null }));
+
 const categorias: CategoriaOption[] = [
   { id: 'c1', nome: 'Completa', ativo: true, plano_conta_receita_id: 'r', plano_conta_despesa_id: 'd' },
   { id: 'c2', nome: 'Sem class', ativo: true, plano_conta_receita_id: null, plano_conta_despesa_id: null },

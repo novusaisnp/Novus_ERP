@@ -4,6 +4,8 @@ import userEvent from '@testing-library/user-event';
 import { DadosBasicosSection } from './DadosBasicosSection';
 import { Produto } from '@/types/produto';
 
+vi.mock('@/components/shared/QuickAddCategoria', () => ({ QuickAddCategoria: () => null }));
+
 const baseProduto: Produto = {
   nome: 'Produto X',
   preco_venda: 10,

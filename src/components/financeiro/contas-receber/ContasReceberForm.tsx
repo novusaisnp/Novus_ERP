@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { ContaContabilAutocomplete } from '@/components/financeiro/contas-pagar/ContaContabilAutocomplete';
+import { QuickAddCentroCusto } from '@/components/shared/QuickAddLookups';
 import { ClienteAutocomplete } from './ClienteAutocomplete';
 import { useCentrosCusto } from '@/hooks/useCentrosCusto';
 import { useEmpresasRepresentadas } from '@/hooks/useEmpresasRepresentadas';
@@ -243,6 +244,7 @@ export const ContasReceberForm: React.FC<ContasReceberFormProps> = ({
 
               <div className="space-y-2">
                 <Label htmlFor="centro_custo_id">Centro de Custo</Label>
+                <div className="flex gap-2">
                 <Select
                   value={formData.centro_custo_id ?? 'nenhum'}
                   onValueChange={(value) =>
@@ -265,6 +267,8 @@ export const ContasReceberForm: React.FC<ContasReceberFormProps> = ({
                     ))}
                   </SelectContent>
                 </Select>
+                  <QuickAddCentroCusto onCreated={({ id }) => onInputChange('centro_custo_id', id)} />
+                </div>
               </div>
             </div>
           )}
