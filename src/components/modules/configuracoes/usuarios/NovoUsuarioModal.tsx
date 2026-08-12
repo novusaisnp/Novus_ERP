@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { sociosRepresentantesService } from '@/services/sociosRepresentantesService';
 import { usuarioService, type ColaboradorDisponivel, type NovoUsuarioPendenteInput } from '@/services/usuarioService';
 import { usePerfis } from '@/hooks/usePerfis';
+import { provisionarAdminSatelites } from '@/lib/provisionarAdminSatelites';
 import type { SocioRepresentante } from '@/types/socios';
 
 type Origem = 'COLABORADOR' | 'SOCIO';
@@ -117,6 +118,9 @@ const NovoUsuarioModal: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
         if (provError) throw provError;
         if (provData?.ok) {
           toast.success('Usuário criado. Peça pra pessoa entrar com o e-mail dela nos dois campos (login e senha) no primeiro acesso.');
+          if (origem === 'SOCIO') {
+            await provisionarAdminSatelites(pessoaId);
+          }
         } else {
           toast.warning('Usuário criado, porém o acesso não foi provisionado: ' + (provData?.message || 'erro desconhecido.'));
         }
@@ -147,7 +151,19 @@ const NovoUsuarioModal: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label>Origem da pessoa</Label>
-            <RadioGroup value={origem} onValueChange={(v) => { setOrigem(v as Origem); setPessoaId(''); }} className="grid grid-cols-2 gap-2">
+            <RadioGroup
+              value={origem}
+              onValueChange={(v) => {
+                const nova = v as Origem;
+                setOrigem(nova);
+                setPessoaId('');
+                // Sócio/representante legal recebe acesso administrativo por força do
+                // contrato entre a NOVUS e a empresa responsável — o role não é escolha
+                // de quem cadastra.
+                setRole(nova === 'SOCIO' ? 'admin' : 'operador');
+              }}
+              className="grid grid-cols-2 gap-2"
+            >
               <label className="flex items-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-muted/50">
                 <RadioGroupItem value="COLABORADOR" />
                 <Briefcase className="w-4 h-4" /> Colaborador
@@ -200,7 +216,11 @@ const NovoUsuarioModal: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
             </div>
             <div>
               <Label>Role</Label>
-              <Select value={role} onValueChange={(v) => setRole(v as 'admin' | 'gerente' | 'operador' | 'visualizador')}>
+              <Select
+                value={role}
+                onValueChange={(v) => setRole(v as 'admin' | 'gerente' | 'operador' | 'visualizador')}
+                disabled={origem === 'SOCIO'}
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="visualizador">Visualizador</SelectItem>
@@ -209,6 +229,12 @@ const NovoUsuarioModal: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
                   <SelectItem value="admin">Administrador</SelectItem>
                 </SelectContent>
               </Select>
+              {origem === 'SOCIO' && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Sócio e representante legal recebem acesso administrativo por contrato, aqui e
+                  em todos os sistemas licenciados para a empresa.
+                </p>
+              )}
             </div>
           </div>
 

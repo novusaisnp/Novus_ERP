@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { sociosRepresentantesService } from '@/services/sociosRepresentantesService';
+import { revogarAdminSatelites } from '@/lib/provisionarAdminSatelites';
 import type { SocioRepresentante } from '@/types/socios';
 
 export const useSociosRepresentantes = (empresaId?: string) => {
@@ -14,7 +15,15 @@ export const useSociosRepresentantes = (empresaId?: string) => {
   });
 
   const saveMutation = useMutation({
-    mutationFn: (input: SocioRepresentante) => sociosRepresentantesService.save(input),
+    mutationFn: async (input: SocioRepresentante) => {
+      const salvo = await sociosRepresentantesService.save(input);
+      // Desligar o sócio aqui tem que tirar o acesso nos satélites também — senão a
+      // conta continua ativa em cada um deles, invisível de dentro do ERP.
+      if (input.id && input.ativo === false) {
+        await revogarAdminSatelites(input.id);
+      }
+      return salvo;
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['socios-representantes', empresaId] });
       qc.invalidateQueries({ queryKey: ['socios-disponiveis'] });
@@ -24,7 +33,12 @@ export const useSociosRepresentantes = (empresaId?: string) => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => sociosRepresentantesService.softDelete(id),
+    // Revoga ANTES do soft delete: a Porta 0.2 resolve o sócio com `deleted_at IS NULL`
+    // e não acharia mais o registro depois.
+    mutationFn: async (id: string) => {
+      await revogarAdminSatelites(id);
+      return sociosRepresentantesService.softDelete(id);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['socios-representantes', empresaId] });
       toast.success('Removido');

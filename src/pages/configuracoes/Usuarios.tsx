@@ -14,7 +14,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Users, Shield, Plus, AlertTriangle, Briefcase, User as UserIcon, Link2, KeyRound } from 'lucide-react';
+import { Users, Shield, Plus, AlertTriangle, Briefcase, User as UserIcon, Link2, KeyRound, Share2 } from 'lucide-react';
+import { provisionarAdminSatelites, revogarAdminSatelites } from '@/lib/provisionarAdminSatelites';
 import { useToast } from '@/hooks/use-toast';
 import { usePerfis } from '@/hooks/usePerfis';
 import PerfisConfig from '@/components/modules/configuracoes/empresas/PerfisConfig';
@@ -145,7 +146,15 @@ const ConfiguracoesUsuarios: React.FC = () => {
   });
 
   const toggleAtivo = useMutation({
-    mutationFn: ({ id, ativo }: { id: string; ativo: boolean }) => usuarioService.toggleAtivo(id, ativo),
+    // Desativar o usuário de um sócio revoga junto o acesso nos satélites; reativar
+    // reprovisiona. Sem isso o desligamento valeria só no ERP.
+    mutationFn: async ({ id, ativo, u }: { id: string; ativo: boolean; u: UsuarioComPessoa }) => {
+      const res = await usuarioService.toggleAtivo(id, ativo);
+      if (u.pessoa_tipo === 'SOCIO' && u.entidade_id) {
+        await (ativo ? provisionarAdminSatelites(u.entidade_id) : revogarAdminSatelites(u.entidade_id));
+      }
+      return res;
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['config-usuarios'] });
       toast({ title: 'Status atualizado' });
@@ -175,6 +184,13 @@ const ConfiguracoesUsuarios: React.FC = () => {
     },
     onError: (e: Error) => toast({ title: 'Erro', description: e?.message || 'Falha', variant: 'destructive' }),
   });
+
+  // Porta 0.1 — replica o acesso admin do sócio nos satélites licenciados. Reexecutável:
+  // serve tanto pra sócio antigo quanto pra satélite licenciado depois.
+  const provisionarSatelites = useMutation({
+    mutationFn: (socioId: string) => provisionarAdminSatelites(socioId),
+  });
+  const provisionandoId = provisionarSatelites.isPending ? provisionarSatelites.variables : null;
 
   const ativos = usuarios.filter((u) => u.ativo).length;
   const pendentes = usuarios.filter((u) => u.pessoa_pendente).length;
@@ -292,16 +308,30 @@ const ConfiguracoesUsuarios: React.FC = () => {
                           <Badge variant={u.ativo ? 'default' : 'secondary'}>{u.ativo ? 'Ativo' : 'Inativo'}</Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Switch checked={!!u.ativo} onCheckedChange={(v) => toggleAtivo.mutate({ id: u.id, ativo: v })} />
+                          <Switch checked={!!u.ativo} onCheckedChange={(v) => toggleAtivo.mutate({ id: u.id, ativo: v, u })} />
                         </TableCell>
                         <TableCell className="text-right">
-                          {u.user_id && (
-                            <ResetarSenhaAction
-                              usuario={u}
-                              pending={resetarSenha.isPending}
-                              onReset={(role) => resetarSenha.mutate({ u, role })}
-                            />
-                          )}
+                          <div className="flex items-center justify-end gap-1">
+                            {u.pessoa_tipo === 'SOCIO' && u.entidade_id && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-xs"
+                                disabled={provisionandoId === u.entidade_id}
+                                onClick={() => provisionarSatelites.mutate(u.entidade_id!)}
+                              >
+                                <Share2 className="w-3 h-3 mr-1" />
+                                {provisionandoId === u.entidade_id ? 'Provisionando...' : 'Provisionar satélites'}
+                              </Button>
+                            )}
+                            {u.user_id && (
+                              <ResetarSenhaAction
+                                usuario={u}
+                                pending={resetarSenha.isPending}
+                                onReset={(role) => resetarSenha.mutate({ u, role })}
+                              />
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

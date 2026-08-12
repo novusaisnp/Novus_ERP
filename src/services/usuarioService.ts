@@ -112,6 +112,32 @@ export const usuarioService = {
     });
   },
 
+  /**
+   * Porta 0.1 — replica o acesso administrativo do sócio/representante em todos os
+   * satélites com licença ativa da empresa. Idempotente: pode ser reexecutado depois
+   * de um satélite novo ser licenciado.
+   */
+  async provisionarAdminSatelites(socioId: string) {
+    return supabase.functions.invoke<{
+      success: boolean;
+      satelites: { codigo: string; ok: boolean; erro?: string }[];
+    }>('centelha-provisiona-admin', {
+      body: { socio_id: socioId },
+    });
+  },
+
+  /**
+   * Porta 0.2 — tira o acesso do sócio/representante em todos os satélites licenciados.
+   */
+  async revogarAdminSatelites(socioId: string) {
+    return supabase.functions.invoke<{
+      success: boolean;
+      satelites: { codigo: string; ok: boolean; erro?: string }[];
+    }>('centelha-revoga-admin', {
+      body: { socio_id: socioId },
+    });
+  },
+
   async resetarSenha(params: { usuario_id: string; email: string; nome: string; role: string }) {
     return supabase.functions.invoke('enviar-convite-usuario', {
       body: { ...params, mode: 'reset' },
