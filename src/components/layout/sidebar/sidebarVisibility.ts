@@ -31,11 +31,9 @@ export const getVisibleSidebarItems = ({ isAdmin }: Options): MenuItem[] => {
       if (!isAdmin || !featureFlags.syncDashboard) continue;
     }
 
-    // Configurações → Sistema: item filtrado dentro do grupo
     // Configurações → Relatórios (Ops): P6.1 — admin-only
     if (group.title === 'Configurações' && group.items) {
       const filtered = group.items.filter((sub) => {
-        if (sub.title === 'Sistema') return featureFlags.sistemaConfig;
         if (sub.url === '/configuracoes/relatorios-ops') return isAdmin;
         if (sub.url === '/configuracoes/campos-personalizados') return isAdmin;
         return true;

@@ -1,15 +1,12 @@
 
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   BarChart3,
   Download,
   FileText,
   Users,
-  TrendingUp,
-  Calendar,
   Building,
   Briefcase
 } from 'lucide-react';
@@ -31,30 +28,6 @@ type ColaboradorRow = {
   admissao: string;
 };
 
-const relatoriosEmDesenvolvimento = [
-  {
-    id: 4,
-    titulo: "Admissões e Demissões",
-    descricao: "Histórico de admissões e demissões por período",
-    icon: Calendar,
-    categoria: "Movimentação",
-  },
-  {
-    id: 5,
-    titulo: "Análise Salarial",
-    descricao: "Estatísticas e análises de salários por cargo e departamento",
-    icon: TrendingUp,
-    categoria: "Financeiro",
-  },
-  {
-    id: 6,
-    titulo: "Dashboard Executivo RH",
-    descricao: "Visão geral com KPIs e métricas principais do RH",
-    icon: BarChart3,
-    categoria: "Dashboard",
-  },
-];
-
 const estatisticas = [
   {
     titulo: "Relatórios Disponíveis",
@@ -62,13 +35,6 @@ const estatisticas = [
     descricao: "prontos para geração",
     icon: FileText,
     cor: "text-status-confirmed"
-  },
-  {
-    titulo: "Em Desenvolvimento",
-    valor: 3,
-    descricao: "em construção",
-    icon: Calendar,
-    cor: "text-status-production"
   },
   {
     titulo: "Formatos",
@@ -198,7 +164,7 @@ const Relatorios: React.FC = () => {
       </div>
 
       {/* Cards de Estatísticas */}
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2">
         {estatisticas.map((stat, index) => (
           <Card key={index}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -257,40 +223,6 @@ const Relatorios: React.FC = () => {
               </CardContent>
             </Card>
           ))}
-
-          {relatoriosEmDesenvolvimento.map((relatorio) => (
-            <Card key={relatorio.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-start gap-4 flex-1">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <relatorio.icon className="h-6 w-6 text-primary" />
-                    </div>
-
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold">{relatorio.titulo}</h3>
-                        <Badge variant="secondary">Em Desenvolvimento</Badge>
-                        <Badge variant="outline">
-                          {relatorio.categoria}
-                        </Badge>
-                      </div>
-
-                      <p className="text-sm text-muted-foreground">
-                        {relatorio.descricao}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" disabled>
-                      Em Breve
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
         </div>
       </div>
 
@@ -324,7 +256,6 @@ const Relatorios: React.FC = () => {
 
           <div className="pt-4 border-t">
             <p className="text-sm text-muted-foreground">
-              <strong>Nota:</strong> Alguns relatórios estão em desenvolvimento e serão disponibilizados em breve.
               Os relatórios disponíveis podem ser gerados imediatamente com os dados atuais do sistema.
             </p>
           </div>

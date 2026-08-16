@@ -1,9 +1,11 @@
 // SM1-D: Feature flags para módulos fora do escopo do go-live inicial.
 // Ative individualmente por env quando o módulo for aprovado para produção.
 //
-// Padrão: `false` — módulo oculto do sidebar e das rotas.
+// Padrão: `false` — módulo oculto do sidebar e das rotas (AUDITORIA_NOVA Fase 4:
+// a flag agora também protege a rota via <FeatureRoute>, não só o item de menu —
+// antes digitar a URL direto abria a tela pra qualquer usuário logado mesmo com
+// a flag desligada).
 // Para habilitar em preview/dev, defina no `.env`:
-//   VITE_FEATURE_SISTEMA_CONFIG=true
 //   VITE_FEATURE_ESTOQUE_EXT=true
 //   VITE_FEATURE_SYNC_DASHBOARD=true   (também exige role admin)
 
@@ -15,7 +17,6 @@ const boolFlag = (key: string): boolean => {
 };
 
 export const featureFlags = {
-  sistemaConfig: boolFlag('VITE_FEATURE_SISTEMA_CONFIG'),
   estoqueExt: boolFlag('VITE_FEATURE_ESTOQUE_EXT'),
   syncDashboard: boolFlag('VITE_FEATURE_SYNC_DASHBOARD'),
 } as const;

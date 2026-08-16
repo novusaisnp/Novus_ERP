@@ -16,7 +16,6 @@ import Dashboard from './pages/Dashboard';
 // Configurações Pages
 import Usuarios from './pages/configuracoes/Usuarios';
 import Empresas from './pages/configuracoes/Empresas';
-import Sistema from './pages/configuracoes/Sistema';
 import CentrosCusto from './pages/configuracoes/CentrosCusto';
 import Perfil from './pages/configuracoes/Perfil';
 import Webhooks from './pages/configuracoes/Webhooks';
@@ -103,6 +102,7 @@ import Contratos from './pages/contratos/Contratos';
 // Integração Pages
 import SyncDashboard from './pages/integracao/SyncDashboard';
 import { AdminRoute } from './components/auth/AdminRoute';
+import { FeatureRoute } from './components/auth/FeatureRoute';
 import { SessionPersistenceHandler } from './components/SessionPersistenceHandler';
 
 const queryClient = new QueryClient();
@@ -142,25 +142,27 @@ function App() {
                     <Route path="servicos" element={<Servicos />} />
                   </Route>
                   
-                  {/* Estoque Routes */}
+                  {/* Estoque Routes — core (Produtos/Categorias/Kardex) sempre aberto;
+                      o resto exige VITE_FEATURE_ESTOQUE_EXT (AUDITORIA_NOVA Fase 4:
+                      a flag agora protege a rota, não só o item de menu). */}
                   <Route path="estoque">
                     <Route path="produtos" element={<Produtos />} />
                     <Route path="categorias" element={<Categorias />} />
-                    <Route path="localizacoes" element={<Localizacoes />} />
-                    <Route path="unidades-medida" element={<UnidadesMedida />} />
-                    <Route path="tamanhos" element={<Tamanhos />} />
-                    <Route path="movimentacoes" element={<MovimentacoesEstoque />} />
-                    <Route path="inventario" element={<InventarioEstoque />} />
                     <Route path="kardex/:produtoId" element={<KardexPage />} />
+                    <Route path="localizacoes" element={<FeatureRoute flag="estoqueExt"><Localizacoes /></FeatureRoute>} />
+                    <Route path="unidades-medida" element={<FeatureRoute flag="estoqueExt"><UnidadesMedida /></FeatureRoute>} />
+                    <Route path="tamanhos" element={<FeatureRoute flag="estoqueExt"><Tamanhos /></FeatureRoute>} />
+                    <Route path="movimentacoes" element={<FeatureRoute flag="estoqueExt"><MovimentacoesEstoque /></FeatureRoute>} />
+                    <Route path="inventario" element={<FeatureRoute flag="estoqueExt"><InventarioEstoque /></FeatureRoute>} />
 
-                    <Route path="relatorios" element={<RelatoriosEstoqueHub />} />
-                    <Route path="relatorios/giro" element={<GiroPage />} />
-                    <Route path="relatorios/curva-abc" element={<CurvaAbcPage />} />
-                    <Route path="relatorios/posicao" element={<PosicaoPage />} />
-                    <Route path="relatorios/parados" element={<ParadosPage />} />
-                    <Route path="relatorios/ruptura" element={<RupturaPage />} />
+                    <Route path="relatorios" element={<FeatureRoute flag="estoqueExt"><RelatoriosEstoqueHub /></FeatureRoute>} />
+                    <Route path="relatorios/giro" element={<FeatureRoute flag="estoqueExt"><GiroPage /></FeatureRoute>} />
+                    <Route path="relatorios/curva-abc" element={<FeatureRoute flag="estoqueExt"><CurvaAbcPage /></FeatureRoute>} />
+                    <Route path="relatorios/posicao" element={<FeatureRoute flag="estoqueExt"><PosicaoPage /></FeatureRoute>} />
+                    <Route path="relatorios/parados" element={<FeatureRoute flag="estoqueExt"><ParadosPage /></FeatureRoute>} />
+                    <Route path="relatorios/ruptura" element={<FeatureRoute flag="estoqueExt"><RupturaPage /></FeatureRoute>} />
                   </Route>
-                  
+
                   {/* Vendas Routes - declared before generic routes to avoid conflicts */}
                   <Route path="vendas">
                     <Route index element={<Navigate to="/vendas/pedidos" replace />} />
@@ -242,14 +244,18 @@ function App() {
                     <Route path="relatorios" element={<Relatorios />} />
                   </Route>
 
-                  {/* Integração Routes — admin-only (SM1-D) */}
+                  {/* Integração Routes — admin-only + VITE_FEATURE_SYNC_DASHBOARD (SM1-D).
+                      AUDITORIA_NOVA Fase 4: antes só o item de menu respeitava a flag,
+                      a rota abria pra qualquer admin mesmo com o módulo desligado. */}
                   <Route path="integracao">
                     <Route
                       path="sincronizacao"
                       element={
-                        <AdminRoute>
-                          <SyncDashboard />
-                        </AdminRoute>
+                        <FeatureRoute flag="syncDashboard">
+                          <AdminRoute>
+                            <SyncDashboard />
+                          </AdminRoute>
+                        </FeatureRoute>
                       }
                     />
                   </Route>
@@ -258,7 +264,6 @@ function App() {
                   <Route path="configuracoes">
                     <Route path="empresas" element={<Empresas />} />
                     <Route path="usuarios" element={<Usuarios />} />
-                    <Route path="sistema" element={<Sistema />} />
                     <Route path="perfil" element={<Perfil />} />
                     <Route path="webhooks" element={<Webhooks />} />
                     <Route path="campos-personalizados" element={<AdminRoute><CamposPersonalizados /></AdminRoute>} />

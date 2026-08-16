@@ -271,10 +271,6 @@ export const sidebarItems: MenuItem[] = [
         url: "/configuracoes/usuarios",
       },
       {
-        title: "Sistema",
-        url: "/configuracoes/sistema",
-      },
-      {
         title: "Webhooks",
         url: "/configuracoes/webhooks",
       },

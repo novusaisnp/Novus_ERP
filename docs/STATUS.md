@@ -1,5 +1,79 @@
 # Status do projeto — NOVUS ERP
 
+## 🔖 Checkpoint atual — AUDITORIA_NOVA Fase 4: flag protege rota, não só esconde (2026-08-16)
+
+### O problema: flag só escondia o item de menu, nunca a rota
+
+`src/lib/featureFlags.ts` já dizia no comentário "módulo oculto do sidebar **e das
+rotas**" — mas isso era falso: `App.tsx` nunca consultava a flag nas definições de
+`<Route>`, só `sidebarVisibility.ts` a usava pra filtrar o menu. Digitar a URL direto
+abria a tela normalmente pra qualquer usuário logado, com a flag ligada ou não.
+
+Criado `src/components/auth/FeatureRoute.tsx` (mesmo padrão de `AdminRoute`, mas
+checando uma flag em vez de role) e aplicado nas rotas que a flag deveria proteger:
+6 rotas de Estoque estendido (`localizacoes`, `unidades-medida`, `tamanhos`,
+`movimentacoes`, `inventario`, `relatorios` + 5 sub-rotas de relatório) e
+`/integracao/sincronizacao` (que já tinha `AdminRoute`, agora soma `FeatureRoute`).
+`estoque/produtos`, `estoque/categorias` e `estoque/kardex/:produtoId` continuam
+sempre abertos — são o núcleo, nunca estiveram atrás de flag.
+
+### Flags ligadas — conteúdo real, testado, sem motivo pra continuar escondido
+
+`VITE_FEATURE_ESTOQUE_EXT=true` e `VITE_FEATURE_SYNC_DASHBOARD=true` no `.env` local e
+documentadas no `.env.example`. Confirmado antes de ligar: nenhuma tela nova tem
+marcador de fachada (`TODO`/`Em breve`/`console.log` suspeito), `SyncDashboard.tsx`
+sem dependência do `syncService.ts` já apagado na Fase 3. **Pendente**: as mesmas duas
+variáveis precisam ser configuradas no ambiente de produção (Vercel) — não há sessão
+`vercel` autenticada nesta máquina/sessão pra fazer isso agora; alguém com acesso à
+conta certa precisa setar as duas no dashboard do projeto ou via `vercel env add`.
+
+### `Sistema.tsx` — removido, não "limpo": não tinha nada real por trás
+
+5 cards, todos "Em breve", zero código de verdade atrás de qualquer um (Backup,
+Segurança, Notificações, Personalização, Integrações — nem serviço, nem hook, nem
+tabela). Diferente de `VendaPagamentoSection`/`RegrasClassificacaoReceita` (Fase 3),
+que tinham motor real por trás só faltando rota — aqui não havia nada pra conectar.
+Removido: `src/pages/configuracoes/Sistema.tsx`, a rota em `App.tsx`, o item de menu,
+o filtro em `sidebarVisibility.ts` e a flag `sistemaConfig` (ficou órfã, nada mais a
+proteger).
+
+### RH → Relatórios — 3 reais mantidos, 3 decorativos removidos
+
+Diferente do padrão "incompletude comunicada" do SPED (que explica **por que** ainda
+não é seguro gerar o arquivo) — aqui eram só 3 cards "Em Desenvolvimento" sem nenhuma
+explicação nem plano concreto. Os 3 relatórios reais (Colaboradores, por Cargo, por
+Departamento — dado real via `useColaboradores`/`useCargos`/`useDepartamentos`,
+export CSV funcional) continuam intactos. Removidos os 3 cards decorativos
+(Admissões e Demissões, Análise Salarial, Dashboard Executivo RH) e o texto que
+prometia "serão disponibilizados em breve" sem previsão nenhuma.
+
+### Validação
+
+- `npm run typecheck` limpo; `npm run test -- --run` → 53 arquivos, 387/387.
+- Nada testado ao vivo no navegador nesta sessão (mesma ressalva de fases anteriores).
+  Recomendado: logar, confirmar que as 6 rotas de Estoque estendido e o Sync Dashboard
+  abrem normalmente agora, e que `/configuracoes/sistema` dá 404/redireciona.
+
+### Arquivos desta entrega
+
+- `src/components/auth/FeatureRoute.tsx` (novo)
+- `src/App.tsx`, `src/lib/featureFlags.ts`, `src/components/layout/sidebar/{sidebarConfig,sidebarVisibility}.ts`
+- `src/pages/rh/Relatorios.tsx`
+- `.env`, `.env.example`
+- Removido: `src/pages/configuracoes/Sistema.tsx`
+- `docs/STATUS.md`
+
+### Próxima ação única
+
+AUDITORIA_NOVA.md fica com Fase 5 (escala — paginação server-side, 331 policies
+`auth.uid()` por linha) e Fase 6 (autorização real por rota) como as frentes que
+faltam, nessa ordem: 6 antes de 5, por desenho do plano (autorização importa mais que
+performance enquanto a base é pequena). Nenhuma decisão pendente pra continuar. Fora
+da sequência: configurar as duas flags em produção (Vercel) quando alguém com acesso
+à conta certa estiver disponível.
+
+---
+
 ## 🔖 Checkpoint atual — Engate rápido: envelope de origem completo + syncVenda reescrito (2026-08-16)
 
 Fora da sequência da AUDITORIA_NOVA — o usuário trouxe uma pergunta de arquitetura:
