@@ -1,5 +1,111 @@
 # Status do projeto — NOVUS ERP
 
+## 🔖 Checkpoint atual — Engate rápido: envelope de origem completo + syncVenda reescrito (2026-08-16)
+
+Fora da sequência da AUDITORIA_NOVA — o usuário trouxe uma pergunta de arquitetura:
+como o ERP deve estar pronto para gerar receita sozinho (Vendas) **ou** recebê-la de
+um módulo satélite (hoje só Educacional; amanhã clínica, PDV de mercado, o que for),
+sem depender de saber qual será o próximo satélite, e mantendo toda manipulação
+financeira (editar/liquidar/estornar/cancelar) só no ERP. Resposta: essa arquitetura
+já existia documentada em `docs/CONTRATOS_CANONICOS_ERP.md` e `docs/ROADMAP_2026.md`
+— 3 portas (Título/Liquidação/Autorização) + envelope de rastreabilidade
+(`origem_sistema`/`origem_canal`/`externo_id`/`idempotency_key`/`hash_payload`),
+opcional em todo registro, satélite-agnóstico por desenho. Não foi preciso inventar
+nada — foi preciso *fechar* o que já estava desenhado mas incompleto no banco/código.
+
+### Fase 1b do contrato canônico: envelope completo em 6 tabelas que não tinham
+
+Migration `20260816160000`. Conferido contra o banco real, não a documentação (que já
+estava desatualizada em um ponto — `entidades` já tinha o envelope completo e o doc
+ainda listava como pendente):
+
+| Tabela | Antes | Depois |
+|---|---|---|
+| `contas_pagar` | nada | completo (Título também funciona no sentido pagar, não só receber) |
+| `vendas` | só `hash_payload` | completo |
+| `venda_pagamento_parcelas` | só `externo_id` | completo |
+| `liquidacoes_titulos` | só `idempotency_key` (já com índice único) | completo |
+| `produtos` | nada | completo |
+| `estoque_movimentacoes` | nada | completo |
+
+Índice único parcial `(empresa_representada_id, idempotency_key) WHERE idempotency_key
+IS NOT NULL [AND deleted_at IS NULL]` em cada uma, mesmo padrão de `contratos`
+(a tabela com o índice mais bem desenhado entre as que já tinham o envelope).
+`src/integrations/supabase/types.ts` atualizado manualmente por tabela (mesma técnica
+das fases anteriores — diff conferido contra `supabase gen types` antes de aplicar,
+nunca sobrescrita por inteiro).
+
+### `syncVenda` reescrito — era o único ponto de fato quebrado
+
+`sync-webhook` tem 4 handlers por tabela (`syncEntidade`, `syncVenda`, `syncContrato`,
+`syncFinanceiro`). `syncContrato`/`syncEntidade` já seguiam o padrão moderno
+(idempotência real por `idempotency_key`+`hash_payload`, envelope completo).
+`syncVenda` era código antigo, desde antes da migração para `entidades`
+(Cadastro Unificado) e antes do envelope existir em `vendas`: gravava campos que **não
+existem** na tabela real (`valor_desconto`, `valor_acrescimo`, `forma_pagamento`,
+`itens` como coluna jsonb, `source_system`, `sync_metadata`), sem idempotência de
+verdade, `status` aceitando `'finalizada'` (minúsculo, fora do enum real).
+
+Reescrito no mesmo padrão de `syncContrato`: idempotência por
+`(empresa_representada_id, idempotency_key)` com detecção de payload divergente e de
+condição de corrida (`23505`), envelope completo, e agora grava `itens_venda` de
+verdade (tabela própria, não existe coluna jsonb de itens em `vendas` — o código antigo
+tentava gravar itens numa coluna que nunca existiu). Se a gravação dos itens falhar
+depois do INSERT da venda ter ido, a venda é revertida — não fica cabeçalho sem itens.
+
+Nomes de coluna provados contra o schema real numa simulação em
+`BEGIN...ROLLBACK` (`supabase/sql/fase_engate_rapido_syncvenda_prova.sql`) — não há
+runtime Deno nesta sessão pra exercitar a edge function de verdade, então a prova
+simula o INSERT exato que o código monta.
+
+**Deployado em produção** (autorização explícita do usuário) — as outras 3 funções no
+mesmo arquivo (`syncContrato`/`syncEntidade`/`syncFinanceiro`, possivelmente em uso
+real pelo Educacional hoje) não mudaram uma linha; o deploy sobe o arquivo inteiro mas
+o comportamento delas é idêntico ao de antes.
+
+### O que fica registrado, não é decisão pra agora
+
+- Meios de pagamento (Asaas, Inter, boleto/duplicata próprio) já estão no roadmap
+  (FIN-3, FIN-7) com adaptador desacoplado do provedor — decisão de qual provedor
+  fica **deliberadamente em aberto até a fase exigir** (mesma disciplina já registrada
+  pra fila de mensagens e OAuth2 externo). Não foi aberta nesta sessão.
+- Roadmap explicitamente evita "criar adaptador genérico especulativo" — Educacional é
+  o primeiro caso real a validar contra o contrato antes de generalizar pra satélites
+  hipotéticos ainda não pensados.
+- Achado, não perseguido nesta sessão: `vendaCanonicalObjectSchema` (Zod, em
+  `_shared/canonical/entities.ts`) só declara `cliente_id` (UUID), mas tanto o
+  `syncVenda` novo quanto o `syncContrato` já existente resolvem cliente por
+  `cliente_cpf_cnpj` na prática — o contrato documentado é mais estreito que o código
+  real. Não é bug (o código aceita mais do que o schema valida, não menos), mas é
+  uma divergência entre documentação e implementação a fechar quando fizer sentido.
+
+### Validação
+
+- `npm run typecheck` limpo; `npm run test -- --run` → 53 arquivos, 387/387 (nenhum
+  teste novo — não há suíte Deno para `sync-webhook` nesta sessão, mesmo ponto cego já
+  documentado no `CLAUDE.md` do projeto).
+- Migration provada em `BEGIN...ROLLBACK`; aplicada de verdade e registrada no ledger.
+- `ux_contas_pagar_idempotency`/`ux_vendas_idempotency`/`ux_vpp_idempotency`/
+  `ux_produtos_idempotency`/`ux_estoque_mov_idempotency` conferidos existindo no banco
+  depois da migration real (não só na simulação).
+
+### Arquivos desta entrega
+
+- `supabase/migrations/20260816160000_fase1b_envelope_origem.sql`
+- `supabase/functions/sync-webhook/index.ts` (deployado)
+- `supabase/sql/fase_engate_rapido_syncvenda_prova.sql`
+- `src/integrations/supabase/types.ts`
+- `docs/STATUS.md`
+
+### Próxima ação única
+
+Sem decisão pendente para continuar a AUDITORIA_NOVA.md (próxima é Fase 4). Se o
+usuário quiser seguir a linha de integração em vez disso: auditar a integração real do
+Educacional contra o contrato canônico é o "primeiro caso real" que o roadmap pede
+antes de qualquer generalização — candidato natural a próxima sessão de arquitetura.
+
+---
+
 ## 🔖 Checkpoint atual — AUDITORIA_NOVA Fase 3: fachadas resolvidas com cuidado extra (2026-08-16)
 
 Sessão marcada por uma correção de rumo do usuário no meio do trabalho: ao ver que o

@@ -1258,14 +1258,19 @@ export type Database = {
           deleted_at: string | null
           descricao: string
           empresa_representada_id: string
+          externo_id: string | null
           fornecedor_id: string | null
+          hash_payload: string | null
           id: string
+          idempotency_key: string | null
           motivo_cancelamento: string | null
           natureza_id: string | null
           numero_documento: string | null
           numero_parcela: number | null
           observacoes: string | null
+          origem_canal: string | null
           origem_recorrencia_id: string | null
+          origem_sistema: string | null
           periodicidade: string | null
           plano_conta_id: string | null
           plano_pagamento_id: string | null
@@ -1292,14 +1297,19 @@ export type Database = {
           deleted_at?: string | null
           descricao: string
           empresa_representada_id: string
+          externo_id?: string | null
           fornecedor_id?: string | null
+          hash_payload?: string | null
           id?: string
+          idempotency_key?: string | null
           motivo_cancelamento?: string | null
           natureza_id?: string | null
           numero_documento?: string | null
           numero_parcela?: number | null
           observacoes?: string | null
+          origem_canal?: string | null
           origem_recorrencia_id?: string | null
+          origem_sistema?: string | null
           periodicidade?: string | null
           plano_conta_id?: string | null
           plano_pagamento_id?: string | null
@@ -1326,14 +1336,19 @@ export type Database = {
           deleted_at?: string | null
           descricao?: string
           empresa_representada_id?: string
+          externo_id?: string | null
           fornecedor_id?: string | null
+          hash_payload?: string | null
           id?: string
+          idempotency_key?: string | null
           motivo_cancelamento?: string | null
           natureza_id?: string | null
           numero_documento?: string | null
           numero_parcela?: number | null
           observacoes?: string | null
+          origem_canal?: string | null
           origem_recorrencia_id?: string | null
+          origem_sistema?: string | null
           periodicidade?: string | null
           plano_conta_id?: string | null
           plano_pagamento_id?: string | null
@@ -2654,11 +2669,16 @@ export type Database = {
           deleted_at: string | null
           documento_ref: string | null
           empresa_representada_id: string
+          externo_id: string | null
+          hash_payload: string | null
           id: string
+          idempotency_key: string | null
           inventario_id: string | null
           localizacao_destino_id: string | null
           localizacao_origem_id: string | null
           observacoes: string | null
+          origem_canal: string | null
+          origem_sistema: string | null
           produto_id: string
           quantidade: number
           tipo: string
@@ -2673,11 +2693,16 @@ export type Database = {
           deleted_at?: string | null
           documento_ref?: string | null
           empresa_representada_id: string
+          externo_id?: string | null
+          hash_payload?: string | null
           id?: string
+          idempotency_key?: string | null
           inventario_id?: string | null
           localizacao_destino_id?: string | null
           localizacao_origem_id?: string | null
           observacoes?: string | null
+          origem_canal?: string | null
+          origem_sistema?: string | null
           produto_id: string
           quantidade: number
           tipo: string
@@ -2692,11 +2717,16 @@ export type Database = {
           deleted_at?: string | null
           documento_ref?: string | null
           empresa_representada_id?: string
+          externo_id?: string | null
+          hash_payload?: string | null
           id?: string
+          idempotency_key?: string | null
           inventario_id?: string | null
           localizacao_destino_id?: string | null
           localizacao_origem_id?: string | null
           observacoes?: string | null
+          origem_canal?: string | null
+          origem_sistema?: string | null
           produto_id?: string
           quantidade?: number
           tipo?: string
@@ -3843,7 +3873,9 @@ export type Database = {
           empresa_representada_id: string
           estornado: boolean
           estorno_idempotency_key: string | null
+          externo_id: string | null
           forma_pagamento: string | null
+          hash_payload: string | null
           historico: string | null
           id: string
           idempotency_key: string | null
@@ -3852,6 +3884,8 @@ export type Database = {
           natureza_id: string | null
           numero_cheque: string | null
           observacoes: string | null
+          origem_canal: string | null
+          origem_sistema: string | null
           plano_conta_id: string | null
           tipo_titulo: string | null
           titulo_id: string | null
@@ -3878,7 +3912,9 @@ export type Database = {
           empresa_representada_id: string
           estornado?: boolean
           estorno_idempotency_key?: string | null
+          externo_id?: string | null
           forma_pagamento?: string | null
+          hash_payload?: string | null
           historico?: string | null
           id?: string
           idempotency_key?: string | null
@@ -3887,6 +3923,8 @@ export type Database = {
           natureza_id?: string | null
           numero_cheque?: string | null
           observacoes?: string | null
+          origem_canal?: string | null
+          origem_sistema?: string | null
           plano_conta_id?: string | null
           tipo_titulo?: string | null
           titulo_id?: string | null
@@ -3913,7 +3951,9 @@ export type Database = {
           empresa_representada_id?: string
           estornado?: boolean
           estorno_idempotency_key?: string | null
+          externo_id?: string | null
           forma_pagamento?: string | null
+          hash_payload?: string | null
           historico?: string | null
           id?: string
           idempotency_key?: string | null
@@ -3922,6 +3962,8 @@ export type Database = {
           natureza_id?: string | null
           numero_cheque?: string | null
           observacoes?: string | null
+          origem_canal?: string | null
+          origem_sistema?: string | null
           plano_conta_id?: string | null
           tipo_titulo?: string | null
           titulo_id?: string | null
@@ -5278,14 +5320,19 @@ export type Database = {
           estoque_atual: number | null
           estoque_maximo: number | null
           estoque_minimo: number | null
+          externo_id: string | null
+          hash_payload: string | null
           id: string
+          idempotency_key: string | null
           imagem_url: string | null
           largura: number | null
           margem_lucro: number | null
           natureza_receita_id: string | null
           ncm: string | null
           nome: string
+          origem_canal: string | null
           origem_produto: string | null
+          origem_sistema: string | null
           peso: number | null
           plano_conta_receita_id: string | null
           preco_custo: number | null
@@ -5310,14 +5357,19 @@ export type Database = {
           estoque_atual?: number | null
           estoque_maximo?: number | null
           estoque_minimo?: number | null
+          externo_id?: string | null
+          hash_payload?: string | null
           id?: string
+          idempotency_key?: string | null
           imagem_url?: string | null
           largura?: number | null
           margem_lucro?: number | null
           natureza_receita_id?: string | null
           ncm?: string | null
           nome: string
+          origem_canal?: string | null
           origem_produto?: string | null
+          origem_sistema?: string | null
           peso?: number | null
           plano_conta_receita_id?: string | null
           preco_custo?: number | null
@@ -5342,14 +5394,19 @@ export type Database = {
           estoque_atual?: number | null
           estoque_maximo?: number | null
           estoque_minimo?: number | null
+          externo_id?: string | null
+          hash_payload?: string | null
           id?: string
+          idempotency_key?: string | null
           imagem_url?: string | null
           largura?: number | null
           margem_lucro?: number | null
           natureza_receita_id?: string | null
           ncm?: string | null
           nome?: string
+          origem_canal?: string | null
           origem_produto?: string | null
+          origem_sistema?: string | null
           peso?: number | null
           plano_conta_receita_id?: string | null
           preco_custo?: number | null
@@ -6596,9 +6653,13 @@ export type Database = {
           data_vencimento: string
           empresa_representada_id: string
           externo_id: string | null
+          hash_payload: string | null
           id: string
+          idempotency_key: string | null
           is_entrada: boolean
           numero: number
+          origem_canal: string | null
+          origem_sistema: string | null
           status: string
           updated_at: string
           valor: number
@@ -6610,9 +6671,13 @@ export type Database = {
           data_vencimento: string
           empresa_representada_id: string
           externo_id?: string | null
+          hash_payload?: string | null
           id?: string
+          idempotency_key?: string | null
           is_entrada?: boolean
           numero: number
+          origem_canal?: string | null
+          origem_sistema?: string | null
           status?: string
           updated_at?: string
           valor: number
@@ -6624,9 +6689,13 @@ export type Database = {
           data_vencimento?: string
           empresa_representada_id?: string
           externo_id?: string | null
+          hash_payload?: string | null
           id?: string
+          idempotency_key?: string | null
           is_entrada?: boolean
           numero?: number
+          origem_canal?: string | null
+          origem_sistema?: string | null
           status?: string
           updated_at?: string
           valor?: number
@@ -6738,14 +6807,18 @@ export type Database = {
           deleted_at: string | null
           desconto: number | null
           empresa_representada_id: string
+          externo_id: string | null
           hash_payload: string | null
           id: string
+          idempotency_key: string | null
           localizacao_estoque_id: string | null
           numero_venda: string | null
           observacoes: string | null
           observacoes_internas: string | null
           orcamento_id: string | null
           origem: string | null
+          origem_canal: string | null
+          origem_sistema: string | null
           plano_pagamento_id: string | null
           status: string | null
           status_fiscal: string
@@ -6766,14 +6839,18 @@ export type Database = {
           deleted_at?: string | null
           desconto?: number | null
           empresa_representada_id: string
+          externo_id?: string | null
           hash_payload?: string | null
           id?: string
+          idempotency_key?: string | null
           localizacao_estoque_id?: string | null
           numero_venda?: string | null
           observacoes?: string | null
           observacoes_internas?: string | null
           orcamento_id?: string | null
           origem?: string | null
+          origem_canal?: string | null
+          origem_sistema?: string | null
           plano_pagamento_id?: string | null
           status?: string | null
           status_fiscal?: string
@@ -6794,14 +6871,18 @@ export type Database = {
           deleted_at?: string | null
           desconto?: number | null
           empresa_representada_id?: string
+          externo_id?: string | null
           hash_payload?: string | null
           id?: string
+          idempotency_key?: string | null
           localizacao_estoque_id?: string | null
           numero_venda?: string | null
           observacoes?: string | null
           observacoes_internas?: string | null
           orcamento_id?: string | null
           origem?: string | null
+          origem_canal?: string | null
+          origem_sistema?: string | null
           plano_pagamento_id?: string | null
           status?: string | null
           status_fiscal?: string

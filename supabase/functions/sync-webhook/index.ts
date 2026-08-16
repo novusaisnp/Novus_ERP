@@ -529,49 +529,186 @@ async function syncEntidade(supabase: SupabaseClient, payload: WebhookPayload, e
   }
 }
 
+// Payload de item, formato vendaCanonicalSchema (CONTRATOS_CANONICOS_ERP.md §5/§9):
+// { descricao, quantidade, preco_unitario, produto_id?, servico_id?, ... }.
+// itens_venda é tabela própria (sem coluna jsonb em vendas) — cada linha vira
+// uma row aqui, mesmo cálculo de valor_total_item usado por vendasService.save().
+function buildItensVendaRows(
+  itens: Array<Record<string, unknown>>,
+  vendaId: string,
+  empresaId: string,
+) {
+  return itens.map((it, idx) => {
+    const quantidade = Number(it.quantidade) || 0;
+    const precoUnitario = Number(it.preco_unitario) || 0;
+    const descontoItem = Number(it.desconto_item) || 0;
+    const acrescimoItem = Number(it.acrescimo_item) || 0;
+    const bruto = quantidade * precoUnitario;
+    return {
+      venda_id: vendaId,
+      empresa_representada_id: empresaId,
+      tipo_item: it.servico_id ? 'S' : 'P',
+      produto_id: (it.produto_id as string) || null,
+      servico_id: (it.servico_id as string) || null,
+      descricao: (it.descricao as string) || '',
+      quantidade,
+      unidade: (it.unidade as string) || null,
+      preco_unitario: precoUnitario,
+      desconto_item: descontoItem,
+      acrescimo_item: acrescimoItem,
+      valor_total_item: bruto - descontoItem + acrescimoItem,
+      ordem: idx,
+      observacoes: (it.observacoes as string) || null,
+    };
+  });
+}
+
+// AUDITORIA_NOVA.md Fase "engate rápido": versão anterior não batia com o
+// schema real de `vendas` (usava valor_desconto/valor_acrescimo/forma_pagamento/
+// itens/source_system/sync_metadata — nenhuma dessas colunas existe), sem
+// idempotência real e sem o envelope de origem. Reescrita no mesmo padrão de
+// syncContrato/syncEntidade: idempotency_key + hash_payload como fonte de
+// verdade de replay, envelope completo, e grava itens_venda de verdade (não
+// existe coluna jsonb de itens em vendas).
 async function syncVenda(supabase: SupabaseClient, payload: WebhookPayload, empresaId: string) {
   const { event, data } = payload;
-  let clienteId = null;
-  if (data.cliente_id) {
+  let clienteId: string | null = null;
+  if (data.cliente_cpf_cnpj || data.cliente_id) {
+    const cpfCnpj = data.cliente_cpf_cnpj as string | undefined;
+    const filtros = [
+      data.cliente_id && `externo_id.eq.${data.cliente_id}`,
+      cpfCnpj && `cpf.eq.${cpfCnpj}`,
+      cpfCnpj && `cnpj.eq.${cpfCnpj}`,
+    ].filter(Boolean).join(',');
     const { data: cliente } = await supabase
       .from('entidades')
       .select('id')
       .eq('empresa_representada_id', empresaId)
-      .or(`externo_id.eq.${data.cliente_id},cpf.eq.${data.cliente_cpf_cnpj},cnpj.eq.${data.cliente_cpf_cnpj}`)
-      .single();
-    clienteId = cliente?.id;
+      .or(filtros)
+      .maybeSingle();
+    clienteId = cliente?.id ?? null;
   }
+
+  const idempotencyKey =
+    (data.idempotency_key as string) ||
+    `${payload.source_system}:venda:${data.numero_venda ?? data.id}`;
+  const hashPayload = await sha256Hex(new TextEncoder().encode(JSON.stringify(data)));
+
+  const itensPayload = Array.isArray(data.itens) ? (data.itens as Array<Record<string, unknown>>) : [];
+  const subtotalItens = itensPayload.reduce((acc, it) => {
+    const bruto = (Number(it.quantidade) || 0) * (Number(it.preco_unitario) || 0);
+    return acc + bruto - (Number(it.desconto_item) || 0) + (Number(it.acrescimo_item) || 0);
+  }, 0);
+  const desconto = Number(data.desconto) || 0;
+  const acrescimo = Number(data.acrescimo) || 0;
+  const valorFrete = Number(data.valor_frete) || 0;
+  const valorTotal =
+    data.valor_total != null ? Number(data.valor_total) : subtotalItens - desconto + acrescimo + valorFrete;
+
   const vendaData = {
     empresa_representada_id: empresaId,
-    numero_venda: data.numero_venda || data.id,
+    numero_venda: (data.numero_venda as string) || (data.id as string) || null,
     cliente_id: clienteId,
-    data_venda: data.data_venda || new Date().toISOString(),
-    valor_total: data.valor_total || data.total,
-    valor_desconto: data.valor_desconto || 0,
-    valor_acrescimo: data.valor_acrescimo || 0,
-    itens: data.itens || [],
-    forma_pagamento: data.forma_pagamento,
-    status: data.status || 'finalizada',
-    observacoes: data.observacoes,
-    source_system: payload.source_system,
-    sync_metadata: {
-      external_id: data.id,
-      synchronized_at: new Date().toISOString(),
-      source_data: data,
-    },
+    data_venda: (data.data_venda as string) || new Date().toISOString().split('T')[0],
+    // vendaCanonicalSchema exige status no enum real (RASCUNHO|CONFIRMADO|
+    // EM_PRODUCAO|FATURADO|ENTREGUE|CANCELADO) — a versão antiga aceitava
+    // 'finalizada' (minúsculo, fora do enum) sem validar.
+    status: ((data.status as string) || 'CONFIRMADO').toString().toUpperCase(),
+    tipo: (data.tipo as string) || 'P',
+    subtotal: subtotalItens,
+    desconto,
+    acrescimo,
+    valor_frete: valorFrete,
+    valor_total: valorTotal,
+    observacoes: (data.observacoes as string) || null,
+    // vendaCanonicalSchema: um satélite só deve preenchê-lo quando já souber
+    // resolver seu vendedor/operador para um usuário real do NOVUS (ex.: PDV
+    // com login federado). Ausente/null é o caminho normal.
+    vendedor_id: (data.vendedor_id as string) || null,
+    origem_canal: 'webhook',
+    origem_sistema: payload.source_system,
+    externo_id: (data.id as string) ?? null,
+    idempotency_key: idempotencyKey,
+    hash_payload: hashPayload,
   };
+
   switch (event) {
     case 'insert':
-    case 'sync':
-      return await supabase.from('vendas').insert(vendaData).select().single();
-    case 'update':
-      return await supabase
+    case 'sync': {
+      const { data: existing } = await supabase
         .from('vendas')
-        .update({ ...vendaData, updated_at: new Date().toISOString() })
+        .select('id, hash_payload')
+        .eq('empresa_representada_id', empresaId)
+        .eq('idempotency_key', idempotencyKey)
+        .is('deleted_at', null)
+        .maybeSingle();
+
+      if (existing) {
+        if (existing.hash_payload !== hashPayload) {
+          throw new Error(
+            `CONFLITO_PAYLOAD_DIVERGENTE: venda com idempotency_key=${idempotencyKey} já existe com payload diferente`,
+          );
+        }
+        const replayed = await supabase.from('vendas').select().eq('id', existing.id).single();
+        return { ...replayed, replay: true };
+      }
+
+      const inserted = await supabase.from('vendas').insert(vendaData).select().single();
+      if (inserted.error) {
+        if ((inserted.error as { code?: string }).code === '23505') {
+          // condição de corrida: outra chamada concorrente inseriu entre o SELECT acima e este INSERT
+          const race = await supabase
+            .from('vendas')
+            .select()
+            .eq('empresa_representada_id', empresaId)
+            .eq('idempotency_key', idempotencyKey)
+            .single();
+          return { ...race, replay: true };
+        }
+        return inserted;
+      }
+
+      const vendaId = inserted.data.id as string;
+      if (itensPayload.length > 0) {
+        const rows = buildItensVendaRows(itensPayload, vendaId, empresaId);
+        const { error: itensError } = await supabase.from('itens_venda').insert(rows);
+        if (itensError) {
+          // não deixa um cabeçalho de venda sem os itens que vieram no mesmo payload
+          await supabase.from('vendas').delete().eq('id', vendaId);
+          throw new Error(`Falha ao gravar itens da venda: ${itensError.message}`);
+        }
+      }
+
+      return inserted;
+    }
+    case 'update': {
+      const { data: existing } = await supabase
+        .from('vendas')
+        .select('id')
         .eq('numero_venda', data.numero_venda || data.id)
         .eq('empresa_representada_id', empresaId)
+        .maybeSingle();
+      if (!existing) {
+        throw new Error(`VENDA_NAO_ENCONTRADA: numero_venda=${data.numero_venda ?? data.id}`);
+      }
+
+      const updated = await supabase
+        .from('vendas')
+        .update({ ...vendaData, updated_at: new Date().toISOString() })
+        .eq('id', existing.id)
         .select()
         .single();
+
+      if (itensPayload.length > 0) {
+        const { error: delErr } = await supabase.from('itens_venda').delete().eq('venda_id', existing.id);
+        if (delErr) throw new Error(`Falha ao limpar itens da venda: ${delErr.message}`);
+        const rows = buildItensVendaRows(itensPayload, existing.id, empresaId);
+        const { error: itensError } = await supabase.from('itens_venda').insert(rows);
+        if (itensError) throw new Error(`Falha ao atualizar itens da venda: ${itensError.message}`);
+      }
+
+      return updated;
+    }
   }
 }
 
