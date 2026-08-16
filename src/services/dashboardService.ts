@@ -45,4 +45,41 @@ export const dashboardService = {
     if (error) throw error;
     return (data ?? []).reduce((acc, r) => acc + Number(r.saldo_atual || 0), 0);
   },
+
+  async fetchProdutosEstoqueBaixo(): Promise<number> {
+    const empresaId = await getEmpresaAtivaIdOuFalha();
+    const { data, error } = await supabase
+      .from('produtos')
+      .select('estoque_atual, estoque_minimo')
+      .eq('empresa_representada_id', empresaId)
+      .eq('controla_estoque', true)
+      .eq('ativo', true)
+      .is('deleted_at', null);
+    if (error) throw error;
+    return (data ?? []).filter((p) => Number(p.estoque_atual ?? 0) <= Number(p.estoque_minimo ?? 0)).length;
+  },
+
+  async fetchContasVencidasCount(): Promise<number> {
+    const empresaId = await getEmpresaAtivaIdOuFalha();
+    const hoje = new Date().toISOString().split('T')[0];
+    const [pagar, receber] = await Promise.all([
+      supabase
+        .from('contas_pagar')
+        .select('id', { count: 'exact', head: true })
+        .eq('empresa_representada_id', empresaId)
+        .eq('status', 'PENDENTE')
+        .lt('data_vencimento', hoje)
+        .is('deleted_at', null),
+      supabase
+        .from('contas_receber')
+        .select('id', { count: 'exact', head: true })
+        .eq('empresa_representada_id', empresaId)
+        .eq('status', 'PENDENTE')
+        .lt('data_vencimento', hoje)
+        .is('deleted_at', null),
+    ]);
+    if (pagar.error) throw pagar.error;
+    if (receber.error) throw receber.error;
+    return (pagar.count || 0) + (receber.count || 0);
+  },
 };

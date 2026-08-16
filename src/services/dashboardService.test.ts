@@ -31,6 +31,18 @@ describe('dashboardService', () => {
       }),
     });
 
+  /** Chain resiliente a qualquer sequência de .eq()/.lt()/.is() antes do await. */
+  const makeChain = (resultado: unknown) => {
+    const chain: any = {
+      select: () => chain,
+      eq: () => chain,
+      lt: () => chain,
+      is: () => chain,
+      then: (resolve: (v: unknown) => void) => resolve(resultado),
+    };
+    return chain;
+  };
+
   it('soma os títulos pendentes da empresa ativa', async () => {
     mockSelect({ data: [{ valor_original: 10 }, { valor_original: 5.5 }], error: null });
 
@@ -60,5 +72,44 @@ describe('dashboardService', () => {
     mockSelect({ data: [], error: null });
 
     await expect(dashboardService.fetchSumContas('contas_receber')).resolves.toBe(0);
+  });
+
+  it('conta produtos com estoque atual abaixo ou igual ao minimo', async () => {
+    from.mockReturnValue(makeChain({
+      data: [
+        { estoque_atual: 2, estoque_minimo: 5 },
+        { estoque_atual: 10, estoque_minimo: 5 },
+        { estoque_atual: 5, estoque_minimo: 5 },
+      ],
+      error: null,
+    }));
+
+    await expect(dashboardService.fetchProdutosEstoqueBaixo()).resolves.toBe(2);
+  });
+
+  it('propaga falha do estoque baixo em vez de devolver zero', async () => {
+    from.mockReturnValue(makeChain({ data: null, error: { message: 'falha de rede' } }));
+
+    await expect(dashboardService.fetchProdutosEstoqueBaixo()).rejects.toBeTruthy();
+  });
+
+  it('soma contas vencidas de pagar e receber', async () => {
+    from.mockImplementation((table: string) =>
+      makeChain({ count: table === 'contas_pagar' ? 3 : 2, error: null }),
+    );
+
+    await expect(dashboardService.fetchContasVencidasCount()).resolves.toBe(5);
+  });
+
+  it('propaga falha de contas vencidas em vez de devolver zero', async () => {
+    from.mockImplementation((table: string) =>
+      makeChain(
+        table === 'contas_pagar'
+          ? { count: null, error: { message: 'permissao negada' } }
+          : { count: 0, error: null },
+      ),
+    );
+
+    await expect(dashboardService.fetchContasVencidasCount()).rejects.toBeTruthy();
   });
 });

@@ -40,6 +40,7 @@ export interface Venda {
   valor_total?: number;
   plano_pagamento_id?: string | null;
   vendedor_id?: string | null;
+  localizacao_estoque_id?: string | null;
   observacoes?: string | null;
   observacoes_internas?: string | null;
   deleted_at?: string | null;

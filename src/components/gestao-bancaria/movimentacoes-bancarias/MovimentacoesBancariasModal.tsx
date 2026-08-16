@@ -12,7 +12,7 @@ import { MovimentacoesBancariasTable } from './MovimentacoesBancariasTable';
 import { NovaMovimentacaoModal } from './NovaMovimentacaoModal';
 import { TransferenciaModal } from './TransferenciaModal';
 import { HistoricoMovimentacoes } from './HistoricoMovimentacoes';
-import { X, Plus, ArrowRightLeft, Upload } from 'lucide-react';
+import { X, Plus, ArrowRightLeft } from 'lucide-react';
 import { toCsv, downloadCsv } from '@/utils/csvExport';
 import { ExportMenu } from '@/components/relatorios/ExportMenu';
 import { groupBy } from '@/utils/relatoriosAgg';
@@ -157,9 +157,8 @@ export function MovimentacoesBancariasModal({
 
         <div className="flex-1 flex flex-col min-h-0">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="movimentacoes">Movimentações</TabsTrigger>
-              <TabsTrigger value="extrato">Extrato Avançado</TabsTrigger>
               <TabsTrigger value="historico">Histórico</TabsTrigger>
             </TabsList>
 
@@ -180,18 +179,6 @@ export function MovimentacoesBancariasModal({
                   isLoading={isLoading}
                   onRefresh={refetch}
                 />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="extrato" className="flex-1 flex flex-col">
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center">
-                  <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Extrato Avançado</h3>
-                  <p className="text-muted-foreground">
-                    Em desenvolvimento - Visualização avançada de extratos
-                  </p>
-                </div>
               </div>
             </TabsContent>
 

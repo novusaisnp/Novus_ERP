@@ -1,20 +1,43 @@
-import { useState, useEffect, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FluxoCaixaService } from '@/services/fluxoCaixaService';
-import { 
-  FluxoCaixaItem, 
-  FluxoCaixaFiltros, 
-  FluxoCaixaResumo, 
+import {
+  FluxoCaixaItem,
+  FluxoCaixaFiltros,
+  FluxoCaixaResumo,
   FluxoCaixaProjecao,
-  FluxoCaixaEstatisticas
+  FluxoCaixaEstatisticas,
+  PeriodoAgrupamento,
 } from '@/types/fluxoCaixa';
 
+const pad2 = (n: number) => String(n).padStart(2, '0');
+const toIso = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+
+// Chave do bucket no formato YYYY-MM-DD (o início do período), sempre em data
+// local — "T00:00:00" evita o deslocamento de um dia em UTC-3 que já mordeu
+// este projeto antes (new Date('YYYY-MM-DD') sozinho interpreta como UTC).
+const bucketKey = (dataStr: string, periodo: PeriodoAgrupamento): string => {
+  const d = new Date(`${dataStr}T00:00:00`);
+  if (periodo === 'MENSAL') {
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-01`;
+  }
+  if (periodo === 'SEMANAL') {
+    const diaSemana = d.getDay(); // 0=domingo
+    const deslocamentoParaSegunda = diaSemana === 0 ? -6 : 1 - diaSemana;
+    const segunda = new Date(d);
+    segunda.setDate(d.getDate() + deslocamentoParaSegunda);
+    return toIso(segunda);
+  }
+  return dataStr;
+};
+
 export const useFluxoCaixa = (filtros: FluxoCaixaFiltros = {}) => {
+  const queryClient = useQueryClient();
 
   // Query para buscar movimentações
-  const { 
-    data: movimentacoes = [], 
-    isLoading: isLoadingMovimentacoes, 
+  const {
+    data: movimentacoes = [],
+    isLoading: isLoadingMovimentacoes,
     error: errorMovimentacoes,
     refetch: refetchMovimentacoes
   } = useQuery({
@@ -60,29 +83,32 @@ export const useFluxoCaixa = (filtros: FluxoCaixaFiltros = {}) => {
     retry: 2
   });
 
-  // Preparar dados para o gráfico
+  // Preparar dados para o gráfico, agrupados por dia/semana/mês conforme o
+  // filtro escolhido (antes ignorava periodo_agrupamento e sempre agrupava
+  // por dia — AUDITORIA_NOVA Fase 3).
+  const periodoAgrupamento = filtros.periodo_agrupamento || 'DIARIO';
   const dadosGrafico = useMemo(() => {
     if (!movimentacoes.length) return [];
 
-    const dadosPorData = new Map<string, { entradas: number; saidas: number }>();
-    
+    const dadosPorBucket = new Map<string, { entradas: number; saidas: number }>();
+
     movimentacoes.forEach(m => {
-      const data = m.data.split('T')[0];
-      if (!dadosPorData.has(data)) {
-        dadosPorData.set(data, { entradas: 0, saidas: 0 });
+      const chave = bucketKey(m.data.split('T')[0], periodoAgrupamento);
+      if (!dadosPorBucket.has(chave)) {
+        dadosPorBucket.set(chave, { entradas: 0, saidas: 0 });
       }
-      
-      const dadosDia = dadosPorData.get(data)!;
+
+      const dadosBucket = dadosPorBucket.get(chave)!;
       if (m.tipo === 'ENTRADA') {
-        dadosDia.entradas += m.valor;
+        dadosBucket.entradas += m.valor;
       } else {
-        dadosDia.saidas += m.valor;
+        dadosBucket.saidas += m.valor;
       }
     });
 
     let saldoAcumulado = 0;
-    
-    return Array.from(dadosPorData.entries())
+
+    return Array.from(dadosPorBucket.entries())
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([data, { entradas, saidas }]) => {
         saldoAcumulado += entradas - saidas;
@@ -93,18 +119,21 @@ export const useFluxoCaixa = (filtros: FluxoCaixaFiltros = {}) => {
           saldo_acumulado: saldoAcumulado
         };
       });
-  }, [movimentacoes]);
+  }, [movimentacoes, periodoAgrupamento]);
 
   // Estados consolidados
   const isLoading = isLoadingMovimentacoes || isLoadingResumo || isLoadingProjecao || isLoadingEstatisticas;
   const error = errorMovimentacoes || errorResumo || errorProjecao || errorEstatisticas;
 
-  // Função para invalidar cache
+  // "Atualizar" precisa recarregar as quatro consultas — refazer só as
+  // movimentações e deixar resumo/projeção/estatísticas com dado velho na
+  // tela é o mesmo tipo de inconsistência que já mordeu este módulo antes.
   const invalidateCache = () => {
-    refetchMovimentacoes();
+    queryClient.invalidateQueries({ queryKey: ['fluxo-caixa'] });
+    queryClient.invalidateQueries({ queryKey: ['fluxo-caixa-resumo'] });
+    queryClient.invalidateQueries({ queryKey: ['fluxo-caixa-projecao'] });
+    queryClient.invalidateQueries({ queryKey: ['fluxo-caixa-estatisticas'] });
   };
-
-  // Log de debug removido (dados sensíveis)
 
 
   return {
@@ -114,7 +143,8 @@ export const useFluxoCaixa = (filtros: FluxoCaixaFiltros = {}) => {
     projecao,
     estatisticas,
     dadosGrafico,
-    
+    periodoAgrupamento,
+
     // Estados
     isLoading,
     error,

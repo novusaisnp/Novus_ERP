@@ -6740,6 +6740,7 @@ export type Database = {
           empresa_representada_id: string
           hash_payload: string | null
           id: string
+          localizacao_estoque_id: string | null
           numero_venda: string | null
           observacoes: string | null
           observacoes_internas: string | null
@@ -6767,6 +6768,7 @@ export type Database = {
           empresa_representada_id: string
           hash_payload?: string | null
           id?: string
+          localizacao_estoque_id?: string | null
           numero_venda?: string | null
           observacoes?: string | null
           observacoes_internas?: string | null
@@ -6794,6 +6796,7 @@ export type Database = {
           empresa_representada_id?: string
           hash_payload?: string | null
           id?: string
+          localizacao_estoque_id?: string | null
           numero_venda?: string | null
           observacoes?: string | null
           observacoes_internas?: string | null
@@ -6822,6 +6825,13 @@ export type Database = {
             columns: ["empresa_representada_id"]
             isOneToOne: false
             referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_localizacao_estoque_id_fkey"
+            columns: ["localizacao_estoque_id"]
+            isOneToOne: false
+            referencedRelation: "localizacoes_estoque"
             referencedColumns: ["id"]
           },
           {

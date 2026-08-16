@@ -21,6 +21,7 @@ import CentrosCusto from './pages/configuracoes/CentrosCusto';
 import Perfil from './pages/configuracoes/Perfil';
 import Webhooks from './pages/configuracoes/Webhooks';
 import CamposPersonalizados from './pages/configuracoes/CamposPersonalizados';
+import RegrasClassificacaoReceita from './pages/configuracoes/RegrasClassificacaoReceita';
 // P6.1: lazy — página admin de operação do pipeline de relatórios (P5.1).
 const RelatoriosOps = React.lazy(() => import('./pages/configuracoes/RelatoriosOps'));
 
@@ -36,7 +37,6 @@ import Categorias from './pages/estoque/Categorias';
 import Localizacoes from './pages/estoque/Localizacoes';
 import UnidadesMedida from './pages/estoque/UnidadesMedida';
 import Tamanhos from './pages/estoque/Tamanhos';
-import EmBreve from './pages/estoque/EmBreve';
 import MovimentacoesEstoque from './pages/estoque/movimentacoes/index';
 import InventarioEstoque from './pages/estoque/inventario/index';
 import KardexPage from './pages/estoque/kardex/index';
@@ -262,6 +262,10 @@ function App() {
                     <Route path="perfil" element={<Perfil />} />
                     <Route path="webhooks" element={<Webhooks />} />
                     <Route path="campos-personalizados" element={<AdminRoute><CamposPersonalizados /></AdminRoute>} />
+                    {/* AUDITORIA_NOVA Fase 3: tela pronta, sem rota — alimenta um trigger real
+                        (trg_snapshot_class_venda) já ativo no banco. RLS é authenticated normal,
+                        sem gate de admin, então a rota também não tem. */}
+                    <Route path="regras-classificacao-receita" element={<RegrasClassificacaoReceita />} />
                     {/* P6.1: novus_owner-only (AUDITORIA_NOVA Fase 1.5 — report_ops_* não tem
                         coluna de empresa, é operação interna NOVUS, não dado de cliente).
                         Gate server-side (AdminRoute) + gate próprio na página. */}

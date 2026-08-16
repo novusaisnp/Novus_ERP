@@ -283,6 +283,10 @@ export const sidebarItems: MenuItem[] = [
         url: "/configuracoes/campos-personalizados",
       },
       {
+        title: "Regras de classificação de receita",
+        url: "/configuracoes/regras-classificacao-receita",
+      },
+      {
         // P6.1: admin-only. Filtrado em sidebarVisibility quando isAdmin=false.
         title: "Relatórios (Ops)",
         url: "/configuracoes/relatorios-ops",

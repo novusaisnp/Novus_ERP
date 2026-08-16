@@ -1,5 +1,131 @@
 # Status do projeto — NOVUS ERP
 
+## 🔖 Checkpoint atual — AUDITORIA_NOVA Fase 3: fachadas resolvidas com cuidado extra (2026-08-16)
+
+Sessão marcada por uma correção de rumo do usuário no meio do trabalho: ao ver que o
+seletor de localização de estoque (Fase 2, Fluxo de Caixa) não tinha o cadastro rápido
+padrão do resto do app, o usuário apontou que **cada peça do sistema existe com um
+propósito** e que remover algo por parecer "código morto" sem entender esse propósito
+é o erro errado a cometer. Duas consequências diretas, registradas aqui para não se
+perderem:
+
+1. Duas remoções que eu tinha feito nesta mesma fase (por padrão "não está ligado a
+   nada, então remove") foram **revertidas e construídas de verdade** em vez de
+   deixadas removidas — ver abaixo.
+2. Antes de decidir sobre `VendaPagamentoSection`/`RegrasClassificacaoReceita`
+   (órfãs segundo a auditoria original), investiguei o propósito real de cada uma
+   em vez de assumir que "sem chamador" = "sem efeito". A investigação achou algo
+   que a auditoria original não pegou — ver seção própria abaixo.
+
+### Achado maior que o esperado: pipeline Venda → Conta a Receber nunca funcionou
+
+A auditoria original marcou `GerarTitulosButton` como **OK**. Não é: o RPC que ele
+chama (`gerar_contas_receber_da_venda`, FIN-E5) itera sobre `venda_pagamento` →
+`venda_pagamento_parcelas` — as tabelas que só `VendaPagamentoSection` grava. Sem essa
+tela alcançável na UI, toda venda do sistema tem zero linhas nessas tabelas, e o botão
+"Gerar títulos" sempre retorna `gerados:0, reaproveitados:0` com o toast "Nenhuma
+parcela elegível" — mensagem honesta, mas o efeito prático é **nenhum título gerado,
+nunca, para nenhuma venda, desde que o recurso existe**.
+
+A cadeia completa, confirmada lendo as funções reais no banco:
+`VendaPagamentoSection` grava pagamento/parcelas → trigger `trg_snapshot_class_venda`
+(dispara ao confirmar a venda) classifica cada parcela via
+`resolver_classificacao_receita` (que usa as regras de `RegrasClassificacaoReceita`,
+com fallback pros padrões de cadastro) → `gerar_contas_receber_da_venda` lê essa
+classificação e cria um título por rateio contábil, com idempotência real via hash.
+As três peças existem, testadas, corretas — só a primeira não tinha rota.
+
+**Conectado, não apagado:**
+- `VendaPagamentoSection` entra em `VendaFormModal.tsx`, visível só quando a venda já
+  existe (`venda?.id`) — precisa do id pra gravar pagamento/parcelas.
+- `RegrasClassificacaoReceita` ganhou rota `/configuracoes/regras-classificacao-receita`
+  e item no menu Configurações (RLS já era `authenticated` normal, sem admin — rota
+  seguiu o mesmo escopo, sem `AdminRoute`).
+
+### Duas remoções revertidas e construídas de verdade
+
+- **Editar movimentação bancária**: o backend (`atualizarMovimentacaoBancaria` no
+  service, `atualizar`/`isUpdating` já expostos no hook) **já existia pronto** —
+  só faltava a tela. `EditarMovimentacaoDialog.tsx` (novo) edita apenas descrição,
+  documento de referência e observações; valor/conta/data ficam de fora de propósito
+  (mudar isso exige estornar e relançar, preservando o rastreio contábil e o saldo).
+- **Agrupamento Diário/Semanal/Mensal do Fluxo de Caixa**: `useFluxoCaixa.ts` agora
+  agrupa de verdade por bucket (dia / segunda-feira da semana / dia 1 do mês) via
+  `bucketKey()`, respeitando `filtros.periodo_agrupamento` — antes o filtro existia na
+  UI mas o gráfico sempre somava por dia. `FluxoCaixaGrafico.tsx` recebe a granularidade
+  e formata o eixo (`Ago/26`, `Sem. 12/08`, `12/08`) de acordo.
+
+### Resto da Fase 3
+
+- **`ContasPagar`, Naturezas, Tributos**: já fechados na Fase 2 (não repetido aqui).
+- **`window.location.reload()` na conciliação** → `queryClient.invalidateQueries` nas
+  chaves `["conciliacao","linhas",extratoId]` e `["conciliacao","extrato",extratoId]`.
+- **Dashboard "Alertas Importantes"** deixou de ser estático: `fetchProdutosEstoqueBaixo`
+  (produtos com `estoque_atual <= estoque_minimo`, `controla_estoque=true`) e
+  `fetchContasVencidasCount` (pagar + receber pendentes com vencimento passado) —
+  testes novos em `dashboardService.test.ts` seguindo o padrão "erro nunca vira zero"
+  já estabelecido no arquivo.
+- **`gera_financeiro` do Contrato**: aviso explícito no formulário, só em modo edição,
+  de que a flag só tem efeito na criação (`AFTER INSERT`) — ligar/desligar num
+  contrato existente não cria nem remove título.
+- **Baixa de estoque de venda**: `vendas.localizacao_estoque_id` (migration aditiva,
+  nullable) substitui `locais[0].id`. `VendaFormModal.tsx` ganhou o seletor — com
+  `QuickAddLocalizacao`, mesmo padrão de cadastro rápido do resto do app — auto-preenchido
+  na primeira localização em venda nova, editável, nunca sobrescreve escolha feita.
+  Sem escolha (vendas programáticas antigas), cai no fallback antigo.
+- **Removidos, confirmados sem consumidor em lugar nenhum**: `financeiro/bancos/*`
+  (6 arquivos, duplicata órfã de `gestao-bancaria/bancos/*`, que é a versão real em
+  uso), `EmBreve.tsx`, `NotFound.tsx`, `Index.tsx` (resíduo de template, zero rotas),
+  `syncService.ts` (lógica duplicada, só as edge functions fazem isso de verdade hoje),
+  aba "Extrato Avançado" (card estático "Em desenvolvimento"), texto de debug e
+  `console.log`s em `RateiosTab.tsx`/`FluxoCaixaFiltros.tsx`/`FluxoCaixaGrafico.tsx`,
+  datas hardcoded `2024-01-01`/`2025-12-31` em `fluxoCaixaService.ts` (agora janela
+  relativa a "hoje", 12 meses pra trás e pra frente).
+
+### Validação
+
+- `npm run typecheck` limpo; `npm run test -- --run` → 53 arquivos, 387/387.
+- Migration `20260816150000` (coluna `vendas.localizacao_estoque_id`) provada em
+  `BEGIN...ROLLBACK` antes de aplicar; `src/integrations/supabase/types.ts` corrigido
+  manualmente (só o bloco `vendas`, diff conferido contra `supabase gen types` antes de
+  aplicar — não sobrescrito por inteiro, pra não arrastar drift de schema não revisado).
+- Nada desta fase testado ao vivo no navegador — mesma ressalva das fases anteriores.
+  O pipeline Venda → Conta a Receber em particular merece um teste manual de ponta a
+  ponta antes de confiar nele em produção: criar venda, registrar pagamento parcelado
+  em `VendaPagamentoSection`, confirmar a venda, clicar "Gerar títulos" e conferir os
+  títulos criados no banco.
+
+### Arquivos desta entrega
+
+- `supabase/migrations/20260816150000_fase3_venda_localizacao_estoque.sql`
+- `src/App.tsx`, `src/components/layout/sidebar/sidebarConfig.ts`
+- `src/components/vendas/VendaFormModal.tsx`, `src/types/vendas.ts`,
+  `src/services/vendasService.ts`
+- `src/components/contratos/ContratoFormModal.tsx`
+- `src/components/gestao-bancaria/movimentacoes-bancarias/{MovimentacoesBancariasTable,MovimentacoesBancariasModal}.tsx`
+  + `DetalheMovimentacaoDialog.tsx`, `EditarMovimentacaoDialog.tsx` (novos)
+- `src/components/financeiro/fluxo-caixa/{FluxoCaixaFiltros,FluxoCaixaGrafico}.tsx`,
+  `src/hooks/useFluxoCaixa.ts`, `src/services/fluxoCaixaService.ts`,
+  `src/pages/financeiro/FluxoCaixaPage.tsx`
+- `src/components/financeiro/movimentacoes/RateiosTab.tsx`
+- `src/pages/gestao-bancaria/conciliacao/[extratoId]/index.tsx`
+- `src/pages/Dashboard.tsx`, `src/services/dashboardService.ts` + `.test.ts`
+- `src/integrations/supabase/types.ts`
+- Deletados: `src/components/financeiro/bancos/*`, `src/pages/{Index,NotFound}.tsx`,
+  `src/pages/estoque/EmBreve.tsx`, `src/services/syncService.ts`
+- `docs/STATUS.md`
+
+### Próxima ação única
+
+Fase 4 do plano (`AUDITORIA_NOVA.md`): ligar o que está escondido — auditar ao vivo as
+telas de Estoque atrás de feature flag, limpar `Sistema.tsx` (5 cards "Em breve") e
+`RH → Relatórios`, ligar `VITE_FEATURE_ESTOQUE_EXT` e passar as flags pras rotas em
+`App.tsx` (hoje a flag só esconde o menu, não protege a rota). Nenhuma decisão
+pendente. Fase 5 (escala) continua depois da Fase 6 de propósito, conforme a ordem
+já registrada no plano.
+
+---
+
 ## 🔖 Checkpoint atual — AUDITORIA_NOVA Fase 2: fechados os buracos que perdiam dado (2026-08-16)
 
 Os quatro itens do plano, nenhum dependente de decisão de produto pendente.

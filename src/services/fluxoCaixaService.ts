@@ -20,11 +20,25 @@ export interface FluxoCompetenciaLinha {
   saldo_competencia: number;
 }
 
+// Sem filtro de data explícito, a janela é relativa a agora (12 meses para trás e
+// para frente) — não um intervalo fixo, que vence sozinho com o tempo (era
+// 2024-01-01/2025-12-31, já no passado frente à data atual).
+const janelaPadrao = () => {
+  const hoje = new Date();
+  const inicio = new Date(hoje.getFullYear() - 1, hoje.getMonth(), hoje.getDate());
+  const fim = new Date(hoje.getFullYear() + 1, hoje.getMonth(), hoje.getDate());
+  return {
+    inicio: inicio.toISOString().split('T')[0],
+    fim: fim.toISOString().split('T')[0],
+  };
+};
+
 export class FluxoCaixaService {
   static async getFluxoCaixa(filtros: FluxoCaixaFiltros = {}): Promise<FluxoCaixaItem[]> {
-    
+
     try {
       const empresaId = await getEmpresaAtivaIdOuFalha();
+      const janela = janelaPadrao();
 
       // Buscar contas a pagar
       const { data: contasPagar, error: errorPagar } = await supabase
@@ -42,8 +56,8 @@ export class FluxoCaixaService {
           plano_conta:plano_contas(id, codigo, nome),
           centro_custo:centros_custo(id, nome, codigo)
         `)
-        .gte('data_vencimento', filtros.data_inicio || '2024-01-01')
-        .lte('data_vencimento', filtros.data_fim || '2025-12-31')
+        .gte('data_vencimento', filtros.data_inicio || janela.inicio)
+        .lte('data_vencimento', filtros.data_fim || janela.fim)
         .eq('empresa_representada_id', empresaId)
         .is('deleted_at', null);
 
@@ -65,8 +79,8 @@ export class FluxoCaixaService {
           observacoes,
           cliente:entidades!contas_receber_cliente_id_fkey(id, nome)
         `)
-        .gte('data_vencimento', filtros.data_inicio || '2024-01-01')
-        .lte('data_vencimento', filtros.data_fim || '2025-12-31')
+        .gte('data_vencimento', filtros.data_inicio || janela.inicio)
+        .lte('data_vencimento', filtros.data_fim || janela.fim)
         .eq('empresa_representada_id', empresaId)
         .is('deleted_at', null);
 

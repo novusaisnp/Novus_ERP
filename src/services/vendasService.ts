@@ -113,9 +113,17 @@ export const vendasService = {
     // seguro chamar a cada save enquanto a venda não estiver RASCUNHO/CANCELADO.
     if (withTotals.status && withTotals.status !== 'RASCUNHO' && withTotals.status !== 'CANCELADO') {
       try {
-        const locais = await localizacaoService.getAll();
-        if (locais.length > 0) {
-          await estoqueService.baixarEstoqueVenda(vendaId, locais[0].id);
+        // Localização escolhida no formulário (AUDITORIA_NOVA Fase 3: antes
+        // sempre usava a primeira localização retornada pela query, não uma
+        // escolhida pelo usuário). Sem escolha explícita, cai no comportamento
+        // antigo como fallback — mantém vendas programáticas funcionando.
+        let localizacaoId = (withTotals as Venda).localizacao_estoque_id;
+        if (!localizacaoId) {
+          const locais = await localizacaoService.getAll();
+          localizacaoId = locais[0]?.id;
+        }
+        if (localizacaoId) {
+          await estoqueService.baixarEstoqueVenda(vendaId, localizacaoId);
         }
       } catch (e) {
         console.error('[vendasService] Erro ao baixar estoque da venda', e);

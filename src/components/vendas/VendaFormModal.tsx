@@ -16,12 +16,15 @@ import { planosPagamentoService } from '@/services/configBasicasService';
 import { pagamentoCatalogoService } from '@/services/pagamentoCatalogoService';
 import { porta3Service } from '@/services/porta3Service';
 import { usuarioService } from '@/services/usuarioService';
+import { useLocalizacoes } from '@/hooks/useLocalizacoes';
+import { QuickAddLocalizacao } from '@/components/shared/QuickAddLookups';
 import { useVendas } from '@/hooks/useVendas';
 import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCatalogoProdutos } from '@/hooks/useCatalogoOrcamento';
 import { CatalogoItemPicker } from './CatalogoItemPicker';
 import { AutorizacaoExcecaoVendaDialog } from './AutorizacaoExcecaoVendaDialog';
+import { VendaPagamentoSection } from './VendaPagamentoSection';
 import type { Bloqueio } from '@/types/porta3';
 
 interface Props {
@@ -60,6 +63,7 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
     queryKey: ['naturezas-pagamento'],
     queryFn: () => pagamentoCatalogoService.listarNaturezas(),
   });
+  const { data: localizacoes = [] } = useLocalizacoes();
   const produtosCatalogo = useCatalogoProdutos(empresaId ?? undefined);
   const estoquePorProduto = useMemo(() => {
     const m = new Map<string, { estoque: number; controla: boolean; nome: string }>();
@@ -108,6 +112,15 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
       return meu ? { ...p, vendedor_id: meu.id } : p;
     });
   }, [open, venda, authUser?.id, usuarios]);
+
+  // Localização de estoque: em venda nova, auto-preenche com a primeira
+  // cadastrada (editável via Select) — nunca sobrescreve uma escolha já
+  // feita. Antes disso a baixa de estoque sempre usava a primeira
+  // localização sem o usuário poder ver ou trocar (AUDITORIA_NOVA Fase 3).
+  useEffect(() => {
+    if (!open || venda?.id || localizacoes.length === 0) return;
+    setForm((p) => (p.localizacao_estoque_id ? p : { ...p, localizacao_estoque_id: localizacoes[0].id }));
+  }, [open, venda, localizacoes]);
 
   const totais = useMemo(() => vendasService.calcTotais(form), [form]);
 
@@ -271,6 +284,26 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label>Localização de Estoque</Label>
+              <div className="flex gap-2">
+                <Select
+                  value={form.localizacao_estoque_id || ''}
+                  onValueChange={(v) => setField('localizacao_estoque_id', v)}
+                >
+                  <SelectTrigger><SelectValue placeholder="De onde sai o estoque" /></SelectTrigger>
+                  <SelectContent>
+                    {localizacoes.map((l) => (
+                      <SelectItem key={l.id} value={l.id}>{l.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <QuickAddLocalizacao
+                  empresaId={empresaId ?? undefined}
+                  onCreated={({ id }) => setField('localizacao_estoque_id', id)}
+                />
+              </div>
             </div>
             <div className="md:col-span-2">
               <Label>Plano de Pagamento</Label>
@@ -437,6 +470,20 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
               onChange={(e) => setField('observacoes', e.target.value)}
             />
           </div>
+
+          {/* Só depois de a venda existir: FIN-E5 (botão "Gerar títulos" na lista)
+              lê venda_pagamento/venda_pagamento_parcelas pra criar as contas a
+              receber — sem isso preenchido, "Gerar títulos" sempre reporta
+              "nenhuma parcela elegível" e não gera nada (AUDITORIA_NOVA Fase 3). */}
+          {venda?.id && empresaId && (
+            <VendaPagamentoSection
+              vendaId={venda.id}
+              empresaId={empresaId}
+              clienteId={form.cliente_id}
+              valorTotalVenda={totais.valor_total || 0}
+              dataVenda={form.data_venda}
+            />
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>

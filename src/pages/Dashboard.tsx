@@ -49,6 +49,8 @@ const Dashboard: React.FC = () => {
   const pagar = useQuery({ queryKey: ['dash-pagar'], queryFn: () => dashboardService.fetchSumContas('contas_pagar') });
   const receber = useQuery({ queryKey: ['dash-receber'], queryFn: () => dashboardService.fetchSumContas('contas_receber') });
   const saldo = useQuery({ queryKey: ['dash-saldo'], queryFn: dashboardService.fetchSaldoBancario });
+  const estoqueBaixo = useQuery({ queryKey: ['dash-estoque-baixo'], queryFn: dashboardService.fetchProdutosEstoqueBaixo });
+  const contasVencidas = useQuery({ queryKey: ['dash-contas-vencidas'], queryFn: dashboardService.fetchContasVencidasCount });
 
   return (
     <div className="container mx-auto px-6 py-8">
@@ -103,14 +105,32 @@ const Dashboard: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="border-l-4 border-[hsl(var(--status-production))] pl-4">
-              <p className="font-medium">Estoque Baixo</p>
-              <p className="text-sm text-muted-foreground">Monitore produtos abaixo do mínimo</p>
-            </div>
-            <div className="border-l-4 border-[hsl(var(--status-cancelled))] pl-4">
-              <p className="font-medium">Contas Vencidas</p>
-              <p className="text-sm text-muted-foreground">Acompanhe contas em atraso</p>
-            </div>
+            {estoqueBaixo.isLoading || contasVencidas.isLoading ? (
+              <Skeleton className="h-16 w-full" />
+            ) : estoqueBaixo.isError || contasVencidas.isError ? (
+              <p className="text-sm text-destructive">Não foi possível carregar os alertas.</p>
+            ) : !estoqueBaixo.data && !contasVencidas.data ? (
+              <p className="text-sm text-muted-foreground">Nenhum alerta no momento.</p>
+            ) : (
+              <>
+                {!!estoqueBaixo.data && (
+                  <div className="border-l-4 border-[hsl(var(--status-production))] pl-4">
+                    <p className="font-medium">Estoque Baixo</p>
+                    <p className="text-sm text-muted-foreground">
+                      {estoqueBaixo.data} {estoqueBaixo.data === 1 ? 'produto abaixo' : 'produtos abaixo'} do mínimo
+                    </p>
+                  </div>
+                )}
+                {!!contasVencidas.data && (
+                  <div className="border-l-4 border-[hsl(var(--status-cancelled))] pl-4">
+                    <p className="font-medium">Contas Vencidas</p>
+                    <p className="text-sm text-muted-foreground">
+                      {contasVencidas.data} {contasVencidas.data === 1 ? 'conta vencida' : 'contas vencidas'} e pendentes
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
           </CardContent>
         </Card>
 

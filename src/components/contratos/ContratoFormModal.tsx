@@ -146,6 +146,12 @@ export const ContratoFormModal: React.FC<Props> = ({ open, onOpenChange, contrat
               <Label htmlFor="gera">Gera contas a receber</Label>
             </div>
           </div>
+          {contrato && (
+            <p className="text-xs text-muted-foreground -mt-4">
+              Esta opção só gera o título financeiro na criação do contrato. Ligá-la ou
+              desligá-la aqui não cria nem remove títulos de um contrato já existente.
+            </p>
+          )}
 
           <div>
             <Label>Descrição</Label>

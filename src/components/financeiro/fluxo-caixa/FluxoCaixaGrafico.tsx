@@ -1,4 +1,4 @@
-import { FluxoCaixaProjecao, FluxoCaixaGraficoData } from '@/types/fluxoCaixa';
+import { FluxoCaixaProjecao, FluxoCaixaGraficoData, PeriodoAgrupamento } from '@/types/fluxoCaixa';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -7,11 +7,10 @@ interface FluxoCaixaGraficoProps {
   dados: FluxoCaixaGraficoData[];
   projecao: FluxoCaixaProjecao[];
   isLoading: boolean;
+  periodoAgrupamento?: PeriodoAgrupamento;
 }
 
-export const FluxoCaixaGrafico = ({ dados, projecao, isLoading }: FluxoCaixaGraficoProps) => {
-  console.log('[FluxoCaixa] Renderizando gráfico com', dados.length, 'pontos');
-
+export const FluxoCaixaGrafico = ({ dados, projecao, isLoading, periodoAgrupamento = 'DIARIO' }: FluxoCaixaGraficoProps) => {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -19,11 +18,17 @@ export const FluxoCaixaGrafico = ({ dados, projecao, isLoading }: FluxoCaixaGraf
     }).format(value);
   };
 
+  // Cada bucket em "data" já vem no início do período (dia, segunda-feira da
+  // semana, ou dia 1 do mês) — só muda o rótulo mostrado.
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('pt-BR', { 
-      day: '2-digit', 
-      month: '2-digit' 
-    });
+    const d = new Date(`${date}T00:00:00`);
+    if (periodoAgrupamento === 'MENSAL') {
+      return d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+    }
+    if (periodoAgrupamento === 'SEMANAL') {
+      return `Sem. ${d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`;
+    }
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
   };
 
   if (isLoading) {

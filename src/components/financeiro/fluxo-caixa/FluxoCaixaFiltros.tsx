@@ -17,8 +17,6 @@ interface FluxoCaixaFiltrosProps {
 }
 
 export const FluxoCaixaFiltros = ({ filtros, onFiltrosChange, onRefresh, movimentacoes = [], resumo, isLoading = false }: FluxoCaixaFiltrosProps) => {
-  console.log('[FluxoCaixa] Renderizando filtros:', filtros);
-
   const [localFiltros, setLocalFiltros] = useState(filtros);
 
   const handleChange = (key: keyof FluxoCaixaFiltrosType, value: any) => {
@@ -52,7 +50,7 @@ export const FluxoCaixaFiltros = ({ filtros, onFiltrosChange, onRefresh, movimen
             onChange={(e) => handleChange('data_inicio', e.target.value)}
           />
         </div>
-        
+
         <div className="space-y-2">
           <Label htmlFor="data_fim">Data Fim</Label>
           <Input
@@ -79,9 +77,9 @@ export const FluxoCaixaFiltros = ({ filtros, onFiltrosChange, onRefresh, movimen
         </div>
 
         <div className="space-y-2">
-          <Label>Período</Label>
-          <Select 
-            value={localFiltros.periodo_agrupamento || 'DIARIO'} 
+          <Label>Período do gráfico</Label>
+          <Select
+            value={localFiltros.periodo_agrupamento || 'DIARIO'}
             onValueChange={(value) => handleChange('periodo_agrupamento', value)}
           >
             <SelectTrigger>

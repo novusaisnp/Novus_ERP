@@ -21,10 +21,6 @@ export const RateiosTab = ({ titulo, podeEditar }: RateiosTabProps) => {
   const { data: rateios = [], isLoading, error } = useRateiosTitulo(titulo.id, titulo.tipo);
   const [showForm, setShowForm] = useState(false);
 
-  console.log('[RateiosTab] Renderizando aba de rateios para título:', titulo.id, 'tipo:', titulo.tipo);
-  console.log('[RateiosTab] Dados recebidos - rateios:', rateios, 'isLoading:', isLoading, 'error:', error);
-  console.log('[RateiosTab] Total rateios encontrados:', rateios?.length || 0);
-
   // Somar em ponto flutuante deixa resíduo (0,1 + 0,2 = 0,30000000000000004), que na tela
   // aparece como "R$ -0,00". Arredondar a soma resolve na exibição, único uso aqui.
   const emCentavos = (v: number) => Math.round(v * 100) / 100;
@@ -139,9 +135,6 @@ export const RateiosTab = ({ titulo, podeEditar }: RateiosTabProps) => {
               <h3 className="text-lg font-medium mb-2">Nenhum rateio encontrado</h3>
               <p className="text-muted-foreground text-center mb-4">
                 Este título ainda não possui rateios por centro de custo ou plano de contas.
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Debug: {rateios.length} rateios carregados
               </p>
               {podeEditar && (
                 <Button onClick={() => setShowForm(true)}>

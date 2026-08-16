@@ -21,15 +21,16 @@ export const FluxoCaixaPage = () => {
   });
 
   // Hook do fluxo de caixa
-  const { 
-    movimentacoes, 
-    resumo, 
-    projecao, 
+  const {
+    movimentacoes,
+    resumo,
+    projecao,
     estatisticas,
     dadosGrafico,
-    isLoading, 
-    error, 
-    invalidateCache 
+    periodoAgrupamento,
+    isLoading,
+    error,
+    invalidateCache
   } = useFluxoCaixa(filtros);
 
   // Handlers
@@ -93,10 +94,11 @@ export const FluxoCaixaPage = () => {
       />
 
       {/* Gráfico */}
-      <FluxoCaixaGrafico 
+      <FluxoCaixaGrafico
         dados={dadosGrafico}
         projecao={projecao}
         isLoading={isLoading}
+        periodoAgrupamento={periodoAgrupamento}
       />
 
       {/* Tabela */}

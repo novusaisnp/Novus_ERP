@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   useExtrato,
@@ -31,6 +32,7 @@ function fmtMoney(v: number) {
 export default function ConciliacaoExtratoPage() {
   const { extratoId } = useParams<{ extratoId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data: extrato } = useExtrato(extratoId);
   const { data: linhas, isLoading } = useLinhasExtrato(extratoId);
   const sugerir = useSugerirMatches(extratoId);
@@ -60,8 +62,9 @@ export default function ConciliacaoExtratoPage() {
       await conciliacaoService.criarLancamento(linha.id, { descricao: linha.descricao });
       toast({ title: "Lançamento criado e conciliado" });
       sugerir.reset();
-      // refetch via invalidação já ocorre no hook do serviço; força reload
-      window.location.reload();
+      setSelected(null);
+      queryClient.invalidateQueries({ queryKey: ["conciliacao", "linhas", extratoId] });
+      queryClient.invalidateQueries({ queryKey: ["conciliacao", "extrato", extratoId] });
     } catch (e) {
       toast({
         title: "Erro ao criar lançamento",

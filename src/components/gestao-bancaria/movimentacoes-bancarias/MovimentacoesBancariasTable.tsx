@@ -39,6 +39,8 @@ import {
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { getTipoLabel } from './tipoMovimentacaoLabels';
+import { DetalheMovimentacaoDialog } from './DetalheMovimentacaoDialog';
+import { EditarMovimentacaoDialog } from './EditarMovimentacaoDialog';
 
 interface MovimentacoesBancariasTableProps {
   movimentacoes: MovimentacaoBancaria[];
@@ -52,7 +54,8 @@ export function MovimentacoesBancariasTable({
   onRefresh,
 }: MovimentacoesBancariasTableProps) {
   const { estornar, conciliar, excluir } = useMovimentacoesBancarias();
-  const [selectedMovimentacao, setSelectedMovimentacao] = useState<string | null>(null);
+  const [selectedMovimentacao, setSelectedMovimentacao] = useState<MovimentacaoBancaria | null>(null);
+  const [editingMovimentacao, setEditingMovimentacao] = useState<MovimentacaoBancaria | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     type: 'estornar' | 'excluir';
     movimentacao: MovimentacaoBancaria;
@@ -298,33 +301,33 @@ export function MovimentacoesBancariasTable({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setSelectedMovimentacao(movimentacao.id)}>
+                        <DropdownMenuItem onClick={() => setSelectedMovimentacao(movimentacao)}>
                           <Eye className="h-4 w-4 mr-2" />
                           Visualizar
                         </DropdownMenuItem>
-                        
+
                         {!movimentacao.estornado && (
                           <>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setEditingMovimentacao(movimentacao)}>
                               <Edit3 className="h-4 w-4 mr-2" />
                               Editar
                             </DropdownMenuItem>
-                            
+
                             {!movimentacao.conciliado && (
                               <DropdownMenuItem onClick={() => handleConciliacao(movimentacao)}>
                                 <CheckCircle2 className="h-4 w-4 mr-2" />
                                 Conciliar
                               </DropdownMenuItem>
                             )}
-                            
-                            <DropdownMenuItem 
+
+                            <DropdownMenuItem
                               onClick={() => handleEstorno(movimentacao)}
                               className="text-status-production"
                             >
                               <RotateCcw className="h-4 w-4 mr-2" />
                               Estornar
                             </DropdownMenuItem>
-                            
+
                             <DropdownMenuItem 
                               onClick={() => handleExclusao(movimentacao)}
                               className="text-status-cancelled"
@@ -364,6 +367,16 @@ export function MovimentacoesBancariasTable({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <DetalheMovimentacaoDialog
+        movimentacao={selectedMovimentacao}
+        onClose={() => setSelectedMovimentacao(null)}
+      />
+
+      <EditarMovimentacaoDialog
+        movimentacao={editingMovimentacao}
+        onClose={() => setEditingMovimentacao(null)}
+      />
     </Card>
   );
 }
