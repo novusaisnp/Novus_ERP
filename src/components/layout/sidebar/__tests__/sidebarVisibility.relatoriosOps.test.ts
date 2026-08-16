@@ -31,11 +31,21 @@ describe("sidebarVisibility — Relatórios (Ops)", () => {
     expect(urls).not.toContain("/configuracoes/relatorios-ops");
   });
 
-  it("mantém itens padrão de Configurações para não-admin (Empresas/Usuários/Webhooks)", () => {
+  it("mantém itens padrão de Configurações para não-admin (Empresas/Usuários)", () => {
     const groups = getVisibleSidebarItems({ isAdmin: false });
     const urls = findConfig(groups)?.items?.map((s) => s.url) ?? [];
     expect(urls).toContain("/configuracoes/empresas");
     expect(urls).toContain("/configuracoes/usuarios");
-    expect(urls).toContain("/configuracoes/webhooks");
+  });
+
+  // AUDITORIA_NOVA Fase 6: webhook_configs.secret_token virou admin-only na
+  // RLS (não é dado que qualquer funcionário deveria ler/rotacionar) — o
+  // item de menu segue a mesma direção.
+  it("Webhooks: visível só para admin", () => {
+    const admin = getVisibleSidebarItems({ isAdmin: true });
+    expect(findConfig(admin)?.items?.map((s) => s.url)).toContain("/configuracoes/webhooks");
+
+    const comum = getVisibleSidebarItems({ isAdmin: false });
+    expect(findConfig(comum)?.items?.map((s) => s.url)).not.toContain("/configuracoes/webhooks");
   });
 });

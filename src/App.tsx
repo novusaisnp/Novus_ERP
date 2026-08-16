@@ -235,7 +235,10 @@ function App() {
                     <Route path="colaboradores" element={<Colaboradores />} />
                     <Route path="cargos" element={<Cargos />} />
                     <Route path="departamentos" element={<Departamentos />} />
-                    <Route path="folha/folha-pagamento" element={<FolhaPagamento />} />
+                    {/* AUDITORIA_NOVA Fase 6: folha_pagamento agora é admin-only na
+                        RLS (salário não é dado que qualquer funcionário deveria ler) —
+                        a rota segue a mesma direção. */}
+                    <Route path="folha/folha-pagamento" element={<AdminRoute><FolhaPagamento /></AdminRoute>} />
                     <Route path="folha/vencimentos-padrao" element={<VencimentosPadrao />} />
                     <Route path="folha/descontos-padrao" element={<DescontosPadrao />} />
                     <Route path="folha/beneficios-vinculados" element={<BeneficiosVinculados />} />
@@ -265,7 +268,10 @@ function App() {
                     <Route path="empresas" element={<Empresas />} />
                     <Route path="usuarios" element={<Usuarios />} />
                     <Route path="perfil" element={<Perfil />} />
-                    <Route path="webhooks" element={<Webhooks />} />
+                    {/* AUDITORIA_NOVA Fase 6: webhook_configs agora é admin-only na
+                        RLS (secret_token HMAC não é dado que qualquer funcionário
+                        deveria ler nem rotacionar) — a rota segue a mesma direção. */}
+                    <Route path="webhooks" element={<AdminRoute><Webhooks /></AdminRoute>} />
                     <Route path="campos-personalizados" element={<AdminRoute><CamposPersonalizados /></AdminRoute>} />
                     {/* AUDITORIA_NOVA Fase 3: tela pronta, sem rota — alimenta um trigger real
                         (trg_snapshot_class_venda) já ativo no banco. RLS é authenticated normal,

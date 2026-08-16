@@ -1,5 +1,83 @@
 # Status do projeto — NOVUS ERP
 
+## 🔖 Checkpoint atual — AUDITORIA_NOVA Fase 6: autorização real, não decorativa (2026-08-16)
+
+### Achado mais grave que o registrado: não era só a rota sem gate
+
+Bloco 5 da auditoria apontava `/configuracoes/webhooks` protegida só por `ProtectedRoute`.
+Investigando pra corrigir, a RLS real de `webhook_configs` e `folha_pagamento` mostrou
+algo pior: **as 4 operações** (SELECT/INSERT/UPDATE/DELETE), não só a leitura, usavam
+o mesmo padrão largo de `usuarios`/`empresas_representadas`
+(`user_has_access_to_empresa OR admin`) — ou seja, **qualquer funcionário autenticado
+da empresa podia ler E rotacionar o `secret_token` HMAC, e ler E editar a folha de
+pagamento de qualquer colega**, não só abrir a tela.
+
+**Decisão do usuário**: diferente de `usuarios`/`empresas_representadas` (diretório de
+equipe e dados básicos da empresa — ok qualquer funcionário ver, mantido como estava,
+escrita já era admin-only desde a Fase 1.5), `webhook_configs` e `folha_pagamento`
+viraram **admin-only nas 4 operações** — migration `20260816170000`. Segredo HMAC e
+salário não têm por que qualquer funcionário ler, e a mesma regra larga que expunha
+leitura também expunha escrita.
+
+- `/configuracoes/webhooks` e `/rh/folha/folha-pagamento` ganharam `<AdminRoute>` em
+  `App.tsx`, e os dois itens de menu somem para não-admin em `sidebarVisibility.ts` —
+  mesmo padrão já usado para Relatórios (Ops)/Campos Personalizados.
+- `usuarios`/`empresas_representadas` não mudaram: RLS já era a correta (leitura
+  ampla, escrita admin-only desde a Fase 1.5); a auditoria original tratava os quatro
+  juntos, mas só dois realmente precisavam de RLS mais restrita.
+
+### `token_autenticacao` da Integração de Ponto — parava de trafegar em texto puro
+
+Confirmado: `select('*')` na listagem devolvia o token em texto puro **em toda carga
+da tela** (não só ao editar), e o formulário de edição pré-preenchia o campo com o
+valor lido, pronto pra copiar. Corrigido sem exigir cofre de segredos (a Fase 6.5
+ainda vai decidir se esta tela continua existindo — não fazia sentido investir numa
+arquitetura de vault pra uma feature com o futuro em aberto):
+
+- `listIntegracoes()`: `select` explícito sem a coluna `token_autenticacao` — a
+  listagem nunca mais recebe o valor.
+- Formulário de edição: campo sempre começa vazio (`placeholder`: "Deixe em branco
+  para manter o token atual"). `atualizarIntegracao` só inclui a coluna no `UPDATE`
+  quando o campo vem preenchido — em branco preserva o valor já gravado, nunca zera
+  por omissão.
+
+### Validação
+
+- `npm run typecheck` limpo; `npm run test -- --run` → 53 arquivos, 388/388 (1 teste
+  existente que cristalizava o comportamento antigo — "Webhooks visível pra
+  não-admin" — atualizado pra refletir a mudança intencional; 1 teste novo).
+- Migration provada em `BEGIN...ROLLBACK` antes de aplicar; aplicada de verdade e
+  registrada no ledger.
+- Nada testado ao vivo no navegador nesta sessão (extensão do Chrome não conectou —
+  mismatch de conta entre o token OAuth do Claude Code e a extensão, causa exata
+  ainda não identificada). Recomendado: logar como usuário comum (não-admin) e
+  confirmar que Webhooks/Folha de Pagamento saem do menu e a URL direta redireciona;
+  logar como admin e confirmar que continuam acessíveis.
+
+### Arquivos desta entrega
+
+- `supabase/migrations/20260816170000_fase6_admin_only_webhooks_folha.sql`
+- `src/App.tsx`, `src/components/layout/sidebar/sidebarVisibility.ts`
+- `src/services/integracaoPontoService.ts`, `src/pages/rh/IntegracaoPonto.tsx`
+- `src/components/layout/sidebar/__tests__/sidebarVisibility.relatoriosOps.test.ts`
+- `docs/STATUS.md`
+
+### Deploy desta sessão (fora da AUDITORIA_NOVA)
+
+`VITE_FEATURE_ESTOQUE_EXT` e `VITE_FEATURE_SYNC_DASHBOARD` configuradas em Produção
+no Vercel (`novusai-erp`) e um deploy de produção disparado (`vercel --prod`),
+publicando todo o trabalho desta sessão em `erp.novusai.app` — autorização explícita
+do usuário nos dois passos (configurar env var de produção e disparar o deploy).
+
+### Próxima ação única
+
+Fase 5 do plano (escala — paginação server-side, 331 policies `auth.uid()` reavaliado
+por linha) é a única frente restante da AUDITORIA_NOVA.md original, mais Fase 6.5
+(decisão de produto sobre o que RH realmente é — folha, registros de ponto,
+integração de ponto). Nenhuma decisão pendente pra Fase 5 especificamente.
+
+---
+
 ## 🔖 Checkpoint atual — AUDITORIA_NOVA Fase 4: flag protege rota, não só esconde (2026-08-16)
 
 ### O problema: flag só escondia o item de menu, nunca a rota

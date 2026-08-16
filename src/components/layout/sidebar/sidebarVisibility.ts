@@ -31,13 +31,25 @@ export const getVisibleSidebarItems = ({ isAdmin }: Options): MenuItem[] => {
       if (!isAdmin || !featureFlags.syncDashboard) continue;
     }
 
-    // Configurações → Relatórios (Ops): P6.1 — admin-only
+    // Configurações → Relatórios (Ops) / Campos personalizados / Webhooks: admin-only.
+    // Webhooks entrou na Fase 6 (AUDITORIA_NOVA) — gerencia o secret_token HMAC,
+    // agora admin-only também na RLS, não só na rota.
     if (group.title === 'Configurações' && group.items) {
       const filtered = group.items.filter((sub) => {
         if (sub.url === '/configuracoes/relatorios-ops') return isAdmin;
         if (sub.url === '/configuracoes/campos-personalizados') return isAdmin;
+        if (sub.url === '/configuracoes/webhooks') return isAdmin;
         return true;
       });
+      items.push({ ...group, items: filtered });
+      continue;
+    }
+
+    // RH → Folha de Pagamento: admin-only (Fase 6 — salário, mesma lógica de webhooks).
+    if (group.title === 'RH' && group.items) {
+      const filtered = group.items.filter((sub) =>
+        sub.url === '/rh/folha/folha-pagamento' ? isAdmin : true,
+      );
       items.push({ ...group, items: filtered });
       continue;
     }

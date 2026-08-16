@@ -36,7 +36,10 @@ const IntegracaoPontoPage: React.FC = () => {
       nome: i.nome,
       tipo: i.tipo || '',
       endpoint: i.endpoint || '',
-      token_autenticacao: i.token_autenticacao || '',
+      // Nunca pré-preenche: o token não é lido de volta do banco (nem a
+      // listagem nem esta tela o buscam). Deixar em branco ao salvar mantém
+      // o valor já gravado; só troca se o usuário digitar um novo.
+      token_autenticacao: '',
       configuracoes: i.configuracoes ? JSON.stringify(i.configuracoes, null, 2) : '{}',
       ativo: i.ativo !== false,
     });
@@ -139,7 +142,16 @@ const IntegracaoPontoPage: React.FC = () => {
                 </Select>
               </div>
               <div className="col-span-2"><Label>Endpoint</Label><Input value={form.endpoint} onChange={(e) => setForm({ ...form, endpoint: e.target.value })} placeholder="https://..." /></div>
-              <div className="col-span-2"><Label>Token de Autenticação</Label><Input type="password" value={form.token_autenticacao} onChange={(e) => setForm({ ...form, token_autenticacao: e.target.value })} /></div>
+              <div className="col-span-2">
+                <Label>Token de Autenticação</Label>
+                <Input
+                  type="password"
+                  value={form.token_autenticacao}
+                  onChange={(e) => setForm({ ...form, token_autenticacao: e.target.value })}
+                  placeholder={editing ? 'Deixe em branco para manter o token atual' : ''}
+                  autoComplete="new-password"
+                />
+              </div>
             </div>
             <div>
               <Label>Configurações (JSON)</Label>
