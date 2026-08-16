@@ -17,12 +17,16 @@ interface TributosListProps {
   tributos: Tributo[];
   isLoading: boolean;
   searchTerm: string;
+  onEdit: (tributo: Tributo) => void;
+  onDelete: (tributo: Tributo) => void;
 }
 
 export const TributosList: React.FC<TributosListProps> = ({
   tributos,
   isLoading,
-  searchTerm
+  searchTerm,
+  onEdit,
+  onDelete,
 }) => {
   const getTipoColor = (tipo: string) => {
     switch (tipo) {
@@ -94,10 +98,10 @@ export const TributosList: React.FC<TributosListProps> = ({
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={() => onEdit(tributo)} title="Editar">
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={() => onDelete(tributo)} title="Excluir">
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>

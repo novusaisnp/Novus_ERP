@@ -1,5 +1,109 @@
 # Status do projeto — NOVUS ERP
 
+## 🔖 Checkpoint atual — AUDITORIA_NOVA Fase 2: fechados os buracos que perdiam dado (2026-08-16)
+
+Os quatro itens do plano, nenhum dependente de decisão de produto pendente.
+
+### Upload de documento financeiro deixou de ser simulado
+
+`movimentacoesService.uploadDocumento` gravava uma `url_arquivo` falsa e nunca enviava
+nada ao Storage (comentário original: "implementar quando storage estiver configurado...
+por enquanto, simular URL"). Migration `20260816140000` cria o bucket privado
+`financeiro-documentos` (path `<empresa_id>/<titulo_id>/<timestamp>_<nome>`, mesmo padrão
+de `banco-extratos`) com policies já na forma corrigida da Fase 1.5
+(`has_role_for_empresa`, não `has_role` global — não reintroduz o bug que acabou de ser
+fechado).
+
+- Upload real via `supabase.storage.from('financeiro-documentos').upload(...)`; se o
+  `insert` na tabela falhar depois do upload ter ido, o arquivo órfão é removido do bucket
+  em vez de ficar solto sem linha correspondente.
+- `getDocumentoUrl` gera signed URL (bucket privado); `download:true` força
+  `Content-Disposition: attachment`.
+- Botões **Visualizar** e **Download** de `DocumentosTab.tsx` (antes sem `onClick`) abrem
+  a signed URL em nova aba.
+- `deleteDocumento` agora remove o arquivo do storage além de marcar a linha como
+  inativa — antes só apagava logicamente no banco (o que já não importava muito, porque
+  nunca existia arquivo real por trás).
+
+**Não testado ao vivo no navegador** (exigiria login real) — verificado por leitura
+completa do diff, migration provada em `BEGIN...ROLLBACK` antes de aplicar, bucket e
+policies conferidos por consulta direta no banco. Recomendado um teste manual do ciclo
+completo (subir, reabrir, baixar, excluir) antes de considerar fechado de vez.
+
+### `ContasPagar.handleSubmit` não fecha mais o modal antes da mutation terminar
+
+Bug real confirmado por leitura de código: montava um `callback` com `onSuccess`/`onError`
+mas nunca o passava para `criar()`/`atualizar()` (que são `mutate`, não `mutateAsync`) —
+fechava o modal e resolvia a Promise **antes** da gravação terminar. Uma falha no banco
+passava despercebida. Reescrito espelhando `ContasReceber.tsx:52-67`: `await` numa Promise
+que só resolve/rejeita pelo `onSuccess`/`onError` real da mutation; `handleModalClose()` só
+roda depois do `await` bem-sucedido. `ContasPagarModal.tsx` já tratava a rejeição com toast
+e mantinha o modal aberto — não precisou mudar.
+
+### Naturezas de Operação: form sem `onSave` e service sem `create`/`update`
+
+Confirmado exatamente como a auditoria descreveu: `NaturezaOperacaoForm` renderizado sem
+`onSave` nos dois pontos de `Tributos.tsx` (dois `<Dialog>` independentes com o mesmo
+form), e `naturezaService.ts` só tinha `fetchNaturezasOperacao`.
+
+- `createNaturezaOperacao`/`updateNaturezaOperacao` adicionados ao service (empresa via
+  `getEmpresaAtivaIdOuFalha`, mesmo padrão de `mdfeService.ts`/`spedService.ts`); RLS já
+  cobria INSERT/UPDATE para `authenticated`, não precisou de migration.
+  `useCreateNaturezaOperacao`/`useUpdateNaturezaOperacao` em `useFiscal.ts`, mesmo estilo
+  das mutations de CFOP/NCM já existentes (mapeamento de erro 23505/42501 incluso).
+- `Tributos.tsx`: `onSave` ligado, `Dialog` duplicado removido (sobrava um renderizado
+  fora da `Tabs`, nunca alcançado), card estático substituído por tabela real das
+  naturezas cadastradas com botão Editar.
+
+### Tributos (alíquotas): CRUD estava inteiramente decorativo
+
+Confirmado: botão "Novo Tributo" sem `onClick`, Editar/Excluir de cada linha sem
+`onClick`, `tributoService.ts` só tinha `fetchTributos`.
+
+- `createTributo`/`updateTributo`/`deleteTributo` (soft-delete via `deleted_at` + `ativo`,
+  mesmo padrão de outras tabelas fiscais) adicionados ao service; RLS já cobria as quatro
+  operações. Hooks correspondentes em `useFiscal.ts`.
+- `TributoFormModal.tsx` (novo componente, mesmo padrão de `CFOPFormModal.tsx`) para
+  criar/editar; `TributosList.tsx` ganhou `onEdit`/`onDelete`; `TributosTab.tsx` liga os
+  três pontos mortos e adiciona confirmação de exclusão (`AlertDialog` simples, não
+  `ConfirmDeleteWithDeps` — `tributos` é tabela-folha, nada referencia por FK).
+
+### Validação
+
+- `npm run typecheck` limpo; `npm run test -- --run` → 53 arquivos, 383/383 (nenhum teste
+  novo — os quatro itens são código de UI/serviço sem teste unitário prévio nesta área;
+  ver Fase 7 do plano para cobertura).
+- Migration do bucket provada em `BEGIN...ROLLBACK`, aplicada de verdade e registrada no
+  ledger.
+- Os três itens de código puro (ContasPagar, Naturezas, Tributos) não foram exercidos ao
+  vivo no navegador nesta sessão — mesma ressalva do upload de documento acima.
+
+### Arquivos desta entrega
+
+- `supabase/migrations/20260816140000_fase2_bucket_documentos_financeiros.sql`
+- `src/services/movimentacoesService.ts`
+- `src/components/financeiro/movimentacoes/DocumentosTab.tsx`
+- `src/pages/financeiro/ContasPagar.tsx`
+- `src/services/fiscal/naturezaService.ts`
+- `src/services/fiscal/tributoService.ts`
+- `src/hooks/useFiscal.ts`
+- `src/pages/fiscal/Tributos.tsx`
+- `src/components/modules/fiscal/TributosTab.tsx`
+- `src/components/modules/fiscal/TributosList.tsx`
+- `src/components/modules/fiscal/TributoFormModal.tsx` (novo)
+- `docs/STATUS.md`
+
+### Próxima ação única
+
+Fase 3 do plano (`AUDITORIA_NOVA.md`): matar as fachadas restantes — ligar
+"Editar"/"Visualizar" de Movimentações Bancárias, implementar ou remover o filtro
+`periodo_agrupamento` do Fluxo de Caixa, remover aba "Extrato Avançado" e texto de debug,
+apagar `financeiro/bancos/*` órfão e `syncService.ts` morto, ligar o card "Alertas
+Importantes" do Dashboard a dado real, trocar `window.location.reload()` por invalidação
+de query na conciliação, e mais itens pequenos — nenhum depende de decisão pendente.
+
+---
+
 ## 🔖 Checkpoint atual — AUDITORIA_NOVA Fase 1.5: admin escopado por empresa (2026-08-16)
 
 Decisão do usuário (bloqueante, registrada no plano): **restringir `admin` à

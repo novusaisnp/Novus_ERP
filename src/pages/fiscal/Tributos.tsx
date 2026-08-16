@@ -13,11 +13,18 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Calculator } from "lucide-react";
-import { useConfiguracoesFiscais } from '@/hooks/useFiscal';
-import type { ConfiguracaoFiscal } from '@/types/fiscal';
+import {
+  useConfiguracoesFiscais,
+  useNaturezasOperacao,
+  useCreateNaturezaOperacao,
+  useUpdateNaturezaOperacao,
+} from '@/hooks/useFiscal';
+import type { ConfiguracaoFiscal, NaturezaOperacao } from '@/types/fiscal';
 
 console.log('[Fiscal] Inicializando página de Tributos refatorada');
 
@@ -26,7 +33,33 @@ const Tributos: React.FC = () => {
   const [showConfigForm, setShowConfigForm] = useState(false);
   const [showNaturezaForm, setShowNaturezaForm] = useState(false);
   const [configuracaoEditando, setConfiguracaoEditando] = useState<ConfiguracaoFiscal>();
+  const [naturezaEditando, setNaturezaEditando] = useState<NaturezaOperacao>();
   const { data: configuracoes = [] } = useConfiguracoesFiscais();
+  const { data: naturezas = [], isLoading: loadingNaturezas } = useNaturezasOperacao();
+  const criarNatureza = useCreateNaturezaOperacao();
+  const atualizarNatureza = useUpdateNaturezaOperacao();
+
+  const handleNovaNatureza = () => {
+    setNaturezaEditando(undefined);
+    setShowNaturezaForm(true);
+  };
+
+  const handleEditarNatureza = (natureza: NaturezaOperacao) => {
+    setNaturezaEditando(natureza);
+    setShowNaturezaForm(true);
+  };
+
+  const handleSalvarNatureza = (data: NaturezaOperacao) => {
+    const { id, createdAt, updatedAt, ...input } = data;
+    if (naturezaEditando) {
+      atualizarNatureza.mutate(
+        { id: naturezaEditando.id, input },
+        { onSuccess: () => setShowNaturezaForm(false) },
+      );
+    } else {
+      criarNatureza.mutate(input, { onSuccess: () => setShowNaturezaForm(false) });
+    }
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -104,26 +137,67 @@ const Tributos: React.FC = () => {
             </div>
             <Dialog open={showNaturezaForm} onOpenChange={setShowNaturezaForm}>
               <DialogTrigger asChild>
-                <Button>
+                <Button onClick={handleNovaNatureza}>
                   <Plus className="h-4 w-4 mr-2" />
                   Nova Natureza
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                <NaturezaOperacaoForm onClose={() => setShowNaturezaForm(false)} />
+                <NaturezaOperacaoForm
+                  natureza={naturezaEditando}
+                  onClose={() => setShowNaturezaForm(false)}
+                  onSave={handleSalvarNatureza}
+                />
               </DialogContent>
             </Dialog>
           </div>
 
           <Card>
-            <CardContent className="p-6">
-              <div className="text-center py-12">
-                <Calculator className="mx-auto h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-4 text-lg font-semibold">Naturezas de Operação</h3>
-                <p className="mt-2 text-muted-foreground">
-                  As naturezas básicas foram cadastradas automaticamente
-                </p>
-              </div>
+            <CardContent className="p-0">
+              {loadingNaturezas ? (
+                <div className="text-center py-12 text-muted-foreground">Carregando…</div>
+              ) : naturezas.length === 0 ? (
+                <div className="text-center py-12">
+                  <Calculator className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <h3 className="mt-4 text-lg font-semibold">Nenhuma natureza cadastrada</h3>
+                  <p className="mt-2 text-muted-foreground">
+                    Cadastre a primeira natureza de operação da empresa.
+                  </p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Código</TableHead>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Finalidade</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {naturezas.map((natureza) => (
+                      <TableRow key={natureza.id}>
+                        <TableCell className="font-mono font-semibold">{natureza.codigo}</TableCell>
+                        <TableCell>{natureza.descricao}</TableCell>
+                        <TableCell className="capitalize">{natureza.tipo}</TableCell>
+                        <TableCell className="capitalize">{natureza.finalidade}</TableCell>
+                        <TableCell>
+                          <Badge variant={natureza.ativo ? 'default' : 'secondary'}>
+                            {natureza.ativo ? 'Ativa' : 'Inativa'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm" onClick={() => handleEditarNatureza(natureza)} title="Editar">
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -140,12 +214,6 @@ const Tributos: React.FC = () => {
           <TributosTab />
         </TabsContent>
       </Tabs>
-
-      <Dialog open={showNaturezaForm} onOpenChange={setShowNaturezaForm}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <NaturezaOperacaoForm onClose={() => setShowNaturezaForm(false)} />
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

@@ -63,28 +63,19 @@ const ContasPagar = () => {
   };
 
   const handleSubmit = async (data: ContaPagarInput) => {
-    return new Promise<void>((resolve, reject) => {
-      const callback = {
-        onSuccess: () => {
-          handleModalClose();
-          resolve();
-        },
-        onError: (error: Error) => {
-          reject(error);
-        }
-      };
-
-      if (contaSelecionada) {
-        atualizar({ id: contaSelecionada.id, input: data });
-      } else {
-        criar(data);
-      }
-      
-      // Como as mutations do React Query são assíncronas, vamos resolver imediatamente
-      // O feedback de sucesso/erro já está sendo tratado no hook useContasPagar
-      handleModalClose();
-      resolve();
-    });
+    if (contaSelecionada) {
+      await new Promise<void>((resolve, reject) => {
+        atualizar(
+          { id: contaSelecionada.id, input: data },
+          { onSuccess: () => resolve(), onError: (error: Error) => reject(error) },
+        );
+      });
+    } else {
+      await new Promise<void>((resolve, reject) => {
+        criar(data, { onSuccess: () => resolve(), onError: (error: Error) => reject(error) });
+      });
+    }
+    handleModalClose();
   };
 
   const handleDelete = (id: string) => {

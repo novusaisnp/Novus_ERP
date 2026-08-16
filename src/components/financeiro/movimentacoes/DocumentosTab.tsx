@@ -23,6 +23,8 @@ import {
 import { format } from 'date-fns';
 import { useDocumentosTitulo } from '@/hooks/useMovimentacoesCompletas';
 import { TituloFinanceiro } from '@/types/movimentacoesFinanceiras';
+import { movimentacoesService, type DocumentoTitulo } from '@/services/movimentacoesService';
+import { useToast } from '@/hooks/use-toast';
 
 interface DocumentosTabProps {
   titulo: TituloFinanceiro;
@@ -30,20 +32,42 @@ interface DocumentosTabProps {
 }
 
 export const DocumentosTab = ({ titulo, podeEditar }: DocumentosTabProps) => {
-  const { 
-    documentos, 
-    isLoading, 
-    uploadDocumento, 
-    deleteDocumento, 
-    isUploading, 
-    isDeleting 
+  const {
+    documentos,
+    isLoading,
+    uploadDocumento,
+    deleteDocumento,
+    isUploading,
+    isDeleting
   } = useDocumentosTitulo(titulo.id, titulo.tipo);
-  
+  const { toast } = useToast();
+
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [categoria, setCategoria] = useState<string>('');
   const [descricao, setDescricao] = useState('');
   const [documentoParaExcluir, setDocumentoParaExcluir] = useState<string | null>(null);
+  const [abrindoDocumentoId, setAbrindoDocumentoId] = useState<string | null>(null);
+
+  const abrirDocumento = async (documento: DocumentoTitulo, modo: 'visualizar' | 'download') => {
+    setAbrindoDocumentoId(documento.id);
+    try {
+      const url = await movimentacoesService.getDocumentoUrl(
+        documento.url_arquivo,
+        modo === 'download' ? { download: true } : undefined,
+      );
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      console.error('[DocumentosTab] Erro ao gerar link do documento:', error);
+      toast({
+        title: 'Erro',
+        description: error instanceof Error ? error.message : 'Não foi possível abrir o documento.',
+        variant: 'destructive',
+      });
+    } finally {
+      setAbrindoDocumentoId(null);
+    }
+  };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -322,10 +346,22 @@ export const DocumentosTab = ({ titulo, podeEditar }: DocumentosTabProps) => {
 
                 <div className="flex justify-between items-center mt-4">
                   <div className="flex gap-1">
-                    <Button size="sm" variant="outline" title="Visualizar">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      title="Visualizar"
+                      disabled={abrindoDocumentoId === documento.id}
+                      onClick={() => abrirDocumento(documento, 'visualizar')}
+                    >
                       <Eye className="w-3 h-3" />
                     </Button>
-                    <Button size="sm" variant="outline" title="Download">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      title="Download"
+                      disabled={abrindoDocumentoId === documento.id}
+                      onClick={() => abrirDocumento(documento, 'download')}
+                    >
                       <Download className="w-3 h-3" />
                     </Button>
                   </div>

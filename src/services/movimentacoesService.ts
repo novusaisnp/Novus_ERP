@@ -31,6 +31,7 @@ export interface DocumentoTitulo {
   descricao?: string | null;
   tamanho_bytes?: number | null;
   upload_usuario_id?: string | null;
+  url_arquivo: string;
   created_at: string;
 }
 
@@ -298,7 +299,9 @@ export const movimentacoesService = {
     }
   },
 
-  // Upload de documento
+  // Upload de documento — vai de verdade ao bucket privado 'financeiro-documentos'
+  // (path <empresa_id>/<titulo_id>/<timestamp>_<nome>), antes gravava url_arquivo
+  // simulada sem nunca enviar o arquivo (ver AUDITORIA_NOVA.md Bloco 3).
   async uploadDocumento(dados: {
     titulo_id: string;
     tipo_titulo: string;
@@ -306,18 +309,23 @@ export const movimentacoesService = {
     categoria?: string;
     descricao?: string;
   }): Promise<void> {
-    
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
     const empresaId = await getEmpresaIdAtual();
 
     try {
-      // 1. Upload do arquivo para storage (implementar quando storage estiver configurado)
-      // Por enquanto, simular URL
       const nomeArquivo = `${Date.now()}_${dados.arquivo.name}`;
-      const urlArquivo = `documents/${dados.tipo_titulo}/${dados.titulo_id}/${nomeArquivo}`;
+      const storagePath = `${empresaId}/${dados.titulo_id}/${nomeArquivo}`;
 
-      // 2. Registrar documento na base
+      const { error: uploadError } = await supabase.storage
+        .from('financeiro-documentos')
+        .upload(storagePath, dados.arquivo, {
+          contentType: dados.arquivo.type || undefined,
+          upsert: false,
+        });
+      if (uploadError) throw uploadError;
+
       const { error: insertError } = await supabase
         .from('documentos_titulos_financeiros')
         .insert({
@@ -328,31 +336,63 @@ export const movimentacoesService = {
           nome_original: dados.arquivo.name,
           tipo_arquivo: dados.arquivo.type,
           tamanho_bytes: dados.arquivo.size,
-          url_arquivo: urlArquivo,
+          url_arquivo: storagePath,
           categoria: dados.categoria || 'OUTROS',
           descricao: dados.descricao,
           upload_usuario_id: user.id,
         });
 
-      if (insertError) throw insertError;
-
+      if (insertError) {
+        // Registro falhou depois do upload ter ido — remove o arquivo órfão
+        // em vez de deixar um objeto no bucket sem linha correspondente.
+        await supabase.storage.from('financeiro-documentos').remove([storagePath]);
+        throw insertError;
+      }
     } catch (error) {
       console.error('[MovimentacoesService] Erro ao fazer upload:', error);
       throw new Error(`Erro ao enviar documento: ${error.message}`);
     }
   },
 
-  // Deletar documento
+  // URL assinada (bucket privado) para visualizar/baixar um documento.
+  // download:true força Content-Disposition: attachment no arquivo servido.
+  async getDocumentoUrl(urlArquivo: string, options?: { download?: boolean }, expiresIn = 300): Promise<string> {
+    const { data, error } = await supabase.storage
+      .from('financeiro-documentos')
+      .createSignedUrl(urlArquivo, expiresIn, options?.download ? { download: true } : undefined);
+    if (error || !data?.signedUrl) {
+      throw new Error(`Erro ao gerar link do documento: ${error?.message || 'falha desconhecida'}`);
+    }
+    return data.signedUrl;
+  },
+
+  // Deletar documento — remove o arquivo do storage e depois marca a linha
+  // como inativa (mesma ordem do upload: some o arquivo primeiro só se a
+  // baixa lógica no banco confirmar).
   async deleteDocumento(documentoId: string): Promise<void> {
 
     try {
+      const { data: doc, error: fetchError } = await supabase
+        .from('documentos_titulos_financeiros')
+        .select('url_arquivo')
+        .eq('id', documentoId)
+        .single();
+      if (fetchError) throw fetchError;
+
       const { error } = await supabase
         .from('documentos_titulos_financeiros')
         .update({ ativo: false })
         .eq('id', documentoId);
-
       if (error) throw error;
 
+      if (doc?.url_arquivo) {
+        const { error: removeError } = await supabase.storage
+          .from('financeiro-documentos')
+          .remove([doc.url_arquivo]);
+        if (removeError) {
+          console.error('[MovimentacoesService] Falha ao remover arquivo do storage:', removeError.message);
+        }
+      }
     } catch (error) {
       console.error('[MovimentacoesService] Erro ao remover documento:', error);
       throw new Error(`Erro ao remover documento: ${error.message}`);

@@ -1,10 +1,10 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { 
-  fetchConfiguracoesFiscais, 
-  fetchNaturezasOperacao, 
-  fetchCFOPs, 
-  fetchTributos, 
+import {
+  fetchConfiguracoesFiscais,
+  fetchNaturezasOperacao,
+  fetchCFOPs,
+  fetchTributos,
   fetchNCMs,
   createConfiguracaoFiscal,
   createCFOP,
@@ -15,6 +15,13 @@ import {
   updateNCM,
   toggleNCMAtivo,
   NCMInput,
+  createNaturezaOperacao,
+  updateNaturezaOperacao,
+  NaturezaOperacaoInput,
+  createTributo,
+  updateTributo,
+  deleteTributo,
+  TributoInput,
 } from "@/services/fiscalService";
 import { toast } from "sonner";
 
@@ -176,3 +183,88 @@ export const useToggleNCMAtivo = () => {
     onError: (err) => toast.error(mapNCMError(err)),
   });
 };
+
+// ===== Natureza de Operação mutations =====
+const mapNaturezaError = (err: ApiError): string => {
+  const msg = String(err?.message || err?.error_description || '');
+  const code = err?.code;
+  if (code === '42501' || /permission denied|violates row-level security/i.test(msg)) {
+    return 'Sem permissão para alterar naturezas de operação.';
+  }
+  if (code === '23505' || /duplicate key/i.test(msg)) {
+    return 'Já existe uma natureza de operação com esse código.';
+  }
+  return msg || 'Falha ao processar natureza de operação.';
+};
+
+export const useCreateNaturezaOperacao = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: NaturezaOperacaoInput) => createNaturezaOperacao(input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['naturezas-operacao'] });
+      toast.success('Natureza de operação criada com sucesso!');
+    },
+    onError: (err) => toast.error(mapNaturezaError(err)),
+  });
+};
+
+export const useUpdateNaturezaOperacao = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: Partial<NaturezaOperacaoInput> }) =>
+      updateNaturezaOperacao(id, input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['naturezas-operacao'] });
+      toast.success('Natureza de operação atualizada!');
+    },
+    onError: (err) => toast.error(mapNaturezaError(err)),
+  });
+};
+
+// ===== Tributo (alíquotas) mutations =====
+const mapTributoError = (err: ApiError): string => {
+  const msg = String(err?.message || err?.error_description || '');
+  const code = err?.code;
+  if (code === '42501' || /permission denied|violates row-level security/i.test(msg)) {
+    return 'Sem permissão para alterar tributos.';
+  }
+  return msg || 'Falha ao processar tributo.';
+};
+
+export const useCreateTributo = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: TributoInput) => createTributo(input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tributos'] });
+      toast.success('Tributo criado com sucesso!');
+    },
+    onError: (err) => toast.error(mapTributoError(err)),
+  });
+};
+
+export const useUpdateTributo = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: Partial<TributoInput> }) => updateTributo(id, input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tributos'] });
+      toast.success('Tributo atualizado!');
+    },
+    onError: (err) => toast.error(mapTributoError(err)),
+  });
+};
+
+export const useDeleteTributo = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteTributo(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tributos'] });
+      toast.success('Tributo removido.');
+    },
+    onError: (err) => toast.error(mapTributoError(err)),
+  });
+};
+
