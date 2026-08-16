@@ -1,7 +1,26 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-export const checkHasRole = async (userId: string, role: 'admin' | 'gerente' | 'operador' | 'visualizador'): Promise<boolean> => {
+// AUDITORIA_NOVA Fase 1.5: has_role() sozinho não filtra empresa — um admin
+// de qualquer empresa cliente passava em qualquer checagem de 'admin' em
+// qualquer empresa. Passando empresaId, 'admin' usa has_role_for_empresa
+// (preserva novus_owner como papel global, escopando 'admin' à empresa
+// informada). Sem empresaId, cai no has_role antigo — usado hoje só por
+// 'novus_owner', que já é global por natureza.
+export const checkHasRole = async (
+  userId: string,
+  role: 'admin' | 'gerente' | 'operador' | 'visualizador' | 'novus_owner',
+  empresaId?: string | null,
+): Promise<boolean> => {
+  if (role === 'admin' && empresaId) {
+    const { data, error } = await supabase.rpc('has_role_for_empresa', {
+      _user_id: userId,
+      _role: role,
+      _empresa_id: empresaId,
+    });
+    if (error) return false;
+    return Boolean(data);
+  }
   const { data, error } = await supabase.rpc('has_role', {
     _user_id: userId,
     _role: role,

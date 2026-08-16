@@ -3,8 +3,14 @@
 // e-mail (login com e-mail nos dois campos é uma autenticação real) — elimina
 // a dependência de e-mail transacional funcionando (o convite antigo via
 // inviteUserByEmail nunca tinha página que tratasse a sessão resultante, e
-// esbarrava no limite do Resend sandbox). Requer chamador autenticado com
-// papel 'admin' (defesa server-side contra escalonamento de privilégio).
+// esbarrava no limite do Resend sandbox). Requer chamador com papel 'admin'
+// NA EMPRESA DO ALVO (has_role_for_empresa, não has_role) — defesa
+// server-side contra escalonamento de privilégio. AUDITORIA_NOVA Fase 1.5:
+// antes disso, has_role(admin) sozinho não filtrava empresa nem checava que
+// o usuario_id/empresa_representada_id do alvo era da mesma empresa do
+// chamador — um admin de qualquer empresa podia resetar senha (e promover a
+// admin) de qualquer usuário de qualquer outra empresa. novus_owner
+// continua liberado em qualquer empresa (has_role_for_empresa já cobre).
 //
 // mode: 'create' (padrão) cria o auth.users + vincula usuarios + grava
 // user_roles. mode: 'reset' redefine a senha de um usuário já existente e
@@ -64,20 +70,22 @@ Deno.serve(async (req) => {
     }
     const callerUid = claimsData.claims.sub as string;
 
-    // --- AuthZ: exige role admin ---
     const admin = createClient(supabaseUrl, serviceRole, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
-    const { data: isAdmin, error: roleErr } = await admin.rpc('has_role', {
-      _user_id: callerUid,
-      _role: 'admin',
-    });
-    if (roleErr || !isAdmin) {
-      return new Response(
-        JSON.stringify({ ok: false, message: 'Acesso negado: requer perfil admin.' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
-    }
+
+    // AuthZ real acontece mais abaixo, depois de sabermos a empresa do ALVO
+    // (fetch do usuario em 'reset', ou body.empresa_representada_id em
+    // 'create') — checar aqui, sem saber o alvo, é o que causava o bug de
+    // escalonamento cross-tenant.
+    const isAdminForEmpresa = async (empresaId: string): Promise<boolean> => {
+      const { data, error } = await admin.rpc('has_role_for_empresa', {
+        _user_id: callerUid,
+        _role: 'admin',
+        _empresa_id: empresaId,
+      });
+      return !error && Boolean(data);
+    };
 
     // --- Validação de entrada ---
     const body = (await req.json().catch(() => ({}))) as Body;
@@ -117,6 +125,13 @@ Deno.serve(async (req) => {
         return new Response(
           JSON.stringify({ ok: false, message: 'Usuário não encontrado ou ainda sem conta vinculada.' }),
           { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+
+      if (!(await isAdminForEmpresa(usuario.empresa_representada_id))) {
+        return new Response(
+          JSON.stringify({ ok: false, message: 'Acesso negado: requer perfil admin na empresa do usuário.' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         );
       }
 
@@ -171,6 +186,12 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ ok: false, message: 'Role inválido.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+    if (!(await isAdminForEmpresa(empresaId))) {
+      return new Response(
+        JSON.stringify({ ok: false, message: 'Acesso negado: requer perfil admin na empresa informada.' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 

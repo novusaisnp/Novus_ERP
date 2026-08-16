@@ -1,5 +1,247 @@
 # Status do projeto — NOVUS ERP
 
+## 🔖 Checkpoint atual — AUDITORIA_NOVA Fase 1.5: admin escopado por empresa (2026-08-16)
+
+Decisão do usuário (bloqueante, registrada no plano): **restringir `admin` à
+própria empresa**, preservando `novusaisnp@gmail.com` como único
+`novus_owner` (já era o único antes desta sessão — confirmado, não precisou
+de ação). `has_role_for_empresa` já existia no banco e já era usada em 3
+policies (`contas_receber.cr_update`, `campos_personalizados_update_admin`,
+`preferencias_listagem_update_own`) — esta fase estende o mesmo padrão a
+todo o resto do sistema que ainda usava `has_role(auth.uid(),'admin')` sem
+escopo.
+
+### Banco: 288 policies migradas
+
+- **286 por sweep mecânico**, gerado a partir do catálogo real (`pg_policies`
+  × `information_schema.columns`), não lista fixa: toda policy com coluna
+  `empresa_representada_id` direta teve `has_role(auth.uid(),'admin'::app_role)`
+  trocado por `has_role_for_empresa(auth.uid(),'admin'::app_role,
+  empresa_representada_id)` via `ALTER POLICY`.
+- **2 casos especiais**, tratados à mão porque a empresa não é uma coluna
+  direta:
+  - `empresas_representadas` — a própria linha é a empresa (`id`, não
+    `empresa_representada_id`). UPDATE/SELECT escopados via
+    `has_role_for_empresa(..., id)`. **INSERT e DELETE viram `novus_owner`
+    exclusivo** — antes, qualquer admin de qualquer empresa podia criar ou
+    apagar QUALQUER empresa do sistema, inclusive a de outro cliente, e
+    inclusive apagar a própria (confirmado pela prova ao vivo que nem a
+    própria empresa pode ser apagada por um admin comum agora).
+  - `entidade_dados_colaborador` — empresa via subquery em `entidades`
+    (`e.empresa_representada_id`), troca feita dentro do `EXISTS`.
+- **`report_ops_alerts` / `report_ops_audit` viraram `novus_owner`**, não
+  `admin` escopado: confirmado que `report_schedules` (a tabela-mãe) também
+  não tem coluna de empresa — é operação interna NOVUS (monitoramento de
+  relatórios agendados), não dado de cliente. `RelatoriosOps.tsx` e a rota
+  `/configuracoes/relatorios-ops` em `App.tsx` seguem a mesma direção.
+- **`sync_logs` já estava corrigida** por sessão anterior não documentada
+  (tem `empresa_representada_id` e policies `user_has_access_to_empresa(...)
+  OR has_role(admin)`) — caiu no sweep mecânico normal. A afirmação da
+  auditoria original ("RLS `USING(true)`, sem coluna de empresa") estava
+  desatualizada.
+- **8 tabelas revisadas e deixadas como estão, de propósito**: `cfop`, `ncm`,
+  `papeis_catalogo`, `entidade_dependencias`, `modalidades_pagamento`,
+  `naturezas_pagamento`, `empresa_responsavel` são catálogos globais sem
+  conceito de empresa (confirmado por `information_schema.columns` — nenhuma
+  tem `empresa_representada_id`). Não é lacuna de isolamento porque não há
+  dado de tenant ali.
+- **Achado novo, não corrigido, fora do escopo desta fase**: `perfis_acesso`
+  também não tem `empresa_representada_id`, apesar de ter uma coluna
+  `sistema` que distingue perfis "de sistema" (protegidos) de perfis
+  presumivelmente customizáveis por empresa. Sem a coluna de tenant, um
+  perfil de acesso customizado criado pela empresa A é global — visível e
+  editável por admin de qualquer empresa. Diferente dos catálogos acima,
+  este parece um gap real (mesmo padrão do antigo `sync_logs`), mas corrigir
+  exige adicionar coluna + migrar dados + ajustar `PerfisConfig.tsx` e
+  `usePerfis.ts` — maior que o escopo mecânico desta fase. Candidato a uma
+  fase própria.
+
+### Código: `checkHasRole`, `AdminRoute`, sidebar, `RelatoriosOps`
+
+- `src/utils/authUtils.ts`: `checkHasRole` ganhou `empresaId` opcional —
+  quando informado e `role==='admin'`, chama `has_role_for_empresa`; sem
+  isso, cai no `has_role` antigo (hoje só usado por `novus_owner`, que é
+  global por natureza). Tipo do parâmetro `role` ganhou `'novus_owner'`.
+- `src/components/auth/AdminRoute.tsx`: ganhou prop `role?: 'admin' |
+  'novus_owner'` (default `'admin'`). Quando `'admin'`, resolve a empresa
+  ativa (`getEmpresaAtivaId`) e passa pro `checkHasRole` escopado. Protege
+  `DashboardFiscal`, `SyncDashboard` e `CamposPersonalizados` (ficam
+  escopados por empresa) e `RelatoriosOps` (vira `novus_owner`, via
+  `<AdminRoute role="novus_owner">` em `App.tsx`).
+- `src/components/layout/AppSidebar.tsx`: mesmo padrão para o flag
+  `isAdmin` que controla visibilidade de itens do menu.
+
+### Código: `enviar-convite-usuario` — achado que não estava na auditoria
+
+**Vulnerabilidade cross-tenant real, corrigida e deployada nesta sessão**
+(com autorização explícita do usuário, deploy de edge function é ação
+manual separada do `git push`). A checagem server-side desta edge function
+usava `has_role(callerUid,'admin')` — sem escopo de empresa **e sem checar
+que o usuário-alvo pertencia à mesma empresa do chamador**. Na prática,
+qualquer admin de qualquer empresa podia, via o botão "Resetar senha" da
+tela Usuários, resetar a senha e definir o role (inclusive `admin`) de
+**qualquer usuário de qualquer outra empresa**, só sabendo o `usuario_id`.
+Pior que o que a auditoria descreveu (que só falava em auto-promoção dentro
+da mesma tela, sem mencionar o alcance cross-tenant real).
+
+Corrigido: a autorização agora acontece **depois** de resolver a empresa do
+alvo (fetch do `usuario` em modo `reset`; `body.empresa_representada_id` em
+modo `create`) e usa `has_role_for_empresa(callerUid, 'admin', empresaDoAlvo)`.
+`novus_owner` continua liberado em qualquer empresa. Não removeu `'admin'`
+do dropdown de role do reset — a promoção dentro da própria empresa continua
+sendo uma ação de time normal; o que fechou foi o alcance cross-tenant.
+Deployado em `reksodqzemboaeqxnxyy` via `supabase functions deploy`.
+
+### Validação
+
+- Cada migration provada em `BEGIN...ROLLBACK` antes de aplicar; aplicadas de
+  verdade e conferidas por consulta direta (299 policies com
+  `has_role_for_empresa`, 21 remanescentes nas 8 tabelas de catálogo global +
+  `perfis_acesso`, exatamente como esperado).
+- **Prova ao vivo cross-tenant** (`supabase/sql/fase1_5_admin_isolamento_prova.sql`,
+  mesmo padrão de `fin0_isolamento_entre_empresas.sql`, dados temporários em
+  `BEGIN...ROLLBACK`): admin real da empresa A não vê nem edita centro de
+  custo da empresa B (sweep mecânico); não vê nem edita a linha da empresa B
+  em `empresas_representadas`; não consegue criar uma empresa nova; não
+  consegue apagar nem a própria empresa. Sanidade: um assert invertido de
+  propósito falhou como esperado.
+- `npm run typecheck` limpo; `npm run test -- --run` → 53 arquivos, 383/383.
+- Edge function **não testada ao vivo com sessão real** (exigiria login real
+  de um admin) — validada por leitura completa do diff e pelo fato de
+  `has_role_for_empresa` já estar provada correta pelo teste SQL acima.
+  Recomendado um teste manual do fluxo "Resetar senha" antes de considerar o
+  ciclo totalmente fechado.
+
+### Arquivos desta entrega
+
+- `supabase/migrations/20260816130000_fase1_5_admin_escopo_empresa_sweep.sql`
+- `supabase/migrations/20260816130100_fase1_5_admin_escopo_casos_especiais.sql`
+- `supabase/sql/fase1_5_admin_isolamento_prova.sql`
+- `supabase/functions/enviar-convite-usuario/index.ts` (deployado)
+- `src/utils/authUtils.ts`
+- `src/components/auth/AdminRoute.tsx`
+- `src/components/layout/AppSidebar.tsx`
+- `src/pages/configuracoes/RelatoriosOps.tsx`
+- `src/App.tsx`
+- `docs/STATUS.md`
+
+### Próxima ação única
+
+Fase 2 do plano (`AUDITORIA_NOVA.md`): fechar os buracos que perdem dado —
+upload real de documento financeiro no Storage, `ContasPagar.handleSubmit`
+usando `mutateAsync`, CRUD real de Naturezas de Operação e Tributos. Nenhuma
+depende de decisão de produto pendente.
+
+---
+
+## 🔖 Checkpoint atual — AUDITORIA_NOVA Fase 1: banco ressuscitado (2026-08-16)
+
+Primeira fase de execução de `AUDITORIA_NOVA.md`. Todos os achados críticos do
+Bloco 1 (banco desalinhado das migrations) que dependiam só de SQL — sem decisão
+de produto pendente — foram corrigidos e provados contra o banco real
+(`reksodqzemboaeqxnxyy`).
+
+### O que foi feito
+
+- **Conciliação bancária deixou de estar inoperante.** Recriadas as 14 policies de
+  `banco_extratos_importados`, `banco_movimentacoes_extrato`,
+  `banco_regras_conciliacao` e `banco_conciliacao_log` — confirmado ao vivo, antes
+  da correção, que RLS estava ligada com zero policies nas quatro (`SELECT` vazio
+  sem erro, escrita falhando com `42501`). `entidade_id_map` foi revisada e **não**
+  precisou de mudança: RLS sem policy ali é intencional e já documentada em
+  `20260810230000_create_entidades_schema.sql` como tabela de trabalho só para
+  `service_role`.
+- **Buckets fiscais criados**: `fiscal-xml`, `fiscal-danfe`, `fiscal-certificados`
+  (mais `fiscal-sped`, referenciado pelo mesmo conjunto de policies e pela edge
+  function `fiscal-signed-url` mas ausente da lista original da auditoria — incluído
+  por consistência). As policies de `storage.objects` já existiam desde
+  `20260713224846`; só o bucket em si nunca tinha sido criado.
+  `fiscal-certificados` espelha a validação real de `fiscal-upload-certificado`
+  (só `.pfx`/`.p12`, 512KB).
+- **Superfície de ataque das RPCs reduzida.** 43 funções `SECURITY DEFINER`
+  tinham `EXECUTE` alcançável por `anon` no momento da correção (a auditoria
+  contou 44 no dia anterior; nenhuma investigada apontou causa da diferença de 1,
+  tratada como ruído). **Achado que não estava no documento**: em 26 dessas 43, o
+  acesso de `anon` vinha só por herança do grant padrão do Postgres a `PUBLIC`
+  (toda função nova recebe `EXECUTE TO PUBLIC` a menos que seja revogado
+  explicitamente) — revogar só `FROM anon` teria sido `noop` nessas 26. A migration
+  revoga de `PUBLIC` e `anon` juntos, gerado dinamicamente a partir do catálogo real
+  (`pg_proc`), não por lista fixa de nomes. Confirmado antes de aplicar que as 43
+  têm grant explícito e independente para `authenticated` e `service_role` — a
+  revogação não toca no caminho legítimo.
+- **`search_path` fixado** nas 4 funções apontadas pelo advisor
+  (`financeiro_limite_retroativo`, `sync_contas_bancarias_ativo_status`,
+  `sync_movimentacoes_bancarias_legacy_fields`, `validate_required_user_fields`) —
+  nenhuma delas é `SECURITY DEFINER` (são `SECURITY INVOKER`, o advisor aponta o
+  risco de qualquer forma), todas sem `proconfig`, agora `SET search_path = public`.
+
+### Achado colateral, verificado e descartado
+
+`anon` tem `GRANT SELECT/INSERT/UPDATE/DELETE` em ~100 tabelas do schema `public`,
+incluindo as 4 de conciliação — pareceu um problema novo, mas é o
+`ALTER DEFAULT PRIVILEGES` padrão de todo projeto Supabase (`anon`/`authenticated`
+recebem grant de tabela amplo por desenho; a RLS é quem restringe de verdade).
+Como as novas policies têm `TO authenticated`, nenhuma policy se aplica a `anon`, e
+RLS nega por padrão quando nenhuma policy cobre o papel — `anon` continua bloqueado
+apesar do grant de tabela. Não é uma ação pendente.
+
+### Achado colateral, não corrigido nesta fase (fora do escopo)
+
+`supabase_migrations.schema_migrations` tem um buraco: ~14 migrations locais entre
+`20260809233000` e `20260811030000` nunca foram registradas como aplicadas no
+banco `reksodqzemboaeqxnxyy`, apesar de o schema real já refletir o conteúdo delas
+(confirmado: `entidade_id_map`, criada em `20260810230000`, já existia antes desta
+sessão). É drift de bookkeeping do CLI, não de schema — provável sequela da
+migração de projeto de 2026-08-08, quando `supabase db push` normal falharia com
+"already exists" nessas 14 se rodado hoje. Não bloqueou este trabalho porque as 4
+migrations novas desta fase foram aplicadas e registradas diretamente, sem tocar
+no intervalo antigo. Vale um reparo dedicado do ledger antes de alguém rodar
+`supabase db push` sem `--include-all` neste projeto.
+
+### Validação
+
+- Cada uma das 4 migrations provada em `BEGIN ... ROLLBACK` contra o banco real
+  antes de aplicar; aplicadas de verdade em seguida e conferidas por consulta
+  direta (14 policies presentes, 4 buckets presentes, zero funções ainda
+  alcançáveis por `anon`, zero funções ainda com `search_path` mutável).
+- **Prova ao vivo do ciclo completo** com papel `authenticated` simulado (mesmo
+  padrão de `supabase/sql/fin0_isolamento_entre_empresas.sql`, dados temporários
+  dentro de `BEGIN...ROLLBACK`): usuário real cria empresa, conta bancária, extrato
+  importado, movimentação de extrato, regra de conciliação e log — todos visíveis
+  de volta pelo próprio usuário — e um `UPDATE` de status persiste. Script versionado
+  em `supabase/sql/fase1_conciliacao_prova_ao_vivo.sql`. Sanidade: um assert
+  invertido de propósito falhou como esperado.
+- **Não testado no navegador com sessão real** — a verificação ao vivo pedida pelo
+  plano ("abrir `/gestao-bancaria/conciliacao` logado, importar um extrato,
+  conciliar uma linha") foi substituída pela prova em SQL acima porque a sessão
+  atual não tem credenciais de um usuário real do app. Recomendado um teste manual
+  rápido no navegador antes de considerar a Fase 1 definitivamente fechada.
+- `npm run typecheck` limpo; `npm run test -- --run` → 53 arquivos, 383/383
+  (nenhum arquivo TS tocado nesta fase — só SQL).
+- `supabase db advisors --type security` rodado depois das mudanças:
+  `function_search_path_mutable` zerou (eram 4). `leaked_password_protection`
+  continua ligado (é toggle do painel Auth, fora do escopo de migration).
+
+### Arquivos desta entrega
+
+- `supabase/migrations/20260816120000_fase1_conciliacao_policies.sql`
+- `supabase/migrations/20260816120100_fase1_fiscal_buckets.sql`
+- `supabase/migrations/20260816120200_fase1_revoke_anon_execute.sql`
+- `supabase/migrations/20260816120300_fase1_fix_search_path.sql`
+- `supabase/sql/fase1_conciliacao_prova_ao_vivo.sql`
+- `docs/STATUS.md`
+
+### Próxima ação única
+
+**Fase 1.5 do plano é bloqueante e é decisão de produto, não código**: decidir se
+`admin` de uma empresa cliente deve enxergar dados de outras empresas. Hoje
+enxerga, por desenho documentado (`has_role()` não filtra empresa em ~146
+policies), mas colide com a auto-promoção livre em `Usuarios.tsx:96-134`. Ver
+`AUDITORIA_NOVA.md` seção 1.5 e "Fase 1.5" no plano de execução antes de
+prosseguir para a Fase 2.
+
+---
+
 ## 📌 Checkpoint — cadastro rápido em lookups (2026-08-12)
 
 Formulários operacionais agora permitem cadastrar Cargo, Departamento, Setor, Categoria,

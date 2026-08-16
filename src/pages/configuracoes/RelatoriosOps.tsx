@@ -1,5 +1,7 @@
 // P5.1 + P6.2 + P6.4 — Página operacional (admin) para monitorar runs de report_schedules.
-// Gate: apenas usuários com role 'admin'. Não-admin veem aviso e nenhum dado.
+// Gate: apenas novus_owner. report_schedules/report_ops_* não têm coluna de
+// empresa — é operação interna NOVUS, não dado de cliente (AUDITORIA_NOVA
+// Fase 1.5) — por isso não usa o 'admin' escopado por empresa.
 import React, { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { checkHasRole } from "@/utils/authUtils";
@@ -29,9 +31,9 @@ const RelatoriosOps: React.FC = () => {
   const { user } = useAuth();
 
   const { data: isAdmin, isLoading: loadingRole } = useQuery({
-    queryKey: ["is-admin", user?.id ?? null],
+    queryKey: ["is-novus-owner", user?.id ?? null],
     enabled: !!user?.id,
-    queryFn: () => checkHasRole(user!.id, "admin"),
+    queryFn: () => checkHasRole(user!.id, "novus_owner"),
     staleTime: 60_000,
   });
 

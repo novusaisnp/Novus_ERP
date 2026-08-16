@@ -10,6 +10,7 @@ import { SidebarMenuGroup } from './sidebar/SidebarMenuGroup';
 import { getVisibleSidebarItems } from './sidebar/sidebarVisibility';
 import { useAuth } from '@/contexts/AuthContext';
 import { checkHasRole } from '@/utils/authUtils';
+import { getEmpresaAtivaId } from '@/lib/empresaAtiva';
 
 interface AppSidebarProps {
   onExpandedChange?: (expanded: boolean) => void;
@@ -30,10 +31,17 @@ export function AppSidebar({
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const { user } = useAuth();
 
-  const { data: isAdmin = false } = useQuery({
-    queryKey: ['sidebar-is-admin', user?.id ?? null],
+  const { data: empresaAtivaId } = useQuery({
+    queryKey: ['sidebar-empresa-ativa', user?.id ?? null],
     enabled: !!user?.id,
-    queryFn: () => checkHasRole(user!.id, 'admin'),
+    queryFn: getEmpresaAtivaId,
+    staleTime: 60_000,
+  });
+
+  const { data: isAdmin = false } = useQuery({
+    queryKey: ['sidebar-is-admin', user?.id ?? null, empresaAtivaId ?? null],
+    enabled: !!user?.id && empresaAtivaId !== undefined,
+    queryFn: () => checkHasRole(user!.id, 'admin', empresaAtivaId ?? null),
     staleTime: 60_000,
   });
 

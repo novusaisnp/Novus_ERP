@@ -262,11 +262,13 @@ function App() {
                     <Route path="perfil" element={<Perfil />} />
                     <Route path="webhooks" element={<Webhooks />} />
                     <Route path="campos-personalizados" element={<AdminRoute><CamposPersonalizados /></AdminRoute>} />
-                    {/* P6.1: admin-only. Gate server-side (AdminRoute) + gate próprio na página. */}
+                    {/* P6.1: novus_owner-only (AUDITORIA_NOVA Fase 1.5 — report_ops_* não tem
+                        coluna de empresa, é operação interna NOVUS, não dado de cliente).
+                        Gate server-side (AdminRoute) + gate próprio na página. */}
                     <Route
                       path="relatorios-ops"
                       element={
-                        <AdminRoute>
+                        <AdminRoute role="novus_owner">
                           <React.Suspense
                             fallback={
                               <div className="min-h-[40vh] flex items-center justify-center" aria-busy="true">
