@@ -41,7 +41,7 @@ describe('produtoService.listar', () => {
     mock.from.mockImplementationOnce(() => ({
       select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [{ id: 'p1' }], error: null }) }) }),
     }));
-    expect(await produtoService.listar()).toEqual([{ id: 'p1' }]);
+    expect(await produtoService.listar()).toEqual({ data: [{ id: 'p1' }], total: 1 });
   });
 
   it('propaga erro', async () => {

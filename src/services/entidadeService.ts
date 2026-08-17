@@ -138,28 +138,68 @@ function fromRow(row: Record<string, unknown>): Entidade {
   };
 }
 
-export const entidadeService = {
-  async fetchEntidades(empresaId: string, papel?: PapelCodigo): Promise<Entidade[]> {
-    let query = supabase
-      .from('entidades')
-      .select('*, entidade_papeis(papel), entidade_dados_colaborador(*)')
-      .eq('empresa_representada_id', empresaId)
-      .is('deleted_at', null)
-      .order('nome');
+export interface Paginacao {
+  page: number; // 0-based
+  pageSize: number;
+}
 
-    if (papel) {
-      query = supabase
-        .from('entidades')
-        .select('*, entidade_papeis!inner(papel), entidade_dados_colaborador(*)')
-        .eq('empresa_representada_id', empresaId)
-        .eq('entidade_papeis.papel', papel)
-        .is('deleted_at', null)
-        .order('nome');
+export interface FetchEntidadesOpts {
+  busca?: string;
+  paginacao?: Paginacao;
+}
+
+export const entidadeService = {
+  async fetchEntidades(
+    empresaId: string,
+    papel?: PapelCodigo,
+    opts: FetchEntidadesOpts = {},
+  ): Promise<{ data: Entidade[]; total: number }> {
+    const { busca, paginacao } = opts;
+    const countOpt = { count: paginacao ? ('exact' as const) : undefined };
+
+    let query = papel
+      ? supabase
+          .from('entidades')
+          .select('*, entidade_papeis!inner(papel), entidade_dados_colaborador(*)', countOpt)
+          .eq('empresa_representada_id', empresaId)
+          .eq('entidade_papeis.papel', papel)
+          .is('deleted_at', null)
+          .order('nome')
+      : supabase
+          .from('entidades')
+          .select('*, entidade_papeis(papel), entidade_dados_colaborador(*)', countOpt)
+          .eq('empresa_representada_id', empresaId)
+          .is('deleted_at', null)
+          .order('nome');
+
+    if (busca?.trim()) {
+      const termo = busca.trim().replace(/[,()]/g, '');
+      query = query.or(
+        `nome.ilike.%${termo}%,apelido.ilike.%${termo}%,cpf.ilike.%${termo}%,cnpj.ilike.%${termo}%,email.ilike.%${termo}%`,
+      );
     }
 
-    const { data, error } = await query;
+    if (paginacao) {
+      const from = paginacao.page * paginacao.pageSize;
+      const to = from + paginacao.pageSize - 1;
+      query = query.range(from, to);
+    }
+
+    const { data, error, count } = await query;
     if (error) throw error;
-    return (data || []).map(fromRow);
+    const rows = (data || []).map(fromRow);
+    return { data: rows, total: paginacao ? (count ?? 0) : rows.length };
+  },
+
+  async getEntidadeById(id: string): Promise<Entidade | null> {
+    const { data, error } = await supabase
+      .from('entidades')
+      .select('*, entidade_papeis(papel), entidade_dados_colaborador(*)')
+      .eq('id', id)
+      .is('deleted_at', null)
+      .maybeSingle();
+    if (error) throw error;
+    return data ? fromRow(data) : null;
   },
 
   async createEntidade(entidade: Entidade): Promise<Entidade> {

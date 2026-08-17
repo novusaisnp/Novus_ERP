@@ -1,18 +1,40 @@
+import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { entidadeService } from '@/services/entidadeService';
+import type { Paginacao } from '@/services/entidadeService';
 import type { Entidade, PapelCodigo } from '@/types/entidade';
 import { useToast } from '@/components/ui/use-toast';
 
-export const useEntidades = (empresaRepresentadaId: string | null, papel: PapelCodigo) => {
+interface UseEntidadesOpts {
+  busca?: string;
+  paginacao?: Paginacao;
+}
+
+export const useEntidades = (
+  empresaRepresentadaId: string | null,
+  papel: PapelCodigo | undefined,
+  opts: UseEntidadesOpts = {},
+) => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const queryKey = ['entidades', papel, empresaRepresentadaId];
+  const { busca = '', paginacao } = opts;
 
-  const { data: entidades = [], isLoading: loading } = useQuery({
+  // Debounce da busca — mesmo padrão de useContaContabilSearch.ts (300ms).
+  const [debouncedBusca, setDebouncedBusca] = useState(busca);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedBusca(busca), 300);
+    return () => clearTimeout(timer);
+  }, [busca]);
+
+  const queryKey = ['entidades', papel, empresaRepresentadaId, debouncedBusca, paginacao];
+
+  const { data: result, isLoading: loading, isFetching } = useQuery({
     queryKey,
-    queryFn: () => entidadeService.fetchEntidades(empresaRepresentadaId!, papel),
+    queryFn: () => entidadeService.fetchEntidades(empresaRepresentadaId!, papel, { busca: debouncedBusca, paginacao }),
     enabled: !!empresaRepresentadaId,
   });
+  const entidades = result?.data ?? [];
+  const total = result?.total ?? 0;
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey });
 

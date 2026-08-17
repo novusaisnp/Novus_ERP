@@ -38,7 +38,7 @@ beforeEach(() => {
 
 describe('useProdutos load', () => {
   it('carrega e transforma', async () => {
-    svc.listar.mockResolvedValue([row]);
+    svc.listar.mockResolvedValue({ data: [row], total: 1 });
     const { result } = renderHook(() => useProdutos());
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.produtos).toHaveLength(1);
@@ -56,7 +56,7 @@ describe('useProdutos load', () => {
 
 describe('useProdutos criar/atualizar', () => {
   it('bloqueia quando validação falha', async () => {
-    svc.listar.mockResolvedValue([]);
+    svc.listar.mockResolvedValue({ data: [], total: 0 });
     const { result } = renderHook(() => useProdutos());
     await waitFor(() => expect(result.current.loading).toBe(false));
 
@@ -70,7 +70,7 @@ describe('useProdutos criar/atualizar', () => {
   });
 
   it('cria produto válido', async () => {
-    svc.listar.mockResolvedValue([]);
+    svc.listar.mockResolvedValue({ data: [], total: 0 });
     svc.criar.mockResolvedValue({ id: 'new' });
     const { result } = renderHook(() => useProdutos());
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -85,7 +85,7 @@ describe('useProdutos criar/atualizar', () => {
   });
 
   it('atualiza existente', async () => {
-    svc.listar.mockResolvedValue([]);
+    svc.listar.mockResolvedValue({ data: [], total: 0 });
     svc.atualizar.mockResolvedValue({ id: 'p1' });
     const { result } = renderHook(() => useProdutos());
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -99,7 +99,7 @@ describe('useProdutos criar/atualizar', () => {
   });
 
   it('propaga erro do service', async () => {
-    svc.listar.mockResolvedValue([]);
+    svc.listar.mockResolvedValue({ data: [], total: 0 });
     svc.criar.mockRejectedValue({ code: '23505' });
     const { result } = renderHook(() => useProdutos());
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -112,7 +112,7 @@ describe('useProdutos criar/atualizar', () => {
   });
 
   it('atualizar bloqueia com validação inválida', async () => {
-    svc.listar.mockResolvedValue([]);
+    svc.listar.mockResolvedValue({ data: [], total: 0 });
     const { result } = renderHook(() => useProdutos());
     await waitFor(() => expect(result.current.loading).toBe(false));
     let ok = true;
@@ -126,7 +126,7 @@ describe('useProdutos criar/atualizar', () => {
 
 describe('useProdutos excluir', () => {
   it('exclui com sucesso', async () => {
-    svc.listar.mockResolvedValue([]);
+    svc.listar.mockResolvedValue({ data: [], total: 0 });
     svc.excluir.mockResolvedValue(undefined);
     const { result } = renderHook(() => useProdutos());
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -140,7 +140,7 @@ describe('useProdutos excluir', () => {
   });
 
   it('propaga erro', async () => {
-    svc.listar.mockResolvedValue([]);
+    svc.listar.mockResolvedValue({ data: [], total: 0 });
     svc.excluir.mockRejectedValue(new Error('FK'));
     const { result } = renderHook(() => useProdutos());
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -155,7 +155,7 @@ describe('useProdutos excluir', () => {
 
 describe('useProdutos buscarPorCodigoBarras', () => {
   it('retorna produto encontrado', async () => {
-    svc.listar.mockResolvedValue([]);
+    svc.listar.mockResolvedValue({ data: [], total: 0 });
     svc.buscarPorCodigoBarras.mockResolvedValue(row);
     const { result } = renderHook(() => useProdutos());
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -168,7 +168,7 @@ describe('useProdutos buscarPorCodigoBarras', () => {
   });
 
   it('retorna null quando não encontra', async () => {
-    svc.listar.mockResolvedValue([]);
+    svc.listar.mockResolvedValue({ data: [], total: 0 });
     svc.buscarPorCodigoBarras.mockResolvedValue(null);
     const { result } = renderHook(() => useProdutos());
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -181,7 +181,7 @@ describe('useProdutos buscarPorCodigoBarras', () => {
   });
 
   it('retorna null em erro (não lança)', async () => {
-    svc.listar.mockResolvedValue([]);
+    svc.listar.mockResolvedValue({ data: [], total: 0 });
     svc.buscarPorCodigoBarras.mockRejectedValue(new Error('x'));
     const { result } = renderHook(() => useProdutos());
     await waitFor(() => expect(result.current.loading).toBe(false));

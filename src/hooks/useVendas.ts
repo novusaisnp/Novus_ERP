@@ -1,15 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { vendasService } from '@/services/vendasService';
+import { vendasService, type Paginacao } from '@/services/vendasService';
 import { Venda, VendaFiltros } from '@/types/vendas';
 import { useToast } from '@/hooks/use-toast';
 
-export const useVendas = (filtros: VendaFiltros = {}) => {
+export const useVendas = (filtros: VendaFiltros = {}, paginacao?: Paginacao) => {
   const qc = useQueryClient();
   const { toast } = useToast();
 
   const listQuery = useQuery({
-    queryKey: ['vendas', filtros],
-    queryFn: () => vendasService.list(filtros),
+    queryKey: ['vendas', filtros, paginacao],
+    queryFn: () => vendasService.list(filtros, paginacao),
   });
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['vendas'] });
@@ -45,8 +45,10 @@ export const useVendas = (filtros: VendaFiltros = {}) => {
   });
 
   return {
-    vendas: listQuery.data || [],
+    vendas: listQuery.data?.data || [],
+    total: listQuery.data?.total || 0,
     loading: listQuery.isLoading,
+    isFetching: listQuery.isFetching,
     refetch: listQuery.refetch,
     saveVenda: saveMutation.mutateAsync,
     excluirVenda: deleteMutation.mutateAsync,

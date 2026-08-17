@@ -1,30 +1,30 @@
 
-import { buildContasPagarQuery, getContaPagarByIdQuery, getEstatisticasQuery } from './contasPagar/contasPagarQueries';
+import { buildContasPagarQuery, getContaPagarByIdQuery, getEstatisticasQuery, type Paginacao } from './contasPagar/contasPagarQueries';
 import { transformFromSupabase } from './contasPagar/contasPagarTransforms';
 import { createContaPagar, updateContaPagar, deleteContaPagar } from './contasPagar/contasPagarOperations';
 import { dbStatusPagarToUi } from '@/lib/statusMappers';
 import { getEmpresaAtivaIdOuFalha } from '@/lib/empresaAtiva';
 
-import type { 
-  ContaPagar, 
-  ContaPagarInput, 
-  ContaPagarFilters, 
-  ContaPagarEstatisticas 
+import type {
+  ContaPagar,
+  ContaPagarInput,
+  ContaPagarFilters,
+  ContaPagarEstatisticas
 } from '@/types/contasPagar';
 
 export const contasPagarService = {
-  async getAll(filtros: ContaPagarFilters = {}): Promise<ContaPagar[]> {
-    
+  async getAll(filtros: ContaPagarFilters = {}, paginacao?: Paginacao): Promise<{ data: ContaPagar[]; total: number }> {
+
     const empresaId = await getEmpresaAtivaIdOuFalha();
-    const query = buildContasPagarQuery(filtros, empresaId);
-    const { data, error } = await query;
+    const query = buildContasPagarQuery(filtros, empresaId, paginacao);
+    const { data, error, count } = await query;
 
     if (error) {
       console.error('[ContasPagar] Erro ao buscar contas a pagar:', error);
       throw new Error(`Erro ao buscar contas a pagar: ${error.message}`);
     }
 
-    return data.map(transformFromSupabase);
+    return { data: data.map(transformFromSupabase), total: paginacao ? (count ?? 0) : data.length };
   },
 
   async getById(id: string): Promise<ContaPagar | null> {

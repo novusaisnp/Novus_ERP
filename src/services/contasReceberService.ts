@@ -1,22 +1,22 @@
 
-import { buildContasReceberQuery, getContaReceberByIdQuery, getEstatisticasQuery } from './contasReceber/contasReceberQueries';
+import { buildContasReceberQuery, getContaReceberByIdQuery, getEstatisticasQuery, type Paginacao } from './contasReceber/contasReceberQueries';
 import { transformFromSupabase } from './contasReceber/contasReceberTransforms';
 import { createContaReceber, updateContaReceber, deleteContaReceber } from './contasReceber/contasReceberOperations';
 import { getEmpresaAtivaIdOuFalha } from '@/lib/empresaAtiva';
-import type { 
-  ContaReceber, 
-  ContaReceberInput, 
-  ContaReceberFilters, 
-  ContaReceberEstatisticas 
+import type {
+  ContaReceber,
+  ContaReceberInput,
+  ContaReceberFilters,
+  ContaReceberEstatisticas
 } from '@/types/contasReceber';
 
 export const contasReceberService = {
-  async getAll(filtros: ContaReceberFilters = {}): Promise<ContaReceber[]> {
-    
+  async getAll(filtros: ContaReceberFilters = {}, paginacao?: Paginacao): Promise<{ data: ContaReceber[]; total: number }> {
+
     try {
       const empresaId = await getEmpresaAtivaIdOuFalha();
-      const query = buildContasReceberQuery(filtros, empresaId);
-      const { data, error } = await query;
+      const query = buildContasReceberQuery(filtros, empresaId, paginacao);
+      const { data, error, count } = await query;
 
       if (error) {
         console.error('[ContasReceber] Erro ao buscar contas a receber:', error);
@@ -25,10 +25,10 @@ export const contasReceberService = {
 
       // Retorna array vazio se não há dados, evitando erros
       if (!data || data.length === 0) {
-        return [];
+        return { data: [], total: paginacao ? (count ?? 0) : 0 };
       }
 
-      return data.map(transformFromSupabase);
+      return { data: data.map(transformFromSupabase), total: paginacao ? (count ?? 0) : data.length };
     } catch (error) {
       console.error('[ContasReceber] Erro no service getAll:', error);
       throw error;

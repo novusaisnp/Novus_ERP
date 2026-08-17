@@ -12,6 +12,7 @@ import {
   obterDocumentosMovimentacao,
   atualizarMovimentacaoBancaria,
   excluirMovimentacaoBancaria,
+  type Paginacao,
 } from '@/services/movimentacoesBancariasService';
 import {
   FiltrosMovimentacoes,
@@ -52,19 +53,22 @@ const notifyBankingError = (err: unknown, fallbackTitle: string, logTag: string)
 
 
 
-export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
+export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes, paginacao?: Paginacao) => {
   const queryClient = useQueryClient();
 
   // Query para listar movimentações
   const {
-    data: movimentacoes = [],
+    data: movimentacoesResult,
     isLoading,
+    isFetching,
     error,
     refetch,
   } = useQuery({
-    queryKey: qk.movimentacoesBancarias.list(filtros),
-    queryFn: () => listarMovimentacoesBancarias(filtros),
+    queryKey: qk.movimentacoesBancarias.list({ filtros, paginacao }),
+    queryFn: () => listarMovimentacoesBancarias(filtros, paginacao),
   });
+  const movimentacoes = movimentacoesResult?.data ?? [];
+  const total = movimentacoesResult?.total ?? 0;
 
   // Query para estatísticas
   const { data: estatisticas } = useQuery({
@@ -167,8 +171,10 @@ export const useMovimentacoesBancarias = (filtros?: FiltrosMovimentacoes) => {
 
   return {
     movimentacoes,
+    total,
     estatisticas,
     isLoading,
+    isFetching,
     error,
     refetch,
     criar: criarMutation.mutate,

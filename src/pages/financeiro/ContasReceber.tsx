@@ -6,22 +6,28 @@ import { ContasReceberFilters } from '@/components/financeiro/contas-receber/Con
 import { ContasReceberContent } from '@/components/financeiro/contas-receber/ContasReceberContent';
 import { ContaReceberFormModal } from '@/components/financeiro/contas-receber/ContaReceberFormModal';
 import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
+import { PaginationFooter } from '@/components/shared/PaginationFooter';
 import type {
   ContaReceber,
   ContaReceberFilters as ContaReceberFiltersType,
   ContaReceberInput,
 } from '@/types/contasReceber';
 
+const PAGE_SIZE = 50;
+
 const ContasReceber = () => {
   const [filtros, setFiltros] = useState<ContaReceberFiltersType>({});
   const [contaParaExcluir, setContaParaExcluir] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<ContaReceber | null>(null);
+  const [page, setPage] = useState(0);
 
   const {
     contasReceber,
+    total,
     estatisticas,
     isLoading,
+    isFetching,
     error,
     criar,
     atualizar,
@@ -29,7 +35,7 @@ const ContasReceber = () => {
     isCreating,
     isUpdating,
     isDeleting,
-  } = useContasReceber(filtros);
+  } = useContasReceber(filtros, { page, pageSize: PAGE_SIZE });
 
   const handleCreateClick = () => {
     setEditing(null);
@@ -47,6 +53,7 @@ const ContasReceber = () => {
 
   const handleFilter = (novosFiltros: ContaReceberFiltersType) => {
     setFiltros(novosFiltros);
+    setPage(0);
   };
 
   const handleSubmit = async (input: ContaReceberInput, id?: string) => {
@@ -83,6 +90,16 @@ const ContasReceber = () => {
         onCreateClick={handleCreateClick}
         isDeleting={isDeleting}
       />
+
+      {!isLoading && contasReceber.length > 0 && (
+        <PaginationFooter
+          page={page}
+          pageSize={PAGE_SIZE}
+          total={total}
+          isFetching={isFetching}
+          onPageChange={setPage}
+        />
+      )}
 
       <ContaReceberFormModal
         isOpen={modalOpen}

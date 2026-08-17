@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { ShoppingCart, Plus, Pencil, Trash2, Ban, FileText } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
+import { PaginationFooter } from '@/components/shared/PaginationFooter';
 
 import { useVendas } from '@/hooks/useVendas';
 import { VendaFormModal } from '@/components/vendas/VendaFormModal';
@@ -45,9 +46,17 @@ const podeEmitir = (v: Venda, fiscalStatus?: string): EmissaoCheck => {
   return { ok: true };
 };
 
+const PAGE_SIZE = 50;
+
 const Vendas: React.FC = () => {
-  const [filtros, setFiltros] = useState<VendaFiltros>({});
-  const { vendas, loading, excluirVenda, cancelarVenda } = useVendas(filtros);
+  const [filtrosState, setFiltrosState] = useState<VendaFiltros>({});
+  const [page, setPage] = useState(0);
+  const setFiltros: typeof setFiltrosState = (value) => {
+    setFiltrosState(value);
+    setPage(0);
+  };
+  const filtros = filtrosState;
+  const { vendas, total, loading, isFetching, excluirVenda, cancelarVenda } = useVendas(filtros, { page, pageSize: PAGE_SIZE });
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Venda | null>(null);
@@ -248,6 +257,16 @@ const Vendas: React.FC = () => {
             )}
           </CardContent>
         </Card>
+
+        {!loading && vendas.length > 0 && (
+          <PaginationFooter
+            page={page}
+            pageSize={PAGE_SIZE}
+            total={total}
+            isFetching={isFetching}
+            onPageChange={setPage}
+          />
+        )}
 
         <VendaFormModal open={modalOpen} onOpenChange={setModalOpen} venda={editing} />
 

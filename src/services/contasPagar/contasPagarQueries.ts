@@ -3,7 +3,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { uiStatusPagarToDb } from '@/lib/statusMappers';
 import type { ContaPagarFilters } from '@/types/contasPagar';
 
-export const buildContasPagarQuery = (filtros: ContaPagarFilters = {}, empresaId: string) => {
+export interface Paginacao {
+  page: number; // 0-based
+  pageSize: number;
+}
+
+export const buildContasPagarQuery = (
+  filtros: ContaPagarFilters = {},
+  empresaId: string,
+  paginacao?: Paginacao,
+) => {
 
   let query = supabase
     .from('contas_pagar')
@@ -43,7 +52,7 @@ export const buildContasPagarQuery = (filtros: ContaPagarFilters = {}, empresaId
           codigo
         )
       )
-    `)
+    `, { count: paginacao ? 'exact' : undefined })
     .is('deleted_at', null)
     .eq('empresa_representada_id', empresaId)
     .order('data_vencimento', { ascending: false });
@@ -75,6 +84,12 @@ export const buildContasPagarQuery = (filtros: ContaPagarFilters = {}, empresaId
 
   if (filtros.valor_max) {
     query = query.lte('valor_original', filtros.valor_max);
+  }
+
+  if (paginacao) {
+    const from = paginacao.page * paginacao.pageSize;
+    const to = from + paginacao.pageSize - 1;
+    query = query.range(from, to);
   }
 
   return query;

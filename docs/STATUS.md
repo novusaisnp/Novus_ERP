@@ -1,5 +1,76 @@
 # Status do projeto — NOVUS ERP
 
+## 🔖 Checkpoint atual — AUDITORIA_NOVA Fase 5 (item 2/3): paginação server-side nas 6 listas de maior volume (2026-08-17)
+
+Segunda das três frentes da Fase 5 (a primeira, RLS `auth.uid()`, ver seção
+abaixo). Paginação real (`limit`/`offset` + contagem exata) nas 6 listas
+citadas no plano — Contas a Pagar, Contas a Receber, Movimentações Bancárias,
+Vendas, Entidades, Produtos — no padrão já usado no Kardex
+(`relatoriosService.ts`): rodapé "Mostrando X–Y de Z" + Anterior/Próxima.
+
+### O que mudou
+
+- **Novo componente compartilhado**: `src/components/shared/PaginationFooter.tsx`
+  — mesmo rodapé nas 6 telas em vez de 6 implementações divergentes.
+- **Services**: `contasPagarService`, `contasReceberService`,
+  `movimentacoesBancariasService`, `vendasService`, `entidadeService`,
+  `produtoService` — cada um ganhou um parâmetro `paginacao?: {page,
+  pageSize}` opcional. Query builder usa `.select(..., {count:'exact'})` +
+  `.range(from,to)` só quando `paginacao` é passado; omitido, o service se
+  comporta exatamente como antes (busca tudo, sem `count`). Isso preserva
+  **sem tocar** os consumidores que precisam do dataset completo — Relatórios
+  Financeiro/Vendas e Fluxo de Caixa continuam chamando os mesmos hooks sem
+  paginação e seguem recebendo a lista inteira (a agregação desses relatórios
+  no Postgres é a 3ª frente da Fase 5, ainda não iniciada).
+- **Entidades**: a busca (`searchTerm`) era 100% client-side sobre a lista
+  inteira já carregada — paginar sem mover a busca pro servidor teria feito a
+  busca só enxergar a página atual, escondendo resultados em silêncio. Movida
+  pra `.or(nome/apelido/cpf/cnpj/email.ilike...)` no `entidadeService`, com
+  debounce de 300ms (mesmo padrão de `useContaContabilSearch.ts`). Mesmo
+  achado e mesmo fix em **Produtos** (`nome/codigo/ncm`). Fornecedores/
+  Clientes/Colaboradores (telas satélite que também usam `entidadeService`/
+  `useEntidades`) **não foram tocados** — continuam chamando o hook sem
+  `busca`/`paginacao`, comportamento idêntico ao de antes; não estavam no
+  escopo das 6 listas do plano.
+- **Deep-link de edição corrigido em 2 telas**: Contas a Pagar
+  (`?editarTitulo=`) e Entidades (`?edit=`) resolviam o registro a editar
+  procurando por id dentro da lista já carregada — com paginação, um registro
+  fora da página atual faria o deep-link falhar em silêncio. Trocado por
+  busca direta (`getById`/novo `entidadeService.getEntidadeById`), independente
+  de paginação.
+- **Trade-off deliberado em Movimentações Bancárias**: exportação CSV e o
+  payload do relatório (`ExportMenu`) dentro do modal agora refletem só a
+  página carregada na tela, não mais o dataset inteiro filtrado — mesmo
+  comportamento que o próprio Kardex (a referência que o plano manda copiar)
+  já tem hoje (`kardexToCsv(rows)` exporta só a página). Não é regressão
+  silenciosa: documentado aqui porque é a única das 6 telas onde exportação e
+  listagem paginada vivem no mesmo componente.
+
+### Validação
+
+- `npm run typecheck` limpo; `npm run test -- --run` → 53 arquivos, 388/388
+  (testes de `produtoService`/`useProdutos` ajustados ao novo formato de
+  retorno `{data, total}`).
+- **Testado ao vivo no navegador** (dev server local, conta real): Entidades
+  — busca "Manoel" reduziu 2→1 registro corretamente, confirmado via
+  Network que a requisição real ao Supabase carrega
+  `offset=0&limit=50` e o `.or(...)` de busca; clique em editar abriu o
+  modal com os dados certos (prova do fix do deep-link). Vendas — dado real
+  de teste, rodapé "Mostrando 1–1 de 1" correto. Contas a Pagar, Produtos,
+  Movimentações Bancárias — conta de teste sem dados nesses módulos;
+  confirmado que a tela renderiza o estado vazio sem erro de console e sem
+  quebrar.
+
+### Próxima ação única
+
+Fase 5 seguiria pela 3ª frente (agregação de indicadores no Postgres — fluxo
+de caixa e relatórios financeiros/vendas, hoje somando no navegador). Depois
+de fechar as três, `supabase db advisors --type performance` roda de novo
+para medir o delta final da fase inteira. Nenhuma decisão do usuário
+pendente para começar.
+
+---
+
 ## 🔖 Checkpoint atual — AUDITORIA_NOVA Fase 5 (item 1/3): 345 policies RLS reescritas (2026-08-17)
 
 Fase 5 tem três frentes independentes (paginação server-side, RLS `auth.uid()`,

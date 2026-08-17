@@ -3,20 +3,24 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { contasPagarService } from '@/services/contasPagarService';
+import type { Paginacao } from '@/services/contasPagar/contasPagarQueries';
 import type { ContaPagar, ContaPagarInput, ContaPagarFilters } from '@/types/contasPagar';
 
-export const useContasPagar = (filtros: ContaPagarFilters = {}) => {
+export const useContasPagar = (filtros: ContaPagarFilters = {}, paginacao?: Paginacao) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const {
-    data: contasPagar = [],
+    data: contasPagarResult,
     isLoading,
+    isFetching,
     error,
   } = useQuery({
-    queryKey: ['contas-pagar', filtros],
-    queryFn: () => contasPagarService.getAll(filtros),
+    queryKey: ['contas-pagar', filtros, paginacao],
+    queryFn: () => contasPagarService.getAll(filtros, paginacao),
   });
+  const contasPagar = contasPagarResult?.data ?? [];
+  const total = contasPagarResult?.total ?? 0;
 
   const {
     data: estatisticas,
@@ -89,8 +93,10 @@ export const useContasPagar = (filtros: ContaPagarFilters = {}) => {
 
   return {
     contasPagar,
+    total,
     estatisticas,
     isLoading,
+    isFetching,
     isLoadingStats,
     error,
     criar: createMutation.mutate,

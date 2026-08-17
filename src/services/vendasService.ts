@@ -16,14 +16,21 @@ function calcTotais(v: Partial<Venda>): Partial<Venda> {
   return { ...v, subtotal, valor_total };
 }
 
+export interface Paginacao {
+  page: number; // 0-based
+  pageSize: number;
+}
+
 export const vendasService = {
   calcTotais,
 
-  async list(filtros: VendaFiltros = {}): Promise<Venda[]> {
+  async list(filtros: VendaFiltros = {}, paginacao?: Paginacao): Promise<{ data: Venda[]; total: number }> {
     const empresaId = await getEmpresaId();
     let q = supabase
       .from('vendas')
-      .select('*, cliente:entidades!vendas_cliente_id_fkey(id, nome), vendedor:usuarios(id, nome), itens:itens_venda(*)')
+      .select('*, cliente:entidades!vendas_cliente_id_fkey(id, nome), vendedor:usuarios(id, nome), itens:itens_venda(*)', {
+        count: paginacao ? 'exact' : undefined,
+      })
       .eq('empresa_representada_id', empresaId)
       .is('deleted_at', null)
       .order('data_venda', { ascending: false });
@@ -33,12 +40,19 @@ export const vendasService = {
     if (filtros.data_fim) q = q.lte('data_venda', filtros.data_fim);
     if (filtros.busca) q = q.ilike('numero_venda', `%${filtros.busca}%`);
 
-    const { data, error } = await q;
+    if (paginacao) {
+      const from = paginacao.page * paginacao.pageSize;
+      const to = from + paginacao.pageSize - 1;
+      q = q.range(from, to);
+    }
+
+    const { data, error, count } = await q;
     if (error) {
       console.error('[vendasService] Erro ao listar vendas');
       throw error;
     }
-    return (data || []) as Venda[];
+    const rows = (data || []) as Venda[];
+    return { data: rows, total: paginacao ? (count ?? 0) : rows.length };
   },
 
   async save(venda: Venda): Promise<Venda> {

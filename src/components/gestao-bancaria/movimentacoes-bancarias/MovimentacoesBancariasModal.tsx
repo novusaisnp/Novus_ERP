@@ -9,6 +9,7 @@ import { FiltrosMovimentacoes } from '@/types/movimentacoesBancarias';
 import { MovimentacoesBancariasFilters } from './MovimentacoesBancariasFilters';
 import { MovimentacoesBancariasStats } from './MovimentacoesBancariasStats';
 import { MovimentacoesBancariasTable } from './MovimentacoesBancariasTable';
+import { PaginationFooter } from '@/components/shared/PaginationFooter';
 import { NovaMovimentacaoModal } from './NovaMovimentacaoModal';
 import { TransferenciaModal } from './TransferenciaModal';
 import { HistoricoMovimentacoes } from './HistoricoMovimentacoes';
@@ -23,6 +24,8 @@ import type { MovimentacaoBancaria } from '@/types/movimentacoesBancarias';
 import { getTipoLabel } from './tipoMovimentacaoLabels';
 
 
+const PAGE_SIZE = 50;
+
 interface MovimentacoesBancariasModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -36,8 +39,12 @@ export function MovimentacoesBancariasModal({
   const [novaMovimentacaoOpen, setNovaMovimentacaoOpen] = useState(false);
   const [transferenciaOpen, setTransferenciaOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('movimentacoes');
+  const [page, setPage] = useState(0);
 
-  const { movimentacoes, estatisticas, isLoading, refetch } = useMovimentacoesBancarias(filtros);
+  const { movimentacoes, total, estatisticas, isLoading, isFetching, refetch } = useMovimentacoesBancarias(
+    filtros,
+    { page, pageSize: PAGE_SIZE },
+  );
   const { contasBancarias } = useContasBancarias();
   const { empresas } = useEmpresasRepresentadas();
   const { data: logosMap, isLoading: logosLoading } = useEmpresasLogosMap(empresas);
@@ -51,6 +58,7 @@ export function MovimentacoesBancariasModal({
 
   const handleFiltrosChange = (novosFiltros: FiltrosMovimentacoes) => {
     setFiltros(novosFiltros);
+    setPage(0);
   };
 
   const detailColumns = useMemo(() => [
@@ -121,7 +129,7 @@ export function MovimentacoesBancariasModal({
               Movimentações Bancárias
             </DialogTitle>
             <Badge variant="outline" className="ml-2">
-              {movimentacoes.length} movimentações
+              {total} movimentações
             </Badge>
           </div>
           <div className="flex items-center space-x-2">
@@ -180,6 +188,16 @@ export function MovimentacoesBancariasModal({
                   onRefresh={refetch}
                 />
               </div>
+
+              {!isLoading && movimentacoes.length > 0 && (
+                <PaginationFooter
+                  page={page}
+                  pageSize={PAGE_SIZE}
+                  total={total}
+                  isFetching={isFetching}
+                  onPageChange={setPage}
+                />
+              )}
             </TabsContent>
 
             <TabsContent value="historico" className="flex-1 flex flex-col">

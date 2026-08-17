@@ -1,25 +1,34 @@
 
 import { useState, useEffect } from 'react';
-import { produtoService } from '@/services/produtoService';
+import { produtoService, type Paginacao } from '@/services/produtoService';
 import { produtoUtils } from '@/utils/produtoUtils';
 import { Produto, SupabaseProduto } from '@/types/produto';
 import { useToast } from '@/hooks/use-toast';
 
-export const useProdutos = () => {
+export const useProdutos = (busca = '', paginacao?: Paginacao) => {
   const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Debounce da busca — mesmo padrão de useContaContabilSearch.ts (300ms).
+  const [debouncedBusca, setDebouncedBusca] = useState(busca);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedBusca(busca), 300);
+    return () => clearTimeout(timer);
+  }, [busca]);
 
   const fetchProdutos = async () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const data = await produtoService.listar();
+
+      const { data, total: totalRows } = await produtoService.listar({ busca: debouncedBusca, paginacao });
       const produtosTransformados = data.map(produtoUtils.transformSupabaseToProduto);
-      
+
       setProdutos(produtosTransformados);
+      setTotal(totalRows);
     } catch (err) {
       console.error('[useProdutos] Erro ao carregar produtos:', err);
       setError('Erro ao carregar produtos');
@@ -139,10 +148,12 @@ export const useProdutos = () => {
 
   useEffect(() => {
     fetchProdutos();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedBusca, paginacao?.page, paginacao?.pageSize]);
 
   return {
     produtos,
+    total,
     loading,
     error,
     fetchProdutos,

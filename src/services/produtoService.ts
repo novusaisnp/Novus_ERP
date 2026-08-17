@@ -7,21 +7,46 @@ import { getEmpresaAtivaIdOuFalha as getEmpresaId } from '@/lib/empresaAtiva';
 type ProdutoInsert = Database['public']['Tables']['produtos']['Insert'];
 type ProdutoUpdate = Database['public']['Tables']['produtos']['Update'];
 
+export interface Paginacao {
+  page: number; // 0-based
+  pageSize: number;
+}
+
+export interface ListarProdutosOpts {
+  busca?: string;
+  paginacao?: Paginacao;
+}
+
 export const produtoService = {
-  async listar(): Promise<SupabaseProduto[]> {
+  async listar(opts: ListarProdutosOpts = {}): Promise<{ data: SupabaseProduto[]; total: number }> {
+    const { busca, paginacao } = opts;
     const empresaId = await getEmpresaId();
-    const { data, error } = await supabase
+    let query = supabase
       .from('produtos')
-      .select('*')
+      .select('*', { count: paginacao ? 'exact' : undefined })
       .eq('empresa_representada_id', empresaId)
       .order('created_at', { ascending: false });
+
+    if (busca?.trim()) {
+      const termo = busca.trim().replace(/[,()]/g, '');
+      query = query.or(`nome.ilike.%${termo}%,codigo.ilike.%${termo}%,ncm.ilike.%${termo}%`);
+    }
+
+    if (paginacao) {
+      const from = paginacao.page * paginacao.pageSize;
+      const to = from + paginacao.pageSize - 1;
+      query = query.range(from, to);
+    }
+
+    const { data, error, count } = await query;
 
     if (error) {
       console.error('[Produtos] Erro ao listar produtos:', error);
       throw error;
     }
 
-    return (data || []) as unknown as SupabaseProduto[];
+    const rows = (data || []) as unknown as SupabaseProduto[];
+    return { data: rows, total: paginacao ? (count ?? 0) : rows.length };
   },
 
   async buscarPorId(id: string): Promise<SupabaseProduto | null> {

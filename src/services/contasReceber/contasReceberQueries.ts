@@ -2,6 +2,11 @@ import { supabase } from '@/integrations/supabase/client';
 import type { ContaReceberFilters } from '@/types/contasReceber';
 import { normalizarStatus } from './contasReceberTransforms';
 
+export interface Paginacao {
+  page: number; // 0-based
+  pageSize: number;
+}
+
 const aplicarFiltrosComuns = (query: any, filtros: ContaReceberFilters, empresaId: string) => {
   // Soft delete: nunca retornar removidos
   query = query.is('deleted_at', null).eq('empresa_representada_id', empresaId);
@@ -58,13 +63,23 @@ const selectComRelacionamentos = `
   )
 `;
 
-export const buildContasReceberQuery = (filtros: ContaReceberFilters = {}, empresaId: string) => {
+export const buildContasReceberQuery = (
+  filtros: ContaReceberFilters = {},
+  empresaId: string,
+  paginacao?: Paginacao,
+) => {
   const query = supabase
     .from('contas_receber')
-    .select(selectComRelacionamentos)
+    .select(selectComRelacionamentos, { count: paginacao ? 'exact' : undefined })
     .order('data_vencimento', { ascending: false });
 
-  return aplicarFiltrosComuns(query, filtros, empresaId);
+  const filtrada = aplicarFiltrosComuns(query, filtros, empresaId);
+  if (paginacao) {
+    const from = paginacao.page * paginacao.pageSize;
+    const to = from + paginacao.pageSize - 1;
+    return filtrada.range(from, to);
+  }
+  return filtrada;
 };
 
 export const getContaReceberByIdQuery = (id: string, empresaId: string) => {

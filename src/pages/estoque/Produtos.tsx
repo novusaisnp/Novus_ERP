@@ -12,21 +12,32 @@ import { FormProduto } from '@/components/modules/FormProduto';
 import { Produto } from '@/types/produto';
 import { produtoUtils } from '@/utils/produtoUtils';
 import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
+import { PaginationFooter } from '@/components/shared/PaginationFooter';
+
+const PAGE_SIZE = 50;
 
 const Produtos: React.FC = () => {
-  const { produtos, loading, criarProduto, atualizarProduto, excluirProduto } = useProdutos();
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(0);
+  const { produtos, total, loading, criarProduto, atualizarProduto, excluirProduto } = useProdutos(searchTerm, {
+    page,
+    pageSize: PAGE_SIZE,
+  });
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduto, setEditingProduto] = useState<Produto | undefined>(undefined);
   const [formLoading, setFormLoading] = useState(false);
   const [produtoToDelete, setProdutoToDelete] = useState<Produto | null>(null);
 
-  const filteredProdutos = produtos.filter(produto =>
-    produto.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (produto.codigo && produto.codigo.includes(searchTerm)) ||
-    (produto.categoria && produto.categoria.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (produto.ncm && produto.ncm.includes(searchTerm))
-  );
+  // Busca já é server-side (useProdutos com `busca`) — `produtos` chega
+  // filtrado e paginado, sem filtro client-side redundante. Exceção:
+  // "categoria" nunca foi um campo populado em Produto (só categoria_id),
+  // então esse ramo de busca já não fazia nada antes desta mudança.
+  const filteredProdutos = produtos;
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setPage(0);
+  };
 
   const handleEdit = (produto: Produto) => {
     setEditingProduto(produto);
@@ -93,7 +104,7 @@ const Produtos: React.FC = () => {
                 placeholder="Buscar produtos, códigos ou categorias..."
                 className="pl-10"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
               />
             </div>
           </div>
@@ -240,6 +251,15 @@ const Produtos: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {!loading && filteredProdutos.length > 0 && (
+        <PaginationFooter
+          page={page}
+          pageSize={PAGE_SIZE}
+          total={total}
+          onPageChange={setPage}
+        />
+      )}
 
       <FormProduto
         produto={editingProduto}

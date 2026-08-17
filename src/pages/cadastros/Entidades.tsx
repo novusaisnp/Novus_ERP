@@ -14,6 +14,7 @@ import { useEntidades } from '@/hooks/useEntidades';
 import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
 import { FormEntidade } from '@/components/modules/FormEntidade';
 import { ConfirmDeleteWithDeps } from '@/components/shared/ConfirmDeleteWithDeps';
+import { PaginationFooter } from '@/components/shared/PaginationFooter';
 import { entidadeService } from '@/services/entidadeService';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { camposPersonalizadosService } from '@/services/camposPersonalizadosService';
@@ -40,6 +41,8 @@ const COLUNAS_FIXAS = [
  * de lá trazem o usuário pra cá (via ?papel=/?edit=) em vez de duplicar o
  * form com seletor de tipo em cada tela.
  */
+const PAGE_SIZE = 50;
+
 const Entidades: React.FC = () => {
   const { data: empresaId } = useEmpresaAtual();
   const [searchParams] = useSearchParams();
@@ -47,11 +50,24 @@ const Entidades: React.FC = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
-  const { data: entidades = [], isLoading: loading } = useQuery({
-    queryKey: ['entidades', 'todas', empresaId],
-    queryFn: () => entidadeService.fetchEntidades(empresaId!),
+  const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(0);
+
+  // Debounce da busca — mesmo padrão de useContaContabilSearch.ts (300ms).
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const paginacao = { page, pageSize: PAGE_SIZE };
+  const { data: entidadesResult, isLoading: loading, isFetching } = useQuery({
+    queryKey: ['entidades', 'todas', empresaId, debouncedSearchTerm, paginacao],
+    queryFn: () => entidadeService.fetchEntidades(empresaId!, undefined, { busca: debouncedSearchTerm, paginacao }),
     enabled: !!empresaId,
   });
+  const entidades = entidadesResult?.data ?? [];
+  const total = entidadesResult?.total ?? 0;
   const { data: camposPersonalizados = [] } = useQuery({
     queryKey: ['campos-personalizados-ativos', empresaId],
     queryFn: () => camposPersonalizadosService.listar(empresaId!, true),
@@ -63,7 +79,6 @@ const Entidades: React.FC = () => {
     enabled: !!user?.id && !!empresaId,
   });
 
-  const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEntidade, setEditingEntidade] = useState<Entidade | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -96,20 +111,23 @@ const Entidades: React.FC = () => {
   const editParam = searchParams.get('edit');
 
   // Deep-link das telas satélite: ?papel=X abre criação com o papel
-  // pré-marcado, ?edit=<id> abre edição direto.
+  // pré-marcado, ?edit=<id> abre edição direto — busca direta por id
+  // (getEntidadeById), não depende da entidade estar na página atual.
+  const { data: entidadeParaEditar } = useQuery({
+    queryKey: ['entidade-por-id', editParam],
+    queryFn: () => entidadeService.getEntidadeById(editParam as string),
+    enabled: !!editParam,
+  });
   useEffect(() => {
-    if (editParam && entidades.length > 0) {
-      const alvo = entidades.find((e) => e.id === editParam);
-      if (alvo) {
-        setEditingEntidade(alvo);
-        setIsDialogOpen(true);
-      }
+    if (editParam && entidadeParaEditar) {
+      setEditingEntidade(entidadeParaEditar);
+      setIsDialogOpen(true);
     } else if (papelParam && !isDialogOpen) {
       setEditingEntidade(null);
       setIsDialogOpen(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editParam, papelParam, entidades.length]);
+  }, [editParam, papelParam, entidadeParaEditar]);
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ['entidades'] });
@@ -161,12 +179,14 @@ const Entidades: React.FC = () => {
     setEditingEntidade(null);
   };
 
-  const filtered = entidades.filter((e) =>
-    e.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (e.cpf && e.cpf.includes(searchTerm)) ||
-    (e.cnpj && e.cnpj.includes(searchTerm)) ||
-    (e.email && e.email.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  // Busca já é server-side (fetchEntidades com `busca`) — `entidades` chega
+  // filtrada e paginada, sem filtro client-side redundante.
+  const filtered = entidades;
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setPage(0);
+  };
 
   return (
     <div className="container mx-auto px-6 py-8">
@@ -214,7 +234,7 @@ const Entidades: React.FC = () => {
                 placeholder="Buscar por nome, CPF/CNPJ ou email..."
                 className="pl-10"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
               />
             </div>
             <Popover>
@@ -320,6 +340,16 @@ const Entidades: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {!loading && filtered.length > 0 && (
+        <PaginationFooter
+          page={page}
+          pageSize={PAGE_SIZE}
+          total={total}
+          isFetching={isFetching}
+          onPageChange={setPage}
+        />
+      )}
 
       <ConfirmDeleteWithDeps
         open={confirmDeleteId !== null}

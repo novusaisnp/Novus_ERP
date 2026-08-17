@@ -2,29 +2,33 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { contasReceberService } from '@/services/contasReceberService';
+import type { Paginacao } from '@/services/contasReceber/contasReceberQueries';
 import type { ContaReceber, ContaReceberInput, ContaReceberFilters } from '@/types/contasReceber';
 
-export const useContasReceber = (filtros: ContaReceberFilters = {}) => {
+export const useContasReceber = (filtros: ContaReceberFilters = {}, paginacao?: Paginacao) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const {
-    data: contasReceber = [],
+    data: contasReceberResult,
     isLoading,
+    isFetching,
     error,
   } = useQuery({
-    queryKey: ['contas-receber', filtros],
+    queryKey: ['contas-receber', filtros, paginacao],
     queryFn: async () => {
       try {
-        return await contasReceberService.getAll(filtros);
+        return await contasReceberService.getAll(filtros, paginacao);
       } catch (error) {
         console.error('[UseContasReceber] Erro ao buscar contas:', error);
-        // Retornar array vazio em caso de erro para evitar crash
-        return [];
+        // Retornar vazio em caso de erro para evitar crash
+        return { data: [], total: 0 };
       }
     },
     retry: 1, // Tentar apenas uma vez para evitar loop de erros
   });
+  const contasReceber = contasReceberResult?.data ?? [];
+  const total = contasReceberResult?.total ?? 0;
 
   const {
     data: estatisticas,
@@ -114,8 +118,10 @@ export const useContasReceber = (filtros: ContaReceberFilters = {}) => {
 
   return {
     contasReceber,
+    total,
     estatisticas,
     isLoading,
+    isFetching,
     isLoadingStats,
     error,
     criar: createMutation.mutate,

@@ -67,10 +67,21 @@ const checarSaldoParaSaida = async (contaId: string, valor: number): Promise<voi
 };
 
 
+export interface Paginacao {
+  page: number; // 0-based
+  pageSize: number;
+}
+
+export interface MovimentacoesResult {
+  data: MovimentacaoBancaria[];
+  total: number;
+}
+
 // Função para listar movimentações com filtros
 export const listarMovimentacoesBancarias = async (
-  filtros?: FiltrosMovimentacoes
-): Promise<MovimentacaoBancaria[]> => {
+  filtros?: FiltrosMovimentacoes,
+  paginacao?: Paginacao,
+): Promise<MovimentacoesResult> => {
 
   const empresaId = await getEmpresaAtivaIdOuFalha();
 
@@ -109,7 +120,7 @@ export const listarMovimentacoesBancarias = async (
         tipo_lote,
         status
       )
-    `)
+    `, { count: paginacao ? 'exact' : undefined })
     .eq('empresa_representada_id', empresaId)
     .order('data_movimentacao', { ascending: false })
     .order('created_at', { ascending: false });
@@ -165,14 +176,21 @@ export const listarMovimentacoesBancarias = async (
     );
   }
 
-  const { data, error } = await query;
+  if (paginacao) {
+    const from = paginacao.page * paginacao.pageSize;
+    const to = from + paginacao.pageSize - 1;
+    query = query.range(from, to);
+  }
+
+  const { data, error, count } = await query;
 
   if (error) {
     console.error('[MovimentacoesBancarias] Erro ao listar movimentações:', error);
     throw new Error(`Erro ao listar movimentações: ${error.message}`);
   }
 
-  return (data as unknown as MovimentacaoBancaria[]) || [];
+  const rows = (data as unknown as MovimentacaoBancaria[]) || [];
+  return { data: rows, total: paginacao ? (count ?? 0) : rows.length };
 };
 
 // Função para obter uma movimentação específica
