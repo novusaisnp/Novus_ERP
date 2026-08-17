@@ -1,5 +1,70 @@
 # Status do projeto — NOVUS ERP
 
+## 🔖 Checkpoint atual — AUDITORIA_NOVA Fase 5 (item 1/3): 345 policies RLS reescritas (2026-08-17)
+
+Fase 5 tem três frentes independentes (paginação server-side, RLS `auth.uid()`,
+agregação no Postgres). Esta entrega fecha só a segunda — é a mais contida e
+mecânica das três, por isso começou primeiro.
+
+### O que mudou
+
+`supabase db advisors --type performance` apontava 345 policies (não 331 —
+número cresceu desde que o plano foi escrito, novas policies vieram das Fases
+1.5 e 6) reavaliando `auth.uid()` por linha em vez de uma vez por query
+(`auth_rls_initplan`, WARN). Migration `20260817090000` gerada mecanicamente a
+partir do catálogo real (`pg_policies`), no mesmo espírito do sweep da Fase
+1.5 — nunca lista fixa de nomes: todo `auth.uid()` cru em `qual`/`with_check`
+virou `(select auth.uid())`, inclusive dentro de chamadas aninhadas como
+`has_role_for_empresa(auth.uid(), ...)`. Script de geração descartável (Node,
+não versionado — a migration gerada é o artefato que importa).
+
+`supabase db advisors --type performance` depois da migration: `auth_rls_initplan`
+zerou (era 345). Restam só os 6 `multiple_permissive_policies` pré-existentes,
+fora do escopo desta migration (o plano só pede a conversão `auth.uid()`).
+
+### Validação
+
+- Cada uma das 345 reescritas provada em `BEGIN...ROLLBACK` contra o banco
+  real antes de aplicar (contagem de "ainda sem select" = 0, "agora com
+  select" = 345, dentro da transação); aplicada de verdade em seguida,
+  conferida com a mesma consulta contra o banco real, e registrada no ledger
+  (`supabase_migrations.schema_migrations`, mesmo padrão manual das fases
+  anteriores — o buraco de bookkeeping de ~14 migrations de agosto/2026
+  continua sem reparo, não bloqueou esta fase).
+- **Prova funcional ao vivo** (`supabase/sql/fase5_rls_initplan_prova.sql`,
+  mesmo padrão de `fase1_5_admin_isolamento_prova.sql`, dados temporários em
+  `BEGIN...ROLLBACK`): usuário comum de A vê e edita centro de custo da
+  própria empresa mas não o de B (`user_has_access_to_empresa` reescrita);
+  admin de A não vê nem edita centro de custo de B, vê e edita o da própria
+  empresa (`has_role_for_empresa` reescrita). Existe porque `ALTER POLICY`
+  bem-sucedido prova só que o SQL é sintaticamente válido, não que a lógica
+  ficou idêntica — a indireção de `SELECT` é semanticamente neutra por
+  desenho, mas o teste comprova em vez de só confiar na leitura do diff.
+- `npm run typecheck` limpo; `npm run test -- --run` → 53 arquivos, 388/388
+  (nenhum arquivo TS tocado — migration pura de SQL).
+- Contagem de policies (`pg_policies`, schema `public`) confirmada igual antes
+  e depois (347) — o sweep não perdeu nem duplicou nenhuma.
+
+### Arquivos desta entrega
+
+- `supabase/migrations/20260817090000_fase5_rls_initplan_sweep.sql`
+- `supabase/sql/fase5_rls_initplan_prova.sql`
+- `docs/STATUS.md`
+
+### Próxima ação única
+
+Fase 5 continua com as outras duas frentes, nenhuma decisão pendente para
+começar qualquer uma: paginação server-side nas 6 listas de maior volume
+(Contas a Pagar, Contas a Receber, Movimentações Bancárias, Vendas, Entidades,
+Produtos, no padrão já usado no Kardex) e agregação de indicadores no Postgres
+em vez de somar no navegador (fluxo de caixa e relatórios). Depois de fechar
+as três, `supabase db advisors --type performance` roda de novo para medir o
+delta final da fase inteira (pedido explícito da "Verificação global" do
+plano). Fase 6.5 (decisão de produto sobre RH) segue em aberto, não é parte
+da Fase 5.
+
+---
+
 ## 🔖 Checkpoint atual — AUDITORIA_NOVA Fase 6: autorização real, não decorativa (2026-08-16)
 
 ### Achado mais grave que o registrado: não era só a rota sem gate
