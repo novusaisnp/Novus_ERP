@@ -71,17 +71,13 @@ export const useFluxoCaixa = (filtros: FluxoCaixaFiltros = {}) => {
     retry: 2
   });
 
-  // Query para buscar estatísticas
-  const { 
-    data: estatisticas, 
-    isLoading: isLoadingEstatisticas, 
-    error: errorEstatisticas 
-  } = useQuery({
-    queryKey: ['fluxo-caixa-estatisticas', filtros],
-    queryFn: () => FluxoCaixaService.getEstatisticasAvancadas(filtros),
-    staleTime: 10 * 60 * 1000,
-    retry: 2
-  });
+  // Derivado em memória do array de `movimentacoes` já buscado acima — não é
+  // mais uma query própria (AUDITORIA_NOVA Fase 5, item 3/3: eliminava um
+  // re-fetch completo e redundante de contas_pagar/contas_receber).
+  const estatisticas = useMemo(
+    () => movimentacoes.length > 0 ? FluxoCaixaService.getEstatisticasAvancadas(movimentacoes, filtros) : undefined,
+    [movimentacoes, filtros]
+  );
 
   // Preparar dados para o gráfico, agrupados por dia/semana/mês conforme o
   // filtro escolhido (antes ignorava periodo_agrupamento e sempre agrupava
@@ -122,17 +118,15 @@ export const useFluxoCaixa = (filtros: FluxoCaixaFiltros = {}) => {
   }, [movimentacoes, periodoAgrupamento]);
 
   // Estados consolidados
-  const isLoading = isLoadingMovimentacoes || isLoadingResumo || isLoadingProjecao || isLoadingEstatisticas;
-  const error = errorMovimentacoes || errorResumo || errorProjecao || errorEstatisticas;
+  const isLoading = isLoadingMovimentacoes || isLoadingResumo || isLoadingProjecao;
+  const error = errorMovimentacoes || errorResumo || errorProjecao;
 
-  // "Atualizar" precisa recarregar as quatro consultas — refazer só as
-  // movimentações e deixar resumo/projeção/estatísticas com dado velho na
-  // tela é o mesmo tipo de inconsistência que já mordeu este módulo antes.
+  // "Atualizar" precisa recarregar movimentações/resumo/projeção —
+  // estatísticas são derivadas de `movimentacoes`, então acompanham sozinhas.
   const invalidateCache = () => {
     queryClient.invalidateQueries({ queryKey: ['fluxo-caixa'] });
     queryClient.invalidateQueries({ queryKey: ['fluxo-caixa-resumo'] });
     queryClient.invalidateQueries({ queryKey: ['fluxo-caixa-projecao'] });
-    queryClient.invalidateQueries({ queryKey: ['fluxo-caixa-estatisticas'] });
   };
 
 

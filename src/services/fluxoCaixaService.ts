@@ -226,78 +226,52 @@ export class FluxoCaixaService {
     }
   }
 
+  // AUDITORIA_NOVA Fase 5 (item 3/3): antes buscava contas_pagar/
+  // contas_receber/liquidacoes_titulos inteiras (via this.getFluxoCaixa) e
+  // somava em JS — 1 dos 3 re-fetches redundantes que useFluxoCaixa disparava
+  // a cada carregamento de página. Agora é uma agregação real no Postgres
+  // (fn_fluxo_caixa_resumo), migration 20260817110000, provada em
+  // supabase/sql/fase5_fluxo_caixa_agregacao_prova.sql.
   static async getResumoFluxoCaixa(filtros: FluxoCaixaFiltros = {}): Promise<FluxoCaixaResumo> {
-    
+
     try {
       const empresaId = await getEmpresaAtivaIdOuFalha();
-      const movimentacoes = await this.getFluxoCaixa(filtros);
+      const janela = janelaPadrao();
 
-      const hoje = new Date();
-      const data7d = new Date(hoje.getTime() + 7 * 24 * 60 * 60 * 1000);
-      const data14d = new Date(hoje.getTime() + 14 * 24 * 60 * 60 * 1000);
-      const data30d = new Date(hoje.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const { data, error } = await supabase.rpc('fn_fluxo_caixa_resumo', {
+        p_empresa_id: empresaId,
+        p_data_inicio: filtros.data_inicio || janela.inicio,
+        p_data_fim: filtros.data_fim || janela.fim,
+        p_tipo_movimento: filtros.tipo_movimento && filtros.tipo_movimento !== 'TODOS' ? filtros.tipo_movimento : null,
+        p_status: filtros.status && filtros.status !== 'TODOS' ? filtros.status : null,
+        p_tipo_fluxo: filtros.tipo_fluxo && filtros.tipo_fluxo !== 'TODOS' ? filtros.tipo_fluxo : null,
+        p_conta_bancaria_id: filtros.conta_bancaria_id || null,
+        p_plano_conta_id: filtros.plano_conta_id || null,
+        p_centro_custo_id: filtros.centro_custo_id || null,
+        p_busca: filtros.busca || null,
+      });
 
-      const entradas = movimentacoes.filter(m => m.tipo === 'ENTRADA');
-      const saidas = movimentacoes.filter(m => m.tipo === 'SAIDA');
-
-      const totalEntradas = entradas.reduce((sum, m) => sum + m.valor, 0);
-      const totalSaidas = saidas.reduce((sum, m) => sum + m.valor, 0);
-
-      // Buscar saldos das contas bancárias ativas
-      const { data: contasBancarias, error: errorContas } = await supabase
-        .from('contas_bancarias')
-        .select('saldo_atual')
-        .eq('ativo', true)
-        .eq('empresa_representada_id', empresaId);
-
-      if (errorContas) {
-        console.error('[FluxoCaixa] Erro ao buscar contas bancárias:', errorContas);
+      if (error) {
+        console.error('[FluxoCaixa] Erro ao calcular resumo (RPC):', error);
+        throw error;
       }
 
-      // Calcular saldo bancário total (incluindo contas cofre)
-      const saldoBancarioTotal = contasBancarias?.reduce((sum, conta) => sum + conta.saldo_atual, 0) || 0;
+      const row = (data as unknown as Record<string, number>[])?.[0];
+      if (!row) {
+        throw new Error('fn_fluxo_caixa_resumo não retornou linha');
+      }
 
-      // Calcular saldo atual (saldos bancários + movimentações realizadas)
-      const entradasRealizadas = entradas.filter(m => m.status === 'REALIZADO');
-      const saidasRealizadas = saidas.filter(m => m.status === 'REALIZADO');
-      const saldoMovimentacoes = entradasRealizadas.reduce((sum, m) => sum + m.valor, 0) - 
-                                 saidasRealizadas.reduce((sum, m) => sum + m.valor, 0);
-      const saldoAtual = saldoBancarioTotal + saldoMovimentacoes;
-
-
-
-      // Calcular projeções
-      const movimentacoes7d = movimentacoes.filter(m => new Date(m.data) <= data7d);
-      const movimentacoes14d = movimentacoes.filter(m => new Date(m.data) <= data14d);
-      const movimentacoes30d = movimentacoes.filter(m => new Date(m.data) <= data30d);
-
-      const saldoProjetado7d = saldoAtual + this.calcularSaldoProjetado(movimentacoes7d);
-      const saldoProjetado14d = saldoAtual + this.calcularSaldoProjetado(movimentacoes14d);
-      const saldoProjetado30d = saldoAtual + this.calcularSaldoProjetado(movimentacoes30d);
-
-      // Calcular capital de giro (simplificado)
-      const capitalGiro = saldoAtual * 0.7; // 70% do saldo atual
-
-      // Calcular runway (dias até esgotamento)
-      const mediaDiariaSaidas = totalSaidas / 30; // média dos últimos 30 dias
-      const runwayDias = mediaDiariaSaidas > 0 ? Math.floor(saldoAtual / mediaDiariaSaidas) : 999;
-
-      // Saldo mínimo (10% do capital de giro)
-      const saldoMinimo = capitalGiro * 0.1;
-
-      const resumo: FluxoCaixaResumo = {
-        total_entradas: totalEntradas,
-        total_saidas: totalSaidas,
-        saldo_atual: saldoAtual,
-        saldo_projetado_7d: saldoProjetado7d,
-        saldo_projetado_14d: saldoProjetado14d,
-        saldo_projetado_30d: saldoProjetado30d,
-        capital_giro: capitalGiro,
-        runway_dias: runwayDias,
-        saldo_minimo: saldoMinimo
+      return {
+        total_entradas: Number(row.total_entradas),
+        total_saidas: Number(row.total_saidas),
+        saldo_atual: Number(row.saldo_atual),
+        saldo_projetado_7d: Number(row.saldo_projetado_7d),
+        saldo_projetado_14d: Number(row.saldo_projetado_14d),
+        saldo_projetado_30d: Number(row.saldo_projetado_30d),
+        capital_giro: Number(row.capital_giro),
+        runway_dias: Number(row.runway_dias),
+        saldo_minimo: Number(row.saldo_minimo),
       };
-
-      return resumo;
 
     } catch (error) {
       console.error('[FluxoCaixa] Erro ao calcular resumo:', error);
@@ -305,57 +279,32 @@ export class FluxoCaixaService {
     }
   }
 
+  // AUDITORIA_NOVA Fase 5 (item 3/3): idem getResumoFluxoCaixa — agrupamento
+  // dia a dia com saldo acumulado agora vem pronto do Postgres
+  // (fn_fluxo_caixa_projecao), não mais de uma busca completa + Map em JS.
   static async getProjecaoFluxoCaixa(dias: number = 30): Promise<FluxoCaixaProjecao[]> {
-    
+
     try {
-      const dataInicio = new Date();
-      const dataFim = new Date(dataInicio.getTime() + dias * 24 * 60 * 60 * 1000);
-      
-      const movimentacoes = await this.getFluxoCaixa({
-        data_inicio: dataInicio.toISOString().split('T')[0],
-        data_fim: dataFim.toISOString().split('T')[0]
+      const empresaId = await getEmpresaAtivaIdOuFalha();
+
+      const { data, error } = await supabase.rpc('fn_fluxo_caixa_projecao', {
+        p_empresa_id: empresaId,
+        p_dias: dias,
       });
 
-      const projecoes: FluxoCaixaProjecao[] = [];
-      let saldoAcumulado = 0;
-
-      // Agrupar por data
-      const movimentacoesPorData = new Map<string, FluxoCaixaItem[]>();
-      movimentacoes.forEach(m => {
-        const data = m.data.split('T')[0];
-        if (!movimentacoesPorData.has(data)) {
-          movimentacoesPorData.set(data, []);
-        }
-        movimentacoesPorData.get(data)!.push(m);
-      });
-
-      // Gerar projeção dia a dia
-      for (let i = 0; i < dias; i++) {
-        const data = new Date(dataInicio.getTime() + i * 24 * 60 * 60 * 1000);
-        const dataStr = data.toISOString().split('T')[0];
-        
-        const movimentacoesDia = movimentacoesPorData.get(dataStr) || [];
-        
-        const entradasDia = movimentacoesDia
-          .filter(m => m.tipo === 'ENTRADA')
-          .reduce((sum, m) => sum + m.valor, 0);
-        
-        const saidasDia = movimentacoesDia
-          .filter(m => m.tipo === 'SAIDA')
-          .reduce((sum, m) => sum + m.valor, 0);
-
-        saldoAcumulado += entradasDia - saidasDia;
-
-        projecoes.push({
-          data: dataStr,
-          entradas_previstas: entradasDia,
-          saidas_previstas: saidasDia,
-          saldo_acumulado: saldoAcumulado,
-          cenario: 'REALISTA'
-        });
+      if (error) {
+        console.error('[FluxoCaixa] Erro ao calcular projeção (RPC):', error);
+        throw error;
       }
 
-      return projecoes;
+      return ((data as unknown as Array<{ data: string; entradas_previstas: number; saidas_previstas: number; saldo_acumulado: number }>) ?? [])
+        .map((row) => ({
+          data: row.data,
+          entradas_previstas: Number(row.entradas_previstas),
+          saidas_previstas: Number(row.saidas_previstas),
+          saldo_acumulado: Number(row.saldo_acumulado),
+          cenario: 'REALISTA' as const,
+        }));
 
     } catch (error) {
       console.error('[FluxoCaixa] Erro ao calcular projeção:', error);
@@ -363,46 +312,40 @@ export class FluxoCaixaService {
     }
   }
 
-  static async getEstatisticasAvancadas(filtros: FluxoCaixaFiltros = {}): Promise<FluxoCaixaEstatisticas> {
-    
-    try {
-      const movimentacoes = await this.getFluxoCaixa(filtros);
-      
-      const entradas = movimentacoes.filter(m => m.tipo === 'ENTRADA');
-      const saidas = movimentacoes.filter(m => m.tipo === 'SAIDA');
-      
-      const maiorEntrada = entradas.reduce((max, m) => 
-        m.valor > max.valor ? m : max, entradas[0] || {} as FluxoCaixaItem
-      );
-      
-      const maiorSaida = saidas.reduce((max, m) => 
-        m.valor > max.valor ? m : max, saidas[0] || {} as FluxoCaixaItem
-      );
+  // AUDITORIA_NOVA Fase 5 (item 3/3): antes buscava tudo de novo (3º
+  // re-fetch redundante de useFluxoCaixa). "Maior entrada/saída" precisa do
+  // item completo (descrição, título de origem) pra exibir na tela — não
+  // compensa uma RPC só pra isso quando o array já foi buscado pela query de
+  // `movimentacoes`; derivado em memória, sem chamada nova ao banco.
+  static getEstatisticasAvancadas(movimentacoes: FluxoCaixaItem[], filtros: FluxoCaixaFiltros = {}): FluxoCaixaEstatisticas {
+    const entradas = movimentacoes.filter(m => m.tipo === 'ENTRADA');
+    const saidas = movimentacoes.filter(m => m.tipo === 'SAIDA');
 
-      const diasPeriodo = filtros.data_fim && filtros.data_inicio 
-        ? Math.ceil((new Date(filtros.data_fim).getTime() - new Date(filtros.data_inicio).getTime()) / (24 * 60 * 60 * 1000))
-        : 30;
+    const maiorEntrada = entradas.reduce((max, m) =>
+      m.valor > max.valor ? m : max, entradas[0] || {} as FluxoCaixaItem
+    );
 
-      const totalEntradas = entradas.reduce((sum, m) => sum + m.valor, 0);
-      const totalSaidas = saidas.reduce((sum, m) => sum + m.valor, 0);
+    const maiorSaida = saidas.reduce((max, m) =>
+      m.valor > max.valor ? m : max, saidas[0] || {} as FluxoCaixaItem
+    );
 
-      const estatisticas: FluxoCaixaEstatisticas = {
-        periodo: `${filtros.data_inicio || 'Início'} a ${filtros.data_fim || 'Fim'}`,
-        total_movimentacoes: movimentacoes.length,
-        maior_entrada: maiorEntrada,
-        maior_saida: maiorSaida,
-        media_diaria_entradas: totalEntradas / diasPeriodo,
-        media_diaria_saidas: totalSaidas / diasPeriodo,
-        tendencia_saldo: totalEntradas > totalSaidas ? 'CRESCENTE' : 
-                        totalEntradas < totalSaidas ? 'DECRESCENTE' : 'ESTAVEL'
-      };
+    const diasPeriodo = filtros.data_fim && filtros.data_inicio
+      ? Math.ceil((new Date(filtros.data_fim).getTime() - new Date(filtros.data_inicio).getTime()) / (24 * 60 * 60 * 1000))
+      : 30;
 
-      return estatisticas;
+    const totalEntradas = entradas.reduce((sum, m) => sum + m.valor, 0);
+    const totalSaidas = saidas.reduce((sum, m) => sum + m.valor, 0);
 
-    } catch (error) {
-      console.error('[FluxoCaixa] Erro ao calcular estatísticas:', error);
-      throw error;
-    }
+    return {
+      periodo: `${filtros.data_inicio || 'Início'} a ${filtros.data_fim || 'Fim'}`,
+      total_movimentacoes: movimentacoes.length,
+      maior_entrada: maiorEntrada,
+      maior_saida: maiorSaida,
+      media_diaria_entradas: totalEntradas / diasPeriodo,
+      media_diaria_saidas: totalSaidas / diasPeriodo,
+      tendencia_saldo: totalEntradas > totalSaidas ? 'CRESCENTE' :
+                      totalEntradas < totalSaidas ? 'DECRESCENTE' : 'ESTAVEL'
+    };
   }
 
   static async getFluxoCompetencia(params: {
@@ -420,12 +363,6 @@ export class FluxoCaixaService {
       throw error;
     }
     return (data as FluxoCompetenciaLinha[]) ?? [];
-  }
-
-  private static calcularSaldoProjetado(movimentacoes: FluxoCaixaItem[]): number {
-    return movimentacoes.reduce((saldo, m) => {
-      return saldo + (m.tipo === 'ENTRADA' ? m.valor : -m.valor);
-    }, 0);
   }
 }
 

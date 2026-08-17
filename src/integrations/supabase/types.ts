@@ -650,6 +650,59 @@ export type Database = {
           },
         ]
       }
+      campos_personalizados: {
+        Row: {
+          ativo: boolean
+          chave: string
+          created_at: string
+          empresa_representada_id: string
+          entidade: string
+          id: string
+          obrigatorio: boolean
+          opcoes: Json | null
+          ordem: number
+          rotulo: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          chave: string
+          created_at?: string
+          empresa_representada_id: string
+          entidade?: string
+          id?: string
+          obrigatorio?: boolean
+          opcoes?: Json | null
+          ordem?: number
+          rotulo: string
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          chave?: string
+          created_at?: string
+          empresa_representada_id?: string
+          entidade?: string
+          id?: string
+          obrigatorio?: boolean
+          opcoes?: Json | null
+          ordem?: number
+          rotulo?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campos_personalizados_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cargos: {
         Row: {
           ativo: boolean | null
@@ -811,59 +864,6 @@ export type Database = {
             columns: ["plano_conta_receita_id"]
             isOneToOne: false
             referencedRelation: "plano_contas"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      campos_personalizados: {
-        Row: {
-          ativo: boolean
-          chave: string
-          created_at: string
-          empresa_representada_id: string
-          entidade: string
-          id: string
-          obrigatorio: boolean
-          opcoes: Json | null
-          ordem: number
-          rotulo: string
-          tipo: string
-          updated_at: string
-        }
-        Insert: {
-          ativo?: boolean
-          chave: string
-          created_at?: string
-          empresa_representada_id: string
-          entidade?: string
-          id?: string
-          obrigatorio?: boolean
-          opcoes?: Json | null
-          ordem?: number
-          rotulo: string
-          tipo: string
-          updated_at?: string
-        }
-        Update: {
-          ativo?: boolean
-          chave?: string
-          created_at?: string
-          empresa_representada_id?: string
-          entidade?: string
-          id?: string
-          obrigatorio?: boolean
-          opcoes?: Json | null
-          ordem?: number
-          rotulo?: string
-          tipo?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "campos_personalizados_empresa_representada_id_fkey"
-            columns: ["empresa_representada_id"]
-            isOneToOne: false
-            referencedRelation: "empresas_representadas"
             referencedColumns: ["id"]
           },
         ]
@@ -2386,8 +2386,8 @@ export type Database = {
           ativo: boolean
           bairro: string | null
           banco: string | null
-          celular: string | null
           campos_extras: Json
+          celular: string | null
           cep: string | null
           cidade: string | null
           cnae: string | null
@@ -2444,8 +2444,8 @@ export type Database = {
           ativo?: boolean
           bairro?: string | null
           banco?: string | null
-          celular?: string | null
           campos_extras?: Json
+          celular?: string | null
           cep?: string | null
           cidade?: string | null
           cnae?: string | null
@@ -2502,8 +2502,8 @@ export type Database = {
           ativo?: boolean
           bairro?: string | null
           banco?: string | null
-          celular?: string | null
           campos_extras?: Json
+          celular?: string | null
           cep?: string | null
           cidade?: string | null
           cnae?: string | null
@@ -2841,9 +2841,12 @@ export type Database = {
           inscricao_municipal: string | null
           observacoes: string | null
           provedor: string
+          proximo_numero_mdfe: number | null
           proximo_numero_nfce: number | null
           proximo_numero_nfe: number | null
           regime_tributario: string
+          rntrc: string | null
+          serie_mdfe: number | null
           serie_nfce: number | null
           serie_nfe: number | null
           updated_at: string
@@ -2867,9 +2870,12 @@ export type Database = {
           inscricao_municipal?: string | null
           observacoes?: string | null
           provedor?: string
+          proximo_numero_mdfe?: number | null
           proximo_numero_nfce?: number | null
           proximo_numero_nfe?: number | null
           regime_tributario?: string
+          rntrc?: string | null
+          serie_mdfe?: number | null
           serie_nfce?: number | null
           serie_nfe?: number | null
           updated_at?: string
@@ -2893,9 +2899,12 @@ export type Database = {
           inscricao_municipal?: string | null
           observacoes?: string | null
           provedor?: string
+          proximo_numero_mdfe?: number | null
           proximo_numero_nfce?: number | null
           proximo_numero_nfe?: number | null
           regime_tributario?: string
+          rntrc?: string | null
+          serie_mdfe?: number | null
           serie_nfce?: number | null
           serie_nfe?: number | null
           updated_at?: string
@@ -3078,6 +3087,7 @@ export type Database = {
           cofins_cst: string | null
           cofins_valor: number | null
           created_at: string
+          dados_fiscais: Json
           descricao: string
           documento_id: string
           empresa_representada_id: string
@@ -3115,6 +3125,7 @@ export type Database = {
           cofins_cst?: string | null
           cofins_valor?: number | null
           created_at?: string
+          dados_fiscais?: Json
           descricao: string
           documento_id: string
           empresa_representada_id: string
@@ -3152,6 +3163,7 @@ export type Database = {
           cofins_cst?: string | null
           cofins_valor?: number | null
           created_at?: string
+          dados_fiscais?: Json
           descricao?: string
           documento_id?: string
           empresa_representada_id?: string
@@ -3273,6 +3285,160 @@ export type Database = {
           },
           {
             foreignKeyName: "fiscal_eventos_empresa_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fiscal_mdfe_documentos: {
+        Row: {
+          chave_acesso: string
+          codigo_municipio_descarregamento: string
+          created_at: string
+          documento_fiscal_id: string | null
+          empresa_representada_id: string
+          id: string
+          nome_municipio_descarregamento: string
+          operacao_id: string
+          tipo: string
+        }
+        Insert: {
+          chave_acesso: string
+          codigo_municipio_descarregamento: string
+          created_at?: string
+          documento_fiscal_id?: string | null
+          empresa_representada_id: string
+          id?: string
+          nome_municipio_descarregamento: string
+          operacao_id: string
+          tipo: string
+        }
+        Update: {
+          chave_acesso?: string
+          codigo_municipio_descarregamento?: string
+          created_at?: string
+          documento_fiscal_id?: string | null
+          empresa_representada_id?: string
+          id?: string
+          nome_municipio_descarregamento?: string
+          operacao_id?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_mdfe_documentos_documento_fiscal_id_fkey"
+            columns: ["documento_fiscal_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_documentos_eletronicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_mdfe_documentos_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_mdfe_documentos_operacao_id_fkey"
+            columns: ["operacao_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_mdfe_operacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fiscal_mdfe_operacoes: {
+        Row: {
+          condutores: Json
+          created_at: string
+          created_by: string | null
+          data_hora_previsto_inicio_viagem: string | null
+          descricao_produto_predominante: string | null
+          documento_id: string | null
+          emitente_tipo: number
+          empresa_representada_id: string
+          id: string
+          municipios_carregamento: Json
+          municipios_descarregamento: Json
+          ncm_produto_predominante: string | null
+          percursos: Json
+          peso_bruto: number
+          seguros_carga: Json
+          status: string
+          tipo_carga: string | null
+          transportador_tipo: number | null
+          uf_fim: string
+          uf_inicio: string
+          unidade_peso: string
+          updated_at: string
+          valor_total_carga: number
+          veiculo_tracao: Json
+        }
+        Insert: {
+          condutores: Json
+          created_at?: string
+          created_by?: string | null
+          data_hora_previsto_inicio_viagem?: string | null
+          descricao_produto_predominante?: string | null
+          documento_id?: string | null
+          emitente_tipo: number
+          empresa_representada_id: string
+          id?: string
+          municipios_carregamento: Json
+          municipios_descarregamento: Json
+          ncm_produto_predominante?: string | null
+          percursos?: Json
+          peso_bruto: number
+          seguros_carga?: Json
+          status?: string
+          tipo_carga?: string | null
+          transportador_tipo?: number | null
+          uf_fim: string
+          uf_inicio: string
+          unidade_peso: string
+          updated_at?: string
+          valor_total_carga: number
+          veiculo_tracao: Json
+        }
+        Update: {
+          condutores?: Json
+          created_at?: string
+          created_by?: string | null
+          data_hora_previsto_inicio_viagem?: string | null
+          descricao_produto_predominante?: string | null
+          documento_id?: string | null
+          emitente_tipo?: number
+          empresa_representada_id?: string
+          id?: string
+          municipios_carregamento?: Json
+          municipios_descarregamento?: Json
+          ncm_produto_predominante?: string | null
+          percursos?: Json
+          peso_bruto?: number
+          seguros_carga?: Json
+          status?: string
+          tipo_carga?: string | null
+          transportador_tipo?: number | null
+          uf_fim?: string
+          uf_inicio?: string
+          unidade_peso?: string
+          updated_at?: string
+          valor_total_carga?: number
+          veiculo_tracao?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_mdfe_operacoes_documento_id_fkey"
+            columns: ["documento_id"]
+            isOneToOne: true
+            referencedRelation: "fiscal_documentos_eletronicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_mdfe_operacoes_empresa_representada_id_fkey"
             columns: ["empresa_representada_id"]
             isOneToOne: false
             referencedRelation: "empresas_representadas"
@@ -5190,6 +5356,44 @@ export type Database = {
         }
         Relationships: []
       }
+      preferencias_listagem: {
+        Row: {
+          colunas_visiveis: Json
+          created_at: string
+          empresa_representada_id: string
+          id: string
+          tela: string
+          updated_at: string
+          usuario_id: string
+        }
+        Insert: {
+          colunas_visiveis?: Json
+          created_at?: string
+          empresa_representada_id: string
+          id?: string
+          tela: string
+          updated_at?: string
+          usuario_id: string
+        }
+        Update: {
+          colunas_visiveis?: Json
+          created_at?: string
+          empresa_representada_id?: string
+          id?: string
+          tela?: string
+          updated_at?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "preferencias_listagem_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       produto_fornecedores: {
         Row: {
           ativo: boolean
@@ -5261,44 +5465,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vw_estoque_ruptura"
             referencedColumns: ["produto_id"]
-          },
-        ]
-      }
-      preferencias_listagem: {
-        Row: {
-          colunas_visiveis: Json
-          created_at: string
-          empresa_representada_id: string
-          id: string
-          tela: string
-          updated_at: string
-          usuario_id: string
-        }
-        Insert: {
-          colunas_visiveis?: Json
-          created_at?: string
-          empresa_representada_id: string
-          id?: string
-          tela: string
-          updated_at?: string
-          usuario_id: string
-        }
-        Update: {
-          colunas_visiveis?: Json
-          created_at?: string
-          empresa_representada_id?: string
-          id?: string
-          tela?: string
-          updated_at?: string
-          usuario_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "preferencias_listagem_empresa_representada_id_fkey"
-            columns: ["empresa_representada_id"]
-            isOneToOne: false
-            referencedRelation: "empresas_representadas"
-            referencedColumns: ["id"]
           },
         ]
       }
@@ -7057,6 +7223,78 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_outbox: {
+        Row: {
+          created_at: string
+          empresa_representada_id: string
+          entregue_em: string | null
+          evento: string
+          http_status: number | null
+          id: string
+          idempotency_key: string
+          payload: Json
+          processando_desde: string | null
+          proxima_tentativa_em: string
+          resposta: string | null
+          status: string
+          tentativas: number
+          ultimo_erro: string | null
+          updated_at: string
+          webhook_config_id: string
+        }
+        Insert: {
+          created_at?: string
+          empresa_representada_id: string
+          entregue_em?: string | null
+          evento: string
+          http_status?: number | null
+          id?: string
+          idempotency_key: string
+          payload: Json
+          processando_desde?: string | null
+          proxima_tentativa_em?: string
+          resposta?: string | null
+          status?: string
+          tentativas?: number
+          ultimo_erro?: string | null
+          updated_at?: string
+          webhook_config_id: string
+        }
+        Update: {
+          created_at?: string
+          empresa_representada_id?: string
+          entregue_em?: string | null
+          evento?: string
+          http_status?: number | null
+          id?: string
+          idempotency_key?: string
+          payload?: Json
+          processando_desde?: string | null
+          proxima_tentativa_em?: string
+          resposta?: string | null
+          status?: string
+          tentativas?: number
+          ultimo_erro?: string | null
+          updated_at?: string
+          webhook_config_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_outbox_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webhook_outbox_webhook_config_id_fkey"
+            columns: ["webhook_config_id"]
+            isOneToOne: false
+            referencedRelation: "webhook_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       fiscal_metrics_daily: {
@@ -7323,6 +7561,40 @@ export type Database = {
           valor_saida: number
         }[]
       }
+      fn_fluxo_caixa_projecao: {
+        Args: { p_dias?: number; p_empresa_id: string }
+        Returns: {
+          data: string
+          entradas_previstas: number
+          saidas_previstas: number
+          saldo_acumulado: number
+        }[]
+      }
+      fn_fluxo_caixa_resumo: {
+        Args: {
+          p_busca?: string
+          p_centro_custo_id?: string
+          p_conta_bancaria_id?: string
+          p_data_fim: string
+          p_data_inicio: string
+          p_empresa_id: string
+          p_plano_conta_id?: string
+          p_status?: string
+          p_tipo_fluxo?: string
+          p_tipo_movimento?: string
+        }
+        Returns: {
+          capital_giro: number
+          runway_dias: number
+          saldo_atual: number
+          saldo_minimo: number
+          saldo_projetado_14d: number
+          saldo_projetado_30d: number
+          saldo_projetado_7d: number
+          total_entradas: number
+          total_saidas: number
+        }[]
+      }
       fn_kardex_produto: {
         Args: {
           p_data_fim?: string
@@ -7553,6 +7825,22 @@ export type Database = {
           p_valor_pretendido: number
         }
         Returns: Json
+      }
+      webhook_outbox_claim: {
+        Args: { p_limite?: number }
+        Returns: {
+          empresa_representada_id: string
+          evento: string
+          headers: Json
+          id: string
+          max_tentativas: number
+          metodo: string
+          payload: Json
+          secret_token: string
+          tentativa: number
+          timeout_segundos: number
+          url_destino: string
+        }[]
       }
     }
     Enums: {

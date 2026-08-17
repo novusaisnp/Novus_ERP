@@ -1,5 +1,85 @@
 # Status do projeto — NOVUS ERP
 
+## 🔖 Checkpoint atual — AUDITORIA_NOVA Fase 5 (item 3/3, escopo reduzido): agregação Postgres no Fluxo de Caixa (2026-08-17)
+
+Terceira frente da Fase 5, mas com escopo decidido com o usuário: só Fluxo de
+Caixa. As duas telas de Relatórios (financeiro e vendas — ~700 linhas cada,
+maduras, com drill-down/comparação de período) ficaram de fora por
+desproporção risco/esforço frente à urgência real (base de dados de produção
+ainda muito pequena — ver achado abaixo) e não foram tocadas.
+
+### O que mudou
+
+- **Achado antes de mexer**: `useFluxoCaixa.ts` disparava 4 queries
+  independentes por carregamento de página; 3 delas (`getResumoFluxoCaixa`,
+  `getProjecaoFluxoCaixa`, `getEstatisticasAvancadas`) cada uma re-buscava do
+  zero `contas_pagar` + `contas_receber` + `liquidacoes_titulos` inteiras
+  (sem paginação) só para somar em JS — o service já fazia isso internamente
+  chamando `this.getFluxoCaixa(filtros)` de dentro de cada uma.
+- **2 RPCs novas** (`supabase/migrations/20260817110000_...sql`):
+  `fn_fluxo_caixa_resumo` (KPIs: entradas/saídas/saldo atual/projeções
+  7-14-30d/capital de giro/runway) e `fn_fluxo_caixa_projecao` (série diária
+  com saldo acumulado via `SUM() OVER`), no mesmo padrão de
+  `relatorio_fluxo_competencia` (SECURITY DEFINER + checagem
+  `has_role(admin)`/`user_has_access_to_empresa` dentro da função, não só
+  confiar no `empresa_id` recebido).
+- **`getEstatisticasAvancadas` não virou RPC** — "maior entrada/maior saída"
+  precisa do item completo (descrição, título de origem) pra exibir na tela,
+  e esse dado já está no array `movimentacoes` que a página busca de
+  qualquer forma; passou a ser uma função pura derivada em memória
+  (`useMemo` no hook), sem nenhuma chamada ao banco.
+- Resultado: de 4 buscas (1 completa + 3 redundantes) para 2 chamadas leves
+  de agregação + 1 busca de detalhe (`movimentacoes`, que a tela/gráfico
+  realmente precisam linha a linha).
+- **Tipos do Supabase regenerados** (`src/integrations/supabase/types.ts`,
+  `supabase gen types typescript --linked`) pra reconhecer as 2 funções
+  novas — trouxe junto sincronização de schema já acumulada de fases
+  anteriores (MDFe, webhook_outbox) que nunca tinha sido regenerada; diff
+  maior que o esperado só nesse arquivo gerado, não é escopo indevido.
+
+### Validação
+
+- **Bug real pego pela prova, não só sintaxe**: a primeira versão de
+  `fn_fluxo_caixa_projecao` usava `cp.valor_original` em vez do valor
+  liquidado (`lp.valor_pago`) para SAIDA/ENTRADA já realizadas — a prova
+  (`supabase/sql/fase5_fluxo_caixa_agregacao_prova.sql`) pegou isso num
+  `ASSERT` antes de qualquer coisa chegar no front. Corrigido na migration
+  antes de aplicar de verdade.
+- Prova completa em `BEGIN...ROLLBACK` (dados temporários, mesmo padrão de
+  `fase1_5_admin_isolamento_prova.sql`): 4 lançamentos sintéticos (saída
+  prevista, saída realizada via liquidação, entrada prevista, entrada
+  realizada via liquidação) com valores conhecidos — todos os 9 campos do
+  resumo (`total_entradas`, `total_saidas`, `saldo_atual`, 3 projeções,
+  `capital_giro`, `runway_dias`), os filtros `tipo_movimento`/`status`, e 4
+  pontos da série diária de projeção batem exatamente com o cálculo manual.
+  Controle de acesso testado também: usuário sem vínculo com a empresa é
+  recusado pela RPC.
+- `supabase db advisors --type security --linked`: as 2 funções novas
+  aparecem só com o aviso genérico esperado ("SECURITY DEFINER executável
+  por authenticated" — mesmo padrão intencional de `relatorio_fluxo_competencia`),
+  nada novo/inesperado. `--type performance` sem achado relacionado.
+- `npm run typecheck` limpo; `npm run test -- --run` → 53 arquivos, 388/388.
+- **Testado ao vivo no navegador**: página `/financeiro/fluxo-caixa`
+  carregou sem erro de console; Network confirmou as duas RPCs
+  (`rpc/fn_fluxo_caixa_resumo`, `rpc/fn_fluxo_caixa_projecao`) chamadas com
+  200, e a busca de `contas_pagar` caiu de 3-4x para 1x por carregamento de
+  página (conta de teste sem dados reais em contas_pagar/contas_receber,
+  então os KPIs renderizaram R$0,00 — consistente com dataset vazio, não
+  prova valor diferente de zero, só prova que o encanamento novo está
+  ativo e correto).
+
+### Próxima ação única
+
+Fase 5 fica assim: RLS (✅), paginação nas 6 listas (✅), agregação Postgres
+no Fluxo de Caixa (✅) — os 2 Relatórios (financeiro/vendas) meio da 3ª
+frente ficam como pendência explícita, não perdida, para quando a base de
+dados real justificar o esforço. `supabase db advisors --type performance`
+"delta final da fase inteira" mencionado nas entradas anteriores só faz
+sentido depois que essa pendência fechar — não rodado agora de propósito.
+Nenhuma decisão do usuário pendente para o que falta.
+
+---
+
 ## 🔖 Checkpoint atual — AUDITORIA_NOVA Fase 5 (item 2/3): paginação server-side nas 6 listas de maior volume (2026-08-17)
 
 Segunda das três frentes da Fase 5 (a primeira, RLS `auth.uid()`, ver seção
