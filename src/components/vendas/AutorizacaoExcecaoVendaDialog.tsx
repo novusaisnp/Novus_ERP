@@ -23,7 +23,7 @@ interface Props {
   autorizando?: boolean;
 }
 
-// Porta 3 (docs/CONTRATOS_CANONICOS_ERP.md §6): quando verificar_autorizacao_venda
+// Porta 3 (docs/PLANO_MESTRE.md §1.6): quando verificar_autorizacao_venda
 // bloqueia, este modal mostra os bloqueios e — se todos forem superáveis — pede
 // justificativa para autorizar_excecao_venda (auditado, permissão reconfirmada no servidor).
 export const AutorizacaoExcecaoVendaDialog: React.FC<Props> = ({

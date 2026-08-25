@@ -1,4 +1,4 @@
-// Porta 3 (docs/CONTRATOS_CANONICOS_ERP.md §6): pré-checagem e autorização
+// Porta 3 (docs/PLANO_MESTRE.md §1.6): pré-checagem e autorização
 // de exceção. Espelha o formato de supabase/functions/_shared/canonical/preflight.ts
 // (Zod, só acessível a partir do Deno das edge functions) — duplicado aqui como
 // tipo TS simples porque o dado já vem validado de uma RPC confiável, não de

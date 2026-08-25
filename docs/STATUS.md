@@ -1,5 +1,60 @@
 # Status do projeto — NOVUS ERP
 
+## 🔖 Checkpoint atual — AUDITORIA_NOVA Fase 6.5: decisão de produto sobre RH (2026-08-19)
+
+Última frente do plano original (`AUDITORIA_NOVA.md`), decisão de produto, não código
+— as 3 telas de RH marcadas como "FACHADA" na auditoria (Folha de Pagamento, Registros
+de Ponto, Integração de Ponto) ganharam decisão explícita do usuário e o tratamento
+honesto (padrão SPED — card de alerta explicando a lacuna, em vez de parecerem
+funcionais):
+
+- **Folha de Pagamento — motor interno.** Decisão: construir cálculo de INSS/IRRF/FGTS
+  dentro do próprio ERP (não integrar parceiro homologado). Ainda não implementado —
+  é iniciativa grande e juridicamente sensível (tabelas de INSS/IRRF mudam por ano,
+  regras de rescisão), merece sessão de escopo própria, não foi feita agora. Enquanto
+  isso, a tela continua aceitando entrada manual (dado real, grava no banco) — decidi
+  **não bloquear** como o SPED faz, porque aqui não existe o risco do SPED (gerar
+  documento legal incompleto e submeter a terceiro); é só card de alerta deixando claro
+  que os valores são digitados, não calculados, e que os catálogos de Vencimentos/
+  Descontos/Benefícios não alimentam a folha ainda.
+- **Registros de Ponto — sem fonte definida.** Card de alerta explicando que a tela é
+  só leitura e sempre vazia até a fonte real (import CSV, relógio de ponto, API) ser
+  escolhida — decisão que continua em aberto.
+- **Integração de Ponto — vai virar job real**, mas só depois que a fonte de Registros
+  de Ponto acima for decidida (a integração sincronizaria esse dado). Config CRUD
+  continua ativa (grava de verdade) — card de alerta deixa claro que "Sincronizar
+  agora" e execução automática ainda não existem.
+
+### Arquivos desta entrega
+
+- `src/pages/rh/FolhaPagamento.tsx`, `src/pages/rh/RegistrosPonto.tsx`,
+  `src/pages/rh/IntegracaoPonto.tsx` — card de alerta (mesmo padrão visual de
+  `fiscal/SPED.tsx`), sem mudança de comportamento além disso.
+- `docs/STATUS.md`
+
+### Validação
+
+- `npm run typecheck` limpo; `npm run test -- --run` → 53 arquivos, 388/388.
+- **Testado ao vivo no navegador** (dev server local, conta admin real
+  `novusaisnp@gmail.com`, empresa Escola Allegra): as 3 rotas
+  (`/rh/folha/folha-pagamento`, `/rh/registros-ponto`, `/rh/folha/integracao-ponto`)
+  carregaram com o card de alerta renderizando o texto certo, sem erro de console e
+  sem quebrar o resto da tela (filtros, tabela vazia, botão "Nova Folha"/"Nova
+  Integração" continuam clicáveis).
+
+### Próxima ação única
+
+Com a Fase 6.5 decidida, o único item do `AUDITORIA_NOVA.md` original que segue como
+pendência aberta (não perdida) é o motor de cálculo de folha interno — iniciativa
+grande, precisa de escopo próprio antes de virar tarefa, não é "próxima ação" direta.
+Fora isso, resta a Fase 7 (higiene contínua, roda em paralelo, sem bloqueio) e a
+consolidação de documentação (`.md` espalhados → um doc por sistema) que o usuário já
+pediu para fazer depois que o AUDITORIA_NOVA fechasse — com Fase 5 e 6.5 fechadas, essa
+consolidação pode começar quando o usuário quiser. Nenhuma decisão pendente para
+começar qualquer uma das duas.
+
+---
+
 ## 🔖 Checkpoint atual — AUDITORIA_NOVA Fase 5 (item 3/3, escopo reduzido): agregação Postgres no Fluxo de Caixa (2026-08-17)
 
 Terceira frente da Fase 5, mas com escopo decidido com o usuário: só Fluxo de

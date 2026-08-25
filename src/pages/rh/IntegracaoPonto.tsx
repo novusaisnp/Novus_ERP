@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Link2, Edit } from 'lucide-react';
+import { Plus, Link2, Edit, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
 const empty = { id: '', nome: '', tipo: '', endpoint: '', token_autenticacao: '', configuracoes: '{}', ativo: true };
@@ -82,6 +82,15 @@ const IntegracaoPontoPage: React.FC = () => {
         </div>
         <Button onClick={openNew} className="gap-2"><Plus className="h-4 w-4" /> Nova Integração</Button>
       </div>
+
+      <Card className="border-amber-300 bg-amber-50/50 dark:bg-amber-950/10">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base"><AlertTriangle className="h-5 w-5" />Configuração real, execução ainda não existe</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm">
+          <p>O que você salvar aqui é gravado de verdade, mas nenhum código sincroniza — não há botão "Sincronizar agora" nem job agendado, e "Última Sincronização" nunca deixa de mostrar "Nunca". Decisão de produto (2026-08-19): virará execução real assim que a fonte de dados de Registros de Ponto for definida.</p>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader><CardTitle>Integrações</CardTitle></CardHeader>

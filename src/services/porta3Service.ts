@@ -1,4 +1,4 @@
-// Porta 3 (docs/CONTRATOS_CANONICOS_ERP.md §6): checagem de crédito/inadimplência
+// Porta 3 (docs/PLANO_MESTRE.md §1.6): checagem de crédito/inadimplência
 // antes de uma venda a prazo, e registro de exceção autorizada.
 import { supabase } from '@/integrations/supabase/client';
 import type { AutorizacaoExcecaoResult, PreflightResponse } from '@/types/porta3';

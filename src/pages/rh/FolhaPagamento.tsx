@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, DollarSign } from 'lucide-react';
+import { Plus, DollarSign, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
 const formatCurrency = (v: number | null | undefined) =>
@@ -87,6 +87,16 @@ const FolhaPagamento: React.FC = () => {
         </div>
         <Button onClick={() => setModalOpen(true)} className="gap-2"><Plus className="h-4 w-4" /> Nova Folha</Button>
       </div>
+
+      <Card className="border-amber-300 bg-amber-50/50 dark:bg-amber-950/10">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base"><AlertTriangle className="h-5 w-5" />Cálculo automático ainda não existe</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <p>Os valores abaixo (INSS, IRRF, FGTS, vencimentos e descontos) são digitados manualmente — o sistema não calcula nada, só registra o que você informar. Decisão de produto (2026-08-19): o cálculo automático será um motor interno, ainda não implementado.</p>
+          <p className="text-muted-foreground">Os catálogos de Vencimentos Padrão, Descontos Padrão e Benefícios Vinculados também não alimentam esta tela até o motor existir.</p>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="p-4 grid gap-4 md:grid-cols-2">

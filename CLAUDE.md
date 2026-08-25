@@ -42,8 +42,9 @@ npm run lint
   `eslint` (sintático, não type-aware) como rede de segurança automatizada — revise com mais
   cuidado manual do que o resto do código, e deploy (`supabase functions deploy <nome>`) é uma
   ação separada e manual do `git push`, ninguém sobe edge function sozinho.
-- Os docs antigos em `docs/` (`SYSTEM_AUDIT.md`, `ARVORE_PROJETO.md`) estão desatualizados —
-  têm um aviso no topo. Não confie neles sem re-verificar contra o código real.
+- Os docs de auditoria de julho/2026 e a auditoria de agosto/2026 (execução já concluída)
+  estão arquivados em `docs/archive/` — histórico, não fonte de verdade. Não confie neles
+  sem re-verificar contra o código real.
 
 ## Padrões e armadilhas já resolvidos (não redescubra)
 
@@ -76,6 +77,7 @@ gap de isolamento, corrija assim que identificado — não adie para depois.
 
 ## Onde ler mais
 
-- Visão de produto e modelo de integração: [`docs/CONTRATOS_CANONICOS_ERP.md`](./docs/CONTRATOS_CANONICOS_ERP.md)
-- Estado atual, pendências e próxima ação crítica: [`docs/STATUS.md`](./docs/STATUS.md)
-- Backlog priorizado e próximos passos (o que falta, não o que já foi feito): [`docs/ROADMAP_2026.md`](./docs/ROADMAP_2026.md)
+- Arquitetura, backlog priorizado e pendências (documento único — funde o que antes
+  era `CONTRATOS_CANONICOS_ERP.md` + `ROADMAP_2026.md` + `AUDITORIA_NOVA.md`):
+  [`docs/PLANO_MESTRE.md`](./docs/PLANO_MESTRE.md)
+- Estado atual, checkpoint sessão a sessão e próxima ação crítica: [`docs/STATUS.md`](./docs/STATUS.md)

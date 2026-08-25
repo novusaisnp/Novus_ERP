@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Clock } from 'lucide-react';
+import { Clock, AlertTriangle } from 'lucide-react';
 
 const fmtTime = (t: string | null) => t ? t.slice(0, 5) : '—';
 
@@ -46,6 +46,15 @@ const RegistrosPonto: React.FC = () => {
         <h1 className="text-3xl font-bold text-primary mb-2">Registros de Ponto</h1>
         <p className="text-muted-foreground">Consulte os registros de ponto por colaborador e período</p>
       </div>
+
+      <Card className="border-amber-300 bg-amber-50/50 dark:bg-amber-950/10">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base"><AlertTriangle className="h-5 w-5" />Nenhuma fonte de dados ligada ainda</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm">
+          <p>Esta tela só exibe; nada no sistema envia registro de ponto para cá — a lista abaixo estará sempre vazia. A fonte real (importação de arquivo, relógio de ponto, API de terceiro) ainda não foi definida (decisão de produto pendente, 2026-08-19).</p>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="p-4 grid gap-4 md:grid-cols-3">

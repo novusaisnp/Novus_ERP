@@ -126,7 +126,7 @@ export const VendaFormModal: React.FC<Props> = ({ open, onOpenChange, venda }) =
 
   const naturezaCrediarioId = naturezas.find((n) => n.codigo === 'CREDIARIO_PROPRIO')?.id;
   const planoSelecionado = planos.find((p) => p.id === form.plano_pagamento_id);
-  // Porta 3 (docs/CONTRATOS_CANONICOS_ERP.md §6): só faz sentido checar crédito/
+  // Porta 3 (docs/PLANO_MESTRE.md §1.6): só faz sentido checar crédito/
   // inadimplência quando a venda é a prazo (natureza CREDIARIO_PROPRIO do plano
   // de pagamento selecionado) — venda à vista não tem o que checar.
   const isCrediario = !!planoSelecionado?.natureza_id && planoSelecionado.natureza_id === naturezaCrediarioId;
