@@ -1,5 +1,50 @@
 # Status do projeto — NOVUS ERP
 
+## 🔖 Checkpoint atual — Consolidação de usuários/permissões, Fases 0-4 fechadas (2026-08-26)
+
+Plano completo (`C:\Users\maxwe\.claude\plans\vamos-consolidar-a-rela-o-mellow-grove.md`) implementado,
+deployado e testado ao vivo em produção nesta sessão — todas as 5 fases fechadas, nenhuma pendência.
+
+- **Fase 0** — `centelha-socio.ts` (`carregarSocioAutorizado`) trocou a query em
+  `socios_representantes` (tabela dropada no cutover `20260810231500`) por `entidades`+
+  `entidade_papeis`. **Achado**: `centelha-provisiona-admin`/`centelha-revoga-admin` nunca
+  tinham sido deployadas em produção (só existiam localmente) — deployadas agora
+  (`verify_jwt: true`, seguem o padrão de sessão de usuário, não HMAC). Testado ao vivo
+  via "Provisionar satélites" no sócio real (Manoel Messias Junior): antes falharia com erro
+  de tabela inexistente, agora retorna 409 de negócio limpo ("empresa sem responsável
+  vinculado") — confirma que a query nova resolve certo.
+- **Fase 1** — migração `20260825120000_historico_privilegios_entidade_papeis_usuarios.sql`
+  aplicada via `supabase db query --linked --file` (não `db push` — histórico de migrações
+  do projeto está com drift antigo, várias migrações de Aug/09-17 aplicadas por fora do CLI
+  em algum momento; aplicar avulso evita reprocessar esse histórico). Registrada manualmente
+  em `supabase_migrations.schema_migrations` pra `migration list` parar de acusar pendente.
+  Duas tabelas append-only (`historico_entidade_papeis`, `historico_usuarios_perfil`) com
+  triggers `AFTER INSERT/UPDATE/DELETE`. Testado ao vivo: troca de `perfil_id` e
+  ativação/desativação de `entidade_papeis` num usuário de teste geraram linha correta em
+  cada tabela, revertido sem deixar resíduo.
+- **Fase 2** — `entidade-preflight` (novo, genérico, `{cpf, papel}`) extraído de
+  `colaborador-preflight` pra `_shared/entidade-preflight-core.ts`; `colaborador-preflight`
+  virou alias fino (`papel:'COLABORADOR'` fixo), zero consumidor quebrado. Testado ao vivo
+  via chamada HMAC real: `papel:'COLABORADOR'` autoriza colaborador real ativo,
+  `papel:'CLIENTE'` inexistente retorna `ENTIDADE_NAO_ENCONTRADA`, alias antigo
+  (`{cpf}` sem `papel`) continua funcionando.
+- **Fases 3/4** (lado Educacional, `create-guardian-user`) — ver
+  `novus-ai-educacional-54/docs/STATUS.md`, mesma sessão: **primeiro login real de
+  responsável no portal da história do produto**, fechando o gap "zero guardian testou o
+  portal em produção" registrado há semanas.
+
+**Nota sobre o plano pausado** (`parallel-baking-narwhal.md`, cargo→role de colaborador):
+continua pausado e complementar, não absorvido por este — ver texto do plano executado,
+seção "Nota sobre o plano pausado", pra retomar depois consumindo `entidade-preflight` em
+vez do endpoint antigo.
+
+**Validação**: `npm run typecheck && npm run test -- --run && npm run build` limpos (388/388
+testes); `npx eslint` limpo nas edge functions tocadas (ponto cego sem cobertura automática).
+Dados de teste criados durante os testes ao vivo (entidade CLIENTE sintética, sócio nenhum
+tocado além do já existente) foram apagados ao final, sem resíduo.
+
+---
+
 ## 🔖 Checkpoint atual — AUDITORIA_NOVA Fase 6.5: decisão de produto sobre RH (2026-08-19)
 
 Última frente do plano original (`AUDITORIA_NOVA.md`), decisão de produto, não código

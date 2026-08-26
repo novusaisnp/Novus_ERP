@@ -74,13 +74,25 @@ export async function carregarSocioAutorizado(
     return { erro: 'Usuário não autenticado', status: 401 };
   }
 
+  // `socios_representantes` foi dropada no cutover pra `entidades`/`entidade_papeis`
+  // (20260810231500_backfill_cutover_socios_colaboradores.sql) — o ID de sócio de hoje
+  // é um `entidades.id`, com o papel confirmado à parte (entidade pode acumular outros
+  // papéis, ex. COLABORADOR, sem deixar de ser sócio).
   const { data: socio, error: socioError } = await supabase
-    .from('socios_representantes')
+    .from('entidades')
     .select('id, nome, email, cpf, ativo, empresa_representada_id')
     .eq('id', socioId)
     .is('deleted_at', null)
     .maybeSingle();
   if (socioError || !socio) {
+    return { erro: 'Sócio/representante não encontrado', status: 404 };
+  }
+  const { data: papeisSocio, error: papelError } = await supabase
+    .from('entidade_papeis')
+    .select('papel')
+    .eq('entidade_id', socioId)
+    .in('papel', ['SOCIO', 'REPRESENTANTE_LEGAL', 'PROCURADOR']);
+  if (papelError || !papeisSocio || papeisSocio.length === 0) {
     return { erro: 'Sócio/representante não encontrado', status: 404 };
   }
   if (opcoes.exigirAtivo && !socio.ativo) {
