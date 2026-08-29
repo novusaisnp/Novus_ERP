@@ -27,6 +27,7 @@ export const cargoService = {
       nome: cargoData.nome,
       descricao: cargoData.descricao,
       salario_base: cargoData.salarioBase,
+      categoria_padrao: cargoData.categoriaPadrao ?? null,
       ativo: cargoData.ativo,
       updated_at: new Date().toISOString()
     };
@@ -51,6 +52,7 @@ export const cargoService = {
       nome: cargoData.nome,
       descricao: cargoData.descricao,
       salario_base: cargoData.salarioBase,
+      categoria_padrao: cargoData.categoriaPadrao ?? null,
       ativo: cargoData.ativo,
       updated_at: new Date().toISOString()
     };

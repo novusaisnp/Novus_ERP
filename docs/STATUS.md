@@ -1,5 +1,40 @@
 # Status do projeto — NOVUS ERP
 
+## 🔖 Checkpoint atual — Cargo→role sugerida no satélite + fecha exceção de gate ERP (2026-08-29)
+
+Retomada do plano pausado `parallel-baking-narwhal.md` (ver checkpoint 2026-08-26 abaixo),
+reescrita em `C:\Users\maxwe\.claude\plans\fancy-painting-mochi.md` — fechada, deployada e
+testada ao vivo em produção, sem pendência.
+
+- **`cargos.categoria_padrao`** (migração `20260829120000`, taxonomia genérica —
+  `atendimento_operacional`/`coordenacao_administrativa`/`administrativo`/`financeiro`/
+  `diretoria`/`outro`) + Select em `FormCargo`. **Correção no mesmo dia** (migração
+  `20260829130000`): o valor original era `pedagogico`, vocabulário do vertical
+  educacional vazando pro schema do ERP transversal — achado pelo usuário durante o teste
+  ao vivo, corrigido pra `atendimento_operacional` antes de qualquer satélite além do
+  Educacional existir.
+- **`entidade-preflight-core.ts`** passa a retornar `categoria_padrao` (só quando
+  `papel==='COLABORADOR'`) — campo aditivo fora do `preflightResponseSchema` canônico,
+  join até `entidade_dados_colaborador.cargo_id → cargos.categoria_padrao`. Testado ao
+  vivo via chamada HTTP assinada direta antes de qualquer mudança no satélite.
+- **`historico_colaboradores_cargo`** (migração `20260829120100`) fecha a segunda metade
+  do gap de auditoria de privilégio — a primeira metade (`historico_usuarios_perfil`) já
+  existia desde 2026-08-26. Trigger em `entidade_dados_colaborador`, não numa tabela
+  `colaboradores` (dropada no cutover `20260810231500`, achado ao investigar o plano
+  pausado — cargo de colaborador só existe em `entidade_dados_colaborador` hoje).
+- **Decisão de arquitetura confirmada pelo usuário nesta sessão, aplicada do lado
+  satélite** (não requer mudança aqui no ERP): nenhum satélite pode criar staff/portal
+  member sem o ERP já confirmar a entidade — fecha uma exceção pré-existente que permitia
+  bypass quando a organização não tinha integração ERP habilitada. Ver
+  `novus-ai-educacional-54/docs/STATUS.md`, mesma data.
+
+**Validação**: `npm run typecheck && npm run test -- --run && npm run build` limpos
+(388/388 testes). Dado de teste (cargo + entidade sintéticos, CPF `11144477735`) criado
+pra validar ao vivo, apagado ao final sem resíduo (inclusive nas tabelas de histórico
+append-only, que geram linha de EXCLUSAO ao deletar — removidas também).
+
+---
+
 ## 🔖 Checkpoint atual — Consolidação de usuários/permissões, Fases 0-4 fechadas (2026-08-26)
 
 Plano completo (`C:\Users\maxwe\.claude\plans\vamos-consolidar-a-rela-o-mellow-grove.md`) implementado,

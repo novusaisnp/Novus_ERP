@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Cargo } from '@/types/rh';
+import { Cargo, CargoCategoriaPadrao } from '@/types/rh';
 import { useCargos } from '@/hooks/useCargos';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
@@ -24,6 +24,7 @@ const formSchema = z.object({
   nome: z.string().min(1, 'Nome do cargo é obrigatório'),
   descricao: z.string().optional(),
   salarioBase: z.string().optional(),
+  categoriaPadrao: z.custom<CargoCategoriaPadrao>().nullish(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -51,19 +52,21 @@ const FormCargo: React.FC<FormCargoProps> = ({
       nome: '',
       descricao: '',
       salarioBase: '',
+      categoriaPadrao: null,
     },
   });
 
   // Reset form when cargo changes or modal opens/closes
   React.useEffect(() => {
-    
+
     if (open) {
       const formData: FormData = {
         nome: cargo?.nome || '',
         descricao: cargo?.descricao || '',
         salarioBase: cargo?.salarioBase?.toString() || '',
+        categoriaPadrao: cargo?.categoriaPadrao ?? null,
       };
-      
+
       form.reset(formData);
     } else {
       // Limpa o formulário quando fecha
@@ -71,6 +74,7 @@ const FormCargo: React.FC<FormCargoProps> = ({
         nome: '',
         descricao: '',
         salarioBase: '',
+        categoriaPadrao: null,
       });
     }
   }, [cargo, open, form]);
@@ -84,6 +88,7 @@ const FormCargo: React.FC<FormCargoProps> = ({
       nome: data.nome.trim(),
       descricao: data.descricao?.trim() || undefined,
       salarioBase: salarioBaseValue,
+      categoriaPadrao: data.categoriaPadrao ?? null,
       ativo: cargo?.ativo ?? true,
     };
 

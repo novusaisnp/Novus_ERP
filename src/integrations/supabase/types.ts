@@ -706,6 +706,7 @@ export type Database = {
       cargos: {
         Row: {
           ativo: boolean | null
+          categoria_padrao: string | null
           cbo: string | null
           created_at: string | null
           departamento_id: string | null
@@ -720,6 +721,7 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean | null
+          categoria_padrao?: string | null
           cbo?: string | null
           created_at?: string | null
           departamento_id?: string | null
@@ -734,6 +736,7 @@ export type Database = {
         }
         Update: {
           ativo?: boolean | null
+          categoria_padrao?: string | null
           cbo?: string | null
           created_at?: string | null
           departamento_id?: string | null

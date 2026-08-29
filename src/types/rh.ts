@@ -63,11 +63,23 @@ export interface Colaborador {
   updatedAt?: Date;
 }
 
+export const CARGO_CATEGORIAS_PADRAO = [
+  'atendimento_operacional',
+  'coordenacao_administrativa',
+  'administrativo',
+  'financeiro',
+  'diretoria',
+  'outro',
+] as const;
+
+export type CargoCategoriaPadrao = (typeof CARGO_CATEGORIAS_PADRAO)[number];
+
 export interface Cargo {
   id?: string;
   nome: string;
   descricao?: string;
   salarioBase?: number;
+  categoriaPadrao?: CargoCategoriaPadrao | null;
   ativo: boolean;
   createdAt?: Date;
   updatedAt?: Date;
@@ -201,6 +213,7 @@ export interface SupabaseCargo {
   nome: string;
   descricao?: string;
   salario_base?: number;
+  categoria_padrao?: string | null;
   ativo: boolean;
   created_at: string;
   updated_at: string;

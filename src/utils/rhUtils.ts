@@ -93,6 +93,7 @@ export const rhUtils = {
       nome: item.nome,
       descricao: item.descricao,
       salarioBase: item.salario_base,
+      categoriaPadrao: (item.categoria_padrao as Cargo['categoriaPadrao']) ?? null,
       ativo: item.ativo,
       createdAt: new Date(item.created_at),
       updatedAt: new Date(item.updated_at)

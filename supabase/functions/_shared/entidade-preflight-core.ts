@@ -124,7 +124,7 @@ export async function handleEntidadePreflight(req: Request, papelFixo?: PapelCat
 
     const { data: entidade, error: entError } = await supabase
       .from('entidades')
-      .select('id, ativo, deleted_at, entidade_papeis!inner(papel), entidade_dados_colaborador(data_demissao)')
+      .select('id, ativo, deleted_at, entidade_papeis!inner(papel), entidade_dados_colaborador(data_demissao, cargos(categoria_padrao))')
       .eq('empresa_representada_id', empresaId)
       .eq('cpf', cpf)
       .eq('entidade_papeis.papel', papel)
@@ -148,6 +148,7 @@ export async function handleEntidadePreflight(req: Request, papelFixo?: PapelCat
     // Checagem específica por papel, isolada do núcleo -- só COLABORADOR tem tabela de
     // extensão hoje (`entidade_dados_colaborador`); um satélite futuro pode pedir
     // checagem extra por papel sem reescrever a query central acima.
+    let categoriaPadrao: string | null = null
     if (papel === 'COLABORADOR') {
       const dadosColaborador = Array.isArray(entidade.entidade_dados_colaborador)
         ? entidade.entidade_dados_colaborador[0]
@@ -155,10 +156,17 @@ export async function handleEntidadePreflight(req: Request, papelFixo?: PapelCat
       if (dadosColaborador?.data_demissao && new Date(dadosColaborador.data_demissao) <= new Date()) {
         return jsonResponse(bloqueio('COLABORADOR_DEMITIDO', 'Colaborador encontrado, mas já foi desligado'), 200)
       }
+      const cargo = Array.isArray(dadosColaborador?.cargos) ? dadosColaborador.cargos[0] : dadosColaborador?.cargos
+      categoriaPadrao = cargo?.categoria_padrao ?? null
     }
 
     const authorized: PreflightResponse = { autorizado: true, bloqueios: [] }
-    return jsonResponse(preflightResponseSchema.parse(authorized), 200)
+    const validated = preflightResponseSchema.parse(authorized)
+    // `categoria_padrao` é aditivo, de propósito fora de `preflightResponseSchema` --
+    // sugestão de role pro satélite, não faz parte do contrato canônico de
+    // autorizado/bloqueios. Só presente quando papel === 'COLABORADOR'.
+    const responseBody = papel === 'COLABORADOR' ? { ...validated, categoria_padrao: categoriaPadrao } : validated
+    return jsonResponse(responseBody, 200)
   } catch (error) {
     console.error('Unexpected error in entidade-preflight:', error)
     return jsonResponse({ error: 'internal_error' }, 500)
