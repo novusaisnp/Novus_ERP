@@ -49,6 +49,7 @@ import { ArrowLeftRight, ClipboardList, BarChart3, FileText } from 'lucide-react
 
 // Financeiro Pages
 import PlanoContas from './pages/financeiro/PlanoContas';
+import AtivosFixos from './pages/financeiro/AtivosFixos';
 import ContasPagar from './pages/financeiro/ContasPagar';
 import ContasReceber from './pages/financeiro/ContasReceber';
 import MovimentacoesFinanceiras from './pages/financeiro/MovimentacoesFinanceiras';
@@ -199,6 +200,7 @@ function App() {
                     <Route path="fluxo-competencia" element={<FluxoCompetenciaPage />} />
                     <Route path="centros-custo" element={<CentrosCusto />} />
                     <Route path="plano-contas" element={<PlanoContas />} />
+                    <Route path="ativos-fixos" element={<AtivosFixos />} />
                     <Route path="config-basicas" element={<ConfigBasicas />} />
                     <Route path="relatorios" element={<RelatoriosFinanceiro />} />
                   </Route>

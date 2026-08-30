@@ -167,6 +167,10 @@ export const sidebarItems: MenuItem[] = [
         url: "/financeiro/plano-contas",
       },
       {
+        title: "Ativos Fixos",
+        url: "/financeiro/ativos-fixos",
+      },
+      {
         title: "Configurações Básicas",
         url: "/financeiro/config-basicas",
       },

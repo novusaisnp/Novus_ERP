@@ -454,13 +454,13 @@ em `PermissionsSelector.tsx:45-49` sem nenhum módulo por trás.
 
 ## Programa Ativo Fixo
 
-### ATV-1
-- [ ] Cadastro de bem (aquisição, vida útil, taxa, empresa/filial via `empresa_representada_id`).
-- [ ] Motor de depreciação → lançamento automático em `FIN-4` (alimenta também o EBITDA).
-- [ ] Baixa/alienação com ganho/perda.
-- [ ] Vínculo automático com `COMP-` (compra de imobilizado gera o ativo).
+### ATV-1 — fechado 2026-08-30
+- [x] Cadastro de bem (aquisição, vida útil, taxa, empresa/filial via `empresa_representada_id`) — tabela `ativos_fixos` + tela `/financeiro/ativos-fixos`. Ao salvar, gera lançamento de aquisição automático (Débito Imobilizado / Crédito Caixa e Bancos — compra à vista, ver nota `COMP-` abaixo).
+- [x] Motor de depreciação → lançamento automático em `FIN-4` (alimenta também o EBITDA) — RPC `processar_depreciacao_mensal`, sob demanda (botão "Processar Depreciação do Mês"), idempotente por competência (não duplica se rodado 2x no mesmo mês). Linear simples; métodos acelerados não implementados.
+- [x] Baixa/alienação com ganho/perda — RPC `baixar_ativo_fixo`, testado ao vivo com ganho e com perda, lançamento sempre balanceado. Simplificação deliberada: uma única conta "Resultado na Baixa de Imobilizado" recebe débito (perda) ou crédito (ganho), em vez de contas de Receita/Despesa separadas.
+- [ ] Vínculo automático com `COMP-` (compra de imobilizado gera o ativo) — segue pendente, só faz sentido quando `COMP-1` existir; por ora toda aquisição é tratada como compra à vista.
 
-**Critério de saída:** todo bem depreciável gera lançamento mensal automático no razão, sem planilha de depreciação paralela.
+**Critério de saída:** todo bem depreciável gera lançamento mensal automático no razão, sem planilha de depreciação paralela. **Atingido** para o ciclo aquisição→depreciação→baixa; agendamento automático mensal (pg_cron) e o vínculo com `COMP-` ficam para quando fizer sentido (mudança de configuração persistente e dependência de programa ainda não construído, respectivamente).
 
 ## Programa Orçamento e Alçadas
 
@@ -638,7 +638,7 @@ aqui é a **sessão de trabalho com agente**, não sprint/semana de time humano.
 | 1 | `ORG-1` — matriz/filial via FK real | ~~1-2~~ **feito** | Fechado em menos de 1 sessão: 1 coluna nova (`matriz_empresa_representada_id`) + UI, depois de reverter uma primeira tentativa com tabelas novas que não batiam com o modelo real (ver nota em `ORG-1`, acima). |
 | 2 | `ORG-2` — escopo de usuário por filial | ~~1-2~~ **não precisa** | Já coberto pelo mecanismo de `user_roles`/`has_role_for_empresa` existente — cada filial é uma `empresa_representada` normal. |
 | 3 | `FIN-4` parte 1 — livro, lançamento automático de título/liquidação/estorno, períodos/fechamento | **feito o motor** (~1 sessão) | Testado ao vivo (título+liquidação reais, estorno só em prova sintética). **Checkpoint humano ainda pendente**: plano mínimo semeado é um bootstrap universal, não substitui a validação do contador sobre o plano de contas de referência e as regras de contabilização — não tratar como fechado de vez até isso acontecer. Fechamento formal de período e cobertura de tarifas/transferências ficam pra completar a parte 1. |
-| 4 | `ATV-1` — ativo fixo | 2-3 | Sequenciado antes da parte 2 do FIN-4 porque EBITDA depende da depreciação existir. |
+| 4 | `ATV-1` — ativo fixo | ~~2-3~~ **feito** (~1 sessão) | Fechado em menos de 1 sessão: cadastro + motor de depreciação (RPC sob demanda) + baixa com ganho/perda, testado ao vivo (criação, depreciação, baixa com perda — R$1.200 aquisição, R$100 depreciado, R$900 na baixa, perda de R$200 balanceada). |
 | 5 | `FIN-4` parte 2 — Balanço, DRE, EBITDA, DMPL, DFC | 2-3 | Renderização/agregação sobre o livro da parte 1. **Checkpoint humano: contador confere os relatórios gerados contra um fechamento real ou simulado.** |
 | 6 | `COMP-1` — compras e suprimentos completo | 3-5 | Domínio novo, mas integra com Estoque/Financeiro já maduros. |
 | 7 | `ORC-1` — motor de alçadas mínimo | 2-3 | Consumido por Compras (item 6) e Financeiro. |
@@ -646,11 +646,13 @@ aqui é a **sessão de trabalho com agente**, não sprint/semana de time humano.
 | 9 | Fiscal — destravar SPED + NFC-e/CCe/contingência | 2-4 | SPED completo (EFD ICMS/IPI, ECD, ECF) só fecha depois do item 3-5 **e** validação contábil — não é só código. |
 | 10 | `FIN-1` (cauda já em andamento) + `FIN-8` baseline | 2-4 | Roda em paralelo, sem bloquear os itens acima. |
 
-**Total Onda 1: ~18-27 sessões de código** (revisado para baixo depois que `ORG-1`/`ORG-2`
-fecharam em menos de 1 sessão combinada — o item 1 era `~1-2` cada, `2-4` do total original).
-Rodando em ritmo de várias sessões por semana (o próprio histórico do projeto já sustentou
-isso), isso é da ordem de **semanas de calendário, não meses ou anos** — desde que os dois
-checkpoints humanos (itens 3 e 5) não fiquem parados esperando agenda do contador.
+**Total Onda 1: ~16-24 sessões de código** (revisado para baixo 2 vezes: `ORG-1`/`ORG-2`
+fecharam em menos de 1 sessão combinada — eram `~1-2` cada — e `ATV-1` fechou em ~1 sessão
+em vez de `2-3`). Rodando em ritmo de várias sessões por semana (o próprio histórico do
+projeto já sustentou isso — nesta mesma data, `ORG-1`, `FIN-4` parte 1 e `ATV-1` fecharam
+todos na mesma sessão), isso é da ordem de **semanas de calendário, não meses ou anos** —
+desde que os dois checkpoints humanos (itens 3 e 5) não fiquem parados esperando agenda do
+contador.
 
 **Marco de saída da Onda 1:** o ERP passa a ser "completo" no sentido do
 `COMPARATIVO_ERP_TOTVS.md` — uma empresa comercial ou de transformação leve compra, recebe,

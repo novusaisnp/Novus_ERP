@@ -1,5 +1,53 @@
 # Status do projeto — NOVUS ERP
 
+## 🔖 Checkpoint atual — ATV-1 fechado: ativo fixo, depreciação e baixa (2026-08-30)
+
+Terceira frente da Onda 1 na mesma sessão (`ORG-1` → `FIN-4` parte 1 → `ATV-1`).
+Sequenciado antes da parte 2 do FIN-4 porque o EBITDA depende da depreciação existir.
+
+- **Migration `20260830170000`**: tabela `ativos_fixos` (cadastro), 4 novas contas
+  contábeis (`3.2.1 Imobilizado`, `3.2.2 Depreciação Acumulada` — contra-ativo, natureza
+  CREDORA passada explicitamente —, `2.2.1 Depreciação e Amortização`,
+  `2.2.2 Resultado na Baixa de Imobilizado`), estendendo (não recriando) o seed do plano
+  mínimo do FIN-4. `RPC processar_depreciacao_mensal` (sob demanda, idempotente por
+  competência) e `RPC baixar_ativo_fixo` (ganho/ perda contra o valor contábil líquido,
+  simplificação deliberada: uma conta só de resultado, débito=perda/crédito=ganho).
+- **Tela nova**: `/financeiro/ativos-fixos` (cadastro + botão "Processar Depreciação do
+  Mês" + baixa por ativo), serviço `ativoFixoService.ts`, hook `useAtivosFixos.ts`.
+- **Erro de segurança repetido pela 3ª vez, agora corrigido na causa raiz**: `REVOKE
+  EXECUTE ... FROM PUBLIC` sozinho não bastou pras 4 functions novas — achei, ao
+  investigar, que este projeto tem `ALTER DEFAULT PRIVILEGES` concedendo EXECUTE a
+  `anon`/`authenticated` em toda function nova criada pelo `postgres`, **independente**
+  do grant implícito de `PUBLIC` do Postgres puro. São duas fontes de grant distintas —
+  revogar de uma não afeta a outra. A partir de agora, todo `REVOKE` de function nova
+  cobre as três (`FROM PUBLIC, anon, authenticated`) numa só instrução. Memória
+  corrigida com a causa raiz completa (as duas primeiras versões da memória, escritas
+  no ORG-1 e no início do FIN-4, davam instrução incompleta).
+
+**Validação**: prova completa em `BEGIN...ROLLBACK`
+(`supabase/sql/atv1_ativo_fixo_prova.sql`) simulando `auth.uid()` de um `novus_owner` —
+aquisição, depreciação de 2 meses (com checagem de não duplicar ao reprocessar a mesma
+competência), baixa com ganho e baixa com perda, todas balanceadas. **Testado ao vivo em
+produção** pela UI real: ativo de R$1.200/12 meses criado → lançamento de aquisição
+correto; "Processar Depreciação do Mês" → R$100 depreciado (1200/12), valor contábil
+R$1.100; baixa por R$900 → perda de R$200, lançamento com 4 linhas (Débito Resultado 200
++ Depreciação Acumulada 100 + Caixa 900 = Crédito Imobilizado 1200) conferido balanceado
+direto no banco. Dado de teste apagado ao final (mesmo procedimento do FIN-4: desabilitar
+o trigger de balanço temporariamente pra permitir o DELETE completo), zero resíduo
+confirmado. `npm run typecheck` limpo; `npm run test -- --run` → 53 arquivos, 388/388
+(nenhum teste novo — UI/service sem cobertura ainda, mesmo ponto cego já registrado para
+outras telas financeiras).
+
+**Próxima ação**: com `ORG-1`+`FIN-4` parte 1+`ATV-1` fechados, a Onda 1 segue pra
+`COMP-1` (compras e suprimentos) e `ORC-1` (motor de alçadas mínimo) — nessa ordem ou
+invertida, já que `COMP-1` consome `ORC-1` pra aprovação de pedido, mas `ORC-1` sozinho
+não depende de `COMP-1` existir. Depois: parte 2 do FIN-4 (Balanço/DRE/EBITDA/DMPL/DFC),
+agora que a depreciação já existe pra alimentar o EBITDA. **Checkpoint humano do FIN-4
+continua pendente** — nenhum contador validou o plano de contas nem as regras de
+contabilização, incluindo as 4 contas novas de ativo fixo desta sessão.
+
+---
+
 ## 🔖 Checkpoint atual — FIN-4 parte 1: motor de partidas dobradas no ar (2026-08-30)
 
 Continuação da Onda 1, mesma sessão de `ORG-1` (ver checkpoint abaixo). Fundação

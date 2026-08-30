@@ -871,6 +871,84 @@ export type Database = {
           },
         ]
       }
+      ativos_fixos: {
+        Row: {
+          categoria: string | null
+          centro_custo_id: string | null
+          created_at: string
+          data_aquisicao: string
+          data_baixa: string | null
+          descricao: string | null
+          empresa_representada_id: string
+          id: string
+          motivo_baixa: string | null
+          nome: string
+          status: string
+          ultima_competencia_depreciada: string | null
+          updated_at: string
+          valor_aquisicao: number
+          valor_baixa: number | null
+          valor_depreciado_acumulado: number
+          valor_residual: number
+          vida_util_meses: number
+        }
+        Insert: {
+          categoria?: string | null
+          centro_custo_id?: string | null
+          created_at?: string
+          data_aquisicao: string
+          data_baixa?: string | null
+          descricao?: string | null
+          empresa_representada_id: string
+          id?: string
+          motivo_baixa?: string | null
+          nome: string
+          status?: string
+          ultima_competencia_depreciada?: string | null
+          updated_at?: string
+          valor_aquisicao: number
+          valor_baixa?: number | null
+          valor_depreciado_acumulado?: number
+          valor_residual?: number
+          vida_util_meses: number
+        }
+        Update: {
+          categoria?: string | null
+          centro_custo_id?: string | null
+          created_at?: string
+          data_aquisicao?: string
+          data_baixa?: string | null
+          descricao?: string | null
+          empresa_representada_id?: string
+          id?: string
+          motivo_baixa?: string | null
+          nome?: string
+          status?: string
+          ultima_competencia_depreciada?: string | null
+          updated_at?: string
+          valor_aquisicao?: number
+          valor_baixa?: number | null
+          valor_depreciado_acumulado?: number
+          valor_residual?: number
+          vida_util_meses?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ativos_fixos_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ativos_fixos_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       centros_custo: {
         Row: {
           ativo: boolean
@@ -2075,8 +2153,15 @@ export type Database = {
           natureza_despesa_default_id: string | null
           natureza_receita_default_id: string | null
           nome: string
+          plano_conta_caixa_bancos_default_id: string | null
+          plano_conta_contas_pagar_default_id: string | null
+          plano_conta_contas_receber_default_id: string | null
+          plano_conta_depreciacao_acumulada_default_id: string | null
           plano_conta_despesa_default_id: string | null
+          plano_conta_despesa_depreciacao_default_id: string | null
+          plano_conta_imobilizado_default_id: string | null
           plano_conta_receita_default_id: string | null
+          plano_conta_resultado_baixa_ativo_default_id: string | null
           responsavel_id: string | null
           telefone: string | null
           updated_at: string
@@ -2098,8 +2183,15 @@ export type Database = {
           natureza_despesa_default_id?: string | null
           natureza_receita_default_id?: string | null
           nome: string
+          plano_conta_caixa_bancos_default_id?: string | null
+          plano_conta_contas_pagar_default_id?: string | null
+          plano_conta_contas_receber_default_id?: string | null
+          plano_conta_depreciacao_acumulada_default_id?: string | null
           plano_conta_despesa_default_id?: string | null
+          plano_conta_despesa_depreciacao_default_id?: string | null
+          plano_conta_imobilizado_default_id?: string | null
           plano_conta_receita_default_id?: string | null
+          plano_conta_resultado_baixa_ativo_default_id?: string | null
           responsavel_id?: string | null
           telefone?: string | null
           updated_at?: string
@@ -2121,8 +2213,15 @@ export type Database = {
           natureza_despesa_default_id?: string | null
           natureza_receita_default_id?: string | null
           nome?: string
+          plano_conta_caixa_bancos_default_id?: string | null
+          plano_conta_contas_pagar_default_id?: string | null
+          plano_conta_contas_receber_default_id?: string | null
+          plano_conta_depreciacao_acumulada_default_id?: string | null
           plano_conta_despesa_default_id?: string | null
+          plano_conta_despesa_depreciacao_default_id?: string | null
+          plano_conta_imobilizado_default_id?: string | null
           plano_conta_receita_default_id?: string | null
+          plano_conta_resultado_baixa_ativo_default_id?: string | null
           responsavel_id?: string | null
           telefone?: string | null
           updated_at?: string
@@ -7520,6 +7619,26 @@ export type Database = {
         Returns: undefined
       }
       financeiro_limite_retroativo: { Args: never; Returns: string }
+      baixar_ativo_fixo: {
+        Args: {
+          p_ativo_id: string
+          p_data_baixa: string
+          p_motivo: string
+          p_valor_baixa: number
+        }
+        Returns: Json
+      }
+      processar_depreciacao_mensal: {
+        Args: {
+          p_competencia?: string
+          p_empresa_id: string
+        }
+        Returns: {
+          ativo_id: string
+          lancamento_id: string
+          valor_depreciado: number
+        }[]
+      }
       financeiro_liquidar_titulo: {
         Args: {
           p_conta_bancaria_id?: string
