@@ -71,7 +71,7 @@ interface FormState {
   contador_email: string;
   observacoes: string;
   tipo_vinculo: TipoVinculo;
-  cnpj_matriz: string;
+  matriz_empresa_representada_id: string;
   // logo e certificado (persistidos em configuracoes jsonb)
   logo_path: string;
   cert_path: string;
@@ -87,7 +87,7 @@ const empty = (): FormState => ({
   tipo_empresa: '', regime_tributario: '', perfil_tributario: '',
   cnae_principal: '', natureza_juridica: '', data_abertura: '',
   contador_nome: '', contador_crc: '', contador_email: '', observacoes: '',
-  tipo_vinculo: '', cnpj_matriz: '',
+  tipo_vinculo: '', matriz_empresa_representada_id: '',
   logo_path: '', cert_path: '', cert_filename: '', cert_uploaded_at: '',
 });
 
@@ -108,7 +108,6 @@ interface EmpresaConfiguracoes {
   contador_email?: string;
   observacoes?: string;
   tipo_vinculo?: string;
-  cnpj_matriz?: string;
   logo_path?: string;
   cert_path?: string;
   cert_filename?: string;
@@ -116,7 +115,6 @@ interface EmpresaConfiguracoes {
 }
 
 const onlyDigits = (v: string) => (v || '').replace(/\D/g, '');
-const isValidCnpj = (v: string) => onlyDigits(v).length === 14;
 
 const fromEmpresa = (e?: EmpresaRepresentada | null): FormState => {
   if (!e) return empty();
@@ -148,7 +146,7 @@ const fromEmpresa = (e?: EmpresaRepresentada | null): FormState => {
     contador_email: c.contador_email || '',
     observacoes: c.observacoes || '',
     tipo_vinculo: (c.tipo_vinculo as TipoVinculo) || '',
-    cnpj_matriz: c.cnpj_matriz || '',
+    matriz_empresa_representada_id: e.matriz_empresa_representada_id || '',
     logo_path: c.logo_path || '',
     cert_path: c.cert_path || '',
     cert_filename: c.cert_filename || '',
@@ -330,8 +328,8 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (form.tipo_vinculo === 'FILIAL' && !isValidCnpj(form.cnpj_matriz)) {
-      toast.error('Informe um CNPJ da Matriz válido (14 dígitos)');
+    if (form.tipo_vinculo === 'FILIAL' && !form.matriz_empresa_representada_id) {
+      toast.error('Selecione a empresa matriz');
       return;
     }
 
@@ -346,6 +344,7 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
       estado: form.estado || null,
       cep: form.cep || null,
       ativo: form.ativo,
+      matriz_empresa_representada_id: form.tipo_vinculo === 'FILIAL' ? form.matriz_empresa_representada_id : null,
       configuracoes: {
         razao_social: form.razao_social,
         nome_fantasia: form.nome_fantasia,
@@ -362,7 +361,6 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
         contador_email: form.contador_email,
         observacoes: form.observacoes,
         tipo_vinculo: form.tipo_vinculo || null,
-        cnpj_matriz: form.tipo_vinculo === 'FILIAL' ? form.cnpj_matriz : null,
         logo_path: form.logo_path || null,
         cert_path: form.cert_path || null,
         cert_filename: form.cert_filename || null,
@@ -412,6 +410,11 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
                 </div>
                 {(e.cidade || e.estado) && (
                   <div className="text-sm text-muted-foreground">{[e.cidade, e.estado].filter(Boolean).join('/')}</div>
+                )}
+                {e.matriz_empresa_representada_id && (
+                  <div className="text-xs text-muted-foreground">
+                    Matriz: {empresas.find((m) => m.id === e.matriz_empresa_representada_id)?.nome || '—'}
+                  </div>
                 )}
                 <div className="flex justify-end gap-2 pt-2">
                   <Button size="sm" variant="outline" onClick={() => openEdit(e)}>
@@ -492,21 +495,31 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
                       <SelectContent>
                         <SelectItem value="INDEPENDENTE">Empresa Independente</SelectItem>
                         <SelectItem value="MESMA_EMPRESA">Mesma Empresa (CNPJ idêntico à responsável)</SelectItem>
-                        <SelectItem value="FILIAL">Filial (vinculada à responsável como matriz)</SelectItem>
+                        <SelectItem value="FILIAL">Filial (vinculada a outra empresa representada como matriz)</SelectItem>
                         <SelectItem value="GRUPO">Empresa do Grupo (conglomerado econômico)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   {form.tipo_vinculo === 'FILIAL' && (
                     <div>
-                      <Label>CNPJ da Matriz *</Label>
-                      <Input
-                        value={form.cnpj_matriz}
-                        onChange={(ev) => setField('cnpj_matriz', ev.target.value)}
-                        placeholder="00.000.000/0000-00"
-                      />
-                      {form.cnpj_matriz && !isValidCnpj(form.cnpj_matriz) && (
-                        <p className="text-xs text-destructive mt-1">CNPJ inválido (14 dígitos)</p>
+                      <Label>Empresa Matriz *</Label>
+                      <Select
+                        value={form.matriz_empresa_representada_id || undefined}
+                        onValueChange={(v) => setField('matriz_empresa_representada_id', v)}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Selecione a matriz" /></SelectTrigger>
+                        <SelectContent>
+                          {empresas.filter((emp) => emp.id && emp.id !== form.id).map((emp) => (
+                            <SelectItem key={emp.id} value={emp.id as string}>
+                              {emp.nome}{emp.cnpj ? ` — ${emp.cnpj}` : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {empresas.filter((emp) => emp.id && emp.id !== form.id).length === 0 && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Cadastre a empresa matriz primeiro como uma empresa representada independente.
+                        </p>
                       )}
                     </div>
                   )}

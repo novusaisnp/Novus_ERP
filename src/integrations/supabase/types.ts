@@ -2071,6 +2071,7 @@ export type Database = {
           endereco: string | null
           estado: string | null
           id: string
+          matriz_empresa_representada_id: string | null
           natureza_despesa_default_id: string | null
           natureza_receita_default_id: string | null
           nome: string
@@ -2093,6 +2094,7 @@ export type Database = {
           endereco?: string | null
           estado?: string | null
           id?: string
+          matriz_empresa_representada_id?: string | null
           natureza_despesa_default_id?: string | null
           natureza_receita_default_id?: string | null
           nome: string
@@ -2115,6 +2117,7 @@ export type Database = {
           endereco?: string | null
           estado?: string | null
           id?: string
+          matriz_empresa_representada_id?: string | null
           natureza_despesa_default_id?: string | null
           natureza_receita_default_id?: string | null
           nome?: string
@@ -2125,6 +2128,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "empresas_representadas_matriz_empresa_representada_id_fkey"
+            columns: ["matriz_empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "empresas_representadas_centro_custo_default_id_fkey"
             columns: ["centro_custo_default_id"]

@@ -273,6 +273,7 @@ quando seus critérios de saída estão comprovados.)*
 - Documentação e checkpoints são agnósticos de ferramenta: não citar fornecedor, marca, assistente ou ambiente pessoal; registrar apenas evidência técnica reproduzível no repositório.
 - Marcação: `[ ]` pendente, `[~]` em execução, `[x]` concluído, `[!]` bloqueado, `🎯` mecânica interna pronta (mock/sandbox quando aplicável) — só falta credencial ou contrato pago externo para ativar. **`🎯` não conta como pendência do núcleo**; cada um referencia um runbook de ativação dedicado (padrão já provado: [`FISCAL_ATIVACAO_PROVEDOR_REAL.md`](./FISCAL_ATIVACAO_PROVEDOR_REAL.md)). Ao escrever um item que misture mecânica interna + serviço pago, sempre quebrar em dois sub-itens — nunca um item só com comentário lateral.
 - Itens deste programa são indispensáveis; podem ser reordenados por dependência, não removidos sem decisão explícita registrada.
+- **Incremental por padrão** (decisão do usuário, 2026-08-30): toda entrega deste Mapa Mestre é aditiva/adaptativa sobre o que já existe — estende tabelas e services reais em vez de recriar, preserva `empresa_responsavel`/`empresas_representadas` e qualquer outro modelo já em produção sem mudança de significado. Reescrever algo do zero é **último recurso**, só quando uma demanda de mercado concreta (identificada em `COMPARATIVO_ERP_TOTVS.md` ou pesquisa equivalente futura) exigir de verdade — nunca por preferência de design. `ORG-1` corrigido no mesmo dia é o exemplo: a primeira tentativa (tabelas novas `grupos_economicos`/`estabelecimentos`) foi revertida ainda vazia, sem nenhum consumidor, ao ficar claro que não batia com o modelo real (ver nota em `ORG-1` abaixo) — substituída por uma única coluna nova (`matriz_empresa_representada_id`) sobre a tabela que já existia.
 
 ## Programa Financeiro-Contábil (FIN-0 a FIN-8)
 
@@ -347,7 +348,7 @@ por trás).
 **Critério de saída:** todo evento financeiro contabilizado produz débito = crédito, só pode ser corrigido por lançamento reverso auditável, **e os relatórios essenciais (Balanço, DRE, EBITDA, DMPL, DFC) são gerados diretamente do razão**, nunca digitados ou calculados à parte.
 
 ### FIN-5 — Grupo econômico, multiempresa e multifilial
-- (Grupo econômico → empresa → estabelecimento e dimensões — relocado para `ORG-1`/`ORG-2`, Programa Estrutura Organizacional.)
+- (Matriz/filial e dimensões — relocado para `ORG-1`/`ORG-2`, Programa Estrutura Organizacional.)
 - [ ] Tesouraria e contas a pagar centralizadas com operação local controlada.
 - (Workflow de aprovação e segregação solicitante × aprovador × pagador — relocado para `ORC-1`, Programa Orçamento e Alçadas.)
 - [ ] Orçamento, realizado e compromissado por dimensão (execução via `ORC-2`).
@@ -391,20 +392,47 @@ por trás).
 
 ## Programa Estrutura Organizacional
 
-Pré-requisito cross-domain: hoje `empresas_representadas` é uma tabela plana (sem
-hierarquia matriz/filial nem grupo econômico) — bloqueia Compras multi-filial, RH por
-estabelecimento, Fiscal por IE de filial e o próprio Programa Financeiro-Contábil (FIN-5).
+**Nota de correção (2026-08-30, mesma sessão que abriu este programa):** a primeira versão
+de `ORG-1` modelava grupo econômico e estabelecimento como **tabelas novas**
+(`grupos_economicos`, `estabelecimentos`) por cima/dentro de `empresas_representadas`.
+Revertida ainda no mesmo dia, antes de qualquer UI ou dado real depender dela — não batia
+com o modelo de negócio real: **`empresa_responsavel` já é o grupo econômico** de uma
+instalação NOVUS (todas as `empresas_representadas` de um tenant já pertencem a ele por
+definição), e **matriz/filial são outras linhas de `empresas_representadas`**, nunca um
+sub-registro dentro de uma só — cada filial tem CNPJ e Inscrição Estadual próprios e
+precisa emitir nota fiscal com identidade própria (realidade fiscal brasileira), o que o
+módulo Fiscal já pressupõe (`empresa_representada_id` como unidade emissora). Consolidar
+negócios de ramos totalmente diferentes sob um mesmo grupo (ex.: autopeças + restaurante do
+mesmo dono) foi explicitamente descartado do escopo do NOVUS core — cada ramo/mecânica
+distinta merece sua própria instalação; um produto separado de consolidação gerencial
+multi-negócio ("ERP Enterprise") ficou registrado como ideia futura, não iniciado.
 
-### ORG-1 — Grupo, empresa e estabelecimento
-- [ ] Modelar grupo econômico → empresa legal → estabelecimento (matriz/filial).
-- [ ] Dimensões configuráveis (estabelecimento, unidade de negócio, centro de custo já existe, projeto, canal).
+### ORG-1 — Matriz e filial (FK real entre empresas_representadas)
+- [x] Coluna `matriz_empresa_representada_id` (auto-referenciada, nullable, com CHECK
+  contra auto-referência) substituindo o campo solto que já existia
+  (`configuracoes->>'cnpj_matriz'`, texto livre sem FK, dentro de `EmpresasRepresentadasList.tsx`)
+  — migration `20260830150000_org1_correcao_matriz_filial_fk.sql`. UI atualizada: o campo
+  "Filial" agora seleciona a matriz de uma lista real de empresas, não digita CNPJ solto.
+  Nenhuma migração de dado necessária (base de produção não tinha nenhuma filial cadastrada
+  ainda). RLS não mudou — a policy de UPDATE já existente em `empresas_representadas`
+  (admin da própria empresa) cobre a nova coluna.
+- [ ] Dimensões configuráveis adicionais (unidade de negócio, projeto, canal — centro de
+  custo já existe) — item independente de matriz/filial, sem demanda concreta registrada
+  ainda; não iniciar especulativamente (mesmo princípio já usado para custom fields, §1.10).
 
-### ORG-2 — Escopo e migração
-- [ ] Escopo de usuário/RLS por grupo/empresa/estabelecimento, sem regressão no isolamento por `empresa_representada_id` já existente.
-- [ ] Dimensões obrigatórias/configuráveis por empresa e tipo de lançamento.
-- [ ] Plano de migração incremental de `estabelecimento_id` para as tabelas núcleo que precisarem (Compras, Fiscal, RH, Ativo Fixo) — sempre aditivo (`ADD COLUMN IF NOT EXISTS`), nunca `DROP`/`RENAME`.
+### ORG-2 — Escopo de usuário por filial
+- [x] **Já resolvido pelo modelo existente, não precisa de trabalho novo**: como cada
+  filial é sua própria `empresa_representada`, dar acesso de um usuário a uma filial
+  específica já é só uma linha em `user_roles` com aquele `empresa_representada_id` —
+  o mecanismo de escopo (`has_role_for_empresa`/`user_has_access_to_empresa`) já existe e
+  já é usado para isso. **Migração de `estabelecimento_id` (do desenho anterior) não se
+  aplica mais** — não existe mais essa coluna, e as referências a ela em `COMP-1`/`ATV-1`
+  abaixo devem ser lidas como "qual `empresa_representada` (matriz ou filial)", já coberto
+  pelas FKs que essas tabelas já vão ter.
 
-**Critério de saída:** um grupo com múltiplas empresas/filiais opera com escopo de usuário correto em toda RPC/relatório, sem usar centro de custo como filial (risco já registrado abaixo, "Modelo plano de empresas").
+**Critério de saída:** uma filial é uma empresa representada de verdade, resolvível pela
+matriz via FK, com fiscal/RH/compras funcionando nela como em qualquer outra empresa — sem
+usar centro de custo como filial (risco já registrado abaixo, "Modelo plano de empresas").
 
 ## Programa Compras e Suprimentos
 
@@ -415,7 +443,7 @@ em `PermissionsSelector.tsx:45-49` sem nenhum módulo por trás.
 ### COMP-1 — Ciclo completo
 - [ ] Requisição de compra interna.
 - [ ] Cotação/mapa comparativo entre fornecedores (reaproveita cadastro de Fornecedores já existente).
-- [ ] Pedido de compra formal, vinculado a Produto (Estoque) e Estabelecimento (`ORG-`).
+- [ ] Pedido de compra formal, vinculado a Produto (Estoque) — já escopado por `empresa_representada_id` (matriz ou filial, `ORG-1`), sem coluna nova necessária.
 - [ ] Aprovação por alçada antes de emitir ao fornecedor (`ORC-1`).
 - [ ] Recebimento físico — reaproveita `estoque_movimentacoes` tipo ENTRADA (motor já maduro), com conferência quantidade/qualidade contra o pedido.
 - [ ] Match de 3 vias (pedido × recebimento × título) gerando `contas_pagar` automaticamente + lançamento em `FIN-4` (débito estoque/despesa, crédito fornecedor).
@@ -427,7 +455,7 @@ em `PermissionsSelector.tsx:45-49` sem nenhum módulo por trás.
 ## Programa Ativo Fixo
 
 ### ATV-1
-- [ ] Cadastro de bem (aquisição, vida útil, taxa, estabelecimento).
+- [ ] Cadastro de bem (aquisição, vida útil, taxa, empresa/filial via `empresa_representada_id`).
 - [ ] Motor de depreciação → lançamento automático em `FIN-4` (alimenta também o EBITDA).
 - [ ] Baixa/alienação com ganho/perda.
 - [ ] Vínculo automático com `COMP-` (compra de imobilizado gera o ativo).
@@ -441,7 +469,7 @@ reautenticação de senha para 3 ações financeiras específicas; `porta3Servic
 autorização de exceção de crédito em vendas a prazo) — sem motor genérico reutilizável.
 
 ### ORC-1 — Motor de alçadas
-- [ ] Motor de alçada mínimo (matriz valor × categoria × estabelecimento × perfil), consumido por Compras (aprovação de pedido) e Financeiro (substituindo a reautenticação pontual sem quebrar o que já funciona).
+- [ ] Motor de alçada mínimo (valor × categoria × empresa/filial × perfil), consumido por Compras (aprovação de pedido) e Financeiro (substituindo a reautenticação pontual sem quebrar o que já funciona).
 - [ ] Segregação solicitante × aprovador × pagador e substituição temporária auditada.
 - [ ] Trilha de auditoria unificada, reaproveitando o padrão já existente (`historico_*`, `porta3_autorizacoes_excecao`).
 
@@ -584,6 +612,88 @@ projetos/timesheet leve, comércio exterior.
 jurídico, hotelaria, indústria pesada com APS/MES — plugam via o modelo de portas da
 Parte 1, nunca entram no núcleo.
 
+## Roadmap de execução com agente de IA (2026-08-30)
+
+O `COMPARATIVO_ERP_TOTVS.md` estima "3 a 5 anos com pelo menos quatro squads" ou "mais de
+8 anos com uma equipe pequena" — essa referência **não se aplica aqui**. O histórico real
+deste projeto mostra velocidade muito diferente trabalhando com agente de IA: as Fases 1,
+1.5, 2, 3, 4 e 6 da Auditoria de agosto (6 frentes, cada uma com migration, service, UI e
+validação ao vivo) fecharam **todas no mesmo dia** (2026-08-16); a padronização de
+relatórios PDF/Excel (8 fases do plano, `preciso-modernizar-a-uix-velvet-cookie.md`) fechou
+inteira **na mesma sessão** em que foi aprovada (2026-08-11). A unidade de planejamento
+aqui é a **sessão de trabalho com agente**, não sprint/semana de time humano.
+
+**O que não acelera com agente de IA — é o gargalo real, não o código:**
+- Validação de plano de contas e dos relatórios contábeis (`FIN-4`) por um contador real.
+- Regras de folha/rescisão (`RH-1`) revisadas por quem responde legalmente por isso.
+- Contratação de qualquer serviço pago (`🎯`): provedor de PSP (Pix/boleto/cartão),
+  WhatsApp Business API, certificado digital para eSocial, homologação de produção do
+  Focus NFe além do que já existe. Essas datas dependem do usuário assinar contrato, não
+  de sessão de código.
+
+**Onda 1 — sequência de sessões recomendada** (fundação, sem dependência externa paga):
+
+| # | Item | Sessões (estimativa) | Nota |
+|---|---|---:|---|
+| 1 | `ORG-1` — matriz/filial via FK real | ~~1-2~~ **feito** | Fechado em menos de 1 sessão: 1 coluna nova (`matriz_empresa_representada_id`) + UI, depois de reverter uma primeira tentativa com tabelas novas que não batiam com o modelo real (ver nota em `ORG-1`, acima). |
+| 2 | `ORG-2` — escopo de usuário por filial | ~~1-2~~ **não precisa** | Já coberto pelo mecanismo de `user_roles`/`has_role_for_empresa` existente — cada filial é uma `empresa_representada` normal. |
+| 3 | `FIN-4` parte 1 — livro, lançamento automático de título/liquidação/estorno, períodos/fechamento | 2-3 | Título/Liquidação já são maduros — o trigger de lançamento reaproveita esse motor. **Checkpoint humano antes de fechar: contador valida o plano de contas de referência e as regras de contabilização.** |
+| 4 | `ATV-1` — ativo fixo | 2-3 | Sequenciado antes da parte 2 do FIN-4 porque EBITDA depende da depreciação existir. |
+| 5 | `FIN-4` parte 2 — Balanço, DRE, EBITDA, DMPL, DFC | 2-3 | Renderização/agregação sobre o livro da parte 1. **Checkpoint humano: contador confere os relatórios gerados contra um fechamento real ou simulado.** |
+| 6 | `COMP-1` — compras e suprimentos completo | 3-5 | Domínio novo, mas integra com Estoque/Financeiro já maduros. |
+| 7 | `ORC-1` — motor de alçadas mínimo | 2-3 | Consumido por Compras (item 6) e Financeiro. |
+| 8 | `PROD-1` — produção leve básica | 3-4 | Conceitualmente é "venda que baixa estoque" invertida — consumo em vez de saída por venda. |
+| 9 | Fiscal — destravar SPED + NFC-e/CCe/contingência | 2-4 | SPED completo (EFD ICMS/IPI, ECD, ECF) só fecha depois do item 3-5 **e** validação contábil — não é só código. |
+| 10 | `FIN-1` (cauda já em andamento) + `FIN-8` baseline | 2-4 | Roda em paralelo, sem bloquear os itens acima. |
+
+**Total Onda 1: ~18-27 sessões de código** (revisado para baixo depois que `ORG-1`/`ORG-2`
+fecharam em menos de 1 sessão combinada — o item 1 era `~1-2` cada, `2-4` do total original).
+Rodando em ritmo de várias sessões por semana (o próprio histórico do projeto já sustentou
+isso), isso é da ordem de **semanas de calendário, não meses ou anos** — desde que os dois
+checkpoints humanos (itens 3 e 5) não fiquem parados esperando agenda do contador.
+
+**Marco de saída da Onda 1:** o ERP passa a ser "completo" no sentido do
+`COMPARATIVO_ERP_TOTVS.md` — uma empresa comercial ou de transformação leve compra, recebe,
+produz, vende, fatura, paga, recebe, contabiliza, fecha e cumpre obrigações fiscais sem
+planilha paralela. Isto é o primeiro nível real de "ERP 100% operacional" citado no pedido
+do usuário — cobre backoffice completo, ainda sem paridade de mercado médio (Onda 2).
+
+**Onda 2 — estimativa mais grossa** (menos precisa: depende de decisões ainda em aberto —
+provedor de PSP, uso ou não de WhatsApp Business API, escopo do eSocial, Parte 4 item 7):
+
+| Item | Sessões (mecânica interna) | 🎯 fora do controle do agente |
+|---|---:|---|
+| `RH-1` motor de folha | 4-6 | — (é interno, juridicamente sensível, não paga) |
+| `RH-2` ponto + eSocial | 2-3 | Certificado digital + decisão de escopo (Parte 4 item 7) |
+| `VAR-1` caixa/PDV | 2-3 | Contrato de TEF com adquirente |
+| `FIN-5` residual + `FIN-7` mecânica de pagamentos | 3-5 | Escolha e contrato do PSP (Pix/boleto/cartão) |
+| `CRM-1` | 1-2 | — |
+| `COM-1` comunicação | 1-2 | Contrato de e-mail/WhatsApp real |
+| `ORC-2` orçamento empresarial | 1-2 | — |
+
+**Total Onda 2: ~15-25 sessões de código**, mais o tempo — fora do controle de sessão —
+que o usuário levar para fechar os contratos pagos marcados `🎯`. A mecânica interna de
+cada um fica pronta independente disso (mesmo padrão já provado no Fiscal).
+
+**Marco de saída da Onda 2:** paridade forte de mercado médio — compete de verdade com
+Sankhya, SAP Business One e o núcleo do Protheus, segundo o próprio critério do
+`COMPARATIVO_ERP_TOTVS.md`. Este é o segundo nível de "100% operacional", mais completo
+que o marco da Onda 1.
+
+**Onda 3 — estimativa preliminar, revisar quando a Onda 2 fechar:** `LOG-1` (2-3 sessões),
+`PROD-2` (2-3 sessões), projetos/timesheet leve e comércio exterior (baixa prioridade, sem
+estimativa firme ainda — só entram quando a Onda 2 estiver perto do fim).
+
+**Onda 4 — não estimável agora de propósito:** cada vertical (saúde, construção, agro,
+jurídico, hotelaria, indústria pesada) é seu próprio programa multi-sessão, disparado só
+quando houver demanda real de negócio para aquele segmento — estimar sessões antes de saber
+qual vertical entra primeiro seria número inventado, não estimativa.
+
+**Total combinado até o "ERP 100% operacional" na acepção mais forte (fim da Onda 2):
+~35-55 sessões de código**, calendário estimado em poucos meses se as sessões rodarem em
+ritmo semanal e os dois gargalos humanos (contador, contratos `🎯`) não empacarem — não os
+"3 a 5 anos com quatro squads" do comparativo, que pressupõe equipe humana tradicional.
+
 ## Riscos ativos
 
 | Risco | Nível | Mitigação obrigatória |
@@ -593,7 +703,7 @@ Parte 1, nunca entram no núcleo.
 | Permissões financeiras decorativas | crítico | autorização no banco; UI apenas reflete capacidade |
 | Schema real divergir das migrations | alto | consultar banco real antes de qualquer DDL |
 | Listas/relatórios client-side | alto | paginação e agregação server-side (Relatórios financeiro/vendas ainda pendentes, ver Parte 4) |
-| Modelo plano de empresas | alto | grupo/empresa/estabelecimento antes de consolidação |
+| Modelo plano de empresas | alto | ~~grupo/empresa/estabelecimento~~ matriz/filial via FK real antes de qualquer relatório consolidado (`ORG-1`, fechado 2026-08-30) |
 | Vendor lock-in Supabase | médio | manter domínio atrás de `src/services/**`; abstrair só com alternativa real |
 | Complexidade exposta ao pequeno negócio | médio | progressive disclosure e defaults, não outro produto |
 

@@ -1,5 +1,65 @@
 # Status do projeto — NOVUS ERP
 
+## 🔖 Checkpoint atual — Onda 1 iniciada: ORG-1 fechado, com correção de rumo no meio (2026-08-30)
+
+Primeira sessão de código do novo Mapa Mestre de Capacidades (ver checkpoint anterior,
+mesmo dia). Começou por `ORG-1` (matriz/empresa/estabelecimento), conforme a sequência de
+Ondas.
+
+**Erro cometido e corrigido na mesma sessão, antes de qualquer UI/dado depender dele**:
+primeira versão de `ORG-1` criou 2 tabelas novas (`grupos_economicos`, `estabelecimentos`)
+modelando grupo econômico e matriz/filial como entidades separadas por cima de
+`empresas_representadas`. O usuário apontou que isso não bate com o modelo real: **`empresa_responsavel`
+já é o grupo econômico** de uma instalação NOVUS, e **matriz/filial devem ser outras linhas
+de `empresas_representadas`** (cada filial tem CNPJ/IE próprios — já é assim que o módulo
+Fiscal funciona), nunca um sub-registro. O usuário também descartou explicitamente
+consolidar ramos de negócio diferentes (ex.: autopeças + restaurante do mesmo dono) num
+único NOVUS — cada ramo merece sua própria instalação; uma eventual ferramenta de
+consolidação gerencial multi-negócio ("ERP Enterprise") fica só como ideia registrada,
+fora de escopo.
+
+- **Migration `20260830140000`** (as 2 tabelas erradas) foi **revertida** pela migration
+  `20260830150000`, ainda no mesmo dia — nenhuma UI ou service chegou a depender delas
+  (só o backfill automático de teste existia). Achado extra corrigido antes de reverter:
+  a função de trigger (`criar_estabelecimento_matriz`) estava exposta via RPC pra
+  `anon`/`authenticated` (mesmo padrão do Bloco 1.4 da Auditoria de agosto) — não chegou a
+  virar problema porque a tabela toda foi removida, mas o `REVOKE EXECUTE` ficou registrado
+  como lição pra próxima function `SECURITY DEFINER` criada.
+- **Correção real, aplicada**: coluna nova `matriz_empresa_representada_id` (FK
+  auto-referenciada, nullable, CHECK contra auto-referência) em `empresas_representadas`,
+  substituindo o campo solto que já existia e nunca tinha sido notado antes
+  (`configuracoes->>'cnpj_matriz'`, texto livre sem FK, em `EmpresasRepresentadasList.tsx`)
+  — a mesma tela já tinha uma tentativa de resolver isso, só que malfeita. UI atualizada:
+  "Filial" agora seleciona a matriz de uma lista real de empresas (`Select`), não digita
+  CNPJ solto; card da lista mostra o nome da matriz quando aplicável.
+- **`ORG-2` (escopo de usuário por filial) acabou não precisando de nenhum código**: como
+  cada filial agora é uma `empresa_representada` de verdade, dar acesso a ela já é só uma
+  linha em `user_roles` — mecanismo que já existia (`has_role_for_empresa`/
+  `user_has_access_to_empresa`). `docs/PLANO_MESTRE.md` atualizado pra registrar isso (Onda
+  1 caiu de ~20-30 pra ~18-27 sessões estimadas).
+- **`docs/PLANO_MESTRE.md` corrigido ponta a ponta**: nota de correção no Programa
+  Estrutura Organizacional, referências obsoletas a "estabelecimento" como tabela separada
+  removidas de `COMP-1`/`ATV-1`/`ORC-1`/riscos ativos.
+
+**Validação**: as duas migrations provadas em `BEGIN...ROLLBACK` antes de aplicar de
+verdade; backfill/reversão conferidos contra o banco real (`reksodqzemboaeqxnxyy`) a cada
+passo; `supabase db advisors --type security` limpo de achados novos depois da correção
+(o achado do `REVOKE` sumiu porque a function foi removida). `npm run typecheck` limpo;
+`npm run test -- --run` → 53 arquivos, 388/388. **Testado ao vivo no navegador**
+(dev server local, conta admin real): criadas 2 empresas sintéticas ("Teste Org1 Matriz
+Ltda" independente + "Teste Org1 Filial Ltda" com Tipo de Vínculo = Filial) — o seletor
+"Empresa Matriz" listou as empresas reais existentes (Allegra + a matriz sintética),
+salvou, e o card da filial passou a mostrar "Matriz: Teste Org1 Matriz Ltda" corretamente
+resolvido via FK. Dado de teste apagado ao final (1 via UI, 1 via query direta depois que
+a aba parou de responder a screenshot — confirmado por SELECT direto no banco, zero
+resíduo).
+
+**Próxima ação**: seguir a sequência de Onda 1 — `FIN-4` parte 1 (livro de lançamentos,
+contabilização automática de título/liquidação/estorno). Checkpoint humano já sinalizado:
+validar o plano de contas de referência com um contador antes de fechar essa parte.
+
+---
+
 ## 🔖 Checkpoint atual — Pivô de estratégia: ERP big-bang + Mapa Mestre de Capacidades (2026-08-30)
 
 Mudança de arquitetura/estratégia, não de código. Motivada por `docs/COMPARATIVO_ERP_TOTVS.md`
@@ -38,14 +98,28 @@ trás (`PermissionsSelector.tsx:45-49`).
 - Fix incidental (mesma passada, regra "sanitize as you go"): `CLAUDE.md` linha 12 apontava
   pra `docs/CONTRATOS_CANONICOS_ERP.md`, arquivo que não existe mais desde a fusão de
   2026-08-19 — corrigido pra apontar pra Parte 1 do `PLANO_MESTRE.md`.
+- **Continuação na mesma sessão — Roadmap de execução com agente de IA**, pedido explícito
+  do usuário ("já uso agente de IA, velocidade é diferente"): nova subseção na Parte 3
+  ("Roadmap de execução com agente de IA") rejeita a estimativa multianual do
+  `COMPARATIVO_ERP_TOTVS.md` (pressupõe equipe humana tradicional) e recalibra pela
+  velocidade real já observada neste projeto (6 fases da Auditoria de agosto fechadas no
+  mesmo dia, 2026-08-16; padronização de relatórios de 8 fases fechada na mesma sessão em
+  que foi aprovada). Unidade de planejamento vira **sessão de agente**, não sprint/semana.
+  Onda 1 detalhada item a item com estimativa de sessões (~20-30 no total) e dois
+  checkpoints humanos explícitos (contador validar plano de contas e os relatórios do
+  `FIN-4`) — sinalizados como o gargalo real, não a velocidade de código. Onda 2 estimada
+  de forma mais grossa (~15-25 sessões de mecânica interna, ativação `🎯` fora do controle
+  de sessão). Total até "ERP 100% operacional" na acepção mais forte (fim da Onda 2):
+  ~35-55 sessões.
 
-**Validação**: leitura completa do `PLANO_MESTRE.md` resultante (645 linhas) conferindo
-que nenhuma referência cruzada quebrou e que os 3 bullets relocados viraram nota no lugar
-antigo, não desapareceram. Não há suíte automatizada pra markdown — verificação é leitura
-humana. Nenhum código, migration ou UI mudou nesta entrega.
+**Validação**: leitura completa do `PLANO_MESTRE.md` resultante conferindo que nenhuma
+referência cruzada quebrou e que os 3 bullets relocados viraram nota no lugar antigo, não
+desapareceram. Não há suíte automatizada pra markdown — verificação é leitura humana.
+Nenhum código, migration ou UI mudou nesta entrega.
 
-**Próxima ação**: iniciar Onda 1 — `ORG-1`/`ORG-2` e `FIN-4` (fundação), depois `COMP-1`,
-`ATV-1`, `ORC-1`, `PROD-1`. Nenhuma decisão do usuário pendente para começar.
+**Próxima ação**: iniciar Onda 1, sessão 1 — `ORG-1` (grupo/empresa/estabelecimento).
+Nenhuma decisão do usuário pendente para começar; os dois checkpoints de contador (itens 3
+e 5 da tabela de sessões) só bloqueiam quando a sessão chegar neles, não agora.
 
 ---
 
