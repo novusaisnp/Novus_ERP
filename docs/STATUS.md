@@ -1,5 +1,54 @@
 # Status do projeto — NOVUS ERP
 
+## 🔖 Checkpoint atual — Pivô de estratégia: ERP big-bang + Mapa Mestre de Capacidades (2026-08-30)
+
+Mudança de arquitetura/estratégia, não de código. Motivada por `docs/COMPARATIVO_ERP_TOTVS.md`
+(pesquisa da mesma sessão): NOVUS avaliado em ~nível 2 de 5 de maturidade de ERP horizontal
+frente a TOTVS/Protheus/Sankhya/SAP Business One, com lacunas críticas confirmadas por 3
+agentes de exploração contra o schema/código real (não documentação): contabilidade por
+partidas dobradas, compras/suprimentos, estrutura organizacional (grupo→empresa→
+estabelecimento), ativo fixo e orçamento/alçadas genérico — **nenhum desses domínios existe
+hoje**, apesar de já existir uma permissão fantasma `compras.*` cadastrada sem módulo por
+trás (`PermissionsSelector.tsx:45-49`).
+
+- **`docs/PLANO_MESTRE.md` §1.8 reescrita**: reverte a exclusão anterior de
+  produção/manufatura — produção leve (BOM/ordem de fabricação/MRP básico) agora é núcleo,
+  não vertical. Verticais especializados (saúde, construção, agro, jurídico, hotelaria,
+  indústria pesada) continuam satélites via o modelo de portas já existente, nunca
+  construídos dentro do núcleo — mesmo padrão do satélite Educacional.
+- **Parte 3 reestruturada**: de "Programa Financeiro Robusto" (só FIN-0..8) para "Mapa
+  Mestre de Capacidades", com novos Programas — Estrutura Organizacional (`ORG-`), Compras
+  e Suprimentos (`COMP-`), Ativo Fixo (`ATV-`), Orçamento e Alçadas (`ORC-`), RH e
+  Departamento Pessoal (`RH-`), Produção Leve (`PROD-`), Logística Leve (`LOG-`), Varejo e
+  PDV (`VAR-`), CRM (`CRM-`), Comunicação Transacional (`COM-`), Workflow/Documentos (`DOC-`,
+  deliberadamente adiado). 3 bullets relocados de FIN-5/FIN-3 pros programas novos (estrutura
+  organizacional e alçadas estavam soterrados dentro do Financeiro, sem ser cross-domain).
+- **Nova tag `🎯`** na convenção de marcação: mecânica interna 100% pronta, só falta
+  credencial/contrato pago externo (replica o padrão já provado do Fiscal via Focus NFe,
+  `FISCAL_ATIVACAO_PROVEDOR_REAL.md`) — aplicada a Pagamentos (PSP), TEF, WhatsApp/SMS e
+  transmissão eSocial. **Não conta como pendência do núcleo.**
+- **`FIN-4` ganhou escopo explícito de relatórios contábeis essenciais** (pedido do
+  usuário nesta sessão, não estava nos 7 bullets originais): Balanço Patrimonial, DRE,
+  EBITDA, DMPL e DFC, todos derivados do mesmo razão — nunca calculados em paralelo.
+- **Sequenciamento em Ondas** (substitui a "Sequência executiva" anterior): Onda 1
+  (prioridade imediata) = `ORG-`+`FIN-4` como fundação, `COMP-1`, `ATV-1`, `ORC-1`,
+  `PROD-1`, destravar SPED, `FIN-1` continuando em paralelo sem interrupção. Onda 2 =
+  pagamentos/RH-motor/PDV/CRM/comunicação (com ativações `🎯`). Onda 3 = logística/produção
+  mais profunda. Onda 4 = verticais fora do núcleo.
+- Fix incidental (mesma passada, regra "sanitize as you go"): `CLAUDE.md` linha 12 apontava
+  pra `docs/CONTRATOS_CANONICOS_ERP.md`, arquivo que não existe mais desde a fusão de
+  2026-08-19 — corrigido pra apontar pra Parte 1 do `PLANO_MESTRE.md`.
+
+**Validação**: leitura completa do `PLANO_MESTRE.md` resultante (645 linhas) conferindo
+que nenhuma referência cruzada quebrou e que os 3 bullets relocados viraram nota no lugar
+antigo, não desapareceram. Não há suíte automatizada pra markdown — verificação é leitura
+humana. Nenhum código, migration ou UI mudou nesta entrega.
+
+**Próxima ação**: iniciar Onda 1 — `ORG-1`/`ORG-2` e `FIN-4` (fundação), depois `COMP-1`,
+`ATV-1`, `ORC-1`, `PROD-1`. Nenhuma decisão do usuário pendente para começar.
+
+---
+
 ## 🔖 Checkpoint atual — Deploy pendente da padronização de relatórios finalmente feito (2026-08-30)
 
 O plano de padronização de PDF/Excel (`preciso-modernizar-a-uix-velvet-cookie.md`, aprovado

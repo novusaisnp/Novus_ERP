@@ -135,13 +135,37 @@ Este contrato ainda não tem schema Zod formal em `_shared/canonical/` — forma
 
 ## 1.8 Escopo do NOVUS ERP
 
-O NOVUS pretende atender **qualquer negócio que não exija produção/transformação de insumo em produto acabado** (sem BOM, ordem de fabricação, ficha técnica de produção) — exclui restaurantes, laboratórios e fabricantes, não por impossibilidade, mas por fugir do núcleo (Cliente, Venda, Contrato, Título, Estoque) para um domínio de manufatura (MRP) que é produto à parte.
+**Pivô de estratégia decidido em 2026-08-30**, motivado pelo diagnóstico competitivo em
+[`COMPARATIVO_ERP_TOTVS.md`](./COMPARATIVO_ERP_TOTVS.md): o NOVUS estava em
+aproximadamente nível 2 de 5 de maturidade de ERP horizontal frente a
+TOTVS/Protheus/Sankhya/SAP Business One, com lacunas críticas em contabilidade, compras,
+estrutura organizacional, fiscal completo, RH/folha e ativo fixo — nenhuma resolvível por
+analogia técnica, todas exigindo construção real (ver Mapa Mestre de Capacidades, Parte 3).
+
+**Nova ambição:** um único núcleo NOVUS contém tudo que uma operação de padrão enterprise
+precisa para se gerir — cadastros, estrutura organizacional, contabilidade, fiscal,
+compras/suprimentos, estoque, vendas, RH/folha, ativo fixo, orçamento/alçadas, produção
+leve, logística leve, varejo/PDV, CRM básico, comunicação transacional e workflow — sem
+edições diferentes do produto e sem expor toda a complexidade para quem não precisa dela
+(ativação progressiva: uma empresa simples vê poucas telas; uma indústria habilita muito
+mais, mas é o mesmo produto).
+
+Isso reverte a posição anterior deste documento, que excluía negócios com
+produção/transformação de insumo em produto acabado. **Produção leve (BOM simples, ordem
+de fabricação, MRP básico) passa a ser núcleo**, não mais um domínio à parte.
+
+**Verticais especializados continuam satélites**, nunca componentes construídos dentro do
+núcleo — plugam pelo mesmo modelo de portas desta Parte 1 (§1.2). Educacional já é o caso
+real; saúde, construção, agro, jurídico, hotelaria e indústria pesada com APS/MES entram
+do mesmo jeito quando fizer sentido de negócio, com equipe de domínio e homologação
+próprias (Parte 3, Onda 4) — nunca por analogia técnica dentro do núcleo.
 
 | Segmento | Como se encaixa |
 |---|---|
-| Varejo (loja de roupas, mercado) | Venda pontual + Estoque fungível (Porta 3 checa saldo) |
-| Escola | Contrato recorrente (mensalidade) + Venda pontual (uniforme, material) |
-| Locadora de equipamentos | Contrato recorrente — mas falta rastrear **qual bem específico** está locado (gap abaixo) |
+| Varejo (loja de roupas, mercado) | Venda pontual + Estoque fungível (Porta 3 checa saldo) + PDV/balcão (Programa Varejo e PDV, Parte 3) |
+| Escola | Contrato recorrente (mensalidade) + Venda pontual (uniforme, material) — satélite Educacional |
+| Indústria leve / transformação simples | Produção leve (Programa Produção Leve, Parte 3) — BOM, ordem de fabricação, consumo e custo |
+| Locadora de equipamentos | Contrato recorrente — mas falta rastrear **qual bem específico** está locado (gap abaixo, sem mudança) |
 | Oficina / prestação de serviço | Venda ou Contrato + Serviço como item |
 | Crediário próprio | Título + Liquidação + checagem de inadimplência (§1.6) |
 
@@ -231,9 +255,13 @@ Todos os 20 itens do ranking original de gravidade da auditoria (isolamento mult
 
 ---
 
-# Parte 3 — Backlog priorizado
+# Parte 3 — Mapa Mestre de Capacidades do ERP (backlog priorizado)
 
-*(ex-`ROADMAP_2026.md`. Fonte de verdade do que falta no ERP. Uma fase só avança
+*(ex-`ROADMAP_2026.md`, reestruturado em 2026-08-30 seguindo a recomendação final de
+[`COMPARATIVO_ERP_TOTVS.md`](./COMPARATIVO_ERP_TOTVS.md): substituir o backlog então
+predominantemente financeiro por um mapa organizado pelos ciclos completos de negócio —
+compras, contabilidade, fiscal, RH, produção, logística, varejo, CRM e comunicação, além
+do financeiro que já existia. Fonte de verdade do que falta no ERP. Uma fase só avança
 quando seus critérios de saída estão comprovados.)*
 
 ## Regras de execução e continuidade
@@ -243,10 +271,10 @@ quando seus critérios de saída estão comprovados.)*
 - Alterações de schema/RLS/constraints exigem validação contra o banco real antes da migration.
 - Ao pausar, atualizar o topo de `STATUS.md` com: concluído, pendente, arquivos, validações, riscos e **próxima ação única**.
 - Documentação e checkpoints são agnósticos de ferramenta: não citar fornecedor, marca, assistente ou ambiente pessoal; registrar apenas evidência técnica reproduzível no repositório.
-- Marcação: `[ ]` pendente, `[~]` em execução, `[x]` concluído, `[!]` bloqueado.
+- Marcação: `[ ]` pendente, `[~]` em execução, `[x]` concluído, `[!]` bloqueado, `🎯` mecânica interna pronta (mock/sandbox quando aplicável) — só falta credencial ou contrato pago externo para ativar. **`🎯` não conta como pendência do núcleo**; cada um referencia um runbook de ativação dedicado (padrão já provado: [`FISCAL_ATIVACAO_PROVEDOR_REAL.md`](./FISCAL_ATIVACAO_PROVEDOR_REAL.md)). Ao escrever um item que misture mecânica interna + serviço pago, sempre quebrar em dois sub-itens — nunca um item só com comentário lateral.
 - Itens deste programa são indispensáveis; podem ser reordenados por dependência, não removidos sem decisão explícita registrada.
 
-## Programa Financeiro Robusto
+## Programa Financeiro-Contábil (FIN-0 a FIN-8)
 
 Objetivo: servir desde operação simples de caixa até grupo econômico multiempresa/multifilial, sem expor complexidade corporativa para quem não precisa dela.
 
@@ -284,36 +312,45 @@ Objetivo: servir desde operação simples de caixa até grupo econômico multiem
 ### FIN-3 — Pequeno negócio e caixa diário
 - [ ] Onboarding financeiro simplificado com plano de contas e categorias padrão.
 - [ ] Modo simples que oculta dimensões avançadas sem removê-las do modelo.
-- [ ] Abertura e fechamento de caixa por operador/turno.
-- [ ] Sangria, suprimento, conferência e diferença esperado × contado.
+- (Abertura/fechamento de caixa e sangria/suprimento — relocado para `VAR-1`, Programa Varejo e PDV.)
 - [ ] Visão diária: entradas, saídas, saldo, vencimentos e atrasos.
 - [ ] Recorrências monitoradas, com falhas e próxima geração visíveis.
 - [ ] Lembretes de cobrança e comprovantes pelo celular.
-- [ ] Cobrança Pix/boleto/link por adaptador de PSP autorizado.
+- [ ] Mecânica interna de cobrança Pix/boleto/link (geração de payload/linha digitável/QR).
+- [ ] 🎯 Contrato com adaptador de PSP autorizado para efetivar a cobrança (runbook: `docs/PAGAMENTOS_ATIVACAO_PROVEDOR_REAL.md`, a criar quando o provedor for escolhido).
 - [ ] Importação OFX/CSV com mapeamento assistido e prevenção de duplicidade.
 
 **Critério de saída:** uma empresa de caixa único consegue operar sem configurar contabilidade, filiais ou workflow corporativo manualmente.
 
-### FIN-4 — Subledger e contabilidade por partidas dobradas
+### FIN-4 — Subledger e contabilidade por partidas dobradas (fundação do núcleo)
+
+Fundação do núcleo, prioridade máxima junto de `ORG-` — todo evento dos demais programas
+(Compras, Ativo Fixo, RH, Produção) deve gerar lançamento aqui, nunca um razão paralelo
+por módulo. Também é o que desbloqueia o SPED, hoje fachada declarada no próprio código
+(`src/pages/fiscal/SPED.tsx:31`, geração desabilitada por não existir livro contábil real
+por trás).
+
 - [ ] Livro imutável de lançamentos e linhas débito/crédito balanceadas.
-- [ ] Regras de contabilização para títulos, liquidações, tarifas, transferências e estornos.
+- [ ] Regras de contabilização para títulos, liquidações, tarifas, transferências e estornos — **e agora também** recebimento de compra (`COMP-`), folha (`RH-`) e depreciação (`ATV-`).
 - [ ] Períodos contábeis, fechamento, reabertura autorizada e lançamento retroativo auditado.
 - [ ] Plano de contas versionado e mapeamento referencial.
-- [ ] Livro diário, razão, balancete, DRE e balanço derivados do mesmo livro.
+- [ ] Livro diário, razão e balancete derivados do mesmo livro.
+- [ ] **Relatórios contábeis essenciais, gerados diretamente do razão (nunca digitados ou calculados à parte):**
+  - **Balanço Patrimonial** (ativo/passivo/patrimônio líquido).
+  - **DRE** (Demonstração do Resultado do Exercício).
+  - **EBITDA** — derivado da DRE + do Programa Ativo Fixo (`ATV-`) para a parcela de depreciação/amortização.
+  - **DMPL** (Demonstração das Mutações do Patrimônio Líquido).
+  - **DFC** (Demonstração do Fluxo de Caixa, direto e/ou indireto) — reconciliada com o Fluxo de Caixa operacional já existente (`fluxoCaixaService.ts`), não uma segunda implementação divergente.
 - [ ] Trilhas para ECD/ECF/SPED sem misturar regra fiscal ao núcleo financeiro.
 - [ ] Reconciliação entre subledgers de pagar/receber/bancos e razão geral.
 
-**Critério de saída:** todo evento financeiro contabilizado produz débito = crédito e só pode ser corrigido por lançamento reverso auditável.
+**Critério de saída:** todo evento financeiro contabilizado produz débito = crédito, só pode ser corrigido por lançamento reverso auditável, **e os relatórios essenciais (Balanço, DRE, EBITDA, DMPL, DFC) são gerados diretamente do razão**, nunca digitados ou calculados à parte.
 
 ### FIN-5 — Grupo econômico, multiempresa e multifilial
-- [ ] Modelar grupo econômico → empresa legal → estabelecimento matriz/filial.
-- [ ] Separar estabelecimento, unidade de negócio, centro de custo, projeto e canal.
-- [ ] Escopo do usuário por grupo/empresa/filial, aplicado também nas RPCs e relatórios.
-- [ ] Dimensões obrigatórias/configuráveis por empresa e tipo de lançamento.
+- (Grupo econômico → empresa → estabelecimento e dimensões — relocado para `ORG-1`/`ORG-2`, Programa Estrutura Organizacional.)
 - [ ] Tesouraria e contas a pagar centralizadas com operação local controlada.
-- [ ] Workflow de aprovação por valor, categoria, filial e centro de custo.
-- [ ] Segregação solicitante × aprovador × pagador e substituição temporária auditada.
-- [ ] Orçamento, realizado e compromissado por dimensão.
+- (Workflow de aprovação e segregação solicitante × aprovador × pagador — relocado para `ORC-1`, Programa Orçamento e Alçadas.)
+- [ ] Orçamento, realizado e compromissado por dimensão (execução via `ORC-2`).
 - [ ] Operações intercompany, contas recíprocas e eliminações.
 - [ ] Relatórios isolados e consolidados por qualquer nível da hierarquia.
 
@@ -352,6 +389,138 @@ Objetivo: servir desde operação simples de caixa até grupo econômico multiem
 
 **Critério de saída:** controles, recuperação e auditoria são comprovados por exercício, não apenas por configuração declarada.
 
+## Programa Estrutura Organizacional
+
+Pré-requisito cross-domain: hoje `empresas_representadas` é uma tabela plana (sem
+hierarquia matriz/filial nem grupo econômico) — bloqueia Compras multi-filial, RH por
+estabelecimento, Fiscal por IE de filial e o próprio Programa Financeiro-Contábil (FIN-5).
+
+### ORG-1 — Grupo, empresa e estabelecimento
+- [ ] Modelar grupo econômico → empresa legal → estabelecimento (matriz/filial).
+- [ ] Dimensões configuráveis (estabelecimento, unidade de negócio, centro de custo já existe, projeto, canal).
+
+### ORG-2 — Escopo e migração
+- [ ] Escopo de usuário/RLS por grupo/empresa/estabelecimento, sem regressão no isolamento por `empresa_representada_id` já existente.
+- [ ] Dimensões obrigatórias/configuráveis por empresa e tipo de lançamento.
+- [ ] Plano de migração incremental de `estabelecimento_id` para as tabelas núcleo que precisarem (Compras, Fiscal, RH, Ativo Fixo) — sempre aditivo (`ADD COLUMN IF NOT EXISTS`), nunca `DROP`/`RENAME`.
+
+**Critério de saída:** um grupo com múltiplas empresas/filiais opera com escopo de usuário correto em toda RPC/relatório, sem usar centro de custo como filial (risco já registrado abaixo, "Modelo plano de empresas").
+
+## Programa Compras e Suprimentos
+
+Ciclo procure-to-pay completo, hoje 100% ausente — nem tabela, nem service, nem rota —
+apesar de já existir a permissão `compras.create/read/update/delete/aprovacao` cadastrada
+em `PermissionsSelector.tsx:45-49` sem nenhum módulo por trás.
+
+### COMP-1 — Ciclo completo
+- [ ] Requisição de compra interna.
+- [ ] Cotação/mapa comparativo entre fornecedores (reaproveita cadastro de Fornecedores já existente).
+- [ ] Pedido de compra formal, vinculado a Produto (Estoque) e Estabelecimento (`ORG-`).
+- [ ] Aprovação por alçada antes de emitir ao fornecedor (`ORC-1`).
+- [ ] Recebimento físico — reaproveita `estoque_movimentacoes` tipo ENTRADA (motor já maduro), com conferência quantidade/qualidade contra o pedido.
+- [ ] Match de 3 vias (pedido × recebimento × título) gerando `contas_pagar` automaticamente + lançamento em `FIN-4` (débito estoque/despesa, crédito fornecedor).
+- [ ] Devolução a fornecedor.
+- [ ] Ativar de fato as permissões `compras.*` já cadastradas.
+
+**Critério de saída:** uma compra nasce como requisição e termina em título a pagar + lançamento contábil, sem digitação solta em nenhuma etapa.
+
+## Programa Ativo Fixo
+
+### ATV-1
+- [ ] Cadastro de bem (aquisição, vida útil, taxa, estabelecimento).
+- [ ] Motor de depreciação → lançamento automático em `FIN-4` (alimenta também o EBITDA).
+- [ ] Baixa/alienação com ganho/perda.
+- [ ] Vínculo automático com `COMP-` (compra de imobilizado gera o ativo).
+
+**Critério de saída:** todo bem depreciável gera lançamento mensal automático no razão, sem planilha de depreciação paralela.
+
+## Programa Orçamento e Alçadas
+
+Hoje só existem 2 soluções pontuais isoladas (`autorizacaoFinanceiraService.ts`:
+reautenticação de senha para 3 ações financeiras específicas; `porta3Service.ts`:
+autorização de exceção de crédito em vendas a prazo) — sem motor genérico reutilizável.
+
+### ORC-1 — Motor de alçadas
+- [ ] Motor de alçada mínimo (matriz valor × categoria × estabelecimento × perfil), consumido por Compras (aprovação de pedido) e Financeiro (substituindo a reautenticação pontual sem quebrar o que já funciona).
+- [ ] Segregação solicitante × aprovador × pagador e substituição temporária auditada.
+- [ ] Trilha de auditoria unificada, reaproveitando o padrão já existente (`historico_*`, `porta3_autorizacoes_excecao`).
+
+### ORC-2 — Orçamento empresarial
+- [ ] Orçado × realizado × comprometido por dimensão (depende de `ORG-`/`FIN-4` para "realizado" real).
+
+**Critério de saída:** nenhuma compra ou pagamento acima da alçada configurada sai sem aprovação registrada e auditável. Generalizar para um motor de workflow/BPM (`DOC-1`) só quando houver ≥2 consumidores reais provados.
+
+## Programa RH e Departamento Pessoal
+
+O cadastro (Colaboradores/Cargos/Departamentos) já é Real e não muda. Este programa cobre
+só o gap: folha manual, ponto sem fonte, eSocial inexistente.
+
+### RH-1 — Motor de folha
+- [ ] Motor de cálculo interno INSS/IRRF/FGTS por competência (decisão de produto já tomada na Fase 6.5, Parte 4).
+- [ ] Férias/13º/rescisão a partir de Colaboradores/Cargos já existentes.
+- [ ] Vencimentos/Descontos/Benefícios (hoje só cadastro) passam a alimentar a folha automaticamente.
+- [ ] Lançamento automático da folha em `FIN-4` (débito despesa de pessoal, crédito obrigações/salários a pagar).
+
+### RH-2 — Ponto e eSocial
+- [ ] Fonte real de Registros de Ponto (decisão de produto ainda em aberto — Parte 4).
+- [ ] 🎯 Transmissão eSocial — geração de evento é núcleo; envio ao ambiente do governo depende de certificado digital, mesma família de exigência do Fiscal (runbook futuro: `docs/RH_ATIVACAO_ESOCIAL.md`).
+
+**Critério de saída:** folha de um colaborador é calculada, não digitada, e gera lançamento contábil correto sem intervenção manual.
+
+## Programa Produção Leve
+
+Núcleo por decisão do usuário (2026-08-30) — reverte a exclusão anterior de
+produção/manufatura (§1.8).
+
+### PROD-1 — Básico
+- [ ] Ficha técnica/BOM simples.
+- [ ] Ordem de fabricação simples (consome Estoque, gera produto acabado).
+- [ ] Apontamento de consumo × planejado, custo médio de produção.
+
+### PROD-2 — Onda 3, mais profundo
+- [ ] MRP com explosão e múltiplos níveis de BOM.
+
+**Critério de saída:** uma ordem de fabricação simples baixa insumo, gera produto acabado com custo real e lançamento contábil, sem planilha paralela de produção.
+
+## Programa Logística Leve
+
+Estende o Estoque já maduro (Kardex, movimentações, inventário).
+
+### LOG-1
+- [ ] Lote/série/validade (Kardex hoje só rastreia quantidade).
+- [ ] Picking/packing/romaneio simples.
+- [ ] Inventário rotativo (cíclico, além do inventário geral já existente).
+
+## Programa Varejo e PDV
+
+### VAR-1 — Caixa e balcão
+- [ ] Abertura e fechamento de caixa por operador/turno. *(relocado de FIN-3)*
+- [ ] Sangria, suprimento, conferência e diferença esperado × contado. *(relocado de FIN-3)*
+- [ ] Fluxo de venda balcão dentro de Vendas, reutilizando venda/pagamento/estoque existentes.
+- [ ] 🎯 TEF/adquirente de cartão — interface é núcleo, contrato com adquirente é ativação externa.
+
+## Programa CRM
+
+### CRM-1 — Básico
+- [ ] Histórico de compras/ticket médio na tela de Venda (gap já registrado em §1.10).
+- [ ] Pipeline simples de oportunidade (distinto do CRM de leads educacionais do satélite Educacional — domínios diferentes, não compartilhar tabela).
+
+## Programa Comunicação Transacional
+
+`DeliveryProvider`/`EmailProvider` hoje são um stub deliberadamente dormente (nunca chama
+nenhum serviço real, nem Resend nem outro).
+
+### COM-1
+- [ ] Ativar `EmailProvider` com um provedor real por trás da interface já existente.
+- [ ] Fila/log com reprocessamento (padrão outbox de Webhooks já existente).
+- [ ] 🎯 WhatsApp/SMS: fila/template é núcleo; envio real depende de contrato com provedor (runbook futuro: `docs/COMUNICACAO_ATIVACAO_PROVEDOR_REAL.md`).
+
+## Programa Workflow e Documentos (adiado)
+
+`DOC-1` — motor de BPM/workflow genérico. Deliberadamente adiado: mesmo princípio já usado
+no projeto para custom fields — não generalizar sem ≥2 consumidores reais provados
+(candidatos: `ORC-1` e Compras). Revisitar na Onda 2.
+
 ## Demais frentes indispensáveis do ERP
 
 ### Integração hub ↔ satélites
@@ -369,7 +538,7 @@ Objetivo: servir desde operação simples de caixa até grupo econômico multiem
 
 ### Fiscal, RH e estoque especializado
 - [ ] Fiscal completo: NFC-e, CCe, contingência e consulta de status.
-- [ ] Folha real (motor interno — decisão tomada na Fase 6.5, Parte 4) ou integração homologada.
+- (Folha real — agora tracked formalmente em `RH-1`, Programa RH e Departamento Pessoal.)
 - [ ] Bem locável/serializado separado do estoque fungível antes do satélite de locação (Parte 1, §1.8).
 - [ ] Custom fields somente após caso real; preferir `metadata jsonb` antes de EAV, salvo prova contrária.
 
@@ -379,17 +548,41 @@ Objetivo: servir desde operação simples de caixa até grupo econômico multiem
 - [x] Manter rotas canônicas, estados vazios úteis e seletores escaláveis — **fechado pelas Fases 2-5** da Auditoria de agosto (Parte 2).
 - [x] Revisar RLS, UNIQUE/onConflict, CHECKs e FKs no banco real em cada frente — **fechado pelas Fases 1/1.5/6** da Auditoria de agosto (Parte 2).
 
-## Sequência executiva atual
+## Ondas de execução (substitui a sequência anterior, 2026-08-30)
 
 FIN-0 concluída em 2026-08-11. Auditoria de agosto/2026 (Fases 1-6.5) concluída em
-2026-08-19 (Parte 2). Ordem recomendada a partir de agora:
+2026-08-19 (Parte 2). O pivô de estratégia (§1.8) reorganiza o que falta em Ondas —
+cada uma só avança quando a anterior fecha seu critério de saída, mas **`FIN-1` não é
+interrompida**: continua em paralelo até fechar, junto do início da Onda 1.
 
-1. **FIN-1:** renegociação de título, substituindo um título por novas parcelas com rastreabilidade (`gerarParcelas` já existe e está coberto por testes).
-2. **FIN-1:** vincular movimentação bancária existente ou criar e conciliar uma nova.
-3. **FIN-1:** cadastro rápido de entidade nos consumidores financeiros; filtros de conta bancária e usuário; upload de documentos aguardando a mutation; operações em lote.
-4. **FIN-1:** testes E2E do ciclo completo — criar, editar, liquidar, cancelar, estornar, conciliar.
-5. Em paralelo, sem bloqueio: Fase 7 da Auditoria de agosto (manutenção transversal acima).
-6. Retomar a próxima frente conforme dependências, mantendo FIN-2+ como metas obrigatórias.
+**Onda 0 — esta entrega (2026-08-30).** Só documento: §1.8 e esta Parte 3 reescritas.
+Nenhuma frente de código nova começa antes disso fechar.
+
+**Onda 1 — direito de ser chamado ERP completo:**
+- `ORG-1`, `ORG-2` — fundação organizacional.
+- `FIN-4` — contabilidade por partidas dobradas, junto de `ORG-`.
+- `COMP-1` — compras e suprimentos completos.
+- `ATV-1` — ativo fixo.
+- `ORC-1` — motor de alçadas mínimo.
+- `PROD-1` — produção leve básica.
+- Fiscal: destravar SPED (`src/pages/fiscal/SPED.tsx:31`) agora que `FIN-4` existe para alimentá-lo; completar NFC-e/CCe/contingência.
+- `FIN-1` (em andamento) até fechar; `FIN-8` baseline de segurança.
+
+Critério de saída: uma empresa comercial ou de transformação leve compra, recebe, produz
+(quando aplicável), vende, fatura, paga, recebe, contabiliza, fecha e cumpre obrigações
+fiscais sem planilha paralela.
+
+**Onda 2 — paridade de mercado médio:** `FIN-5` residual + `FIN-7` (mecânica CNAB/Pix/
+boleto/Open Finance, ativação `🎯`), `RH-1`/`RH-2` (motor de folha núcleo, eSocial `🎯`),
+`VAR-1` (caixa/PDV núcleo, TEF `🎯`), `CRM-1`, `COM-1` (fila/template núcleo, envio real
+`🎯`), `ORC-2`, `DOC-1` só se houver ≥2 consumidores reais provados.
+
+**Onda 3 — cadeia operacional:** `LOG-1` (WMS leve), `PROD-2` (MRP mais robusto),
+projetos/timesheet leve, comércio exterior.
+
+**Onda 4 — profundidade vertical (satélites, fora do núcleo):** saúde, construção, agro,
+jurídico, hotelaria, indústria pesada com APS/MES — plugam via o modelo de portas da
+Parte 1, nunca entram no núcleo.
 
 ## Riscos ativos
 
@@ -411,6 +604,8 @@ FIN-0 concluída em 2026-08-11. Auditoria de agosto/2026 (Fases 1-6.5) concluíd
 3. Profundidade fiscal/contábil entregue internamente versus parceiros.
 4. País/moeda inicial após BRL para validar FIN-6.
 5. Estratégia de custom fields após primeiro caso concreto.
+6. Motor de regra fiscal para CBS/IBS pós-transição.
+7. Escopo do eSocial — o que o NOVUS emite internamente vs. delega (ver Parte 4).
 
 ---
 
@@ -441,6 +636,9 @@ Estado em 2026-08-19, depois de fechar as Fases 1 a 6.5 (Parte 2):
 6. **`supabase db advisors --type performance`** — delta final da Auditoria de
    agosto inteira (pedido pela "Verificação global" do plano original) ainda não
    rerodado desde o fechamento da Fase 5 (2026-08-17). Não urgente, mas pendente.
+7. **Escopo do eSocial ainda não decidido** — distinto da decisão de folha já tomada
+   na Fase 6.5 (item 1 acima); decidir o que o NOVUS emite internamente vs. delega
+   antes de iniciar `RH-2` (Onda 2, Parte 3).
 
 Nenhuma dessas pendências bloqueia as outras — podem ser atacadas em qualquer
 ordem conforme prioridade do usuário.

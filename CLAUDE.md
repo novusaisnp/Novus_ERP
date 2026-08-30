@@ -9,7 +9,7 @@ ERP multi-tenant (Vite + React 18 + TypeScript + Supabase). Visão de produto: N
 sozinho como ERP completo para negócios de menor complexidade, e também como hub que recebe
 dados de módulos satélite futuros (o primeiro será um sistema de gestão escolar, "Novus
 Educacional") via um modelo de 3 portas — Título / Liquidação / Autorização. O modelo completo
-está formalizado em [`docs/CONTRATOS_CANONICOS_ERP.md`](./docs/CONTRATOS_CANONICOS_ERP.md).
+está formalizado na Parte 1 de [`docs/PLANO_MESTRE.md`](./docs/PLANO_MESTRE.md).
 
 ## Stack e arquitetura
 
