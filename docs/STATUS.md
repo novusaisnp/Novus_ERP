@@ -1,5 +1,36 @@
 # Status do projeto — NOVUS ERP
 
+## 🔖 Checkpoint atual — Deploy pendente da padronização de relatórios finalmente feito (2026-08-30)
+
+O plano de padronização de PDF/Excel (`preciso-modernizar-a-uix-velvet-cookie.md`, aprovado
+2026-08-11) já tinha sido implementado e commitado no mesmo dia (`8a7f3ff`) — mas isso nunca
+tinha sido conferido ao vivo, e uma memória desatualizada (escrita antes do commit) seguia
+dizendo que a execução estava pendente. Corrigido nesta sessão:
+
+- **Verificado ao vivo** (conta admin real, Escola Allegra): RH → Relatórios → Colaboradores,
+  export PDF e Excel. PDF bate com o mockup aprovado (header logo+razão social à esquerda,
+  tipo/título/data à direita em navy, régua fina, sem faixa de cor, rodapé "Emitido via
+  NOVUS.AI ERP" + paginação). Excel confirmado via inspeção do XML interno do `.xlsx` baixado:
+  `pageSetup orientation="landscape" fitToWidth="1" fitToHeight="0"` — a causa raiz do "sai
+  desconfigurado" documentada no plano está de fato corrigida no arquivo real.
+- **Achado real**: a Fase 4 do plano (server-side, Deno — `_shared/report-export/
+  exportPdfServer.ts`/`exportXlsxServer.ts`, consumida por `run-report-schedules`) estava
+  codada e commitada, mas a function **nunca tinha sido deployada** — `supabase functions
+  list` não trazia `run-report-schedules` entre as ativas, mesmo existindo em
+  `supabase/functions/run-report-schedules/` localmente. Plano já prescrevia isso como ação
+  manual separada, exigindo aprovação explícita — nunca tinha acontecido.
+- **Deployada agora** (autorização explícita do usuário): `supabase functions deploy
+  run-report-schedules --project-ref reksodqzemboaeqxnxyy` — confirmado `status:"ACTIVE"`,
+  `version:1` no projeto real. Nenhum código mudou nesta sessão, só o deploy que faltava.
+
+**Próxima ação**: nenhuma pendência conhecida do plano de relatórios. Recomendado, quando
+houver um agendamento real de relatório configurado, disparar `run-report-schedules` uma vez
+e abrir o PDF/Excel entregue por e-mail para confirmar que o header server-side (reimplementado
+à parte do client, sem código compartilhado) bate visualmente com o client — isso nunca foi
+testado ponta a ponta, só o código foi revisado por leitura na sessão original.
+
+---
+
 ## 🔖 Checkpoint atual — Cargo→role sugerida no satélite + fecha exceção de gate ERP (2026-08-29)
 
 Retomada do plano pausado `parallel-baking-narwhal.md` (ver checkpoint 2026-08-26 abaixo),
