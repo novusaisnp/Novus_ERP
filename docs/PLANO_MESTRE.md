@@ -331,10 +331,10 @@ por módulo. Também é o que desbloqueia o SPED, hoje fachada declarada no pró
 (`src/pages/fiscal/SPED.tsx:31`, geração desabilitada por não existir livro contábil real
 por trás).
 
-- [ ] Livro imutável de lançamentos e linhas débito/crédito balanceadas.
-- [ ] Regras de contabilização para títulos, liquidações, tarifas, transferências e estornos — **e agora também** recebimento de compra (`COMP-`), folha (`RH-`) e depreciação (`ATV-`).
-- [ ] Períodos contábeis, fechamento, reabertura autorizada e lançamento retroativo auditado.
-- [ ] Plano de contas versionado e mapeamento referencial.
+- [x] Livro imutável de lançamentos e linhas débito/crédito balanceadas — `lancamentos_contabeis`/`lancamentos_contabeis_itens`, sem policy de UPDATE/DELETE, trigger deferred garantindo débito=crédito em cada lançamento. Migration `20260830160000`, testado ao vivo (não só prova sintética).
+- [~] Regras de contabilização — título criado (`CONTAS_RECEBER`/`CONTAS_PAGAR`, com suporte a rateio) e liquidação (valor efetivo = principal+juros+multa-desconto) geram lançamento automático, testado ao vivo pelo fluxo real (`financeiro_salvar_titulo`→trigger, `financeiro_liquidar_titulo`→trigger). Estorno de liquidação gera reversão automática — validado só em prova sintética (`BEGIN...ROLLBACK`), não ao vivo, porque o próprio estorno exige segunda senha (gate de segurança pré-existente do FIN-0) que não devo preencher por conta do usuário. Pendente: tarifas bancárias avulsas, transferências entre contas, cancelamento de título (o próprio submodal de cancelamento no FIN-1 ainda não está estável), recebimento de compra/folha/depreciação (esperam `COMP-`/`RH-`/`ATV-` existirem).
+- [~] Períodos contábeis — `periodos_contabeis` com resolução automática por competência (`resolver_periodo_contabil`, cria o período ABERTO na hora se não existir). Fechamento/reabertura formal (UI, trava de lançamento em período FECHADO) ainda não construído.
+- [ ] Plano de contas versionado e mapeamento referencial — plano mínimo semeado (5 contas ATIVO/PASSIVO/PATRIMONIO + as RECEITA/DESPESA que já existiam), mas sem versionamento por vigência ainda.
 - [ ] Livro diário, razão e balancete derivados do mesmo livro.
 - [ ] **Relatórios contábeis essenciais, gerados diretamente do razão (nunca digitados ou calculados à parte):**
   - **Balanço Patrimonial** (ativo/passivo/patrimônio líquido).
@@ -637,7 +637,7 @@ aqui é a **sessão de trabalho com agente**, não sprint/semana de time humano.
 |---|---|---:|---|
 | 1 | `ORG-1` — matriz/filial via FK real | ~~1-2~~ **feito** | Fechado em menos de 1 sessão: 1 coluna nova (`matriz_empresa_representada_id`) + UI, depois de reverter uma primeira tentativa com tabelas novas que não batiam com o modelo real (ver nota em `ORG-1`, acima). |
 | 2 | `ORG-2` — escopo de usuário por filial | ~~1-2~~ **não precisa** | Já coberto pelo mecanismo de `user_roles`/`has_role_for_empresa` existente — cada filial é uma `empresa_representada` normal. |
-| 3 | `FIN-4` parte 1 — livro, lançamento automático de título/liquidação/estorno, períodos/fechamento | 2-3 | Título/Liquidação já são maduros — o trigger de lançamento reaproveita esse motor. **Checkpoint humano antes de fechar: contador valida o plano de contas de referência e as regras de contabilização.** |
+| 3 | `FIN-4` parte 1 — livro, lançamento automático de título/liquidação/estorno, períodos/fechamento | **feito o motor** (~1 sessão) | Testado ao vivo (título+liquidação reais, estorno só em prova sintética). **Checkpoint humano ainda pendente**: plano mínimo semeado é um bootstrap universal, não substitui a validação do contador sobre o plano de contas de referência e as regras de contabilização — não tratar como fechado de vez até isso acontecer. Fechamento formal de período e cobertura de tarifas/transferências ficam pra completar a parte 1. |
 | 4 | `ATV-1` — ativo fixo | 2-3 | Sequenciado antes da parte 2 do FIN-4 porque EBITDA depende da depreciação existir. |
 | 5 | `FIN-4` parte 2 — Balanço, DRE, EBITDA, DMPL, DFC | 2-3 | Renderização/agregação sobre o livro da parte 1. **Checkpoint humano: contador confere os relatórios gerados contra um fechamento real ou simulado.** |
 | 6 | `COMP-1` — compras e suprimentos completo | 3-5 | Domínio novo, mas integra com Estoque/Financeiro já maduros. |

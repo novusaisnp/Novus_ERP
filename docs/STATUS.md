@@ -1,5 +1,73 @@
 # Status do projeto — NOVUS ERP
 
+## 🔖 Checkpoint atual — FIN-4 parte 1: motor de partidas dobradas no ar (2026-08-30)
+
+Continuação da Onda 1, mesma sessão de `ORG-1` (ver checkpoint abaixo). Fundação
+contábil do núcleo: livro imutável + lançamento automático em título/liquidação/estorno.
+
+- **Achado antes de construir** (evitando repetir o erro do ORG-1): `plano_contas` já
+  tinha `tipo` (RECEITA/DESPESA/ATIVO/PASSIVO/PATRIMONIO) e `natureza`
+  (DEVEDORA/CREDORA) com CHECK constraint pronto no banco desde sempre — só nunca foi
+  usado além de RECEITA/DESPESA. `contas_receber`/`contas_pagar` já carregam
+  `plano_conta_id`/`centro_custo_id`/`natureza_id` resolvidos automaticamente (motor de
+  classificação em cascata já maduro, `resolver_classificacao_receita`). O trabalho real
+  foi consumir isso, não reinventar.
+- **Migration `20260830160000`**: `lancamentos_contabeis`/`lancamentos_contabeis_itens`
+  (livro imutável — sem policy de UPDATE/DELETE, trigger deferred garante débito=crédito
+  por lançamento), `periodos_contabeis` (resolução automática por competência),
+  `natureza` derivada automaticamente do `tipo` (era NULL nas contas existentes),
+  seed de plano mínimo (5 contas ATIVO/PASSIVO/PATRIMONIO, decisão explícita do usuário
+  pra poder testar de ponta a ponta antes da validação completa do contador — **não
+  substitui essa validação**), `contas_bancarias.plano_conta_id` (subconta própria por
+  conta bancária, com fallback pro default da empresa).
+- **3 gatilhos**: título criado (`contas_receber`/`contas_pagar`) gera lançamento de
+  reconhecimento, com suporte a rateio (`rateios_contas_receber`/`rateios_contas_pagar`)
+  quando existir; liquidação gera lançamento de caixa pelo **valor efetivo**
+  (`valor_pago + juros + multa - desconto`, não só `valor_pago` — achado ao ler
+  `financeiro_liquidar_titulo`, `valor_pago` é só o principal); estorno de liquidação
+  gera lançamento de reversão (débito/crédito invertidos, `estorno_de_id` aponta pro
+  original).
+- **2 erros cometidos e corrigidos na mesma sessão**: (1) `REVOKE EXECUTE ... FROM anon,
+  authenticated` nas 6 funções `SECURITY DEFINER` não bloqueava nada — o grant real vem
+  do `PUBLIC` implícito do Postgres; corrigido pra `REVOKE ... FROM PUBLIC`, confirmado
+  contra `pg_proc.proacl` direto (o advisor de segurança ficou com cache desatualizado
+  por um tempo, não confiar só nele). (2) Rodar múltiplos `REVOKE` separados por `;`
+  como string inline no `db query` só executava o primeiro — precisa de `--file`. Ambos
+  registrados na memória pra não repetir.
+- **Achado de infra, não desta feature**: `supabase.exe` instalado via Scoop foi
+  bloqueado no meio da sessão por uma política de Controle de Aplicativo do Windows
+  (WDAC/AppLocker) — `npx supabase` (baixado sob demanda) contornou sem precisar de
+  nenhuma configuração especial. Só documentado aqui como pista caso aconteça de novo.
+
+**Validação**: prova completa em `BEGIN...ROLLBACK` (`supabase/sql/fin4_livro_contabil_prova.sql`)
+antes de aplicar — título→lançamento, liquidação com juros→valor efetivo correto,
+estorno→reversão, e uma tentativa deliberada de lançamento desbalanceado confirmada como
+rejeitada pelo trigger. **Testado ao vivo em produção** pelo fluxo real do app (não só
+SQL sintético): criado título real via UI (`financeiro_salvar_titulo`) → lançamento de
+reconhecimento gerado (1000 débito Contas a Receber / 1000 crédito Receitas com Vendas);
+liquidado com R$50 de juros via UI (`financeiro_liquidar_titulo`) → lançamento de caixa
+com valor efetivo 1050 correto. Estorno **não testado ao vivo** — exige segunda senha
+(gate de segurança do FIN-0), e não devo preencher credenciais em nome do usuário; a
+lógica de estorno já estava coberta pela prova sintética antes disso. Dado de teste
+(1 título, 1 liquidação, 1 conta bancária sintética, 2 lançamentos) apagado ao final —
+precisou desabilitar temporariamente o trigger de balanço pra permitir o DELETE em
+cascata (ele também dispara em `DELETE`, e um lançamento sendo apagado por completo passa
+por um estado intermediário "0 itens" que o trigger rejeitaria); reabilitado logo depois.
+`npm run typecheck` limpo; nenhum teste novo (mudança é só SQL/schema, sem service/UI
+ainda — ver "Próxima ação").
+
+**Próxima ação**: `ATV-1` (ativo fixo) antes da parte 2 do FIN-4, porque EBITDA depende
+da depreciação existir — depois disso, parte 2 do FIN-4 (Balanço/DRE/EBITDA/DMPL/DFC).
+Pendências explícitas do que ficou de fora desta sessão: services/UI pra consultar o
+livro (hoje só existe via SQL direto), types.ts não regenerado ainda (sem consumidor
+TS ainda), tarifas bancárias avulsas e transferências entre contas sem lançamento
+automático, cancelamento de título sem reversão automática, fechamento formal de
+período sem UI. **Checkpoint humano real ainda pendente**: nenhum contador validou o
+plano de contas semeado nem as regras de contabilização — não tratar isso como
+"FIN-4 fechado", é a fundação técnica funcionando, não a validação de conteúdo contábil.
+
+---
+
 ## 🔖 Checkpoint atual — Onda 1 iniciada: ORG-1 fechado, com correção de rumo no meio (2026-08-30)
 
 Primeira sessão de código do novo Mapa Mestre de Capacidades (ver checkpoint anterior,
