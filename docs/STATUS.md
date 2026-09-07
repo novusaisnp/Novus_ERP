@@ -1,6 +1,78 @@
 # Status do projeto — NOVUS ERP
 
-## 🔖 Checkpoint atual — COMP-1d fechado: Recebimento físico + Match de 3 vias — COMP-1 fecha o ciclo até o título a pagar (2026-09-07)
+## 🔖 Checkpoint atual — FIN-4 parte 2, fatia 1: Balanço Patrimonial + DRE + EBITDA (2026-09-07)
+
+Mesma sessão de COMP-1d (mesmo dia). Item 5 da sequência recomendada da Onda 1
+(`docs/PLANO_MESTRE.md`), que tinha ficado pra trás quando a sessão priorizou
+ORC-1/COMP-1 primeiro. Fatiado com o usuário: fatia 1 = Balanço + DRE + EBITDA
+(esta); fatia 2 = DMPL; fatia 3 = DFC (reconciliada com `fluxoCaixaService.ts`
+já existente). Ainda faltam fatias 2 e 3 pra fechar `FIN-4` parte 2 por
+completo.
+
+- **Migration `20260907180000_fin4p2_balanco_dre.sql`**: duas funções de
+  LEITURA pura sobre o razão já existente (`lancamentos_contabeis`/
+  `_itens`/`plano_contas`) — nenhuma tabela nova, nenhum lançamento novo.
+  `relatorio_balanco_patrimonial(p_empresa_id, p_data_corte)`: saldo
+  acumulado por conta ATIVO/PASSIVO/PATRIMONIO até uma data de corte, mais
+  uma linha sintética "Resultado do Período (não apurado)" — **filha real**
+  da conta raiz de PATRIMONIO (nivel 1), pra fechar a identidade contábil
+  (Ativo = Passivo + PL) já que não existe encerramento formal de período
+  ainda (`periodos_contabeis` sem fechamento construído, gap conhecido de
+  antes). `relatorio_dre(p_empresa_id, p_data_inicio, p_data_fim)`: movimento
+  por conta RECEITA/DESPESA num intervalo de competência. Mesmo padrão de
+  segurança de `fn_fluxo_caixa_resumo` (FIN-1/Fase 5): `SECURITY DEFINER`
+  com checagem explícita de acesso à empresa.
+- **Bug de sinal encontrado e corrigido antes de aplicar**: o sinal do saldo
+  de cada conta tem que seguir o **tipo** da conta (ATIVO/DESPESA crescem a
+  débito; PASSIVO/PATRIMONIO/RECEITA crescem a crédito), nunca a `natureza`
+  individual — contas contra (ex.: Depreciação Acumulada, tipo=ATIVO mas
+  natureza=CREDORA) precisam aparecer **negativas** no grupo pra reduzir o
+  total corretamente. Achado pela própria prova em SQL (identidade contábil
+  quebrando) antes de qualquer teste ao vivo.
+- **EBITDA** é derivado no cliente (hook `useDre`), não na RPC: resultado do
+  período (Receita − Despesa) + valor lançado no período na conta
+  `empresas_representadas.plano_conta_despesa_depreciacao_default_id` (já
+  configurada por `ATV-1`) — nunca por nome/código de conta, que é frágil.
+- **UI**: `/financeiro/balanco` e `/financeiro/dre`, ambas com toggle
+  **Sintético/Analítico** (pedido explícito do usuário) — Sintético mostra só
+  os totais de nível 1 por grupo, Analítico desce até a conta-folha; os dois
+  modos usam o mesmo motor de rollup (`rollupPorConta`/`linhasParaExibicao`
+  em `src/utils/planoContasTree.ts`) e reaproveitam o `ExportMenu` existente
+  (CSV/Excel/PDF com cabeçalho e logo da empresa) sem nenhum código de
+  exportação novo.
+- **Achado ao vivo (não é bug meu, pré-existente)**: `recalc_saldo_estoque`
+  não é o único ponto sensível a isso — aqui, `ON DELETE` de lançamento
+  sintético em `lancamentos_contabeis_itens` esbarra no trigger deferred
+  `trg_validar_balanco_lancamento_contabil` (razão imutável por design,
+  mesmo mecanismo do COMP-1d) — limpeza de dado de teste sempre precisa do
+  `SET CONSTRAINTS ALL IMMEDIATE` + `DISABLE/ENABLE TRIGGER` só durante a
+  limpeza, nunca deixando desabilitado de fato.
+- **Testado ao vivo com dado abundante gerado por funções reais** (pedido
+  explícito do usuário — nunca INSERT direto simulando o efeito): várias
+  `contas_receber`/`contas_pagar` reais (jul/ago/set 2026, com
+  `plano_conta_id` setado — sem isso o trigger `lancar_titulo_criado` não
+  lança nada, gap documentado desde `FIN-4` parte 1) + 1 `ativos_fixos` real
+  com aquisição e 3 meses de depreciação via `processar_depreciacao_mensal`
+  (RPC do `ATV-1`) — 19 lançamentos reais gerados. Balanço fechou
+  (Ativo=Passivo+PL) e DRE bateu exatamente com a soma manual esperada nos
+  dois modos. **8 relatórios exportados e mantidos em Downloads** a pedido do
+  usuário (Balanço e DRE, Sintético/Analítico, PDF/Excel) — dado sintético
+  já removido do banco depois (`SELECT`s de resíduo zero confirmados), os
+  arquivos exportados são o registro que fica.
+- Prova SQL `supabase/sql/fin4p2_balanco_dre_prova.sql` (datas em 2020, de
+  propósito, pra nunca colidir com dado real de produção): 9 asserções —
+  acesso negado, período invertido, saldo em data de corte específica,
+  identidade contábil batendo, DRE não vazando lançamento de outro período,
+  EBITDA/depreciação isolados por competência.
+- `npm run typecheck`/`test -- --run` (388/388)/`build` verdes.
+
+**Gap conhecido, documentado**: caminho de rejeição (`REJEITADO`) do pedido
+de compra (COMP-1c) continua não testado ao vivo — mesmo gap do checkpoint
+anterior, sem relação com esta sessão.
+
+---
+
+## Checkpoint anterior — COMP-1d fechado: Recebimento físico + Match de 3 vias — COMP-1 fecha o ciclo até o título a pagar (2026-09-07)
 
 Mesma sessão do ORC-1/COMP-1a/COMP-1b/COMP-1c (mesmo dia). Fecha o ciclo
 inteiro: Requisição → Cotação → Pedido (aprovado por alçada) → Recebimento →

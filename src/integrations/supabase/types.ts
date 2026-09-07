@@ -9017,6 +9017,38 @@ export type Database = {
       }
       refresh_mv_fluxo_competencia: { Args: never; Returns: undefined }
       regenerar_entidade_dependencias: { Args: never; Returns: number }
+      relatorio_balanco_patrimonial: {
+        Args: { p_data_corte?: string; p_empresa_id: string }
+        Returns: {
+          aceita_lancamento: boolean
+          codigo: string
+          conta_id: string
+          conta_pai_id: string
+          natureza: string
+          nivel: number
+          nome: string
+          saldo: number
+          tipo: string
+        }[]
+      }
+      relatorio_dre: {
+        Args: {
+          p_data_fim: string
+          p_data_inicio: string
+          p_empresa_id: string
+        }
+        Returns: {
+          aceita_lancamento: boolean
+          codigo: string
+          conta_id: string
+          conta_pai_id: string
+          natureza: string
+          nivel: number
+          nome: string
+          tipo: string
+          valor_periodo: number
+        }[]
+      }
       relatorio_fluxo_competencia: {
         Args: { p_data_fim: string; p_data_ini: string; p_empresa_id?: string }
         Returns: {

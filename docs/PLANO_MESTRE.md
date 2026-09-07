@@ -336,12 +336,12 @@ por trás).
 - [~] Períodos contábeis — `periodos_contabeis` com resolução automática por competência (`resolver_periodo_contabil`, cria o período ABERTO na hora se não existir). Fechamento/reabertura formal (UI, trava de lançamento em período FECHADO) ainda não construído.
 - [ ] Plano de contas versionado e mapeamento referencial — plano mínimo semeado (5 contas ATIVO/PASSIVO/PATRIMONIO + as RECEITA/DESPESA que já existiam), mas sem versionamento por vigência ainda.
 - [ ] Livro diário, razão e balancete derivados do mesmo livro.
-- [ ] **Relatórios contábeis essenciais, gerados diretamente do razão (nunca digitados ou calculados à parte):**
-  - **Balanço Patrimonial** (ativo/passivo/patrimônio líquido).
-  - **DRE** (Demonstração do Resultado do Exercício).
-  - **EBITDA** — derivado da DRE + do Programa Ativo Fixo (`ATV-`) para a parcela de depreciação/amortização.
-  - **DMPL** (Demonstração das Mutações do Patrimônio Líquido).
-  - **DFC** (Demonstração do Fluxo de Caixa, direto e/ou indireto) — reconciliada com o Fluxo de Caixa operacional já existente (`fluxoCaixaService.ts`), não uma segunda implementação divergente.
+- **Relatórios contábeis essenciais, gerados diretamente do razão (nunca digitados ou calculados à parte):**
+  - [x] **Balanço Patrimonial** (ativo/passivo/patrimônio líquido). `/financeiro/balanco`, modos Sintético/Analítico, RPC `relatorio_balanco_patrimonial`. Fechado 2026-09-07 (FIN-4 parte 2, fatia 1).
+  - [x] **DRE** (Demonstração do Resultado do Exercício). `/financeiro/dre`, modos Sintético/Analítico, RPC `relatorio_dre`. Fechado 2026-09-07 (fatia 1).
+  - [x] **EBITDA** — derivado da DRE + do Programa Ativo Fixo (`ATV-`) para a parcela de depreciação/amortização (conta `plano_conta_despesa_depreciacao_default_id`, nunca por nome/código). Fechado 2026-09-07 (fatia 1).
+  - [ ] **DMPL** (Demonstração das Mutações do Patrimônio Líquido). Fatia 2, ainda não iniciada.
+  - [ ] **DFC** (Demonstração do Fluxo de Caixa, direto e/ou indireto) — reconciliada com o Fluxo de Caixa operacional já existente (`fluxoCaixaService.ts`), não uma segunda implementação divergente. Fatia 3, ainda não iniciada.
 - [ ] Trilhas para ECD/ECF/SPED sem misturar regra fiscal ao núcleo financeiro.
 - [ ] Reconciliação entre subledgers de pagar/receber/bancos e razão geral.
 
@@ -647,9 +647,9 @@ aqui é a **sessão de trabalho com agente**, não sprint/semana de time humano.
 | 2 | `ORG-2` — escopo de usuário por filial | ~~1-2~~ **não precisa** | Já coberto pelo mecanismo de `user_roles`/`has_role_for_empresa` existente — cada filial é uma `empresa_representada` normal. |
 | 3 | `FIN-4` parte 1 — livro, lançamento automático de título/liquidação/estorno, períodos/fechamento | **feito o motor** (~1 sessão) | Testado ao vivo (título+liquidação reais, estorno só em prova sintética). **Checkpoint humano ainda pendente**: plano mínimo semeado é um bootstrap universal, não substitui a validação do contador sobre o plano de contas de referência e as regras de contabilização — não tratar como fechado de vez até isso acontecer. Fechamento formal de período e cobertura de tarifas/transferências ficam pra completar a parte 1. |
 | 4 | `ATV-1` — ativo fixo | ~~2-3~~ **feito** (~1 sessão) | Fechado em menos de 1 sessão: cadastro + motor de depreciação (RPC sob demanda) + baixa com ganho/perda, testado ao vivo (criação, depreciação, baixa com perda — R$1.200 aquisição, R$100 depreciado, R$900 na baixa, perda de R$200 balanceada). |
-| 5 | `FIN-4` parte 2 — Balanço, DRE, EBITDA, DMPL, DFC | 2-3 | Renderização/agregação sobre o livro da parte 1. **Checkpoint humano: contador confere os relatórios gerados contra um fechamento real ou simulado.** |
-| 6 | `COMP-1` — compras e suprimentos completo | 3-5 | Domínio novo, mas integra com Estoque/Financeiro já maduros. |
-| 7 | `ORC-1` — motor de alçadas mínimo | 2-3 | Consumido por Compras (item 6) e Financeiro. |
+| 5 | `FIN-4` parte 2 — Balanço, DRE, EBITDA, DMPL, DFC | ~~2-3~~ **fatia 1 feita** (~1 sessão) | Fatia 1 (Balanço+DRE+EBITDA) fechada 2026-09-07, testada ao vivo com dado abundante real (19 lançamentos via funções reais). Fatias 2 (DMPL) e 3 (DFC) ainda não iniciadas. **Checkpoint humano: contador confere os relatórios gerados contra um fechamento real ou simulado.** |
+| 6 | `COMP-1` — compras e suprimentos completo | ~~3-5~~ **feito** (~1 sessão, fatiado em COMP-1a/1b/1c/1d) | Ciclo completo Requisição→Cotação→Pedido→Recebimento→título a pagar, fechado 2026-09-07. |
+| 7 | `ORC-1` — motor de alçadas mínimo | ~~2-3~~ **feito** (~1 sessão) | Fechado 2026-09-07, primeiro consumidor real é o Pedido de Compra (item 6). |
 | 8 | `PROD-1` — produção leve básica | 3-4 | Conceitualmente é "venda que baixa estoque" invertida — consumo em vez de saída por venda. |
 | 9 | Fiscal — destravar SPED + NFC-e/CCe/contingência | 2-4 | SPED completo (EFD ICMS/IPI, ECD, ECF) só fecha depois do item 3-5 **e** validação contábil — não é só código. |
 | 10 | `FIN-1` (cauda já em andamento) + `FIN-8` baseline | 2-4 | Roda em paralelo, sem bloquear os itens acima. |
