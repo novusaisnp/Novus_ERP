@@ -76,3 +76,20 @@ export const useDmpl = (dataInicio: string, dataFim: string) => {
     error: query.error,
   };
 };
+
+export const useDfc = (dataInicio: string, dataFim: string) => {
+  const { data: empresa } = useEmpresaRepresentadaAtual();
+  const empresaId = empresa?.id;
+
+  const query = useQuery({
+    queryKey: ['dfc', empresaId, dataInicio, dataFim],
+    queryFn: () => relatorioContabilService.dfc(empresaId as string, dataInicio, dataFim),
+    enabled: !!empresaId && !!dataInicio && !!dataFim,
+  });
+
+  return {
+    dfc: query.data,
+    isLoading: query.isLoading,
+    error: query.error,
+  };
+};

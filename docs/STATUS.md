@@ -1,6 +1,68 @@
 # Status do projeto — NOVUS ERP
 
-## 🔖 Checkpoint atual — FIN-4 parte 2, fatia 2: DMPL + correção geral da exportação de relatórios (2026-09-07)
+## 🔖 Checkpoint atual — FIN-4 parte 2, fatia 3: DFC (método indireto) — os 5 relatórios contábeis essenciais estão fechados (2026-09-07)
+
+Mesma sessão das fatias 1 e 2 (mesmo dia). **Fecha `FIN-4` parte 2 por
+completo** — Balanço, DRE, EBITDA, DMPL e DFC, os 5 relatórios do critério
+de saída original, todos gerados diretamente do razão.
+
+- **Migration `20260907200000_fin4p2_dfc.sql`**: `relatorio_dfc_indireto(
+  p_empresa_id, p_data_inicio, p_data_fim)`. Método indireto — parte do
+  Resultado do Período (mesma fórmula da DRE) e soma de volta a Depreciação
+  e Amortização (mesma conta do EBITDA), ajusta pela variação de capital de
+  giro (Δ Contas a Receber/Pagar) pro Fluxo Operacional; Δ Imobilizado bruto
+  pro Fluxo de Investimento; Δ das contas reais de PATRIMONIO (Capital
+  Social + Lucros Acumulados, excluída a linha sintética de resultado) pro
+  Fluxo de Financiamento.
+- **"Reconciliada com o Fluxo de Caixa já existente, não uma segunda
+  implementação divergente" (pedido do PLANO_MESTRE) — resolvido sem
+  nenhuma lógica de fluxo de caixa nova**: a RPC não inventa nada, usa as
+  MESMAS colunas de conta padrão que `ATV-1`/reconhecimento automático de
+  título já usam (`empresas_representadas.plano_conta_*_default_id`).
+  `fluxoCaixaService.ts` continua sendo a ferramenta de PROJEÇÃO
+  operacional (por vencimento) — não é o mesmo tipo de relatório, não havia
+  lógica pra unificar. A reconciliação real é a identidade contábil:
+  `variacao_caixa_dfc` (FCO+FCI+FCF) tem que bater com `variacao_caixa_
+  balanco` (variação real da conta Caixa e Bancos) — devolvida pela própria
+  RPC pra UI exibir o check "DFC fecha com o Balanço".
+- **Bug real achado pela prova em SQL antes de qualquer teste ao vivo**:
+  `NULL + valor = NULL` em SQL — quando uma conta só tinha movimento
+  DENTRO do período (nada antes), `cd_ate_inicio` vinha `NULL` da cláusula
+  `FILTER`, e somar isso com `cd_periodo` sem `COALESCE` em cada operando
+  colapsava o resultado inteiro pra `NULL`, mascarado como `0` pelo
+  `COALESCE` externo — todos os saldos "final" zeravam silenciosamente.
+  Corrigido aplicando `COALESCE` em cada operando antes de somar, não só no
+  resultado.
+- **Prova SQL** (`fin4p2_dfc_prova.sql`, datas em 2020): cenário desenhado
+  pra isolar cada componente (aporte de capital + compra de imobilizado à
+  vista + receita à vista + venda a prazo + despesa a pagar num mês; só
+  depreciação + recebimento/pagamento parcial no mês seguinte) com o
+  resultado calculado à mão e comparado — 9 asserções, incluindo a
+  identidade fechando em 3 janelas diferentes (mês 1 isolado, mês 2
+  isolado, os dois combinados).
+- Testada ao vivo com o mesmo dado abundante das fatias 1/2 (títulos +
+  ativo fixo + 2 aportes de capital reais) — "DFC fecha com o Balanço"
+  confirmado com dado real, FCO=0/FCI=-5.000/FCF=25.000/ΔCaixa=20.000
+  batendo exatamente com o saldo real de Caixa e Bancos no período.
+- **Outro bug de exportação achado nesta fatia** (mesma classe dos 3 da
+  fatia 2): caractere Unicode "−" (sinal de menos matemático, diferente do
+  hífen "-" comum) não renderiza na fonte helvetica padrão do jsPDF —
+  aparecia como glifo quebrado no PDF. Trocado por hífen ASCII simples nos
+  labels da DFC; nenhuma outra ocorrência do caractere nos demais
+  relatórios contábeis (checado via grep).
+- UI em `/financeiro/dfc` — sem toggle Sintético/Analítico (não se aplica,
+  são linhas fixas de demonstração, não uma árvore de contas).
+- 2 relatórios exportados (PDF/Excel, sem variação sintético/analítico) e
+  mantidos em Downloads, junto dos 12 das fatias anteriores.
+- `npm run typecheck`/`test -- --run` (388/388)/`build` verdes.
+
+**FIN-4 parte 2 está fechada.** Resta só o checkpoint humano documentado
+desde a fatia 1: validação de um contador sobre os relatórios gerados
+contra um fechamento real ou simulado — não é um item de código.
+
+---
+
+## Checkpoint anterior — FIN-4 parte 2, fatia 2: DMPL + correção geral da exportação de relatórios (2026-09-07)
 
 Mesma sessão da fatia 1 (mesmo dia). Fecha o segundo item da fatia de FIN-4
 parte 2; falta só a fatia 3 (DFC, reconciliada com `fluxoCaixaService.ts`)

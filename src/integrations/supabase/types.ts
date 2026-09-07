@@ -9031,6 +9031,28 @@ export type Database = {
           tipo: string
         }[]
       }
+      relatorio_dfc_indireto: {
+        Args: {
+          p_data_fim: string
+          p_data_inicio: string
+          p_empresa_id: string
+        }
+        Returns: {
+          depreciacao_amortizacao: number
+          fluxo_financiamento: number
+          fluxo_investimento: number
+          fluxo_operacional: number
+          resultado_periodo: number
+          saldo_caixa_final: number
+          saldo_caixa_inicial: number
+          variacao_caixa_balanco: number
+          variacao_caixa_dfc: number
+          variacao_contas_pagar: number
+          variacao_contas_receber: number
+          variacao_imobilizado: number
+          variacao_patrimonio_liquido: number
+        }[]
+      }
       relatorio_dmpl: {
         Args: {
           p_data_fim: string

@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import type { BalancoContaLinha, DreContaLinha, DmplContaLinha, TipoContaContabil, NaturezaContaContabil } from '@/types/relatoriosContabeis';
+import type { BalancoContaLinha, DreContaLinha, DmplContaLinha, DfcResultado, TipoContaContabil, NaturezaContaContabil } from '@/types/relatoriosContabeis';
 
 function translateError(error: { code?: string; message?: string } | null, fallback: string): Error {
   const code = error?.code;
@@ -9,6 +9,9 @@ function translateError(error: { code?: string; message?: string } | null, fallb
   }
   if (msg.startsWith('PERIODO_INVALIDO')) {
     return new Error('A data inicial não pode ser depois da data final.');
+  }
+  if (msg.startsWith('CONTAS_PADRAO_NAO_CONFIGURADAS')) {
+    return new Error('A empresa não tem as contas contábeis padrão configuradas (caixa, contas a receber, contas a pagar, imobilizado, depreciação) — configure em Configurações Básicas antes de gerar a DFC.');
   }
   return new Error(`${fallback}: ${msg || 'erro desconhecido'}`);
 }
@@ -95,5 +98,38 @@ export const relatorioContabilService = {
       movimentoPeriodo: Number(r.movimento_periodo),
       saldoFinal: Number(r.saldo_final),
     }));
+  },
+
+  async dfc(empresaId: string, dataInicio: string, dataFim: string): Promise<DfcResultado> {
+    const { data, error } = await supabase.rpc('relatorio_dfc_indireto', {
+      p_empresa_id: empresaId,
+      p_data_inicio: dataInicio,
+      p_data_fim: dataFim,
+    });
+    if (error) throw translateError(error, 'Erro ao gerar a DFC');
+    const row = (data ?? [])[0] as unknown as {
+      resultado_periodo: number; depreciacao_amortizacao: number;
+      variacao_contas_receber: number; variacao_contas_pagar: number; fluxo_operacional: number;
+      variacao_imobilizado: number; fluxo_investimento: number;
+      variacao_patrimonio_liquido: number; fluxo_financiamento: number;
+      saldo_caixa_inicial: number; saldo_caixa_final: number;
+      variacao_caixa_balanco: number; variacao_caixa_dfc: number;
+    } | undefined;
+    if (!row) throw new Error('A DFC não retornou dados para o período informado.');
+    return {
+      resultadoPeriodo: Number(row.resultado_periodo),
+      depreciacaoAmortizacao: Number(row.depreciacao_amortizacao),
+      variacaoContasReceber: Number(row.variacao_contas_receber),
+      variacaoContasPagar: Number(row.variacao_contas_pagar),
+      fluxoOperacional: Number(row.fluxo_operacional),
+      variacaoImobilizado: Number(row.variacao_imobilizado),
+      fluxoInvestimento: Number(row.fluxo_investimento),
+      variacaoPatrimonioLiquido: Number(row.variacao_patrimonio_liquido),
+      fluxoFinanciamento: Number(row.fluxo_financiamento),
+      saldoCaixaInicial: Number(row.saldo_caixa_inicial),
+      saldoCaixaFinal: Number(row.saldo_caixa_final),
+      variacaoCaixaBalanco: Number(row.variacao_caixa_balanco),
+      variacaoCaixaDfc: Number(row.variacao_caixa_dfc),
+    };
   },
 };

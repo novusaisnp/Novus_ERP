@@ -202,6 +202,10 @@ export const sidebarItems: MenuItem[] = [
         url: "/financeiro/dmpl",
       },
       {
+        title: "DFC",
+        url: "/financeiro/dfc",
+      },
+      {
         title: "Central de Aprovações",
         url: "/financeiro/aprovacoes",
       },

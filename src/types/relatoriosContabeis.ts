@@ -25,3 +25,19 @@ export interface DmplContaLinha extends ContaRelatorioBase {
   movimentoPeriodo: number;
   saldoFinal: number;
 }
+
+export interface DfcResultado {
+  resultadoPeriodo: number;
+  depreciacaoAmortizacao: number;
+  variacaoContasReceber: number;
+  variacaoContasPagar: number;
+  fluxoOperacional: number;
+  variacaoImobilizado: number;
+  fluxoInvestimento: number;
+  variacaoPatrimonioLiquido: number;
+  fluxoFinanciamento: number;
+  saldoCaixaInicial: number;
+  saldoCaixaFinal: number;
+  variacaoCaixaBalanco: number;
+  variacaoCaixaDfc: number;
+}
