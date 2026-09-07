@@ -117,6 +117,14 @@ export const sidebarItems: MenuItem[] = [
         title: "Requisições",
         url: "/compras/requisicoes",
       },
+      {
+        title: "Cotações",
+        url: "/compras/cotacoes",
+      },
+      {
+        title: "Pedidos",
+        url: "/compras/pedidos",
+      },
     ],
   },
   {

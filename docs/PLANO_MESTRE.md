@@ -444,9 +444,13 @@ em `PermissionsSelector.tsx:45-49` sem nenhum módulo por trás.
 - [x] Requisição de compra interna (COMP-1a, fechado 2026-09-07) — tela
   `/compras/requisicoes`, ações de documento (Visualizar/Imprimir/PDF/E-mail/
   WhatsApp) no mesmo padrão de Orçamentos/Vendas.
-- [ ] Cotação/mapa comparativo entre fornecedores (reaproveita cadastro de Fornecedores já existente).
-- [ ] Pedido de compra formal, vinculado a Produto (Estoque) — já escopado por `empresa_representada_id` (matriz ou filial, `ORG-1`), sem coluna nova necessária.
-- [ ] Aprovação por alçada antes de emitir ao fornecedor (`ORC-1`).
+- [x] Cotação/mapa comparativo entre fornecedores (COMP-1b, fechado 2026-09-07)
+  — tela `/compras/cotacoes`, vencedor por item, **link público sem login**
+  (`/cotar/:id`) pro fornecedor preencher o próprio preço direto, com portão
+  de confirmação por CNPJ/CPF e cabeçalho com logo da empresa (pedido
+  explícito do usuário, camada extra contra link endereçado errado).
+- [x] Pedido de compra formal, vinculado a Produto (Estoque) — já escopado por `empresa_representada_id` (matriz ou filial, `ORG-1`), sem coluna nova necessária. (COMP-1c, fechado 2026-09-07)
+- [x] Aprovação por alçada antes de emitir ao fornecedor (`ORC-1`) — primeiro consumidor real do motor, valor calculado no servidor (nunca confia no cliente).
 - [ ] Recebimento físico — reaproveita `estoque_movimentacoes` tipo ENTRADA (motor já maduro), com conferência quantidade/qualidade contra o pedido.
 - [ ] Match de 3 vias (pedido × recebimento × título) gerando `contas_pagar` automaticamente + lançamento em `FIN-4` (débito estoque/despesa, crédito fornecedor).
 - [ ] Devolução a fornecedor.

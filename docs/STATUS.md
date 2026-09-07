@@ -1,5 +1,87 @@
 # Status do projeto — NOVUS ERP
 
+## 🔖 Checkpoint atual — COMP-1b + COMP-1c fechados: Cotação + Pedido de Compra, primeiro consumidor real do ORC-1 (2026-09-07)
+
+Mesma sessão do COMP-1a (mesmo dia). Fecha a cadeia inteira até "pedido
+emitido": Requisição → Cotação (mapa comparativo + link público) → Pedido de
+Compra (aprovação por alçada real).
+
+### COMP-1b — Cotação de Compra
+- **Migrations `20260907140000`/`20260907140100`**: `cotacoes_compra` +
+  `cotacoes_compra_fornecedores` + `cotacoes_compra_precos` (vencedor por
+  item — índice único parcial garante só 1 vencedor por item por cotação).
+  RLS pura (sem RPC), mesma filosofia do COMP-1a — mas com uma correção feita
+  **antes** de rodar a prova: as policies de convidar fornecedor/registrar
+  preço não travavam depois da cotação fechada (gap achado e corrigido no
+  próprio arquivo, ainda no mesmo dia, antes de qualquer dado real depender
+  dele — tabelas dropadas e recriadas com a versão corrigida).
+- **Link público de cotação** (`/cotar/:id`, migration `20260907150000` +
+  edge function `compras-cotacao-publica`, `verify_jwt = false`): fornecedor
+  preenche o próprio preço sem login no ERP. O "token" é o próprio `id`
+  (uuid aleatório) do convite. Toda autorização é código na function (service
+  role), nunca RLS pra `anon` — cotação precisa estar `ABERTA`, item precisa
+  pertencer à requisição certa, só grava preço do fornecedor dono do convite.
+  **Dois pedidos do usuário atendidos na mesma sessão**: (1) cabeçalho
+  profissional com logo/CNPJ da empresa (signed URL gerada na function,
+  bucket privado `empresa-logos`); (2) portão de confirmação por CNPJ/CPF do
+  fornecedor antes de revelar qualquer dado sensível — `documento` é
+  reconferido no servidor em toda chamada (`get` e `submit`), nunca confia em
+  flag do cliente. UI: botões "Copiar link"/"WhatsApp" por fornecedor
+  convidado, badge "Respondeu"/"Aguardando".
+- **Achado de bug real durante o teste ao vivo**: destaque de "menor preço"
+  no mapa comparativo nunca aparecia — `preco_unitario` é `numeric` no
+  Postgres, Supabase-JS devolve como `string`, e a comparação `===` contra o
+  resultado de `Math.min()` (number) nunca batia. Corrigido com `Number()`
+  explícito nos dois pontos de comparação.
+
+### COMP-1c — Pedido de Compra
+- **Migration `20260907160000`**: `pedidos_compra` + `pedidos_compra_itens`
+  (1 pedido por fornecedor vencedor da cotação — um pedido de compra é
+  sempre endereçado a UM fornecedor). 4 RPCs `SECURITY DEFINER` (nunca RLS
+  pura pras transições de status — UPDATE direto só é permitido enquanto
+  `RASCUNHO`, e ainda assim sem poder mudar o `status`):
+  `gerar_pedidos_compra_da_cotacao` (idempotente por cotação+fornecedor),
+  `enviar_pedido_compra_para_aprovacao` (**calcula `valor_total` no servidor
+  — nunca confia em valor vindo do cliente pra decidir a alçada** — e chama
+  `solicitar_aprovacao` do ORC-1: primeiro consumidor real do motor, meses
+  depois dele ter sido construído sem nenhum consumidor), `marcar_pedido_
+  compra_emitido`, `cancelar_pedido_compra`. Trigger `AFTER UPDATE` em
+  `solicitacoes_aprovacao` sincroniza `pedidos_compra.status` quando a
+  aprovação é decidida em qualquer lugar (inclusive pela Central de
+  Aprovações, não só por quem enviou o pedido).
+- Tela `/compras/pedidos` (lista) + `/compras/pedidos/:id` (detalhe com
+  itens/subtotal/total e as ações RASCUNHO→AGUARDANDO_APROVACAO/APROVADO→
+  EMITIDO, ou cancelar). Botão "Gerar Pedido(s) de Compra" na tela da
+  cotação, visível quando `FECHADA`.
+
+**Testado ao vivo — dois caminhos**: (1) no navegador, sem alçada
+configurada: pedido nasceu, foi enviado, **auto-aprovado de verdade**
+("Sem alçada configurada para esta categoria/valor — nenhuma aprovação
+exigida", texto idêntico ao já usado no ORC-1), marcado como emitido. (2) via
+SQL direto (alçada real criada pra categoria COMPRA, limiar R$100): pedido de
+R$1.000 (50×R$20, calculado no servidor) ficou `AGUARDANDO_APROVACAO`;
+decisão de um segundo usuário real (segregação — não é quem abriu o pedido)
+via `decidir_solicitacao` refletiu automaticamente em `pedidos_compra.status
+= APROVADO` pelo trigger, sem nenhum código do pedido saber disso
+diretamente. Ambos os caminhos com resíduo zero confirmado depois.
+`npm run typecheck`/`test -- --run` (388/388)/`build` verdes depois de cada
+mudança.
+
+**Gap conhecido**: caminho de rejeição (`REJEITADO`) do pedido não foi
+testado ao vivo nesta sessão — a lógica é a mesma do caminho de aprovação
+(mesmo trigger, `IF NEW.status = 'REJEITADO'`), só não foi exercitada de
+propósito por tempo. Baixo risco, mas registrar caso alguém desconfie do
+fluxo de rejeição no futuro.
+
+**Próxima ação**: Recebimento físico (reaproveita `estoque_movimentacoes`
+tipo ENTRADA) e Match de 3 vias (pedido × recebimento × título →
+`contas_pagar` automático + lançamento `FIN-4`) — últimos dois itens do
+checklist do `COMP-1`, depois só "Devolução a fornecedor" e "ativar de fato
+`compras.*`" (deliberadamente adiado, mesma decisão do COMP-1a/1b: gate por
+permissão granular fica pro fim do programa).
+
+---
+
 ## 🔖 Checkpoint atual — COMP-1a fechado: Requisição de Compra interna (2026-09-07)
 
 Primeira fatia do Programa Compras e Suprimentos (Onda 1), sessão seguinte ao

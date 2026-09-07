@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.process-webhook-outbox]
 verify_jwt = true
+
+[functions.compras-cotacao-publica]
+verify_jwt = false

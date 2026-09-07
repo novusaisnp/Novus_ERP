@@ -53,6 +53,11 @@ import AtivosFixos from './pages/financeiro/AtivosFixos';
 import AlcadasAprovacao from './pages/financeiro/AlcadasAprovacao';
 import Aprovacoes from './pages/financeiro/Aprovacoes';
 import RequisicoesCompra from './pages/compras/RequisicoesCompra';
+import CotacoesCompra from './pages/compras/CotacoesCompra';
+import CotacaoCompraDetalhe from './pages/compras/CotacaoCompraDetalhe';
+import CotacaoFornecedorPublica from './pages/publico/CotacaoFornecedorPublica';
+import PedidosCompra from './pages/compras/PedidosCompra';
+import PedidoCompraDetalhe from './pages/compras/PedidoCompraDetalhe';
 import ContasPagar from './pages/financeiro/ContasPagar';
 import ContasReceber from './pages/financeiro/ContasReceber';
 import MovimentacoesFinanceiras from './pages/financeiro/MovimentacoesFinanceiras';
@@ -130,6 +135,7 @@ function App() {
               <Routes>
                 {/* Public Routes */}
                 <Route path="/login" element={<Login />} />
+                <Route path="/cotar/:id" element={<CotacaoFornecedorPublica />} />
 
                 <Route path="/selecionar-empresa" element={<ProtectedRoute><SelecionarEmpresa /></ProtectedRoute>} />
                 <Route path="/selecionar-empresa/nova" element={<ProtectedRoute><OnboardingCliente /></ProtectedRoute>} />
@@ -183,6 +189,10 @@ function App() {
                   <Route path="compras">
                     <Route index element={<Navigate to="/compras/requisicoes" replace />} />
                     <Route path="requisicoes" element={<RequisicoesCompra />} />
+                    <Route path="cotacoes" element={<CotacoesCompra />} />
+                    <Route path="cotacoes/:id" element={<CotacaoCompraDetalhe />} />
+                    <Route path="pedidos" element={<PedidosCompra />} />
+                    <Route path="pedidos/:id" element={<PedidoCompraDetalhe />} />
                   </Route>
 
                   {/* Gestão Bancária Routes */}
