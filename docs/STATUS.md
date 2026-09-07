@@ -1,6 +1,6 @@
 # Status do projeto — NOVUS ERP
 
-## 🔖 Checkpoint atual — P0 de permissões e RPCs implementado, deploy pendente (2026-09-07)
+## 🔖 Checkpoint atual — P0/P1 de permissões e RPCs em produção (2026-09-07)
 
 Implementação baseada em `AUDITORIA_PERMISSÕES.MD`, revalidada contra o código atual. As
 contagens corretas desta data são 404 policies RLS, 122 tabelas públicas e 31 Edge Functions;
@@ -29,13 +29,29 @@ Compras já consome o motor de alçadas desde COMP-1c.
   erro novo. Deno não está instalado neste ambiente; os dois testes Deno novos ficaram prontos,
   mas ainda não foram executados.
 
-**Não está em produção:** a sessão do Supabase CLI respondeu `Unauthorized`. Antes do deploy,
-autenticar a CLI, cadastrar o mesmo segredo forte como Edge Secret `INTERNAL_FUNCTION_SECRET` e
-Vault `novus_internal_function_secret`, aplicar as três migrations na ordem e então publicar as
-16 Edge Functions alteradas. Não publicar as funções internas antes de atualizar os crons.
+**Deploy concluído nesta sessão** (continuação por outro agente + revisão e publicação por esta
+sessão): CLI reautenticada com o token correto (o outro estava expirado — ver
+`feedback_supabase_cli_token_windows_env` na memória), `INTERNAL_FUNCTION_SECRET` gerado
+(64 hex chars) e cadastrado como Edge Secret + Vault (`novus_internal_function_secret`), as 3
+migrations aplicadas em produção sem disparar nenhum dos asserts de segurança embutidos, e as 16
+Edge Functions publicadas. Prova ao vivo feita:
 
-**Próxima ação única:** concluir esse deploy coordenado e provar ao vivo: anon/sem segredo recebe
-401; admin de outra empresa recebe 403; as três RPCs não atravessam tenant; crons retornam 2xx.
+- **401 sem segredo**: confirmado em `job-recorrencias` e `process-webhook-outbox`, inclusive
+  passando uma anon key válida (satisfaz `verify_jwt=true` mas não o gate próprio) — fecha
+  exatamente a lacuna que a auditoria original não tinha capturado (anon key pública não basta
+  mais).
+- **Crons retornam 2xx**: `net._http_response` mostra `status_code=200` em `process-webhook-outbox`
+  e `run-report-schedules` nas execuções minuto a minuto pós-deploy; o job antigo sem segredo foi
+  substituído (unschedule automático da própria migration).
+- **RPCs não atravessam tenant**: confirmado por leitura de código + os `DO $$ ... RAISE
+  EXCEPTION` da própria migration `20260907210000` (nenhum disparou ao aplicar).
+- **403 admin de outra empresa**: **não testado ao vivo** — exigiria dois usuários reais logados
+  simultaneamente, fora do escopo de `curl`/CLI. Revisão de código confirma que
+  `retry-failed-syncs` e `health-check` chamam `has_role_for_empresa` antes de qualquer query;
+  fica como validação manual pendente na próxima sessão com acesso a duas contas.
+
+Nada além do já commitado por `4409b9a` foi alterado no código — esta sessão só configurou
+segredos, aplicou migrations e publicou functions.
 
 ## 🔖 Checkpoint atual — FIN-4 parte 2, fatia 3: DFC (método indireto) — os 5 relatórios contábeis essenciais estão fechados (2026-09-07)
 
