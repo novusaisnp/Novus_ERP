@@ -59,8 +59,8 @@ export default function BalancoPatrimonial(): JSX.Element {
 
   const exportPayload: ReportExportPayload<BalancoContaLinha & { valorExibido: number }> = useMemo(
     () => ({
-      title: `Balanço Patrimonial (${MODO_LABEL[modo]})`,
-      subtitle: `Posição em ${formatDate(dataCorte)}`,
+      title: 'Balanço Patrimonial',
+      subtitle: `Posição em ${formatDate(dataCorte)} — ${MODO_LABEL[modo]}`,
       branding: reportBranding,
       filters: [
         { label: 'Data de corte', value: formatDate(dataCorte) },
@@ -79,7 +79,7 @@ export default function BalancoPatrimonial(): JSX.Element {
           { header: 'Código', accessor: (r) => r.codigo },
           { header: 'Conta', accessor: (r) => r.nome },
           { header: 'Tipo', accessor: (r) => r.tipo },
-          { header: 'Saldo', accessor: (r) => r.valorExibido },
+          { header: 'Saldo', accessor: (r) => r.valorExibido, align: 'right' },
         ],
         rows: linhasExportacao,
       },

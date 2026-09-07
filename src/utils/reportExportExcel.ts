@@ -96,6 +96,16 @@ export async function exportReportToExcel<T>(payload: ReportExportPayload<T>): P
   for (const r of payload.detail.rows) {
     detalhe.addRow(payload.detail.columns.map((c) => c.accessor(r)));
   }
+  // Colunas marcadas align:'right' são valor numérico — número real na
+  // célula (Excel já alinha à direita sozinho) mais separador de milhar
+  // (Excel aplica o formato usando o locale de quem abre o arquivo).
+  payload.detail.columns.forEach((c, i) => {
+    if (c.align === 'right') {
+      const col = detalhe.getColumn(i + 1);
+      col.numFmt = '#,##0.00';
+      col.alignment = { horizontal: 'right' };
+    }
+  });
 
   // ---------- Aba Agrupado (opcional) ----------
   if (payload.aggregated && payload.aggregated.rows.length > 0) {

@@ -49,8 +49,8 @@ export default function DRE(): JSX.Element {
 
   const exportPayload: ReportExportPayload<DreContaLinha & { valorExibido: number }> = useMemo(
     () => ({
-      title: `DRE — Demonstração do Resultado do Exercício (${MODO_LABEL[modo]})`,
-      subtitle: `Período de ${formatDate(dataInicio)} a ${formatDate(dataFim)}`,
+      title: 'DRE — Demonstração do Resultado do Exercício',
+      subtitle: `Período de ${formatDate(dataInicio)} a ${formatDate(dataFim)} — ${MODO_LABEL[modo]}`,
       branding: reportBranding,
       filters: [
         { label: 'Início', value: formatDate(dataInicio) },
@@ -69,7 +69,7 @@ export default function DRE(): JSX.Element {
           { header: 'Código', accessor: (r) => r.codigo },
           { header: 'Conta', accessor: (r) => r.nome },
           { header: 'Tipo', accessor: (r) => r.tipo },
-          { header: 'Valor no Período', accessor: (r) => r.valorExibido },
+          { header: 'Valor no Período', accessor: (r) => r.valorExibido, align: 'right' },
         ],
         rows: linhasExportacao,
       },

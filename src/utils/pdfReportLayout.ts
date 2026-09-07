@@ -75,18 +75,46 @@ export function drawReportHeader(doc: jsPDF, opts: DrawReportHeaderOptions): num
 
   const textX = logoWidth > 0 ? marginX + logoWidth + marginX * 0.2 : marginX;
 
-  let leftY = headerTop + marginX * 0.3;
+  // Bloco esquerdo: mede a largura REAL de cada linha (nome da empresa +
+  // linhas extra) pra saber onde ele termina de verdade — um chute em % da
+  // página (tentativa anterior) ainda colidia com o bloco direito sempre
+  // que o nome da empresa era comprido, porque o texto nunca era medido,
+  // só desenhado sem limite nenhum.
+  //
+  // Centraliza o bloco de texto (nome + linhas extra) na vertical contra a
+  // logo — sem isto, o texto sempre começava no topo (headerTop + offset
+  // fixo), e uma logo mais alta que o bloco de texto deixava o nome da
+  // empresa "flutuando" acima do centro da logo, desalinhado. Quando não
+  // há logo, o offset de centralização é 0 e o comportamento é o mesmo de
+  // antes (ancorado perto do topo).
+  const companyNameLineHeight = marginX * 0.32;
+  const extraLineHeight = marginX * 0.27;
+  const leftTextBlockHeight = companyNameLineHeight + companyExtraLines.length * extraLineHeight;
+  const leftBlockVerticalCenterOffset = Math.max(0, (logoHeight - leftTextBlockHeight) / 2);
+
+  let leftY = headerTop + leftBlockVerticalCenterOffset + marginX * 0.3;
   doc.setFont('helvetica', 'bold').setFontSize(11.5);
   doc.setTextColor(BRAND_NAVY[0], BRAND_NAVY[1], BRAND_NAVY[2]);
-  doc.text(branding?.companyName || 'Empresa', textX, leftY);
+  const companyName = branding?.companyName || 'Empresa';
+  doc.text(companyName, textX, leftY);
+  let leftBlockRightEdge = textX + doc.getTextWidth(companyName);
 
   leftY += marginX * 0.32;
   doc.setFont('helvetica', 'normal').setFontSize(8.5);
   doc.setTextColor(110);
   companyExtraLines.forEach((line) => {
     doc.text(line, textX, leftY);
+    leftBlockRightEdge = Math.max(leftBlockRightEdge, textX + doc.getTextWidth(line));
     leftY += marginX * 0.27;
   });
+
+  // Bloco direito (rótulo/título/meta) nunca pode invadir leftBlockRightEdge
+  // — a largura disponível é derivada da medição real acima, não de uma
+  // fração fixa da página.
+  const maxRightWidth = Math.max(
+    pageWidth * 0.2,
+    pageWidth - marginX - leftBlockRightEdge - marginX * 0.4,
+  );
 
   let rightY = headerTop + marginX * 0.22;
   doc.setFont('helvetica', 'bold').setFontSize(7.5);
@@ -96,14 +124,19 @@ export function drawReportHeader(doc: jsPDF, opts: DrawReportHeaderOptions): num
   rightY += marginX * 0.34;
   doc.setFont('helvetica', 'bold').setFontSize(13);
   doc.setTextColor(30);
-  doc.text(title, pageWidth - marginX, rightY, { align: 'right' });
-
-  rightY += marginX * 0.3;
+  const titleLines = doc.splitTextToSize(title, maxRightWidth) as string[];
+  titleLines.forEach((line, i) => {
+    doc.text(line, pageWidth - marginX, rightY, { align: 'right' });
+    rightY += i === titleLines.length - 1 ? marginX * 0.3 : marginX * 0.32;
+  });
   doc.setFont('helvetica', 'normal').setFontSize(8.5);
   doc.setTextColor(110);
   metaLines.forEach((line) => {
-    doc.text(line, pageWidth - marginX, rightY, { align: 'right' });
-    rightY += marginX * 0.27;
+    const wrapped = doc.splitTextToSize(line, maxRightWidth) as string[];
+    wrapped.forEach((l) => {
+      doc.text(l, pageWidth - marginX, rightY, { align: 'right' });
+      rightY += marginX * 0.27;
+    });
   });
 
   const headerBottom = Math.max(leftY, rightY, headerTop + logoHeight) + marginX * 0.15;

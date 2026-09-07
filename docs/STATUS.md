@@ -1,6 +1,85 @@
 # Status do projeto — NOVUS ERP
 
-## 🔖 Checkpoint atual — FIN-4 parte 2, fatia 1: Balanço Patrimonial + DRE + EBITDA (2026-09-07)
+## 🔖 Checkpoint atual — FIN-4 parte 2, fatia 2: DMPL + correção geral da exportação de relatórios (2026-09-07)
+
+Mesma sessão da fatia 1 (mesmo dia). Fecha o segundo item da fatia de FIN-4
+parte 2; falta só a fatia 3 (DFC, reconciliada com `fluxoCaixaService.ts`)
+pra fechar o programa inteiro.
+
+### DMPL
+- **Migration `20260907190000_fin4p2_dmpl.sql`**: `relatorio_dmpl(p_empresa_id,
+  p_data_inicio, p_data_fim)`, mesma filosofia das RPCs da fatia 1 (leitura
+  pura, `SECURITY DEFINER` com checagem explícita de acesso). Devolve, por
+  conta PATRIMONIO (real + a linha sintética "Resultado do Período"),
+  `saldo_inicial` (acumulado até `data_inicio - 1`), `movimento_periodo`
+  (lançamentos reais na conta, ou Receita−Despesa do período pra linha
+  sintética) e `saldo_final = saldo_inicial + movimento_periodo`. Por
+  construção, `saldo_final` de cada conta bate com
+  `relatorio_balanco_patrimonial(empresa, data_fim)` e `saldo_inicial` bate
+  com `relatorio_balanco_patrimonial(empresa, data_inicio - 1)` — provado
+  por SQL (reconciliação exata nos dois sentidos).
+- **Simplificação de sinal encontrada durante o design**: crédito−débito
+  somado direto sobre RECEITA+DESPESA já dá Receita−Despesa sem precisar
+  inverter sinal por tipo (uma conta RECEITA cresce a crédito, uma DESPESA
+  cresce a débito — somar os dois direto já é a subtração desejada).
+- UI em `/financeiro/dmpl`, mesmo padrão Sintético/Analítico da fatia 1,
+  tabela de 3 colunas (`DmplTable.tsx`) com rollup próprio por coluna.
+- Testada ao vivo com dado abundante (aportes de capital reais em
+  julho/agosto + títulos/depreciação já existentes) — saldo inicial 0,
+  movimento do período R$39.025 (aportes + resultado), saldo final
+  R$39.025, batendo exatamente com o total do Balanço no mesmo corte.
+
+### Correção geral da exportação de relatórios (achada testando esta fatia, aplicada em todo o app)
+Usuário reportou 3 problemas reais nos PDFs/Excel exportados (Balanço/DRE da
+fatia 1) — nenhum específico desta fatia, todos no utilitário compartilhado
+`src/utils/reportExport*.ts`/`pdfReportLayout.ts` usado por **todo** relatório
+exportável do sistema, não só os contábeis:
+1. **Ordem embaralhada no detalhe (filha antes do pai)**: `relatorio_
+   balanco_patrimonial`/`relatorio_dmpl` não tinham `ORDER BY` — a UI
+   parecia certa porque `ContaHierarquicaTable` reordena por conta própria
+   pra montar a árvore, mas o array flat usado por CSV/PDF/Excel saía na
+   ordem arbitrária do `UNION ALL`. Corrigido com `ORDER BY codigo` nas
+   duas RPCs (`relatorio_dre` já tinha).
+2. **Valores sem separador de milhar e alinhados à esquerda**: `ReportDetailColumn`
+   ganhou um campo opcional `align?: 'left'|'right'` — quando `'right'`, o
+   PDF formata com `numberPt` (pt-BR, sem cifrão) e aplica `columnStyles`
+   right-align no autotable; o Excel aplica `numFmt: '#,##0.00'` +
+   `alignment: {horizontal:'right'}` na coluna inteira. Comportamento
+   antigo preservado pra qualquer coluna que não passe `align` (nenhum
+   relatório pré-existente foi afetado).
+3. **Cabeçalho do PDF "bagunçado" — título comprido colidindo com logo/nome
+   da empresa, e nome da empresa desalinhado verticalmente da logo**: dois
+   bugs reais em `pdfReportLayout.ts`'s `drawReportHeader` (função
+   compartilhada por todo relatório em PDF do sistema):
+   - Título era desenhado numa linha só, ancorado à direita, sem largura
+     máxima — jsPDF desenha a string inteira crescendo pra esquerda até
+     onde couber, sem noção de onde o bloco esquerdo termina. Fix: mede a
+     largura REAL do nome da empresa (`doc.getTextWidth`), calcula a
+     largura disponível de verdade pro bloco direito, e quebra o título em
+     linhas com `doc.splitTextToSize`. (Uma primeira tentativa usando %
+     fixa da página, sem medir nada, ainda colidia pra nomes de empresa
+     compridos — corrigida na sequência com a medição real.)
+   - Nome da empresa sempre ancorado perto do topo do cabeçalho,
+     independente da altura da logo — uma logo mais alta que o bloco de
+     texto deixava o nome "flutuando" acima do centro dela. Fix: calcula a
+     altura do bloco de texto esquerdo e centraliza verticalmente contra
+     `logoHeight` (offset 0 quando não há logo, preservando o
+     comportamento anterior).
+- Confirmado corrigido por inspeção direta dos arquivos exportados (não só
+  visual): script Node com `exceljs` lendo célula a célula do `.xlsx` real
+  (ordem, `numFmt`, `alignment`) e `Read` do `.pdf` real gerado pela UI —
+  não bastava confiar no código, tinha que abrir o arquivo que a tela
+  realmente gera.
+- **12 relatórios re-exportados e mantidos em Downloads** com todos os
+  fixes (Balanço/DRE/DMPL × Sintético/Analítico × PDF/Excel) — os arquivos
+  da fatia 1 (antes do fix) continuam em Downloads também, por pedido
+  explícito do usuário de nunca apagar relatório exportado; só o dado
+  sintético do banco foi limpo.
+- `npm run typecheck`/`test -- --run` (388/388)/`build` verdes.
+
+---
+
+## Checkpoint anterior — FIN-4 parte 2, fatia 1: Balanço Patrimonial + DRE + EBITDA (2026-09-07)
 
 Mesma sessão de COMP-1d (mesmo dia). Item 5 da sequência recomendada da Onda 1
 (`docs/PLANO_MESTRE.md`), que tinha ficado pra trás quando a sessão priorizou

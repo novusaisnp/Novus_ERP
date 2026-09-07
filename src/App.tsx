@@ -52,6 +52,7 @@ import PlanoContas from './pages/financeiro/PlanoContas';
 import AtivosFixos from './pages/financeiro/AtivosFixos';
 import BalancoPatrimonial from './pages/financeiro/BalancoPatrimonial';
 import DRE from './pages/financeiro/DRE';
+import DMPL from './pages/financeiro/DMPL';
 import AlcadasAprovacao from './pages/financeiro/AlcadasAprovacao';
 import Aprovacoes from './pages/financeiro/Aprovacoes';
 import RequisicoesCompra from './pages/compras/RequisicoesCompra';
@@ -224,6 +225,7 @@ function App() {
                     <Route path="ativos-fixos" element={<AtivosFixos />} />
                     <Route path="balanco" element={<BalancoPatrimonial />} />
                     <Route path="dre" element={<DRE />} />
+                    <Route path="dmpl" element={<DMPL />} />
                     <Route path="alcadas" element={<AdminRoute><AlcadasAprovacao /></AdminRoute>} />
                     <Route path="aprovacoes" element={<Aprovacoes />} />
                     <Route path="config-basicas" element={<ConfigBasicas />} />

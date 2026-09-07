@@ -1,6 +1,6 @@
 // Exportação PDF executivo (P4.1). Dynamic import de jspdf + jspdf-autotable.
 import type { ReportExportPayload } from './reportExportShared';
-import { timestampSuffix } from './reportExportShared';
+import { timestampSuffix, numberPt } from './reportExportShared';
 import { normalizeReportColor, resolveReportLogo } from './reportBranding';
 import { drawReportHeader, drawReportFooter, BRAND_NAVY } from './pdfReportLayout';
 
@@ -69,9 +69,17 @@ export async function exportReportToPdf<T>(payload: ReportExportPayload<T>): Pro
     autoTable(doc, {
       startY: y,
       head: [payload.detail.columns.map((c) => c.header)],
-      body: payload.detail.rows.map((row) => payload.detail.columns.map((c) => String(c.accessor(row)))),
+      body: payload.detail.rows.map((row) =>
+        payload.detail.columns.map((c) => {
+          const v = c.accessor(row);
+          return c.align === 'right' && typeof v === 'number' ? numberPt(v) : String(v);
+        }),
+      ),
       styles: { fontSize: 8, cellPadding: 3 },
       headStyles: { fillColor: normalizeReportColor(payload.branding?.primaryColor) ?? BRAND_NAVY },
+      columnStyles: Object.fromEntries(
+        payload.detail.columns.map((c, i) => [i, c.align === 'right' ? { halign: 'right' as const } : {}]),
+      ),
       margin: { left: marginX, right: marginX },
     });
     y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 14;

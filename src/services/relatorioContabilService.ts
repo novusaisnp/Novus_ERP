@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import type { BalancoContaLinha, DreContaLinha, TipoContaContabil, NaturezaContaContabil } from '@/types/relatoriosContabeis';
+import type { BalancoContaLinha, DreContaLinha, DmplContaLinha, TipoContaContabil, NaturezaContaContabil } from '@/types/relatoriosContabeis';
 
 function translateError(error: { code?: string; message?: string } | null, fallback: string): Error {
   const code = error?.code;
@@ -72,6 +72,28 @@ export const relatorioContabilService = {
       contaPaiId: r.conta_pai_id,
       aceitaLancamento: r.aceita_lancamento,
       valorPeriodo: Number(r.valor_periodo),
+    }));
+  },
+
+  async dmpl(empresaId: string, dataInicio: string, dataFim: string): Promise<DmplContaLinha[]> {
+    const { data, error } = await supabase.rpc('relatorio_dmpl', {
+      p_empresa_id: empresaId,
+      p_data_inicio: dataInicio,
+      p_data_fim: dataFim,
+    });
+    if (error) throw translateError(error, 'Erro ao gerar a DMPL');
+    return ((data ?? []) as unknown as (RpcContaRow & { saldo_inicial: number; movimento_periodo: number; saldo_final: number })[]).map((r) => ({
+      contaId: r.conta_id,
+      codigo: r.codigo,
+      nome: r.nome,
+      tipo: r.tipo as TipoContaContabil,
+      natureza: r.natureza as NaturezaContaContabil,
+      nivel: r.nivel,
+      contaPaiId: r.conta_pai_id,
+      aceitaLancamento: r.aceita_lancamento,
+      saldoInicial: Number(r.saldo_inicial),
+      movimentoPeriodo: Number(r.movimento_periodo),
+      saldoFinal: Number(r.saldo_final),
     }));
   },
 };

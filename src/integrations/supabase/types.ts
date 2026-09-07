@@ -9031,6 +9031,24 @@ export type Database = {
           tipo: string
         }[]
       }
+      relatorio_dmpl: {
+        Args: {
+          p_data_fim: string
+          p_data_inicio: string
+          p_empresa_id: string
+        }
+        Returns: {
+          aceita_lancamento: boolean
+          codigo: string
+          conta_id: string
+          conta_pai_id: string
+          movimento_periodo: number
+          nivel: number
+          nome: string
+          saldo_final: number
+          saldo_inicial: number
+        }[]
+      }
       relatorio_dre: {
         Args: {
           p_data_fim: string

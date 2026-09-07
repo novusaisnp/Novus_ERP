@@ -19,3 +19,9 @@ export interface BalancoContaLinha extends ContaRelatorioBase {
 export interface DreContaLinha extends ContaRelatorioBase {
   valorPeriodo: number;
 }
+
+export interface DmplContaLinha extends ContaRelatorioBase {
+  saldoInicial: number;
+  movimentoPeriodo: number;
+  saldoFinal: number;
+}

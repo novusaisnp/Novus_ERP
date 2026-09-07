@@ -51,3 +51,28 @@ export const useDre = (dataInicio: string, dataFim: string) => {
     error: dreQuery.error,
   };
 };
+
+export const useDmpl = (dataInicio: string, dataFim: string) => {
+  const { data: empresa } = useEmpresaRepresentadaAtual();
+  const empresaId = empresa?.id;
+
+  const query = useQuery({
+    queryKey: ['dmpl', empresaId, dataInicio, dataFim],
+    queryFn: () => relatorioContabilService.dmpl(empresaId as string, dataInicio, dataFim),
+    enabled: !!empresaId && !!dataInicio && !!dataFim,
+  });
+
+  const linhas = query.data ?? [];
+  const totalSaldoInicial = linhas.reduce((acc, l) => acc + l.saldoInicial, 0);
+  const totalMovimento = linhas.reduce((acc, l) => acc + l.movimentoPeriodo, 0);
+  const totalSaldoFinal = linhas.reduce((acc, l) => acc + l.saldoFinal, 0);
+
+  return {
+    linhas,
+    totalSaldoInicial,
+    totalMovimento,
+    totalSaldoFinal,
+    isLoading: query.isLoading,
+    error: query.error,
+  };
+};

@@ -88,17 +88,23 @@ BEGIN
     FROM public.plano_contas pc
     LEFT JOIN movimentos m ON m.conta_contabil_id = pc.id
     WHERE pc.empresa_representada_id = p_empresa_id
+  ),
+  resultado_e_linhas AS (
+    SELECT sc.id, sc.codigo, sc.nome, sc.tipo, sc.natureza, sc.nivel, sc.conta_pai_id, sc.aceita_lancamento, sc.saldo
+    FROM saldos_conta sc
+    WHERE sc.tipo IN ('ATIVO', 'PASSIVO', 'PATRIMONIO')
+    UNION ALL
+    SELECT
+      NULL::uuid, 'RESULTADO'::character varying, 'Resultado do Período (não apurado)'::character varying,
+      'PATRIMONIO'::character varying, 'CREDORA'::character varying, 2, v_pl_raiz_id, false,
+      COALESCE(SUM(CASE WHEN sc.tipo = 'RECEITA' THEN sc.saldo WHEN sc.tipo = 'DESPESA' THEN -sc.saldo ELSE 0 END), 0)
+    FROM saldos_conta sc
+    WHERE sc.tipo IN ('RECEITA', 'DESPESA')
   )
-  SELECT sc.id, sc.codigo, sc.nome, sc.tipo, sc.natureza, sc.nivel, sc.conta_pai_id, sc.aceita_lancamento, sc.saldo
-  FROM saldos_conta sc
-  WHERE sc.tipo IN ('ATIVO', 'PASSIVO', 'PATRIMONIO')
-  UNION ALL
-  SELECT
-    NULL::uuid, 'RESULTADO'::character varying, 'Resultado do Período (não apurado)'::character varying,
-    'PATRIMONIO'::character varying, 'CREDORA'::character varying, 2, v_pl_raiz_id, false,
-    COALESCE(SUM(CASE WHEN sc.tipo = 'RECEITA' THEN sc.saldo WHEN sc.tipo = 'DESPESA' THEN -sc.saldo ELSE 0 END), 0)
-  FROM saldos_conta sc
-  WHERE sc.tipo IN ('RECEITA', 'DESPESA');
+  -- UNION ALL sozinho não garante ordem nenhuma — sem isto, telas/exportações
+  -- que não re-ordenam por conta própria (CSV/PDF/Excel do detalhe) mostravam
+  -- filha antes do pai, uma bagunça real reportada pelo usuário.
+  SELECT * FROM resultado_e_linhas ORDER BY codigo;
 END;
 $$;
 
