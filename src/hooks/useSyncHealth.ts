@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { getEmpresaAtivaIdOuFalha } from '@/lib/empresaAtiva';
 
 interface HealthCheck {
   status: 'healthy' | 'warning' | 'error';
@@ -29,14 +30,17 @@ export const useSyncHealth = () => {
   const fetchHealth = async () => {
     try {
       setLoading(true);
-      
-      const { data, error } = await supabase.functions.invoke('health-check');
+
+      const empresaId = await getEmpresaAtivaIdOuFalha();
+      const { data, error } = await supabase.functions.invoke('health-check', {
+        body: { empresaId },
+      });
       
       if (error) throw error;
       
       setHealth(data);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao buscar health check:', error);
       toast({
         title: "Erro",

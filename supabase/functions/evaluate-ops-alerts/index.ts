@@ -3,6 +3,7 @@
 // Sem dependência de email/DELIVERY_PROVIDER.
 import { createClient } from "npm:@supabase/supabase-js@2.110.2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { isInternalRequest } from "../_shared/internal-auth.ts";
 import {
   ALL_ALERT_KINDS,
   evalBehindSchedules,
@@ -32,6 +33,7 @@ function log(event: string, data: Record<string, unknown>): void {
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
+  if (!isInternalRequest(req)) return json({ error: "unauthorized" }, 401);
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");

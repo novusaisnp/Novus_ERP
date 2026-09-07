@@ -122,16 +122,6 @@ export const PERMISSOES_GRANULARES: PermissionModule[] = [
     ]
   },
   {
-    modulo: 'NFe',
-    descricao: 'Notas Fiscais Eletrônicas',
-    permissoes: [
-      { codigo: 'nfe.create', nome: 'Emitir NFe', descricao: 'Gerar notas fiscais eletrônicas' },
-      { codigo: 'nfe.read', nome: 'Consultar NFe', descricao: 'Visualizar NFe emitidas' },
-      { codigo: 'nfe.update', nome: 'Editar NFe', descricao: 'Modificar NFe em elaboração' },
-      { codigo: 'nfe.cancel', nome: 'Cancelar NFe', descricao: 'Cancelar notas fiscais', critica: true }
-    ]
-  },
-  {
     modulo: 'RH',
     descricao: 'Recursos Humanos',
     permissoes: [

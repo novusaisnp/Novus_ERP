@@ -26,7 +26,6 @@ const TENANTS = {
 };
 
 const URL = `${SUPABASE_URL}/functions/v1/sync-webhook`;
-const HEALTH_URL = `${SUPABASE_URL}/functions/v1/health-check`;
 const PATH = "/functions/v1/sync-webhook";
 const EVIDENCE = path.resolve("evidence");
 await fs.mkdir(EVIDENCE, { recursive: true });
@@ -77,14 +76,6 @@ async function call(name, { tenantName, headers, body, expectStatus, expectConta
 }
 function safeJson(t) {
   try { return JSON.parse(t); } catch { return t; }
-}
-
-// ---- Health regression (before) ----
-{
-  const r = await fetch(HEALTH_URL, { headers: { apikey: APIKEY, authorization: `Bearer ${APIKEY}` } });
-  const t = await r.text();
-  console.log(`[HEALTH-BEFORE] ${r.status} ${t.slice(0, 120)}`);
-  await fs.writeFile(path.join(EVIDENCE, "health-before.http.txt"), `${r.status}\n${t}`);
 }
 
 const results = [];
@@ -199,14 +190,6 @@ const payloadFor = (scn) => JSON.stringify({
     expectStatus: 400,
     expectContains: "timestamp_out_of_window",
   }));
-}
-
-// ---- Health regression (after) ----
-{
-  const r = await fetch(HEALTH_URL, { headers: { apikey: APIKEY, authorization: `Bearer ${APIKEY}` } });
-  const t = await r.text();
-  console.log(`[HEALTH-AFTER] ${r.status} ${t.slice(0, 120)}`);
-  await fs.writeFile(path.join(EVIDENCE, "health-after.http.txt"), `${r.status}\n${t}`);
 }
 
 // ---- Summary ----

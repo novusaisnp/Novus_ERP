@@ -5,6 +5,7 @@
 
 import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2.110.2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { isInternalRequest } from "../_shared/internal-auth.ts";
 
 import { resolveDeliveryProvider } from "../_shared/delivery/resolveProvider.ts";
 import type { DeliveryProvider } from "../_shared/delivery/DeliveryProvider.ts";
@@ -351,6 +352,18 @@ async function processSchedule(client: SupabaseClient, sch: ScheduleRow): Promis
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
+  }
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "method_not_allowed" }), {
+      status: 405,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  if (!isInternalRequest(req)) {
+    return new Response(JSON.stringify({ error: "unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {

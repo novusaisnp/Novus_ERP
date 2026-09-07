@@ -4,6 +4,7 @@
 // - service_role only (chamada por cron via net.http_post).
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.110.2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { isInternalRequest } from "../_shared/internal-auth.ts";
 import {
   BATCH_SIZE,
   RETENTION_DAYS,
@@ -112,6 +113,12 @@ Deno.serve(async (req: Request) => {
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "method_not_allowed" }), {
       status: 405,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  if (!isInternalRequest(req)) {
+    return new Response(JSON.stringify({ error: "unauthorized" }), {
+      status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

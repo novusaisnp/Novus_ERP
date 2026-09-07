@@ -10,6 +10,12 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'method_not_allowed' }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
@@ -18,6 +24,33 @@ serve(async (req) => {
 
   try {
     const startTime = Date.now();
+    const authHeader = req.headers.get('Authorization') ?? '';
+    const token = authHeader.toLowerCase().startsWith('bearer ') ? authHeader.slice(7).trim() : '';
+    const { empresaId } = await req.json().catch(() => ({})) as { empresaId?: string };
+    if (!token || !empresaId) {
+      return new Response(JSON.stringify({ error: 'unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !userData.user) {
+      return new Response(JSON.stringify({ error: 'unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const { data: isAdmin } = await supabase.rpc('has_role_for_empresa', {
+      _user_id: userData.user.id,
+      _role: 'admin',
+      _empresa_id: empresaId,
+    });
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ error: 'forbidden' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     const checks = [];
 
     // Verificação 1: Conectividade com banco de dados
@@ -25,6 +58,7 @@ serve(async (req) => {
       const { data, error } = await supabase
         .from('sync_logs')
         .select('count')
+        .eq('empresa_representada_id', empresaId)
         .limit(1);
       
       checks.push({
@@ -49,6 +83,7 @@ serve(async (req) => {
       const { data: syncStats, error } = await supabase
         .from('sync_logs')
         .select('status')
+        .eq('empresa_representada_id', empresaId)
         .gte('created_at', last24h);
 
       if (error) throw error;
@@ -82,6 +117,7 @@ serve(async (req) => {
       const { data: webhookConfigs, error } = await supabase
         .from('webhook_configs')
         .select('nome, ativo')
+        .eq('empresa_representada_id', empresaId)
         .eq('ativo', true);
 
       if (error) throw error;
@@ -107,6 +143,7 @@ serve(async (req) => {
       const { data: queueStats, error } = await supabase
         .from('sync_queue')
         .select('status')
+        .eq('empresa_representada_id', empresaId)
         .in('status', ['pending', 'processing']);
 
       if (error) throw error;

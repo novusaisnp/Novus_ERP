@@ -37,7 +37,7 @@ Sintomas: query `(a)` retorna zero em 48h+ e `(b)` cresce.
 2. Verificar últimas execuções: `SELECT * FROM cron.job_run_details WHERE jobid=... ORDER BY start_time DESC LIMIT 10;`
 3. Se `status='failed'`, ler `return_message`.
 4. Reagendar reexecutando `supabase/sql/p7_prune_cron.sql` (contém `cron.unschedule` implícito se rodado após remover).
-5. Executar 1× manualmente: `curl -X POST -H "apikey: <ANON>" -H "Authorization: Bearer <ANON>" https://<project>.supabase.co/functions/v1/prune-report-artifacts`.
+5. Executar 1× manualmente: `curl -X POST -H "apikey: <ANON>" -H "Authorization: Bearer <ANON>" -H "x-internal-secret: <INTERNAL_FUNCTION_SECRET>" https://<project>.supabase.co/functions/v1/prune-report-artifacts`.
 
 ### 3.2 Backlog crescente
 

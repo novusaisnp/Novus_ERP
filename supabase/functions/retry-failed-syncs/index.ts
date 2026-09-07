@@ -35,6 +35,12 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'method_not_allowed' }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
@@ -43,11 +49,39 @@ serve(async (req) => {
 
   try {
     const startTime = Date.now();
+    const authHeader = req.headers.get('Authorization') ?? '';
+    const token = authHeader.toLowerCase().startsWith('bearer ') ? authHeader.slice(7).trim() : '';
+    const { empresaId } = await req.json().catch(() => ({})) as { empresaId?: string };
+    if (!token || !empresaId) {
+      return new Response(JSON.stringify({ error: 'unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !userData.user) {
+      return new Response(JSON.stringify({ error: 'unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const { data: isAdmin } = await supabase.rpc('has_role_for_empresa', {
+      _user_id: userData.user.id,
+      _role: 'admin',
+      _empresa_id: empresaId,
+    });
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ error: 'forbidden' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Buscar sincronizações falhadas para retry
     const { data: failedSyncs, error: fetchError } = await supabase
       .from('sync_logs')
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .eq('status', 'ERRO')
       .lt('tentativas', 3) // Máximo 3 tentativas
       .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Últimas 24h
@@ -87,7 +121,8 @@ serve(async (req) => {
             tentativas: sync.tentativas + 1,
             mensagem_erro: null,
           })
-          .eq('id', sync.id);
+          .eq('id', sync.id)
+          .eq('empresa_representada_id', empresaId);
 
         results.push({
           id: sync.id,
@@ -110,7 +145,8 @@ serve(async (req) => {
             tentativas: sync.tentativas + 1,
             mensagem_erro: message,
           })
-          .eq('id', sync.id);
+          .eq('id', sync.id)
+          .eq('empresa_representada_id', empresaId);
 
         results.push({
           id: sync.id,

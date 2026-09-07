@@ -1,25 +1,22 @@
--- P7.1 — Agendamento operacional do prune diário de artefatos de relatórios.
--- NÃO executar via migration (contém URL de projeto + anon key).
--- Executar manualmente pelo operador em Cloud → SQL Editor.
---
--- Requisitos: extensões pg_cron e pg_net habilitadas.
--- Rodar 1x/dia às 03:15 UTC (fora das janelas de run-report-schedules/evaluate-ops-alerts).
+-- Compatibilidade operacional: o agendamento canônico agora vive na migration
+-- 20260907212000_p0_crons_edge_autorizados.sql e exige o segredo interno.
 
-select
-  cron.schedule(
-    'prune-report-artifacts-daily',
-    '15 3 * * *',
-    $$
-    select
-      net.http_post(
-        url := 'https://vypjygroqljchdselzqm.supabase.co/functions/v1/prune-report-artifacts',
-        headers := '{"Content-Type": "application/json", "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5cGp5Z3JvcWxqY2hkc2VsenFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2NzkyOTEsImV4cCI6MjA5OTI1NTI5MX0.1HEa5vLORph8E2qzPX3vQ1Fv43Kruitai9iTzE8Mols"}'::jsonb,
-        body := jsonb_build_object('trigger', 'cron', 'ts', now())
-      );
-    $$
-  );
+SELECT cron.unschedule(jobid)
+FROM cron.job
+WHERE command LIKE '%functions/v1/prune-report-artifacts%';
 
--- Para inspecionar:
---   select * from cron.job where jobname = 'prune-report-artifacts-daily';
--- Para remover:
---   select cron.unschedule('prune-report-artifacts-daily');
+SELECT cron.schedule(
+  'prune-report-artifacts-daily',
+  '15 3 * * *',
+  $job$
+    SELECT net.http_post(
+      url := 'https://reksodqzemboaeqxnxyy.supabase.co/functions/v1/prune-report-artifacts',
+      headers := jsonb_build_object(
+        'Content-Type', 'application/json',
+        'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'novus_erp_anon_key' LIMIT 1),
+        'x-internal-secret', (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'novus_internal_function_secret' LIMIT 1)
+      ),
+      body := jsonb_build_object('trigger', 'cron', 'ts', now())
+    );
+  $job$
+);

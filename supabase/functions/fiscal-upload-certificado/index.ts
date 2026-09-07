@@ -6,6 +6,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { hasEveryPermission } from '../_shared/permissions.ts';
 
 interface UploadPayload {
   empresa_representada_id: string;
@@ -42,11 +43,9 @@ Deno.serve(async (req) => {
     const { data: userData, error: userErr } = await client.auth.getUser();
     if (userErr || !userData.user) return json({ error: 'unauthorized' }, 401);
 
-    const { data: isAdmin, error: roleErr } = await client.rpc('has_role', {
-      _user_id: userData.user.id,
-      _role: 'admin',
-    });
-    if (roleErr || !isAdmin) return json({ error: 'forbidden' }, 403);
+    if (!await hasEveryPermission(client, userData.user.id, ['config.empresas'])) {
+      return json({ error: 'forbidden' }, 403);
+    }
 
     const body = (await req.json()) as UploadPayload;
     const errors: string[] = [];

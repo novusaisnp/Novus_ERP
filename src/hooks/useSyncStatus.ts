@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { getEmpresaAtivaIdOuFalha } from '@/lib/empresaAtiva';
 
 interface SyncStatus {
   total: number;
@@ -134,7 +135,10 @@ export const useSyncStatus = () => {
     try {
       setLoading(true);
 
-      const { data, error } = await supabase.functions.invoke('retry-failed-syncs');
+      const empresaId = await getEmpresaAtivaIdOuFalha();
+      const { data, error } = await supabase.functions.invoke('retry-failed-syncs', {
+        body: { empresaId },
+      });
 
       if (error) throw error;
 

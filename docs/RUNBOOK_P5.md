@@ -82,7 +82,7 @@ Passos:
 1. Confirmar: rodar PROBE 1 e PROBE 6 do `p5_health_probes.sql`.
 2. Checar `supabase edge_function_logs` de `run-report-schedules` — buscar `batch_started` recente.
 3. Se sem logs: cron não está disparando → verificar `pg_cron` job (`SELECT * FROM cron.job`).
-4. Recuperação: invocar manualmente `run-report-schedules` (via curl/dashboard) para drenar a fila.
+4. Recuperação: invocar manualmente `run-report-schedules` com o header `x-internal-secret` para drenar a fila.
 5. Reabilitar cron; observar PROBE 1 voltar < 5 min.
 
 **Rollback:** N/A (não afeta usuários finais imediatamente).

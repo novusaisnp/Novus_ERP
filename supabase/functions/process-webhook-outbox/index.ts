@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.110.2';
 import { hmacSha256Hex, retryDelaySeconds } from '../_shared/outbound-webhook.ts';
+import { isInternalRequest } from '../_shared/internal-auth.ts';
 
 interface Delivery {
   id: string;
@@ -26,6 +27,7 @@ async function updateDelivery(
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return Response.json({ error: 'method_not_allowed' }, { status: 405 });
+  if (!isInternalRequest(req)) return Response.json({ error: 'unauthorized' }, { status: 401 });
 
   const url = Deno.env.get('SUPABASE_URL');
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');

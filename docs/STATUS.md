@@ -1,5 +1,42 @@
 # Status do projeto — NOVUS ERP
 
+## 🔖 Checkpoint atual — P0 de permissões e RPCs implementado, deploy pendente (2026-09-07)
+
+Implementação baseada em `AUDITORIA_PERMISSÕES.MD`, revalidada contra o código atual. As
+contagens corretas desta data são 404 policies RLS, 122 tabelas públicas e 31 Edge Functions;
+Compras já consome o motor de alçadas desde COMP-1c.
+
+- `job-recorrencias`, `evaluate-ops-alerts`, `process-webhook-outbox`,
+  `run-report-schedules` e `prune-report-artifacts` agora exigem POST +
+  `x-internal-secret`, comparado em tempo constante com `INTERNAL_FUNCTION_SECRET`. A migration
+  `20260907212000_p0_crons_edge_autorizados.sql` substitui qualquer cron antigo desses endpoints
+  e lê o mesmo segredo do Vault (`novus_internal_function_secret`). A recorrência principal
+  continua no cron SQL direto já existente; a Edge deixa de ser uma porta pública alternativa.
+- `retry-failed-syncs` e `health-check` agora autenticam o JWT como usuário real, exigem admin da
+  empresa pedida via `has_role_for_empresa` e escopam todas as queries ao tenant. Os callers da UI
+  passaram a enviar a empresa ativa. A suíte E2E de webhook deixou de usar anon key para sondar o
+  health endpoint administrativo.
+- `20260907210000_p0_rpc_security.sql`: `recalc_saldo_estoque` ficou trigger-only e passou a
+  recusar produto/localização de outra empresa; `get_ultimo_documento_por_venda` e
+  `resolver_classificacao_receita` agora são SECURITY INVOKER, portanto respeitam RLS.
+- As 9 Edge Functions fiscais deixaram de aceitar qualquer admin genericamente e agora usam
+  `has_permissao`: emissão=`fiscal.create`, consulta/download=`fiscal.read`, evento MDF-e=
+  `fiscal.update`, cancelamento=`fiscal.cancelarNfe`, CC-e=`fiscal.cartaCorrecao`, certificado=
+  `config.empresas`; smoke exige as três ações que executa. `nfe.*` foi removido do catálogo e a
+  migration `20260907211000_p1_normalizar_permissoes_fiscais.sql` converte perfis existentes para
+  `fiscal.*` sem perda de acesso.
+- Validação local: typecheck limpo, 388/388 testes, build limpo e ESLint dos arquivos alterados sem
+  erro novo. Deno não está instalado neste ambiente; os dois testes Deno novos ficaram prontos,
+  mas ainda não foram executados.
+
+**Não está em produção:** a sessão do Supabase CLI respondeu `Unauthorized`. Antes do deploy,
+autenticar a CLI, cadastrar o mesmo segredo forte como Edge Secret `INTERNAL_FUNCTION_SECRET` e
+Vault `novus_internal_function_secret`, aplicar as três migrations na ordem e então publicar as
+16 Edge Functions alteradas. Não publicar as funções internas antes de atualizar os crons.
+
+**Próxima ação única:** concluir esse deploy coordenado e provar ao vivo: anon/sem segredo recebe
+401; admin de outra empresa recebe 403; as três RPCs não atravessam tenant; crons retornam 2xx.
+
 ## 🔖 Checkpoint atual — FIN-4 parte 2, fatia 3: DFC (método indireto) — os 5 relatórios contábeis essenciais estão fechados (2026-09-07)
 
 Mesma sessão das fatias 1 e 2 (mesmo dia). **Fecha `FIN-4` parte 2 por
