@@ -171,6 +171,14 @@ export const sidebarItems: MenuItem[] = [
         url: "/financeiro/ativos-fixos",
       },
       {
+        title: "Central de Aprovações",
+        url: "/financeiro/aprovacoes",
+      },
+      {
+        title: "Alçadas de Aprovação",
+        url: "/financeiro/alcadas",
+      },
+      {
         title: "Configurações Básicas",
         url: "/financeiro/config-basicas",
       },

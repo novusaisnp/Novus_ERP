@@ -23,7 +23,7 @@ interface PermissionsSelectorProps {
   readOnly?: boolean;
 }
 
-const PERMISSOES_GRANULARES: PermissionModule[] = [
+export const PERMISSOES_GRANULARES: PermissionModule[] = [
   {
     modulo: 'Vendas',
     descricao: 'Gestão de vendas e orçamentos',

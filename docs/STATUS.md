@@ -1,5 +1,133 @@
 # Status do projeto — NOVUS ERP
 
+## 🔖 Checkpoint atual — ORC-1 fechado: motor de alçadas mínimo, sem consumidor real ainda (2026-09-07)
+
+Quarta frente da Onda 1 (`ORG-1` → `FIN-4` parte 1 → `ATV-1` → `ORC-1`), sessão
+separada da de 2026-08-30. Escolhido ORC-1 antes de COMP-1 porque COMP-1 consome
+ORC-1 (aprovação de pedido por alçada) e ORC-1 não depende de nada — evita
+retrabalho.
+
+- **Migration `20260907120000_orc1_motor_alcadas.sql`**: 3 tabelas novas —
+  `alcadas_aprovacao` (config: categoria + `valor_minimo` + `permissao_necessaria`,
+  a faixa com maior `valor_minimo <= valor` vence), `alcadas_substitutos`
+  (delegação temporária auditada: titular/substituto/categoria/janela de datas/
+  motivo), `solicitacoes_aprovacao` (a própria trilha de auditoria — mesmo padrão
+  de `porta3_autorizacoes_excecao`: `GRANT SELECT` amplo, escrita só via RPC). 4
+  RPCs `SECURITY DEFINER`: `resolver_alcada` (lookup puro), `solicitar_aprovacao`
+  (auto-aprova se não há alçada configurada pra categoria/valor — critério de
+  saída do programa só vale "acima da alçada configurada"), `decidir_solicitacao`
+  (aprova/rejeita; reconfirma `has_permissao` ou substituição ativa no servidor;
+  segregação solicitante×aprovador incondicional, inclusive pra admin — só depois
+  disso é que valida a justificativa de rejeição, pra não vazar detalhe de regra
+  de negócio pra quem nem tem autoridade de decidir), `cancelar_solicitacao_aprovacao`
+  (só o próprio solicitante, só enquanto `PENDENTE`).
+- **Reuso, não reinvenção**: `permissao_necessaria` referencia os mesmos códigos
+  já cadastrados em `PermissionsSelector.tsx` (ex. `compras.aprovacao`, que já
+  existia sem nenhum módulo por trás) — exportado `PERMISSOES_GRANULARES` de lá
+  pra alimentar o `Select` da tela de configuração de alçadas, em vez de duplicar
+  a lista.
+- **UI nova**: `/financeiro/alcadas` (CRUD de faixas de alçada + substituições,
+  admin-only por RLS) e `/financeiro/aprovacoes` (Central de Aprovações — abas
+  "Aguardando decisão"/"Minhas solicitações"/"Histórico", botão "Nova Solicitação"
+  avulsa — hoje é também o único jeito de gerar uma solicitação real, já que
+  `COMP-1` não existe pra abrir uma automaticamente). Serviço `alcadasService.ts`,
+  hooks `useAlcadas.ts`/`useSolicitacoesAprovacao.ts`, tipos em `types/alcadas.ts`.
+
+**Validação**: prova em `BEGIN...ROLLBACK` (`supabase/sql/orc1_motor_alcadas_prova.sql`)
+com 2 usuários reais (mutando `user_roles.role` e `usuarios.perfil_id` temporariamente
+dentro da própria transação) — 16 asserções, todas passaram: auto-aprovação sem
+alçada; alçada configurada abre `PENDENTE`; segregação bloqueia o solicitante
+mesmo sendo admin; aprovação via `has_role` admin; aprovação via `has_permissao`
+puro (admin removido no meio do teste); rejeição de quem não tem nem admin nem
+permissão nem substituição; substituição ativa autoriza; substituição de
+categoria diferente **não** autoriza; rejeição sem justificativa é bloqueada;
+decisão duplicada é bloqueada; cancelamento pelo próprio solicitante funciona e
+trava decisão posterior; terceiro não pode cancelar solicitação alheia.
+Conferido depois via `SELECT` direto que o `ROLLBACK` não deixou nenhum resíduo
+(role/perfil dos 2 usuários reais voltaram ao original, zero linha nas 3 tabelas
+novas). `npm run typecheck` limpo; `npm run test -- --run` → 53 arquivos, 388/388
+(nenhum teste novo — mesma lacuna já registrada pra outras telas financeiras:
+cobertura é via prova SQL + smoke manual, não Vitest); `npm run build` passa.
+
+**Testado ao vivo no navegador** (extensão do Chrome reconectada no mesmo dia,
+depois de falhar antes — usuário confirmou "chrome aberto e com extensao
+ativa"), sessão real de admin (`novus_owner`), contra o banco de produção:
+`/financeiro/alcadas` — criada alçada real (categoria/valor/permissão, Select
+puxando o catálogo de `PermissionsSelector.tsx` de verdade), editada (toggle
+ativo/inativo), removida; `/financeiro/aprovacoes` — solicitação acima do
+limiar abriu `PENDENTE` e corretamente não apareceu em "Aguardando decisão" do
+próprio solicitante (segregação refletida na UI, não só no banco), apareceu em
+"Minhas solicitações", cancelamento pelo próprio solicitante funcionou
+(`Cancelado`); solicitação em categoria sem alçada configurada foi
+`Auto-aprovado` na hora, com o motivo certo mostrado na UI. Console sem erro
+(só 1 warning de acessibilidade do Radix Dialog — `Missing Description`, o
+mesmo padrão pré-existente em `AtivosFixos.tsx`, não é regressão desta sessão).
+Dados de teste (`TESTE_UI_ORC1`/`TESTE_UI_SEMALCADA`) apagados ao final via SQL
+direto (não dá pra apagar `solicitacoes_aprovacao` pela UI — é auditoria,
+sem policy de DELETE, de propósito).
+
+**Bug real achado e corrigido no mesmo teste ao vivo**: excluir uma alçada já
+referenciada por uma solicitação vazava o erro cru do Postgres pro usuário
+(`update or delete on table "alcadas_aprovacao" violates foreign key
+constraint "solicitacoes_aprovacao_alcada_id_fkey"...`). Usuário pediu, no ato,
+que "nenhum popup de erro em aramaico" vire padrão do sistema — pedido que já
+tinha aparecido antes no backlog do Educacional (ver `feedback_erros_
+inteligiveis_padrao` na memória). Corrigido: `translateError` em
+`alcadasService.ts` ganhou cobertura de `23503` (FK — mensagem parametrizada
+por chamada, já que o mesmo código significa coisas diferentes em
+`alcadas_aprovacao` vs `alcadas_substitutos`), `23505` (UNIQUE) e os códigos
+customizados que ainda não tinham tradução (`SOLICITACAO_NAO_ENCONTRADA`,
+`VALOR_INVALIDO`, `CATEGORIA_OBRIGATORIA`, `DESCRICAO_OBRIGATORIA`,
+`DECISAO_INVALIDA`). Confirmado ao vivo que a mensagem amigável aparece agora
+("Esta alçada já foi usada em solicitações e não pode ser removida — desative-a
+em vez de excluir."). `npm run typecheck`/`test -- --run` (388/388) confirmados
+de novo depois do fix.
+
+**Ação pendente, fora do escopo desta sessão**: auditar os outros `services/`
+do ERP em busca do mesmo padrão de erro cru vazando (FK/UNIQUE não traduzidos)
+— não foi feito uma varredura completa, só o que este `alcadasService.ts`
+tocou. Candidato a virar regra escrita em `CLAUDE.md` (ver memória).
+
+**Gap de UI x permissão granular, achado numa segunda rodada de revisão do
+usuário sobre as telas novas**: `/financeiro/alcadas` não estava protegida por
+`<AdminRoute>` na rota (só o RLS no banco bloqueava a escrita) — corrigido
+nesta mesma sessão, seguindo o padrão já existente e usado em
+`/fiscal/dashboard`, `/rh/folha/folha-pagamento`, `/configuracoes/webhooks`,
+`/configuracoes/campos-personalizados` (`sidebarVisibility.ts` + `AdminRoute`
+no `App.tsx`). Isso é o gate **grosso** (role `admin`), que já era consistente
+no resto do app.
+
+O gate **fino** (permissão granular específica, ex. `compras.aprovacao`) é
+outra história: hoje só existe reforçado no servidor (RLS/`has_permissao`),
+nunca escondendo/desabilitando controle nenhum na UI de propósito. Levantamento
+feito nesta sessão: existe **um único precedente** no projeto inteiro —
+`MovimentacoesGestaoPopup.tsx`/`MovimentacoesModal.tsx` usam
+`usePermissoesFinanceiras()` (RPC `financeiro_permissoes()`) pra esconder 4
+botões específicos (liquidar/estornar/editar/cancelar título) — não é um
+mecanismo genérico reaproveitável pro catálogo inteiro de
+`PermissionsSelector.tsx`. Na Central de Aprovações (`Aprovacoes.tsx`), os
+botões Aprovar/Rejeitar aparecem pra qualquer um (menos o próprio solicitante)
+e a recusa só acontece no clique, via mensagem de erro (agora traduzida, ver
+acima) — não há ocultação por permissão granular.
+
+**Decisão do usuário**: não fazer isso agora — se for fazer, precisa ser um
+padrão único aplicado a **tudo** que hoje só é gateado no servidor por
+permissão granular (não só Aprovações), não um ajuste pontual numa tela só.
+Registrado aqui como decisão de arquitetura em aberto pra quando isso for
+priorizado — provavelmente exigiria uma RPC genérica tipo
+`minhas_permissoes()` (array de códigos do usuário atual) + um hook
+reaproveitável no lugar de duplicar `usePermissoesFinanceiras()` por domínio.
+
+**Próxima ação**: `COMP-1` (compras e suprimentos) — agora consegue chamar
+`solicitar_aprovacao`/`decidir_solicitacao` de verdade na etapa de aprovação de
+pedido, em vez de nascer com uma aprovação provisória. Depois: parte 2 do FIN-4
+(Balanço/DRE/EBITDA/DMPL/DFC) e `PROD-1`. **Decisão explicitamente adiada**:
+migrar `autorizacaoFinanceiraService.ts` (reautenticação de senha pontual do
+Financeiro) pra este motor — é um gate de segurança que já funciona hoje, trocar
+é decisão separada, não incidental a esta sessão.
+
+---
+
 ## 🔖 Checkpoint atual — ATV-1 fechado: ativo fixo, depreciação e baixa (2026-08-30)
 
 Terceira frente da Onda 1 na mesma sessão (`ORG-1` → `FIN-4` parte 1 → `ATV-1`).

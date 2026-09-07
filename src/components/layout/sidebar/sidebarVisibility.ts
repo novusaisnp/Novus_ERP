@@ -54,6 +54,18 @@ export const getVisibleSidebarItems = ({ isAdmin }: Options): MenuItem[] => {
       continue;
     }
 
+    // Financeiro → Alçadas de Aprovação: admin-only (é a tela de configuração —
+    // só admin escreve, via RLS). "Central de Aprovações" fica visível pra
+    // todo mundo de propósito: qualquer funcionário pode ser solicitante,
+    // mesmo sem nenhuma alçada de aprovador.
+    if (group.title === 'Financeiro' && group.items) {
+      const filtered = group.items.filter((sub) =>
+        sub.url === '/financeiro/alcadas' ? isAdmin : true,
+      );
+      items.push({ ...group, items: filtered });
+      continue;
+    }
+
     // Estoque: manter só Produtos/Categorias; extras exigem flag
     if (group.title === 'Estoque' && group.items) {
       const filtered = featureFlags.estoqueExt

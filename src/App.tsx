@@ -50,6 +50,8 @@ import { ArrowLeftRight, ClipboardList, BarChart3, FileText } from 'lucide-react
 // Financeiro Pages
 import PlanoContas from './pages/financeiro/PlanoContas';
 import AtivosFixos from './pages/financeiro/AtivosFixos';
+import AlcadasAprovacao from './pages/financeiro/AlcadasAprovacao';
+import Aprovacoes from './pages/financeiro/Aprovacoes';
 import ContasPagar from './pages/financeiro/ContasPagar';
 import ContasReceber from './pages/financeiro/ContasReceber';
 import MovimentacoesFinanceiras from './pages/financeiro/MovimentacoesFinanceiras';
@@ -201,6 +203,8 @@ function App() {
                     <Route path="centros-custo" element={<CentrosCusto />} />
                     <Route path="plano-contas" element={<PlanoContas />} />
                     <Route path="ativos-fixos" element={<AtivosFixos />} />
+                    <Route path="alcadas" element={<AdminRoute><AlcadasAprovacao /></AdminRoute>} />
+                    <Route path="aprovacoes" element={<Aprovacoes />} />
                     <Route path="config-basicas" element={<ConfigBasicas />} />
                     <Route path="relatorios" element={<RelatoriosFinanceiro />} />
                   </Route>

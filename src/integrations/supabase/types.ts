@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.5"
   }
   centelha: {
     Tables: {
@@ -231,6 +231,175 @@ export type Database = {
           },
           {
             foreignKeyName: "agencias_bancarias_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alcadas_aprovacao: {
+        Row: {
+          ativo: boolean
+          categoria: string
+          created_at: string
+          descricao: string | null
+          empresa_representada_id: string
+          id: string
+          permissao_necessaria: string
+          updated_at: string
+          valor_minimo: number
+        }
+        Insert: {
+          ativo?: boolean
+          categoria: string
+          created_at?: string
+          descricao?: string | null
+          empresa_representada_id: string
+          id?: string
+          permissao_necessaria: string
+          updated_at?: string
+          valor_minimo?: number
+        }
+        Update: {
+          ativo?: boolean
+          categoria?: string
+          created_at?: string
+          descricao?: string | null
+          empresa_representada_id?: string
+          id?: string
+          permissao_necessaria?: string
+          updated_at?: string
+          valor_minimo?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alcadas_aprovacao_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alcadas_substitutos: {
+        Row: {
+          aprovador_substituto_id: string
+          aprovador_titular_id: string
+          categoria: string | null
+          created_at: string
+          criado_por: string
+          data_fim: string
+          data_inicio: string
+          empresa_representada_id: string
+          id: string
+          motivo: string
+        }
+        Insert: {
+          aprovador_substituto_id: string
+          aprovador_titular_id: string
+          categoria?: string | null
+          created_at?: string
+          criado_por: string
+          data_fim: string
+          data_inicio: string
+          empresa_representada_id: string
+          id?: string
+          motivo: string
+        }
+        Update: {
+          aprovador_substituto_id?: string
+          aprovador_titular_id?: string
+          categoria?: string | null
+          created_at?: string
+          criado_por?: string
+          data_fim?: string
+          data_inicio?: string
+          empresa_representada_id?: string
+          id?: string
+          motivo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alcadas_substitutos_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ativos_fixos: {
+        Row: {
+          categoria: string | null
+          centro_custo_id: string | null
+          created_at: string
+          data_aquisicao: string
+          data_baixa: string | null
+          descricao: string | null
+          empresa_representada_id: string
+          id: string
+          motivo_baixa: string | null
+          nome: string
+          status: string
+          ultima_competencia_depreciada: string | null
+          updated_at: string
+          valor_aquisicao: number
+          valor_baixa: number | null
+          valor_depreciado_acumulado: number
+          valor_residual: number
+          vida_util_meses: number
+        }
+        Insert: {
+          categoria?: string | null
+          centro_custo_id?: string | null
+          created_at?: string
+          data_aquisicao: string
+          data_baixa?: string | null
+          descricao?: string | null
+          empresa_representada_id: string
+          id?: string
+          motivo_baixa?: string | null
+          nome: string
+          status?: string
+          ultima_competencia_depreciada?: string | null
+          updated_at?: string
+          valor_aquisicao: number
+          valor_baixa?: number | null
+          valor_depreciado_acumulado?: number
+          valor_residual?: number
+          vida_util_meses: number
+        }
+        Update: {
+          categoria?: string | null
+          centro_custo_id?: string | null
+          created_at?: string
+          data_aquisicao?: string
+          data_baixa?: string | null
+          descricao?: string | null
+          empresa_representada_id?: string
+          id?: string
+          motivo_baixa?: string | null
+          nome?: string
+          status?: string
+          ultima_competencia_depreciada?: string | null
+          updated_at?: string
+          valor_aquisicao?: number
+          valor_baixa?: number | null
+          valor_depreciado_acumulado?: number
+          valor_residual?: number
+          vida_util_meses?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ativos_fixos_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ativos_fixos_empresa_representada_id_fkey"
             columns: ["empresa_representada_id"]
             isOneToOne: false
             referencedRelation: "empresas_representadas"
@@ -871,84 +1040,6 @@ export type Database = {
           },
         ]
       }
-      ativos_fixos: {
-        Row: {
-          categoria: string | null
-          centro_custo_id: string | null
-          created_at: string
-          data_aquisicao: string
-          data_baixa: string | null
-          descricao: string | null
-          empresa_representada_id: string
-          id: string
-          motivo_baixa: string | null
-          nome: string
-          status: string
-          ultima_competencia_depreciada: string | null
-          updated_at: string
-          valor_aquisicao: number
-          valor_baixa: number | null
-          valor_depreciado_acumulado: number
-          valor_residual: number
-          vida_util_meses: number
-        }
-        Insert: {
-          categoria?: string | null
-          centro_custo_id?: string | null
-          created_at?: string
-          data_aquisicao: string
-          data_baixa?: string | null
-          descricao?: string | null
-          empresa_representada_id: string
-          id?: string
-          motivo_baixa?: string | null
-          nome: string
-          status?: string
-          ultima_competencia_depreciada?: string | null
-          updated_at?: string
-          valor_aquisicao: number
-          valor_baixa?: number | null
-          valor_depreciado_acumulado?: number
-          valor_residual?: number
-          vida_util_meses: number
-        }
-        Update: {
-          categoria?: string | null
-          centro_custo_id?: string | null
-          created_at?: string
-          data_aquisicao?: string
-          data_baixa?: string | null
-          descricao?: string | null
-          empresa_representada_id?: string
-          id?: string
-          motivo_baixa?: string | null
-          nome?: string
-          status?: string
-          ultima_competencia_depreciada?: string | null
-          updated_at?: string
-          valor_aquisicao?: number
-          valor_baixa?: number | null
-          valor_depreciado_acumulado?: number
-          valor_residual?: number
-          vida_util_meses?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ativos_fixos_centro_custo_id_fkey"
-            columns: ["centro_custo_id"]
-            isOneToOne: false
-            referencedRelation: "centros_custo"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ativos_fixos_empresa_representada_id_fkey"
-            columns: ["empresa_representada_id"]
-            isOneToOne: false
-            referencedRelation: "empresas_representadas"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       centros_custo: {
         Row: {
           ativo: boolean
@@ -1233,6 +1324,7 @@ export type Database = {
           numero_conta: string
           observacoes: string | null
           permite_transferencia: boolean | null
+          plano_conta_id: string | null
           principal: boolean | null
           saldo_atual: number | null
           saldo_inicial: number | null
@@ -1264,6 +1356,7 @@ export type Database = {
           numero_conta: string
           observacoes?: string | null
           permite_transferencia?: boolean | null
+          plano_conta_id?: string | null
           principal?: boolean | null
           saldo_atual?: number | null
           saldo_inicial?: number | null
@@ -1295,6 +1388,7 @@ export type Database = {
           numero_conta?: string
           observacoes?: string | null
           permite_transferencia?: boolean | null
+          plano_conta_id?: string | null
           principal?: boolean | null
           saldo_atual?: number | null
           saldo_inicial?: number | null
@@ -1322,6 +1416,13 @@ export type Database = {
             columns: ["empresa_representada_id"]
             isOneToOne: false
             referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_bancarias_plano_conta_id_fkey"
+            columns: ["plano_conta_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
             referencedColumns: ["id"]
           },
         ]
@@ -2228,13 +2329,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "empresas_representadas_matriz_empresa_representada_id_fkey"
-            columns: ["matriz_empresa_representada_id"]
-            isOneToOne: false
-            referencedRelation: "empresas_representadas"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "empresas_representadas_centro_custo_default_id_fkey"
             columns: ["centro_custo_default_id"]
             isOneToOne: false
@@ -2246,6 +2340,13 @@ export type Database = {
             columns: ["centro_custo_despesa_default_id"]
             isOneToOne: false
             referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empresas_representadas_matriz_empresa_representada_id_fkey"
+            columns: ["matriz_empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
             referencedColumns: ["id"]
           },
           {
@@ -2263,6 +2364,34 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "empresas_representadas_plano_conta_caixa_bancos_default_id_fkey"
+            columns: ["plano_conta_caixa_bancos_default_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empresas_representadas_plano_conta_contas_pagar_default_id_fkey"
+            columns: ["plano_conta_contas_pagar_default_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empresas_representadas_plano_conta_contas_receber_default__fkey"
+            columns: ["plano_conta_contas_receber_default_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empresas_representadas_plano_conta_depreciacao_acumulada_d_fkey"
+            columns: ["plano_conta_depreciacao_acumulada_default_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "empresas_representadas_plano_conta_despesa_default_id_fkey"
             columns: ["plano_conta_despesa_default_id"]
             isOneToOne: false
@@ -2270,8 +2399,29 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "empresas_representadas_plano_conta_despesa_depreciacao_def_fkey"
+            columns: ["plano_conta_despesa_depreciacao_default_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empresas_representadas_plano_conta_imobilizado_default_id_fkey"
+            columns: ["plano_conta_imobilizado_default_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "empresas_representadas_plano_conta_receita_default_id_fkey"
             columns: ["plano_conta_receita_default_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empresas_representadas_plano_conta_resultado_baixa_ativo_d_fkey"
+            columns: ["plano_conta_resultado_baixa_ativo_default_id"]
             isOneToOne: false
             referencedRelation: "plano_contas"
             referencedColumns: ["id"]
@@ -3725,6 +3875,72 @@ export type Database = {
           },
         ]
       }
+      historico_colaboradores_cargo: {
+        Row: {
+          created_at: string
+          dados_anteriores: Json | null
+          dados_novos: Json | null
+          entidade_id: string
+          id: string
+          usuario_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          entidade_id: string
+          id?: string
+          usuario_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          entidade_id?: string
+          id?: string
+          usuario_id?: string | null
+        }
+        Relationships: []
+      }
+      historico_entidade_papeis: {
+        Row: {
+          created_at: string
+          dados_anteriores: Json | null
+          dados_novos: Json | null
+          empresa_representada_id: string
+          entidade_id: string
+          entidade_papel_id: string
+          id: string
+          papel: string
+          tipo_operacao: string
+          usuario_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          empresa_representada_id: string
+          entidade_id: string
+          entidade_papel_id: string
+          id?: string
+          papel: string
+          tipo_operacao: string
+          usuario_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          empresa_representada_id?: string
+          entidade_id?: string
+          entidade_papel_id?: string
+          id?: string
+          papel?: string
+          tipo_operacao?: string
+          usuario_id?: string | null
+        }
+        Relationships: []
+      }
       historico_estoque_movimentacoes: {
         Row: {
           acao: string
@@ -3889,6 +4105,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      historico_usuarios_perfil: {
+        Row: {
+          created_at: string
+          dados_anteriores: Json | null
+          dados_novos: Json | null
+          empresa_representada_id: string | null
+          fonte: string
+          id: string
+          tipo_operacao: string
+          usuario_alvo_id: string
+          usuario_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          empresa_representada_id?: string | null
+          fonte: string
+          id?: string
+          tipo_operacao: string
+          usuario_alvo_id: string
+          usuario_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          empresa_representada_id?: string | null
+          fonte?: string
+          id?: string
+          tipo_operacao?: string
+          usuario_alvo_id?: string
+          usuario_id?: string | null
+        }
+        Relationships: []
       }
       integracoes_ponto: {
         Row: {
@@ -4071,6 +4323,134 @@ export type Database = {
             columns: ["venda_id"]
             isOneToOne: false
             referencedRelation: "vendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lancamentos_contabeis: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data_competencia: string
+          data_lancamento: string
+          empresa_representada_id: string
+          estorno_de_id: string | null
+          historico: string
+          id: string
+          idempotency_key: string | null
+          numero_lancamento: number
+          origem_id: string | null
+          origem_tabela: string | null
+          origem_tipo: string
+          periodo_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data_competencia: string
+          data_lancamento?: string
+          empresa_representada_id: string
+          estorno_de_id?: string | null
+          historico: string
+          id?: string
+          idempotency_key?: string | null
+          numero_lancamento: number
+          origem_id?: string | null
+          origem_tabela?: string | null
+          origem_tipo: string
+          periodo_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data_competencia?: string
+          data_lancamento?: string
+          empresa_representada_id?: string
+          estorno_de_id?: string | null
+          historico?: string
+          id?: string
+          idempotency_key?: string | null
+          numero_lancamento?: number
+          origem_id?: string | null
+          origem_tabela?: string | null
+          origem_tipo?: string
+          periodo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lancamentos_contabeis_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_contabeis_estorno_de_id_fkey"
+            columns: ["estorno_de_id"]
+            isOneToOne: false
+            referencedRelation: "lancamentos_contabeis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_contabeis_periodo_id_fkey"
+            columns: ["periodo_id"]
+            isOneToOne: false
+            referencedRelation: "periodos_contabeis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lancamentos_contabeis_itens: {
+        Row: {
+          centro_custo_id: string | null
+          conta_contabil_id: string
+          created_at: string
+          historico_item: string | null
+          id: string
+          lancamento_id: string
+          tipo_partida: string
+          valor: number
+        }
+        Insert: {
+          centro_custo_id?: string | null
+          conta_contabil_id: string
+          created_at?: string
+          historico_item?: string | null
+          id?: string
+          lancamento_id: string
+          tipo_partida: string
+          valor: number
+        }
+        Update: {
+          centro_custo_id?: string | null
+          conta_contabil_id?: string
+          created_at?: string
+          historico_item?: string | null
+          id?: string
+          lancamento_id?: string
+          tipo_partida?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lancamentos_contabeis_itens_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_contabeis_itens_conta_contabil_id_fkey"
+            columns: ["conta_contabil_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_contabeis_itens_lancamento_id_fkey"
+            columns: ["lancamento_id"]
+            isOneToOne: false
+            referencedRelation: "lancamentos_contabeis"
             referencedColumns: ["id"]
           },
         ]
@@ -5275,6 +5655,56 @@ export type Database = {
         }
         Relationships: []
       }
+      periodos_contabeis: {
+        Row: {
+          competencia: string
+          created_at: string
+          empresa_representada_id: string
+          fechado_em: string | null
+          fechado_por: string | null
+          id: string
+          motivo_reabertura: string | null
+          reaberto_em: string | null
+          reaberto_por: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          competencia: string
+          created_at?: string
+          empresa_representada_id: string
+          fechado_em?: string | null
+          fechado_por?: string | null
+          id?: string
+          motivo_reabertura?: string | null
+          reaberto_em?: string | null
+          reaberto_por?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          competencia?: string
+          created_at?: string
+          empresa_representada_id?: string
+          fechado_em?: string | null
+          fechado_por?: string | null
+          id?: string
+          motivo_reabertura?: string | null
+          reaberto_em?: string | null
+          reaberto_por?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "periodos_contabeis_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plano_contas: {
         Row: {
           aceita_lancamento: boolean
@@ -6381,6 +6811,88 @@ export type Database = {
             columns: ["empresa_representada_id"]
             isOneToOne: false
             referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      solicitacoes_aprovacao: {
+        Row: {
+          alcada_id: string | null
+          categoria: string
+          contexto: Json | null
+          created_at: string
+          decidido_em: string | null
+          decidido_por: string | null
+          descricao: string
+          empresa_representada_id: string
+          id: string
+          justificativa_decisao: string | null
+          origem_id: string | null
+          origem_tabela: string | null
+          permissao_necessaria: string | null
+          solicitante_id: string
+          status: string
+          substituicao_id: string | null
+          valor: number
+        }
+        Insert: {
+          alcada_id?: string | null
+          categoria: string
+          contexto?: Json | null
+          created_at?: string
+          decidido_em?: string | null
+          decidido_por?: string | null
+          descricao: string
+          empresa_representada_id: string
+          id?: string
+          justificativa_decisao?: string | null
+          origem_id?: string | null
+          origem_tabela?: string | null
+          permissao_necessaria?: string | null
+          solicitante_id: string
+          status?: string
+          substituicao_id?: string | null
+          valor: number
+        }
+        Update: {
+          alcada_id?: string | null
+          categoria?: string
+          contexto?: Json | null
+          created_at?: string
+          decidido_em?: string | null
+          decidido_por?: string | null
+          descricao?: string
+          empresa_representada_id?: string
+          id?: string
+          justificativa_decisao?: string | null
+          origem_id?: string | null
+          origem_tabela?: string | null
+          permissao_necessaria?: string | null
+          solicitante_id?: string
+          status?: string
+          substituicao_id?: string | null
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solicitacoes_aprovacao_alcada_id_fkey"
+            columns: ["alcada_id"]
+            isOneToOne: false
+            referencedRelation: "alcadas_aprovacao"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solicitacoes_aprovacao_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solicitacoes_aprovacao_substituicao_id_fkey"
+            columns: ["substituicao_id"]
+            isOneToOne: false
+            referencedRelation: "alcadas_substitutos"
             referencedColumns: ["id"]
           },
         ]
@@ -7541,8 +8053,21 @@ export type Database = {
         }
         Returns: Json
       }
+      baixar_ativo_fixo: {
+        Args: {
+          p_ativo_id: string
+          p_data_baixa: string
+          p_motivo: string
+          p_valor_baixa: number
+        }
+        Returns: Json
+      }
       baixar_estoque_venda: {
         Args: { p_localizacao_id: string; p_venda_id: string }
+        Returns: Json
+      }
+      cancelar_solicitacao_aprovacao: {
+        Args: { p_solicitacao_id: string }
         Returns: Json
       }
       check_dependencias: {
@@ -7567,6 +8092,14 @@ export type Database = {
       criar_responsavel_centelha: {
         Args: { p_cnpj: string; p_nome: string }
         Returns: string
+      }
+      decidir_solicitacao: {
+        Args: {
+          p_decisao: string
+          p_justificativa?: string
+          p_solicitacao_id: string
+        }
+        Returns: Json
       }
       desfazer_conciliacao: {
         Args: { p_extrato_linha_id: string }
@@ -7619,26 +8152,6 @@ export type Database = {
         Returns: undefined
       }
       financeiro_limite_retroativo: { Args: never; Returns: string }
-      baixar_ativo_fixo: {
-        Args: {
-          p_ativo_id: string
-          p_data_baixa: string
-          p_motivo: string
-          p_valor_baixa: number
-        }
-        Returns: Json
-      }
-      processar_depreciacao_mensal: {
-        Args: {
-          p_competencia?: string
-          p_empresa_id: string
-        }
-        Returns: {
-          ativo_id: string
-          lancamento_id: string
-          valor_depreciado: number
-        }[]
-      }
       financeiro_liquidar_titulo: {
         Args: {
           p_conta_bancaria_id?: string
@@ -7874,6 +8387,14 @@ export type Database = {
           signature_version: string
         }[]
       }
+      processar_depreciacao_mensal: {
+        Args: { p_competencia?: string; p_empresa_id: string }
+        Returns: {
+          ativo_id: string
+          lancamento_id: string
+          valor_depreciado: number
+        }[]
+      }
       promote_to_dual: {
         Args: { p_nome: string; p_tenant: string }
         Returns: Json
@@ -7899,6 +8420,26 @@ export type Database = {
           saldo_competencia: number
         }[]
       }
+      resolver_alcada: {
+        Args: { p_categoria: string; p_empresa_id: string; p_valor: number }
+        Returns: {
+          ativo: boolean
+          categoria: string
+          created_at: string
+          descricao: string | null
+          empresa_representada_id: string
+          id: string
+          permissao_necessaria: string
+          updated_at: string
+          valor_minimo: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "alcadas_aprovacao"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       resolver_classificacao_receita: {
         Args: { p_item_id: string }
         Returns: {
@@ -7910,6 +8451,10 @@ export type Database = {
           regra_versao: number
         }[]
       }
+      resolver_periodo_contabil: {
+        Args: { p_data: string; p_empresa_id: string }
+        Returns: string
+      }
       reverter_extrato: { Args: { p_extrato_id: string }; Returns: Json }
       rollback_to_dual: {
         Args: { p_nome: string; p_tenant: string }
@@ -7917,6 +8462,35 @@ export type Database = {
       }
       rollback_to_v1: {
         Args: { p_nome: string; p_tenant: string }
+        Returns: Json
+      }
+      seed_plano_contas_ativo_fixo: {
+        Args: { p_empresa_id: string }
+        Returns: {
+          depreciacao_acumulada_id: string
+          despesa_depreciacao_id: string
+          imobilizado_id: string
+          resultado_baixa_id: string
+        }[]
+      }
+      seed_plano_contas_minimo: {
+        Args: { p_empresa_id: string }
+        Returns: {
+          caixa_bancos_id: string
+          contas_pagar_id: string
+          contas_receber_id: string
+        }[]
+      }
+      solicitar_aprovacao: {
+        Args: {
+          p_categoria: string
+          p_contexto?: Json
+          p_descricao: string
+          p_empresa_id: string
+          p_origem_id?: string
+          p_origem_tabela?: string
+          p_valor: number
+        }
         Returns: Json
       }
       sugerir_matches_extrato: { Args: { p_extrato_id: string }; Returns: Json }
@@ -8001,12 +8575,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -8030,11 +8604,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -8055,11 +8629,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -8080,11 +8654,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -8097,11 +8671,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

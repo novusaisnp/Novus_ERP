@@ -468,10 +468,12 @@ Hoje só existem 2 soluções pontuais isoladas (`autorizacaoFinanceiraService.t
 reautenticação de senha para 3 ações financeiras específicas; `porta3Service.ts`:
 autorização de exceção de crédito em vendas a prazo) — sem motor genérico reutilizável.
 
-### ORC-1 — Motor de alçadas
-- [ ] Motor de alçada mínimo (valor × categoria × empresa/filial × perfil), consumido por Compras (aprovação de pedido) e Financeiro (substituindo a reautenticação pontual sem quebrar o que já funciona).
-- [ ] Segregação solicitante × aprovador × pagador e substituição temporária auditada.
-- [ ] Trilha de auditoria unificada, reaproveitando o padrão já existente (`historico_*`, `porta3_autorizacoes_excecao`).
+### ORC-1 — Motor de alçadas — fechado 2026-09-07 (sem consumidor real ainda)
+- [x] Motor de alçada mínimo (valor × categoria × empresa/filial × perfil) — tabela `alcadas_aprovacao` (faixa por `valor_minimo`, mais específica vence) + RPC `resolver_alcada`. **Não consumido ainda**: `COMP-1` não existe, e a reautenticação pontual do Financeiro (`autorizacaoFinanceiraService.ts`) não foi tocada — decisão deliberada, ver `docs/STATUS.md`.
+- [x] Segregação solicitante × aprovador × pagador e substituição temporária auditada — `decidir_solicitacao` bloqueia incondicionalmente (mesmo admin) quem abriu a solicitação de decidi-la; `alcadas_substitutos` permite um substituto aprovar em nome de um titular, só enquanto o titular também detiver a permissão exigida (não é promoção).
+- [x] Trilha de auditoria unificada — `solicitacoes_aprovacao` é a própria trilha (mesmo padrão `porta3_autorizacoes_excecao`: leitura ampla, escrita só via RPC `SECURITY DEFINER`).
+
+**Critério de saída do ORC-1 isolado**: motor genérico correto e provado (16 asserções em `BEGIN...ROLLBACK`, ver STATUS). O critério de saída do *programa* ("nenhuma compra ou pagamento acima da alçada sai sem aprovação") só fecha quando `COMP-1` (ou a migração do Financeiro) existir e consumir o motor — mesmo padrão do ATV-1 (vínculo com `COMP-` pendente).
 
 ### ORC-2 — Orçamento empresarial
 - [ ] Orçado × realizado × comprometido por dimensão (depende de `ORG-`/`FIN-4` para "realizado" real).
