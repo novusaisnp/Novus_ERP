@@ -1,6 +1,75 @@
 # Status do projeto — NOVUS ERP
 
-## 🔖 Checkpoint atual — COMP-1b + COMP-1c fechados: Cotação + Pedido de Compra, primeiro consumidor real do ORC-1 (2026-09-07)
+## 🔖 Checkpoint atual — COMP-1d fechado: Recebimento físico + Match de 3 vias — COMP-1 fecha o ciclo até o título a pagar (2026-09-07)
+
+Mesma sessão do ORC-1/COMP-1a/COMP-1b/COMP-1c (mesmo dia). Fecha o ciclo
+inteiro: Requisição → Cotação → Pedido (aprovado por alçada) → Recebimento →
+Match de 3 vias → `contas_pagar` automático → lançamento `FIN-4` automático.
+
+- **Migration `20260907170000_comp1d_recebimento_match3vias.sql`**: tabelas
+  `recebimentos_compra` (header) + `recebimentos_compra_itens` (item, com
+  `estoque_movimentacao_id` de volta pra rastreabilidade); `pedidos_compra`
+  ganha `contas_pagar_id` (nullable) e o status `RECEBIDO` (widen do CHECK).
+  RPC única `confirmar_recebimento_compra(p_pedido_id, p_itens jsonb,
+  p_observacoes)`, `SECURITY DEFINER`, sem policy de INSERT nas duas tabelas
+  novas (mesma filosofia do ORC-1/COMP-1c — única porta de escrita é a RPC,
+  porque a operação é atômica sobre 3+ tabelas e não pode confiar em valor do
+  cliente). Por item: valida que pertence ao pedido, que a soma de tudo já
+  recebido + esta remessa não excede a quantidade pedida, insere a entrada
+  real em `estoque_movimentacoes` (`tipo='ENTRADA'`) e o item do recebimento.
+  Quando **todos** os itens do pedido chegam a 100% recebido (soma de todas
+  as remessas, não só a atual), dispara o match de 3 vias na mesma
+  transação: calcula `valor_total` no servidor (nunca confia em valor do
+  cliente), insere o título em `contas_pagar` — o lançamento contábil nasce
+  sozinho via `trg_contas_pagar_lancar_criado` (motor do FIN-4 já existia,
+  esta migration não escreve nenhum lançamento contábil na mão) — e marca o
+  pedido `RECEBIDO` com o `contas_pagar_id` vinculado.
+- **`localizacao_destino_id` é obrigatório por item** (não nullable, com
+  `LOCALIZACAO_OBRIGATORIA`/`LOCALIZACAO_INVALIDA` como erros claros) —
+  descoberto ao testar que o trigger de saldo (`trg_estoque_mov_recalc`) só
+  recalcula localizações não-nulas, mesmo requisito que a tela manual de
+  movimentação (`NovaMovimentacaoDialog.tsx`) já impunha. UI reaproveita
+  `QuickAddLocalizacao` pra cadastrar localização sem sair do diálogo.
+- **Bug pré-existente encontrado e corrigido nesta sessão (não introduzido
+  por mim)**: `recalc_saldo_estoque()` fazia `INSERT ... ON CONFLICT
+  (empresa_representada_id, produto_id, localizacao_id)` mas essa UNIQUE
+  nunca existiu em `estoque_saldos` — ou seja, **todo recálculo de saldo por
+  localização vinha falhando com 42P10 desde que o módulo de estoque foi
+  criado**, silenciosamente (a tabela real tinha 0 linhas, confirmado antes
+  do fix). Corrigido com `ALTER TABLE ... ADD CONSTRAINT ... UNIQUE
+  (empresa_representada_id, produto_id, localizacao_id)` na mesma migration.
+  Achado porque o recebimento do COMP-1d foi o primeiro fluxo real que
+  disparou esse trigger de ponta a ponta com localização preenchida.
+- **UI**: `PedidoCompraDetalhe.tsx` ganha botão "Confirmar Recebimento"
+  (visível só quando `EMITIDO`) abrindo `ConfirmarRecebimentoDialog.tsx`
+  (localização + quantidade por item, mostra "Pendente: X de Y" calculado a
+  partir de todos os recebimentos já feitos) e uma seção "Recebimentos"
+  listando o histórico; mensagem clara quando o pedido fecha e o título é
+  gerado.
+- **Testado ao vivo, ponta a ponta, com dado sintético (`TESTE UI —`)**:
+  recebimento parcial (30 de 50) → pedido continua `EMITIDO`, sem título;
+  recebimento do restante (20) → pedido vira `RECEBIDO`, toast "Pedido 100%
+  recebido — título a pagar gerado automaticamente", título de R$1.000,00
+  aberto em `/financeiro/contas-pagar` com vencimento a 30 dias. Também
+  provado por SQL (`supabase/sql/comp1d_recebimento_match3vias_prova.sql`,
+  15 asserções: pedido inexistente, acesso negado, itens vazios, quantidade
+  inválida, item alheio, localização ausente/inválida, quantidade excedente,
+  bloqueio de recebimento em pedido já `RECEBIDO`, Kardex batendo e saldo
+  final correto em `estoque_saldos`). `npm run typecheck`/`test -- --run`
+  (388/388)/`build` verdes. Resíduo sintético zero confirmado em ambos os
+  testes (SQL e UI).
+- **Fecha o `COMP-1`** exceto os dois itens deliberadamente adiados desde o
+  início do programa: "Devolução a fornecedor" e "ativar de fato as
+  permissões `compras.*`" (gate granular fica pro fim, mesma decisão de
+  todas as fatias anteriores).
+
+**Gap conhecido**: caminho de rejeição (`REJEITADO`) do pedido (COMP-1c)
+continua não testado ao vivo — mesma lógica do de aprovação, baixo risco,
+já registrado no checkpoint anterior.
+
+---
+
+## Checkpoint anterior — COMP-1b + COMP-1c fechados: Cotação + Pedido de Compra, primeiro consumidor real do ORC-1 (2026-09-07)
 
 Mesma sessão do COMP-1a (mesmo dia). Fecha a cadeia inteira até "pedido
 emitido": Requisição → Cotação (mapa comparativo + link público) → Pedido de

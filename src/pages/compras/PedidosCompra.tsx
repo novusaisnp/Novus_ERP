@@ -17,6 +17,7 @@ const statusBadge: Record<PedidoCompra['status'], { label: string; variant: 'def
   APROVADO: { label: 'Aprovado', variant: 'default' },
   REJEITADO: { label: 'Rejeitado', variant: 'destructive' },
   EMITIDO: { label: 'Emitido', variant: 'default' },
+  RECEBIDO: { label: 'Recebido', variant: 'default' },
   CANCELADO: { label: 'Cancelado', variant: 'destructive' },
 };
 

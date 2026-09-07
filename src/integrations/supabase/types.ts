@@ -5754,6 +5754,7 @@ export type Database = {
       }
       pedidos_compra: {
         Row: {
+          contas_pagar_id: string | null
           cotacao_id: string
           created_at: string
           criado_por: string
@@ -5768,6 +5769,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          contas_pagar_id?: string | null
           cotacao_id: string
           created_at?: string
           criado_por: string
@@ -5782,6 +5784,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          contas_pagar_id?: string | null
           cotacao_id?: string
           created_at?: string
           criado_por?: string
@@ -5796,6 +5799,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "pedidos_compra_contas_pagar_id_fkey"
+            columns: ["contas_pagar_id"]
+            isOneToOne: false
+            referencedRelation: "contas_pagar"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pedidos_compra_cotacao_id_fkey"
             columns: ["cotacao_id"]
@@ -6626,6 +6636,130 @@ export type Database = {
             columns: ["plano_conta_id"]
             isOneToOne: false
             referencedRelation: "plano_contas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recebimentos_compra: {
+        Row: {
+          created_at: string
+          criado_por: string
+          data_recebimento: string
+          empresa_representada_id: string
+          id: string
+          observacoes: string | null
+          pedido_id: string
+        }
+        Insert: {
+          created_at?: string
+          criado_por: string
+          data_recebimento?: string
+          empresa_representada_id: string
+          id?: string
+          observacoes?: string | null
+          pedido_id: string
+        }
+        Update: {
+          created_at?: string
+          criado_por?: string
+          data_recebimento?: string
+          empresa_representada_id?: string
+          id?: string
+          observacoes?: string | null
+          pedido_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recebimentos_compra_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recebimentos_compra_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos_compra"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recebimentos_compra_itens: {
+        Row: {
+          created_at: string
+          empresa_representada_id: string
+          estoque_movimentacao_id: string | null
+          id: string
+          observacao: string | null
+          pedido_item_id: string
+          produto_id: string
+          quantidade_recebida: number
+          recebimento_id: string
+        }
+        Insert: {
+          created_at?: string
+          empresa_representada_id: string
+          estoque_movimentacao_id?: string | null
+          id?: string
+          observacao?: string | null
+          pedido_item_id: string
+          produto_id: string
+          quantidade_recebida: number
+          recebimento_id: string
+        }
+        Update: {
+          created_at?: string
+          empresa_representada_id?: string
+          estoque_movimentacao_id?: string | null
+          id?: string
+          observacao?: string | null
+          pedido_item_id?: string
+          produto_id?: string
+          quantidade_recebida?: number
+          recebimento_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recebimentos_compra_itens_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recebimentos_compra_itens_estoque_movimentacao_id_fkey"
+            columns: ["estoque_movimentacao_id"]
+            isOneToOne: false
+            referencedRelation: "estoque_movimentacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recebimentos_compra_itens_pedido_item_id_fkey"
+            columns: ["pedido_item_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos_compra_itens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recebimentos_compra_itens_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recebimentos_compra_itens_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_estoque_ruptura"
+            referencedColumns: ["produto_id"]
+          },
+          {
+            foreignKeyName: "recebimentos_compra_itens_recebimento_id_fkey"
+            columns: ["recebimento_id"]
+            isOneToOne: false
+            referencedRelation: "recebimentos_compra"
             referencedColumns: ["id"]
           },
         ]
@@ -8522,6 +8656,10 @@ export type Database = {
         Args: { p_extrato_linha_id: string; p_movimentacao_id: string }
         Returns: Json
       }
+      confirmar_recebimento_compra: {
+        Args: { p_itens: Json; p_observacoes?: string; p_pedido_id: string }
+        Returns: Json
+      }
       converter_orcamento_em_venda: { Args: { p_payload: Json }; Returns: Json }
       criar_lancamento_do_extrato: {
         Args: { p_extrato_linha_id: string; p_payload?: Json }
@@ -8750,6 +8888,7 @@ export type Database = {
       gerar_pedidos_compra_da_cotacao: {
         Args: { p_cotacao_id: string }
         Returns: {
+          contas_pagar_id: string | null
           cotacao_id: string
           created_at: string
           criado_por: string

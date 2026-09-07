@@ -451,12 +451,12 @@ em `PermissionsSelector.tsx:45-49` sem nenhum módulo por trás.
   explícito do usuário, camada extra contra link endereçado errado).
 - [x] Pedido de compra formal, vinculado a Produto (Estoque) — já escopado por `empresa_representada_id` (matriz ou filial, `ORG-1`), sem coluna nova necessária. (COMP-1c, fechado 2026-09-07)
 - [x] Aprovação por alçada antes de emitir ao fornecedor (`ORC-1`) — primeiro consumidor real do motor, valor calculado no servidor (nunca confia no cliente).
-- [ ] Recebimento físico — reaproveita `estoque_movimentacoes` tipo ENTRADA (motor já maduro), com conferência quantidade/qualidade contra o pedido.
-- [ ] Match de 3 vias (pedido × recebimento × título) gerando `contas_pagar` automaticamente + lançamento em `FIN-4` (débito estoque/despesa, crédito fornecedor).
+- [x] Recebimento físico — reaproveita `estoque_movimentacoes` tipo ENTRADA (motor já maduro), com conferência quantidade contra o pedido (parcial permitido, nunca excede). (COMP-1d, fechado 2026-09-07)
+- [x] Match de 3 vias (pedido × recebimento × título) gerando `contas_pagar` automaticamente + lançamento em `FIN-4` (motor já existente, disparado sozinho ao inserir o título). (COMP-1d, fechado 2026-09-07)
 - [ ] Devolução a fornecedor.
 - [ ] Ativar de fato as permissões `compras.*` já cadastradas.
 
-**Critério de saída:** uma compra nasce como requisição e termina em título a pagar + lançamento contábil, sem digitação solta em nenhuma etapa.
+**Critério de saída:** uma compra nasce como requisição e termina em título a pagar + lançamento contábil, sem digitação solta em nenhuma etapa. **Atingido** para o caminho feliz (COMP-1a→1d); faltam só devolução e o gate de permissões granulares.
 
 ## Programa Ativo Fixo
 

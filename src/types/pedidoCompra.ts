@@ -4,6 +4,7 @@ export type StatusPedidoCompra =
   | 'APROVADO'
   | 'REJEITADO'
   | 'EMITIDO'
+  | 'RECEBIDO'
   | 'CANCELADO';
 
 export interface PedidoCompraItem {
@@ -27,6 +28,7 @@ export interface PedidoCompra {
   solicitacao_aprovacao_id: string | null;
   observacoes: string | null;
   emitido_em: string | null;
+  contas_pagar_id: string | null;
   created_at: string;
   updated_at: string;
   itens: PedidoCompraItem[];
