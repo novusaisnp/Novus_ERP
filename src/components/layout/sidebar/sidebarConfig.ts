@@ -5,6 +5,7 @@ import {
   Inbox,
   Package,
   ShoppingCart,
+  Truck,
   DollarSign,
   FileText,
   Users,
@@ -105,6 +106,16 @@ export const sidebarItems: MenuItem[] = [
       {
         title: "Relatórios",
         url: "/vendas/relatorios",
+      },
+    ],
+  },
+  {
+    title: "Compras",
+    icon: Truck,
+    items: [
+      {
+        title: "Requisições",
+        url: "/compras/requisicoes",
       },
     ],
   },

@@ -47,6 +47,14 @@ export function drawReportHeader(doc: jsPDF, opts: DrawReportHeaderOptions): num
   let logoWidth = 0;
   let logoHeight = 0;
 
+  // Tudo no cabeçalho é ancorado no mesmo topo (headerTop) e cresce pra baixo.
+  // Bug real corrigido aqui: a logo era posicionada com um offset escalado pela
+  // PRÓPRIA altura dela (startY - size.height * 0.7), enquanto o bloco de texto
+  // da direita usava um offset fixo (startY - marginX * 0.4) — os dois só
+  // coincidiam visualmente pra logos de altura "média"; uma logo mais alta (ex.:
+  // quadrada) subia bem mais que o título, desalinhando os dois blocos.
+  const headerTop = startY - marginX * 0.5;
+
   if (logo) {
     const size = getLogoRenderSize(logo, logoMaxWidth, logoMaxHeight);
     try {
@@ -54,7 +62,7 @@ export function drawReportHeader(doc: jsPDF, opts: DrawReportHeaderOptions): num
         logo.dataUrl,
         logo.extension.toUpperCase(),
         marginX,
-        startY - size.height * 0.7,
+        headerTop,
         size.width,
         size.height,
       );
@@ -67,11 +75,12 @@ export function drawReportHeader(doc: jsPDF, opts: DrawReportHeaderOptions): num
 
   const textX = logoWidth > 0 ? marginX + logoWidth + marginX * 0.2 : marginX;
 
+  let leftY = headerTop + marginX * 0.3;
   doc.setFont('helvetica', 'bold').setFontSize(11.5);
   doc.setTextColor(BRAND_NAVY[0], BRAND_NAVY[1], BRAND_NAVY[2]);
-  doc.text(branding?.companyName || 'Empresa', textX, startY);
+  doc.text(branding?.companyName || 'Empresa', textX, leftY);
 
-  let leftY = startY + marginX * 0.32;
+  leftY += marginX * 0.32;
   doc.setFont('helvetica', 'normal').setFontSize(8.5);
   doc.setTextColor(110);
   companyExtraLines.forEach((line) => {
@@ -79,7 +88,7 @@ export function drawReportHeader(doc: jsPDF, opts: DrawReportHeaderOptions): num
     leftY += marginX * 0.27;
   });
 
-  let rightY = startY - marginX * 0.4;
+  let rightY = headerTop + marginX * 0.22;
   doc.setFont('helvetica', 'bold').setFontSize(7.5);
   doc.setTextColor(BRAND_ACCENT[0], BRAND_ACCENT[1], BRAND_ACCENT[2]);
   doc.text(docTypeLabel.toUpperCase(), pageWidth - marginX, rightY, { align: 'right' });
@@ -97,7 +106,7 @@ export function drawReportHeader(doc: jsPDF, opts: DrawReportHeaderOptions): num
     rightY += marginX * 0.27;
   });
 
-  const headerBottom = Math.max(leftY, rightY, startY + logoHeight * 0.3) + marginX * 0.15;
+  const headerBottom = Math.max(leftY, rightY, headerTop + logoHeight) + marginX * 0.15;
   doc.setDrawColor(BRAND_NAVY[0], BRAND_NAVY[1], BRAND_NAVY[2]);
   doc.setLineWidth(marginX * 0.02);
   doc.line(marginX, headerBottom, pageWidth - marginX, headerBottom);

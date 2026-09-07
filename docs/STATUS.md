@@ -1,5 +1,74 @@
 # Status do projeto — NOVUS ERP
 
+## 🔖 Checkpoint atual — COMP-1a fechado: Requisição de Compra interna (2026-09-07)
+
+Primeira fatia do Programa Compras e Suprimentos (Onda 1), sessão seguinte ao
+ORC-1 (mesmo dia). Fatiamento decidido com o usuário: Requisição → Cotação →
+Pedido+Aprovação → Recebimento → Match 3 vias, começando pelo elo sem
+dependência.
+
+- **Migration `20260907130000_comp1a_requisicao_compra.sql`**: 2 tabelas —
+  `requisicoes_compra` (header: solicitante, centro de custo, justificativa,
+  data de necessidade, status `ABERTA`/`CANCELADA`) e `requisicoes_compra_itens`
+  (produto + quantidade + observação, `empresa_representada_id` denormalizado
+  pra RLS simples — mesmo padrão de `itens_venda`). **Sem RPC** — autorização
+  100% via RLS: qualquer um com acesso à empresa abre requisição (deliberado —
+  "ativar de fato as permissões `compras.*`" é item separado do checklist,
+  deixado pro fim do programa); só o solicitante (ou admin) cancela, só
+  enquanto `ABERTA`; requisição cancelada não pode mais ser editada.
+- **UI**: `/compras/requisicoes` (grupo novo "Compras" no sidebar, ícone
+  caminhão) — criar com N itens (produto via `useProdutos`, sem combobox de
+  busca ainda — banco tinha zero produtos cadastrados, sem pressão de escala
+  agora), cancelar, e **paridade com Orçamentos/Vendas**: menu de ações (⋮)
+  com Visualizar/Imprimir/Baixar PDF/E-mail/WhatsApp (`requisicaoCompraPdf.ts`,
+  reaproveitando `drawReportHeader`/`drawReportFooter`/`resolveReportLogo` —
+  timbrado com logo/CNPJ real da empresa). E-mail/WhatsApp são `mailto:`/`wa.me`
+  com texto pré-preenchido, sem envio automático (mesma realidade do `COM-1`:
+  `EmailProvider` é stub dormente) — pedido explícito do usuário nesta sessão,
+  achando que a tela nova tinha ficado "pelada" sem esse padrão.
+
+**Bug real achado e corrigido no mesmo teste ao vivo (afeta Orçamentos/Vendas
+também, não só esta tela)**: `pdfReportLayout.ts` (`drawReportHeader`,
+compartilhado por todo PDF timbrado do ERP) posicionava a logo com um offset
+escalado pela **própria altura dela** (`startY - size.height * 0.7`), enquanto
+o bloco de texto da direita (tipo/título/meta) usava um offset **fixo**
+(`startY - marginX * 0.4`) — os dois só coincidiam visualmente pra logos de
+altura "média"; a logo real da Allegra (mais alta/quadrada) subia bem mais que
+o título, ficando visivelmente desalinhada. Corrigido ancorando os dois blocos
+(mais a logo) no mesmo `headerTop`, cada um crescendo pra baixo — agora
+robusto pra qualquer proporção de logo. **Não confirmado visualmente pelo
+usuário ainda após o fix** (ficou só a comparação de render desta sessão) —
+próxima vez que mexer em qualquer PDF do ERP, conferir com o usuário se o
+cabeçalho está alinhado de verdade.
+
+**Validação**: prova em `BEGIN...ROLLBACK` (`supabase/sql/comp1a_requisicao_compra_prova.sql`)
+— **achado de metodologia importante**: a conexão de `supabase db query`
+roda como `postgres` com `rolbypassrls=true` (confirmado por sondagem), ou
+seja, RLS não é enforced nessa conexão por padrão. Como esta fatia não usa RPC
+(diferente do ORC-1, cuja autorização é código PL/pgSQL explícito, imune a
+esse problema), a prova precisa rodar sob `SET LOCAL ROLE authenticated` +
+`set_config('request.jwt.claim.sub', ...)` pra testar RLS de verdade — sem
+isso a prova daria falso positivo/negativo sem avisar. Corrigido antes de
+confiar no resultado; 5 asserções passaram sob RLS real: criação com item;
+terceiro sem admin bloqueado ao tentar cancelar (RLS, 0 linhas afetadas);
+solicitante cancela a própria; requisição cancelada não pode mais ser editada.
+Zero resíduo confirmado depois. **Achado à parte**: o banco de produção não
+tinha nenhum produto cadastrado em `produtos` — prova e teste ao vivo usaram
+produto sintético, apagado ao final.
+
+**Testado ao vivo no navegador** contra produção: criar requisição com item
+real, menu de ações completo (Visualizar mostra logo/CNPJ reais, Baixar PDF
+gerou arquivo real e correto, cancelar funcionou e travou edição posterior).
+Console sem erro real (só o warning de acessibilidade pré-existente do Radix
+Dialog). `npm run typecheck`/`test -- --run` (388/388)/`build` confirmados
+depois do fix do cabeçalho de PDF.
+
+**Próxima ação**: próxima fatia do COMP-1 é Cotação/mapa comparativo entre
+fornecedores (consome `requisicoes_compra` ainda `ABERTA` + cadastro de
+Fornecedores já existente via `entidades`).
+
+---
+
 ## 🔖 Checkpoint atual — ORC-1 fechado: motor de alçadas mínimo, sem consumidor real ainda (2026-09-07)
 
 Quarta frente da Onda 1 (`ORG-1` → `FIN-4` parte 1 → `ATV-1` → `ORC-1`), sessão

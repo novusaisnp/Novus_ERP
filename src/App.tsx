@@ -52,6 +52,7 @@ import PlanoContas from './pages/financeiro/PlanoContas';
 import AtivosFixos from './pages/financeiro/AtivosFixos';
 import AlcadasAprovacao from './pages/financeiro/AlcadasAprovacao';
 import Aprovacoes from './pages/financeiro/Aprovacoes';
+import RequisicoesCompra from './pages/compras/RequisicoesCompra';
 import ContasPagar from './pages/financeiro/ContasPagar';
 import ContasReceber from './pages/financeiro/ContasReceber';
 import MovimentacoesFinanceiras from './pages/financeiro/MovimentacoesFinanceiras';
@@ -177,7 +178,13 @@ function App() {
 
                   {/* Contratos redirect (legacy) */}
                   <Route path="contratos/*" element={<Navigate to="/vendas/contratos" replace />} />
-                  
+
+                  {/* Compras Routes */}
+                  <Route path="compras">
+                    <Route index element={<Navigate to="/compras/requisicoes" replace />} />
+                    <Route path="requisicoes" element={<RequisicoesCompra />} />
+                  </Route>
+
                   {/* Gestão Bancária Routes */}
                   <Route path="gestao-bancaria">
                     <Route path="bancos" element={<Bancos />} />

@@ -441,7 +441,9 @@ apesar de já existir a permissão `compras.create/read/update/delete/aprovacao`
 em `PermissionsSelector.tsx:45-49` sem nenhum módulo por trás.
 
 ### COMP-1 — Ciclo completo
-- [ ] Requisição de compra interna.
+- [x] Requisição de compra interna (COMP-1a, fechado 2026-09-07) — tela
+  `/compras/requisicoes`, ações de documento (Visualizar/Imprimir/PDF/E-mail/
+  WhatsApp) no mesmo padrão de Orçamentos/Vendas.
 - [ ] Cotação/mapa comparativo entre fornecedores (reaproveita cadastro de Fornecedores já existente).
 - [ ] Pedido de compra formal, vinculado a Produto (Estoque) — já escopado por `empresa_representada_id` (matriz ou filial, `ORG-1`), sem coluna nova necessária.
 - [ ] Aprovação por alçada antes de emitir ao fornecedor (`ORC-1`).

@@ -6680,6 +6680,116 @@ export type Database = {
         }
         Relationships: []
       }
+      requisicoes_compra: {
+        Row: {
+          centro_custo_id: string | null
+          created_at: string
+          data_necessidade: string | null
+          empresa_representada_id: string
+          id: string
+          justificativa: string
+          solicitante_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          centro_custo_id?: string | null
+          created_at?: string
+          data_necessidade?: string | null
+          empresa_representada_id: string
+          id?: string
+          justificativa: string
+          solicitante_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          centro_custo_id?: string | null
+          created_at?: string
+          data_necessidade?: string | null
+          empresa_representada_id?: string
+          id?: string
+          justificativa?: string
+          solicitante_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "requisicoes_compra_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requisicoes_compra_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      requisicoes_compra_itens: {
+        Row: {
+          created_at: string
+          empresa_representada_id: string
+          id: string
+          observacao: string | null
+          produto_id: string
+          quantidade: number
+          requisicao_id: string
+        }
+        Insert: {
+          created_at?: string
+          empresa_representada_id: string
+          id?: string
+          observacao?: string | null
+          produto_id: string
+          quantidade: number
+          requisicao_id: string
+        }
+        Update: {
+          created_at?: string
+          empresa_representada_id?: string
+          id?: string
+          observacao?: string | null
+          produto_id?: string
+          quantidade?: number
+          requisicao_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "requisicoes_compra_itens_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requisicoes_compra_itens_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requisicoes_compra_itens_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_estoque_ruptura"
+            referencedColumns: ["produto_id"]
+          },
+          {
+            foreignKeyName: "requisicoes_compra_itens_requisicao_id_fkey"
+            columns: ["requisicao_id"]
+            isOneToOne: false
+            referencedRelation: "requisicoes_compra"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       servicos: {
         Row: {
           ativo: boolean
