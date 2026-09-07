@@ -190,22 +190,6 @@ export const sidebarItems: MenuItem[] = [
         url: "/financeiro/ativos-fixos",
       },
       {
-        title: "Balanço Patrimonial",
-        url: "/financeiro/balanco",
-      },
-      {
-        title: "DRE",
-        url: "/financeiro/dre",
-      },
-      {
-        title: "DMPL",
-        url: "/financeiro/dmpl",
-      },
-      {
-        title: "DFC",
-        url: "/financeiro/dfc",
-      },
-      {
         title: "Central de Aprovações",
         url: "/financeiro/aprovacoes",
       },

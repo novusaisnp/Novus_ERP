@@ -29,7 +29,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileBarChart2 } from 'lucide-react';
+import BalancoPatrimonial from './BalancoPatrimonial';
+import DRE from './DRE';
+import DMPL from './DMPL';
+import DFC from './DFC';
 import { ExportMenu } from '@/components/relatorios/ExportMenu';
 import { ScheduleList } from '@/components/relatorios/ScheduleList';
 import { normalizeViewState } from '@/types/reportSchedule';
@@ -112,7 +117,7 @@ interface FinanceiroViewState {
   comparar: boolean;
 }
 
-export default function RelatoriosFinanceiro() {
+function ConsolidadoFinanceiro() {
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
   const [tipoFiltro, setTipoFiltro] = useState<Tipo>('TODOS');
@@ -448,17 +453,8 @@ export default function RelatoriosFinanceiro() {
   }, [todasLinhas, agrupamento]);
 
   return (
-    <div className="p-6 space-y-6">
-      <header className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
-            <FileBarChart2 className="h-7 w-7" />
-            Relatórios Financeiros
-          </h1>
-          <p className="text-muted-foreground">
-            Consolidação de contas a pagar e a receber por período.
-          </p>
-        </div>
+    <div className="space-y-6">
+      <header className="flex items-center justify-end gap-4 flex-wrap">
         <div className="flex items-center gap-2">
           <PresetsMenu api={presets} currentState={currentViewState} onApply={applyPreset} />
           <ExportMenu
@@ -734,6 +730,52 @@ export default function RelatoriosFinanceiro() {
         workerMs={perfStats.worker}
         usedWorker={perfStats.usedWorker}
       />
+    </div>
+  );
+}
+
+// Hub de Relatórios do Financeiro — reúne o consolidado de contas a pagar/
+// receber e os 4 relatórios contábeis essenciais (Balanço/DRE/DMPL/DFC) numa
+// única tela com abas, em vez de cada um ser um item solto no menu
+// Financeiro (pedido explícito do usuário, 2026-09-07). Cada aba renderiza a
+// página original em modo `embedded` (sem o próprio título/padding — só o
+// conteúdo + botão de exportar), então nada da lógica de cada relatório foi
+// duplicada aqui.
+export default function RelatoriosFinanceiro() {
+  return (
+    <div className="p-6 space-y-6">
+      <header>
+        <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
+          <FileBarChart2 className="h-7 w-7" />
+          Relatórios
+        </h1>
+        <p className="text-muted-foreground">Relatórios financeiros e contábeis, derivados do razão e das contas a pagar/receber.</p>
+      </header>
+
+      <Tabs defaultValue="financeiro">
+        <TabsList className="flex-wrap h-auto">
+          <TabsTrigger value="financeiro">Contas a Pagar/Receber</TabsTrigger>
+          <TabsTrigger value="balanco">Balanço Patrimonial</TabsTrigger>
+          <TabsTrigger value="dre">DRE</TabsTrigger>
+          <TabsTrigger value="dmpl">DMPL</TabsTrigger>
+          <TabsTrigger value="dfc">DFC</TabsTrigger>
+        </TabsList>
+        <TabsContent value="financeiro" className="mt-6">
+          <ConsolidadoFinanceiro />
+        </TabsContent>
+        <TabsContent value="balanco" className="mt-6">
+          <BalancoPatrimonial embedded />
+        </TabsContent>
+        <TabsContent value="dre" className="mt-6">
+          <DRE embedded />
+        </TabsContent>
+        <TabsContent value="dmpl" className="mt-6">
+          <DMPL embedded />
+        </TabsContent>
+        <TabsContent value="dfc" className="mt-6">
+          <DFC embedded />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

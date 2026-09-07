@@ -26,7 +26,11 @@ const primeiroDiaDoMes = () => {
 const hoje = () => new Date().toISOString().slice(0, 10);
 const formatDate = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString('pt-BR');
 
-export default function DRE(): JSX.Element {
+interface Props {
+  embedded?: boolean;
+}
+
+export default function DRE({ embedded = false }: Props = {}): JSX.Element {
   const [dataInicio, setDataInicio] = useState(primeiroDiaDoMes());
   const [dataFim, setDataFim] = useState(hoje());
   const [modo, setModo] = useState<Modo>('ANALITICO');
@@ -89,15 +93,19 @@ export default function DRE(): JSX.Element {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className={embedded ? 'space-y-6' : 'p-6 space-y-6'}>
       <header className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
-            <TrendingUp className="h-7 w-7" />
-            DRE
-          </h1>
-          <p className="text-muted-foreground">Demonstração do Resultado do Exercício, derivada do razão contábil.</p>
-        </div>
+        {embedded ? (
+          <div />
+        ) : (
+          <div>
+            <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
+              <TrendingUp className="h-7 w-7" />
+              DRE
+            </h1>
+            <p className="text-muted-foreground">Demonstração do Resultado do Exercício, derivada do razão contábil.</p>
+          </div>
+        )}
         <ExportMenu payload={exportPayload} onCsv={handleCsv} disabled={isLoading || logosLoading || linhas.length === 0} />
       </header>
 

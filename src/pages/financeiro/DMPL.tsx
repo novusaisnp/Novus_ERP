@@ -34,7 +34,11 @@ interface DmplExportRow {
   saldoFinal: number;
 }
 
-export default function DMPL(): JSX.Element {
+interface Props {
+  embedded?: boolean;
+}
+
+export default function DMPL({ embedded = false }: Props = {}): JSX.Element {
   const [dataInicio, setDataInicio] = useState(primeiroDiaDoMes());
   const [dataFim, setDataFim] = useState(hoje());
   const [modo, setModo] = useState<Modo>('ANALITICO');
@@ -103,15 +107,19 @@ export default function DMPL(): JSX.Element {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className={embedded ? 'space-y-6' : 'p-6 space-y-6'}>
       <header className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
-            <LineChart className="h-7 w-7" />
-            DMPL
-          </h1>
-          <p className="text-muted-foreground">Demonstração das Mutações do Patrimônio Líquido, derivada do razão contábil.</p>
-        </div>
+        {embedded ? (
+          <div />
+        ) : (
+          <div>
+            <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
+              <LineChart className="h-7 w-7" />
+              DMPL
+            </h1>
+            <p className="text-muted-foreground">Demonstração das Mutações do Patrimônio Líquido, derivada do razão contábil.</p>
+          </div>
+        )}
         <ExportMenu payload={exportPayload} onCsv={handleCsv} disabled={isLoading || logosLoading || linhas.length === 0} />
       </header>
 

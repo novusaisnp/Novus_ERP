@@ -23,7 +23,13 @@ const MODO_LABEL: Record<Modo, string> = { SINTETICO: 'Sintético', ANALITICO: '
 const hoje = () => new Date().toISOString().slice(0, 10);
 const formatDate = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString('pt-BR');
 
-export default function BalancoPatrimonial(): JSX.Element {
+interface Props {
+  /** Renderizado dentro de uma aba do hub de Relatórios — sem padding/título
+   * próprios (o hub já fornece), mas mantém o botão de exportar. */
+  embedded?: boolean;
+}
+
+export default function BalancoPatrimonial({ embedded = false }: Props = {}): JSX.Element {
   const [dataCorte, setDataCorte] = useState(hoje());
   const [modo, setModo] = useState<Modo>('ANALITICO');
   const { linhas, isLoading } = useBalancoPatrimonial(dataCorte);
@@ -99,15 +105,19 @@ export default function BalancoPatrimonial(): JSX.Element {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className={embedded ? 'space-y-6' : 'p-6 space-y-6'}>
       <header className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
-            <Scale className="h-7 w-7" />
-            Balanço Patrimonial
-          </h1>
-          <p className="text-muted-foreground">Posição patrimonial derivada diretamente do razão contábil.</p>
-        </div>
+        {embedded ? (
+          <div />
+        ) : (
+          <div>
+            <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
+              <Scale className="h-7 w-7" />
+              Balanço Patrimonial
+            </h1>
+            <p className="text-muted-foreground">Posição patrimonial derivada diretamente do razão contábil.</p>
+          </div>
+        )}
         <ExportMenu payload={exportPayload} onCsv={handleCsv} disabled={isLoading || logosLoading || linhas.length === 0} />
       </header>
 
