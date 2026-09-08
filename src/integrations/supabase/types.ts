@@ -2427,6 +2427,7 @@ export type Database = {
           endereco: string | null
           estado: string | null
           id: string
+          limite_lancamento_retroativo_horas: number | null
           matriz_empresa_representada_id: string | null
           natureza_despesa_default_id: string | null
           natureza_receita_default_id: string | null
@@ -2457,6 +2458,7 @@ export type Database = {
           endereco?: string | null
           estado?: string | null
           id?: string
+          limite_lancamento_retroativo_horas?: number | null
           matriz_empresa_representada_id?: string | null
           natureza_despesa_default_id?: string | null
           natureza_receita_default_id?: string | null
@@ -2487,6 +2489,7 @@ export type Database = {
           endereco?: string | null
           estado?: string | null
           id?: string
+          limite_lancamento_retroativo_horas?: number | null
           matriz_empresa_representada_id?: string | null
           natureza_despesa_default_id?: string | null
           natureza_receita_default_id?: string | null
@@ -3209,6 +3212,24 @@ export type Database = {
           produto_id?: string
           quantidade?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      feriados_nacionais: {
+        Row: {
+          data: string
+          movel: boolean
+          nome: string
+        }
+        Insert: {
+          data: string
+          movel?: boolean
+          nome: string
+        }
+        Update: {
+          data?: string
+          movel?: boolean
+          nome?: string
         }
         Relationships: []
       }
@@ -8689,6 +8710,10 @@ export type Database = {
         Returns: Json
       }
       estornar_estoque_venda: { Args: { p_venda_id: string }; Returns: Json }
+      exigir_nao_retroativo: {
+        Args: { p_data: string; p_empresa_id: string; p_permissao: string }
+        Returns: undefined
+      }
       financeiro_cancelar_titulo: {
         Args: {
           p_idempotency_key: string
@@ -8967,6 +8992,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      horas_uteis_decorridas: {
+        Args: { p_fim: string; p_inicio: string }
+        Returns: number
+      }
       is_novus_owner: { Args: never; Returns: boolean }
       listar_satelites_disponiveis: {
         Args: never
@@ -8984,6 +9013,7 @@ export type Database = {
         Args: { p_dias_antecedencia?: number }
         Returns: Json
       }
+      pascoa: { Args: { p_ano: number }; Returns: string }
       periodicidade_meses: {
         Args: { p_periodicidade: string }
         Returns: number

@@ -15,6 +15,8 @@ export interface EmpresaRepresentada {
   ativo?: boolean;
   responsavel_id?: string | null;
   matriz_empresa_representada_id?: string | null;
+  /** Horas úteis de tolerância para lançamento retroativo (Estoque/Vendas/Bancárias/Financeiro). null = sem limite. */
+  limite_lancamento_retroativo_horas?: number | null;
   configuracoes?: Record<string, unknown> | null;
   [key: string]: unknown;
 }

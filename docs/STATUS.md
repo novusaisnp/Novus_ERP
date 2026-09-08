@@ -1,5 +1,47 @@
 # Status do projeto — NOVUS ERP
 
+## 🔖 Checkpoint atual — Bloqueio de lançamento retroativo, configurável por empresa (2026-09-07)
+
+Pedido do usuário durante a sessão de PERM-1: fechar o "catálogo sem consumidor" também para
+`financeiro.lancamentoRetroativo` (existia desde 2026-07-10, nunca checado) e generalizar pra
+Estoque, Vendas e Movimentações Bancárias — que não tinham bloqueio nenhum antes. Refinado em
+conversa: tolerância em **horas úteis** (dia útil = 24h inteiras; fim de semana e feriado
+nacional não contam, sem restringir horário comercial dentro do dia) e **configurável por
+empresa** (cada empresa decide seu limite, inclusive "sem limite" = trava liberada).
+
+- `feriados_nacionais`: tabela com fixos + móveis (Carnaval, Sexta-feira Santa, Corpus Christi)
+  calculados via `pascoa()` (algoritmo de Meeus/Jones/Butcher), populada 2020-2035. Verificado
+  contra datas reais conhecidas (2024/2025/2026) antes de aplicar.
+- `horas_uteis_decorridas(inicio, fim)`: soma só a sobreposição com dias úteis (calendário
+  America/Sao_Paulo), testado isoladamente (caso do próprio usuário: sexta 17h → segunda 10h =
+  17h úteis, não 41h corridas).
+- `empresas_representadas.limite_lancamento_retroativo_horas` (default 48, NULL = sem limite):
+  editável em Configurações > Empresas — aba Dados Gerais, campo novo com switch "sem limite".
+  Essa tela **não tinha rota admin-only antes** (RLS já restringia UPDATE a admin, mas a UI deixava
+  qualquer usuário abrir e só falhava silencioso ao salvar) — corrigido para `AdminRoute` junto.
+- Trigger genérico `trg_bloquear_lancamento_retroativo` (BEFORE INSERT/UPDATE da coluna de data)
+  aplicado em `estoque_movimentacoes`, `vendas`, `movimentacoes_bancarias` — cobre insert direto
+  (sem RPC) desses 3 módulos, não só chamada de função. Regra: `has_role(admin/novus_owner)` ou
+  `has_permissao(<modulo>.lancamentoRetroativo)` libera; senão, dentro do limite da empresa libera;
+  fora do limite, recusa com mensagem acionável (nunca SQLSTATE cru).
+- `financeiro_liquidar_titulo` ganhou o mesmo bypass de permissão + limite por empresa, mantendo o
+  ticket de autorização (`LIQUIDACAO_RETROATIVA`) que já existia como caminho para quem não tem a
+  permissão. Corpo da função conferido via `pg_get_functiondef` direto em produção antes de editar
+  (uma reconstrução de memória anterior tinha detalhes errados — descartada antes de aplicar).
+- Novas permissões no catálogo: `estoque.lancamentoRetroativo`, `vendas.lancamentoRetroativo`
+  (Financeiro já tinha a dele).
+- Validado: typecheck limpo, 403/403 testes, ESLint sem erro novo, tipos do Supabase regerados.
+  Provado via SQL com RPCs/insert reais (`supabase/sql/perm1_retroativo_prova.sql`): bloqueio
+  dispara para usuário sem permissão, trava liberada por empresa libera, limite de volta bloqueia
+  de novo, admin sempre passa, data dentro da janela passa sem permissão — para os 3 módulos
+  novos. Financeiro: admin liquida retroativo sem ticket agora (bypass novo), usuário sem
+  permissão básica continua barrado. Zero resíduo.
+
+**Não testado**: usuário não-admin COM a permissão granular (só sem-admin-sem-permissão e
+admin foram exercitados — não há perfil de teste com `estoque.lancamentoRetroativo` etc.
+atribuído a um usuário real agora). A lógica é a mesma já provada em `has_permissao`/`pode()`
+(PERM-1 anterior), risco residual baixo.
+
 ## 🔖 Checkpoint atual — PERM-1: infraestrutura de permissão granular na UI + primeira fatia (Fiscal) (2026-09-07)
 
 Início do P1 da auditoria de permissões (aplicar `has_permissao` granular em cada tela/rota,

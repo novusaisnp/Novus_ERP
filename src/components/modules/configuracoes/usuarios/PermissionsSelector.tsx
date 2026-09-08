@@ -35,7 +35,8 @@ export const PERMISSOES_GRANULARES: PermissionModule[] = [
       { codigo: 'vendas.desconto', nome: 'Aplicar Descontos', descricao: 'Conceder descontos em vendas' },
       { codigo: 'vendas.cancelamento', nome: 'Cancelar Vendas', descricao: 'Cancelar vendas finalizadas', critica: true },
       { codigo: 'vendas.alterarPreco', nome: 'Alterar Preços', descricao: 'Modificar preços de produtos na venda' },
-      { codigo: 'vendas.autorizarInadimplencia', nome: 'Autorizar Venda a Inadimplente', descricao: 'Superar bloqueio de crédito/inadimplência e autorizar venda a prazo para cliente bloqueado, em análise ou com títulos vencidos', critica: true }
+      { codigo: 'vendas.autorizarInadimplencia', nome: 'Autorizar Venda a Inadimplente', descricao: 'Superar bloqueio de crédito/inadimplência e autorizar venda a prazo para cliente bloqueado, em análise ou com títulos vencidos', critica: true },
+      { codigo: 'vendas.lancamentoRetroativo', nome: 'Lançamentos Retroativos', descricao: 'Registrar vendas com data além do limite de horas úteis da empresa', critica: true }
     ]
   },
   {
@@ -59,7 +60,8 @@ export const PERMISSOES_GRANULARES: PermissionModule[] = [
       { codigo: 'estoque.delete', nome: 'Excluir Movimentações', descricao: 'Remover movimentações', critica: true },
       { codigo: 'estoque.ajuste', nome: 'Ajustes de Estoque', descricao: 'Realizar ajustes manuais de estoque', critica: true },
       { codigo: 'estoque.transferencia', nome: 'Transferências', descricao: 'Transferir produtos entre locais' },
-      { codigo: 'estoque.inventario', nome: 'Inventário', descricao: 'Realizar inventários físicos' }
+      { codigo: 'estoque.inventario', nome: 'Inventário', descricao: 'Realizar inventários físicos' },
+      { codigo: 'estoque.lancamentoRetroativo', nome: 'Lançamentos Retroativos', descricao: 'Registrar movimentações com data além do limite de horas úteis da empresa', critica: true }
     ]
   },
   {

@@ -297,7 +297,11 @@ function App() {
                   
                   {/* Configurações Routes */}
                   <Route path="configuracoes">
-                    <Route path="empresas" element={<Empresas />} />
+                    {/* PERM-1: RLS de empresas_representadas já restringe UPDATE a
+                        admin da empresa; a rota passa a bater com isso — antes
+                        qualquer usuário autenticado via a tela (só falhava
+                        silenciosamente ao salvar). */}
+                    <Route path="empresas" element={<AdminRoute><Empresas /></AdminRoute>} />
                     <Route path="usuarios" element={<Usuarios />} />
                     <Route path="perfil" element={<Perfil />} />
                     {/* AUDITORIA_NOVA Fase 6: webhook_configs agora é admin-only na

@@ -77,6 +77,8 @@ interface FormState {
   cert_path: string;
   cert_filename: string;
   cert_uploaded_at: string;
+  // coluna real; string vazia = sem limite
+  limite_lancamento_retroativo_horas: string;
 }
 
 
@@ -89,6 +91,7 @@ const empty = (): FormState => ({
   contador_nome: '', contador_crc: '', contador_email: '', observacoes: '',
   tipo_vinculo: '', matriz_empresa_representada_id: '',
   logo_path: '', cert_path: '', cert_filename: '', cert_uploaded_at: '',
+  limite_lancamento_retroativo_horas: '48',
 });
 
 
@@ -147,6 +150,10 @@ const fromEmpresa = (e?: EmpresaRepresentada | null): FormState => {
     observacoes: c.observacoes || '',
     tipo_vinculo: (c.tipo_vinculo as TipoVinculo) || '',
     matriz_empresa_representada_id: e.matriz_empresa_representada_id || '',
+    limite_lancamento_retroativo_horas:
+      e.limite_lancamento_retroativo_horas === null || e.limite_lancamento_retroativo_horas === undefined
+        ? ''
+        : String(e.limite_lancamento_retroativo_horas),
     logo_path: c.logo_path || '',
     cert_path: c.cert_path || '',
     cert_filename: c.cert_filename || '',
@@ -345,6 +352,10 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
       cep: form.cep || null,
       ativo: form.ativo,
       matriz_empresa_representada_id: form.tipo_vinculo === 'FILIAL' ? form.matriz_empresa_representada_id : null,
+      limite_lancamento_retroativo_horas:
+        form.limite_lancamento_retroativo_horas.trim() === ''
+          ? null
+          : Number(form.limite_lancamento_retroativo_horas),
       configuracoes: {
         razao_social: form.razao_social,
         nome_fantasia: form.nome_fantasia,
@@ -527,6 +538,34 @@ const EmpresasRepresentadasList: React.FC<Props> = ({ empresas, onSave, onDelete
                   <div className="flex items-center gap-2 md:col-span-2">
                     <Switch checked={!!form.ativo} onCheckedChange={(v) => setField('ativo', v)} id="ativa" />
                     <Label htmlFor="ativa">Empresa ativa</Label>
+                  </div>
+
+                  <div className="md:col-span-2 rounded-md border p-3 space-y-2">
+                    <Label>Limite para lançamento retroativo</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Horas úteis (dia útil = 24h; fim de semana e feriado nacional não contam) que
+                      Estoque, Vendas, Financeiro e Movimentações Bancárias toleram sem exigir a
+                      permissão de lançamento retroativo do usuário.
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <Input
+                        type="number"
+                        min={0}
+                        step={1}
+                        className="w-28"
+                        disabled={form.limite_lancamento_retroativo_horas === ''}
+                        value={form.limite_lancamento_retroativo_horas}
+                        onChange={(ev) => setField('limite_lancamento_retroativo_horas', ev.target.value)}
+                      />
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          id="sem-limite-retroativo"
+                          checked={form.limite_lancamento_retroativo_horas === ''}
+                          onCheckedChange={(v) => setField('limite_lancamento_retroativo_horas', v ? '' : '48')}
+                        />
+                        <Label htmlFor="sem-limite-retroativo">Sem limite (trava liberada)</Label>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </TabsContent>

@@ -7,7 +7,7 @@ import type { EmpresaRepresentada } from '@/hooks/useEmpresasRepresentadas';
 const REAL_COLUMNS = [
   'nome', 'cnpj', 'email', 'telefone', 'endereco',
   'cidade', 'estado', 'cep', 'ativo', 'responsavel_id',
-  'matriz_empresa_representada_id',
+  'matriz_empresa_representada_id', 'limite_lancamento_retroativo_horas',
 ] as const;
 
 function buildPayload(input: EmpresaRepresentada & Record<string, unknown>) {
@@ -39,6 +39,10 @@ function buildPayload(input: EmpresaRepresentada & Record<string, unknown>) {
     ativo: input.ativo ?? true,
     responsavel_id: input.responsavel_id || null,
     matriz_empresa_representada_id: input.matriz_empresa_representada_id || null,
+    limite_lancamento_retroativo_horas:
+      input.limite_lancamento_retroativo_horas === undefined
+        ? 48
+        : input.limite_lancamento_retroativo_horas,
     configuracoes: configuracoes as Json,
     updated_at: new Date().toISOString(),
   };
