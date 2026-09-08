@@ -170,6 +170,26 @@ describe('movimentacoesService.liquidarTitulo', () => {
       p_motivo: 'Pagamento duplicado',
       p_idempotency_key: 'chave-estorno-1',
       p_ticket_autorizacao: null,
+      p_data_contabil: null,
+    });
+  });
+
+  it('estorna com data contabil explicita quando informada', async () => {
+    rpc.mockResolvedValue({ data: { status: 'PENDENTE' }, error: null });
+
+    await movimentacoesService.estornarLiquidacao({
+      liquidacao_id: 'liquidacao-1',
+      motivo: 'Pagamento duplicado',
+      idempotency_key: 'chave-estorno-1',
+      data_contabil: '2026-09-01',
+    });
+
+    expect(rpc).toHaveBeenCalledWith('financeiro_estornar_liquidacao', {
+      p_liquidacao_id: 'liquidacao-1',
+      p_motivo: 'Pagamento duplicado',
+      p_idempotency_key: 'chave-estorno-1',
+      p_ticket_autorizacao: null,
+      p_data_contabil: '2026-09-01',
     });
   });
 

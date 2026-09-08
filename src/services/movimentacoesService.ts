@@ -116,6 +116,7 @@ export const movimentacoesService = {
         p_motivo: dados.motivo,
         p_idempotency_key: dados.idempotency_key,
         p_ticket_autorizacao: dados.ticket_autorizacao ?? null,
+        p_data_contabil: dados.data_contabil || null,
       });
       if (error) throw error;
     } catch (error) {

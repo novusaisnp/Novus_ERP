@@ -284,8 +284,8 @@ Objetivo: servir desde operação simples de caixa até grupo econômico multiem
 
 ### FIN-1 — Completar fluxos atualmente parciais ou apenas visuais
 **Prioridade atual.**
-- [~] Submodal de cancelamento (implementado, aguardando validação visual local).
-- [~] Submodal de estorno (seleção/motivo/conta concluídos; data contábil manual pendente).
+- [~] Submodal de cancelamento (implementado; validação visual local pendente — bug da ferramenta de screenshot na sessão de 2026-09-07 impediu concluir, código já revisado e íntegro).
+- [x] Submodal de estorno — data contábil manual (2026-09-07): campo novo no diálogo, RPC `financeiro_estornar_liquidacao` ganhou `p_data_contabil` (valida não-futuro e não-anterior à liquidação), trigger `lancar_estorno_liquidacao` usa a data escolhida em vez de `CURRENT_DATE` fixo. Provado via SQL com RPCs reais (`supabase/sql/fin1_estorno_data_contabil_prova.sql`), zero resíduo.
 - [x] Submodal de baixa parcial com juros, multa, desconto e saldo posterior.
 - [x] Divisão da baixa entre múltiplas contas/meios de pagamento.
 - [ ] Renegociação: substituir título por novas parcelas preservando rastreabilidade.

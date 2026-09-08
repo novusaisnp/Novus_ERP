@@ -173,4 +173,6 @@ export interface EstornoLiquidacao {
   idempotency_key: string;
   /** Emitido pelo diálogo de autorização; estorno sempre exige. */
   ticket_autorizacao?: string;
+  /** Data contábil do lançamento reverso (YYYY-MM-DD). Vazio → hoje, no servidor. */
+  data_contabil?: string;
 }

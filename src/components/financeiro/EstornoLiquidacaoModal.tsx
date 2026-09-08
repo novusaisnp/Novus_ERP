@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -32,6 +33,7 @@ export const EstornoLiquidacaoModal = ({
   const idempotencyKey = useRef(crypto.randomUUID());
   const [liquidacaoId, setLiquidacaoId] = useState('');
   const [motivo, setMotivo] = useState('');
+  const [dataContabil, setDataContabil] = useState(() => new Date().toISOString().slice(0, 10));
 
   const { data: liquidacoes = [], error, isLoading } = useQuery({
     queryKey: ['liquidacoes-titulo', titulo.id, titulo.tipo],
@@ -44,7 +46,13 @@ export const EstornoLiquidacaoModal = ({
     idempotencyKey.current = crypto.randomUUID();
     setLiquidacaoId('');
     setMotivo('');
+    setDataContabil(new Date().toISOString().slice(0, 10));
   }, [isOpen, titulo.id]);
+
+  const liquidacaoSelecionada = liquidacoes.find((l) => l.id === liquidacaoId);
+  const dataMinima = liquidacaoSelecionada?.data_pagamento
+    ? liquidacaoSelecionada.data_pagamento.slice(0, 10)
+    : undefined;
 
   useEffect(() => {
     if (isOpen && !liquidacaoId && liquidacoes.length === 1) {
@@ -81,11 +89,12 @@ export const EstornoLiquidacaoModal = ({
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    if (!liquidacaoId || motivo.trim().length < 5 || estornarMutation.isPending) return;
+    if (!liquidacaoId || motivo.trim().length < 5 || !dataContabil || estornarMutation.isPending) return;
     autorizacao.disparar({
       liquidacao_id: liquidacaoId,
       motivo: motivo.trim(),
       idempotency_key: idempotencyKey.current,
+      data_contabil: dataContabil,
     });
   };
 
@@ -165,6 +174,23 @@ export const EstornoLiquidacaoModal = ({
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="data-contabil-estorno">Data contábil do estorno *</Label>
+            <Input
+              id="data-contabil-estorno"
+              type="date"
+              value={dataContabil}
+              onChange={(event) => setDataContabil(event.target.value)}
+              min={dataMinima}
+              max={new Date().toISOString().slice(0, 10)}
+              required
+            />
+            <p className="text-xs text-muted-foreground">
+              Data do lançamento reverso no razão contábil. Não pode ser anterior à data da baixa
+              nem posterior a hoje.
+            </p>
+          </div>
+
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <Button className="h-10 w-full" type="button" variant="outline" onClick={onClose} disabled={estornarMutation.isPending}>
               Cancelar
@@ -173,7 +199,7 @@ export const EstornoLiquidacaoModal = ({
               className="h-10 w-full"
               type="submit"
               variant="destructive"
-              disabled={!liquidacaoId || motivo.trim().length < 5 || estornarMutation.isPending}
+              disabled={!liquidacaoId || motivo.trim().length < 5 || !dataContabil || estornarMutation.isPending}
             >
               {estornarMutation.isPending ? 'Estornando...' : 'Confirmar estorno'}
             </Button>
