@@ -1,6 +1,60 @@
 # Status do projeto — NOVUS ERP
 
-## 🔖 Checkpoint atual — FIN-1: liquidação de título vincula movimentação bancária existente (2026-09-08)
+## 🔖 Checkpoint atual — FIN-1: filtros de conta bancária/usuário + regressão de segurança achada e corrigida (2026-09-08)
+
+Item seguinte da cauda do FIN-1: "Aplicar filtros já declarados de conta bancária e usuário."
+`FiltrosMovimentacao.conta_bancaria_id`/`usuario_id` existiam no tipo desde sempre mas nunca
+tinham UI nem eram aplicados na query — nem a aba "Filtros Avançados" os expunha.
+
+- `contas_pagar`/`contas_receber` não têm coluna de conta bancária nem usuário direto — só a
+  liquidação sabe disso (`conta_bancaria_id`, `usuario_liquidacao_id`). Filtro resolvido via
+  subquery em `liquidacoes_titulos` (não estornada/cancelada) antes das duas queries principais,
+  com curto-circuito: filtro ativo sem nenhuma liquidação correspondente retorna lista vazia sem
+  nem consultar `contas_pagar`/`contas_receber`. Efeito colateral esperado e correto: só considera
+  títulos já baixados (um título só ABERTA nunca tem conta/usuário de liquidação).
+- UI nova na aba "Filtros Avançados" (`MovimentacoesModal.tsx`): selects de Conta Bancária e
+  Usuário, com nota explicando o alcance (`listarContasBancariasAtivasComAgenciaBanco`/
+  `usuarioService.fetchUsuariosAtivos`, ambos reaproveitados, nenhum código novo de listagem).
+- **Achado de passagem, corrigido no mesmo commit**: `contas_receber` tinha `plano_conta_id`/
+  `centro_custo_id` declarados no filtro mas só aplicados na query de `contas_pagar` — mesma
+  classe de bug do item principal desta fatia. Corrigido junto.
+
+**Regressão de segurança real, achada e corrigida na mesma sessão** (não é do escopo original
+desta fatia, achada testando o filtro): a migration anterior
+(`20260907250000_fin1_vincular_movimentacao_existente.sql`) usou `CREATE OR REPLACE` acrescentando
+`p_movimentacao_bancaria_id` no final da assinatura de `financeiro_liquidar_titulo`, presumindo
+que isso substituía a função original. **Não substituiu** — Postgres identifica uma função por
+nome + lista de tipos dos parâmetros de entrada, e acrescentar um parâmetro muda essa lista, então
+`CREATE OR REPLACE` criou uma **segunda sobrecarga** em vez de substituir a de 13 argumentos.
+Consequências: (1) a versão de 13 args ficou parada no ar — inalcançável por chamada nomeada (o
+app sempre envia `p_movimentacao_bancaria_id`), mas ambígua para qualquer chamada posicional
+(quebrou a prova SQL desta fatia com "function ... is not unique"); (2) **mais grave**: a versão
+nova (14 args), por ser objeto novo, não herdou o ACL travado da antiga — pegou o default do
+schema, que aqui inclui `EXECUTE` para `PUBLIC` e para `anon`. `financeiro_liquidar_titulo` ficou
+chamável por qualquer requisição com a anon key, sem login nenhum (mitigado em runtime pelo
+`IF auth.uid() IS NULL THEN RAISE EXCEPTION` logo no topo do corpo — não é um caminho de
+escalonamento real — mas contraria a convenção desta sessão de nunca depender só da checagem em
+runtime). Corrigido por `20260907260000_fix_financeiro_liquidar_titulo_acl_overload.sql`: `DROP`
+na sobrecarga de 13 args (confirmado sem nenhum chamador real — só um comentário em
+`lancar_liquidacao_titulo` menciona o nome) + `REVOKE ALL FROM PUBLIC, anon, authenticated` +
+`GRANT EXECUTE` só para `authenticated`/`service_role`. Varredura em todo o schema `public`
+confirmou zero outras funções com mais de uma sobrecarga (incidente isolado). **Lição**: nunca usar
+`CREATE OR REPLACE` para acrescentar parâmetro a uma função já existente — sempre `DROP FUNCTION`
+com a assinatura antiga explícita antes do `CREATE`, mesmo quando a intenção é só "adicionar um
+argumento opcional no final".
+
+- Validado: typecheck limpo, 404/404 testes (suite não mudou — filtro não tem teste dedicado,
+  mesmo padrão de cobertura já existente no hook, que já não tinha testes antes desta fatia),
+  build ok. Lógica do filtro provada por SQL direta (mesma subquery do hook, manualmente) contra
+  dado real: 2 títulos de teste, cada um liquidado numa conta diferente, filtro por uma conta
+  retornou exatamente o título certo. Testado ao vivo no navegador até onde deu: os dois novos
+  selects renderizam corretamente na aba Filtros Avançados com o texto de ajuda certo — o dropdown
+  de Conta Bancária em si depende de `listarContasBancariasAtivasComAgenciaBanco` (função
+  pré-existente, não tocada) que exige agência/banco cadastrados via `!inner`, e as contas
+  bancárias sintéticas de teste não tinham isso — não é um bug desta fatia, só uma limitação do
+  dado de teste; a lógica de filtro em si foi confirmada correta pela prova SQL.
+
+## Checkpoint anterior — FIN-1: liquidação de título vincula movimentação bancária existente (2026-09-08)
 
 Item pendente do FIN-1 (cauda): "Vincular uma movimentação bancária existente ou criar e
 conciliar uma nova." Até aqui, `financeiro_liquidar_titulo` sempre criava uma `movimentacoes_

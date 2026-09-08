@@ -292,7 +292,9 @@ Objetivo: servir desde operação simples de caixa até grupo econômico multiem
 - [x] Gestão de rateios de pagar e receber no detalhe do título.
 - [x] Vincular uma movimentação bancária existente ou criar uma nova. `financeiro_liquidar_titulo` ganhou `p_movimentacao_bancaria_id`: quando informado (mutuamente exclusivo com conta/divisão), reaproveita uma movimentação já existente (sem título, mesmo sentido, valor exato), sem duplicar lançamento. Fechado 2026-09-07, provado via SQL (8 casos, RPC real) + testado ao vivo no navegador (2026-09-08).
 - [ ] Cadastro rápido de entidade nos consumidores financeiros usando o cadastro central.
-- [ ] Aplicar filtros já declarados de conta bancária e usuário.
+- [x] Aplicar filtros já declarados de conta bancária e usuário. Indireto via `liquidacoes_titulos`
+  (conta usada na baixa / quem liquidou) — títulos nunca baixados não têm como corresponder.
+  Fechado 2026-09-08; achou e corrigiu de passagem uma regressão de segurança real (ver STATUS.md).
 - [ ] Corrigir upload/remoção de documentos para aguardar conclusão real da mutation.
 - [ ] Operações em lote com revisão antes de executar.
 - [ ] Testes E2E: criar, editar, liquidar parcial/total, cancelar, estornar e conciliar.

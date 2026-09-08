@@ -24,8 +24,43 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
   const { data: titulos = [], isLoading, error, refetch } = useQuery({
     queryKey: qk.movimentacoesFinanceiras.list(filtros),
     queryFn: async () => {
-      
+
       const titulosUnificados: TituloFinanceiro[] = [];
+
+      // conta_bancaria_id/usuario_id não existem em contas_pagar/contas_receber — só na
+      // liquidação (conta usada no pagamento, usuário que liquidou). Resolvido antes via
+      // subquery; filtro ativo sem nenhuma liquidação correspondente encerra cedo.
+      let idsPorLiquidacao: string[] | null = null;
+      if (filtros.conta_bancaria_id || filtros.usuario_id) {
+        let queryLiquidacoes = supabase
+          .from('liquidacoes_titulos')
+          .select('titulo_id, conta_pagar_id, conta_receber_id')
+          .eq('estornado', false)
+          .eq('cancelada', false);
+
+        if (filtros.conta_bancaria_id) {
+          queryLiquidacoes = queryLiquidacoes.eq('conta_bancaria_id', filtros.conta_bancaria_id);
+        }
+        if (filtros.usuario_id) {
+          queryLiquidacoes = queryLiquidacoes.eq('usuario_liquidacao_id', filtros.usuario_id);
+        }
+
+        const { data: liquidacoes, error: errorLiquidacoes } = await queryLiquidacoes;
+        if (errorLiquidacoes) {
+          console.error('[useMovimentacoesFinanceiras] Erro ao resolver filtro de conta/usuário:', errorLiquidacoes);
+          idsPorLiquidacao = [];
+        } else {
+          idsPorLiquidacao = [...new Set(
+            (liquidacoes || [])
+              .map((l) => l.titulo_id ?? l.conta_pagar_id ?? l.conta_receber_id)
+              .filter((id): id is string => Boolean(id))
+          )];
+        }
+
+        if (idsPorLiquidacao.length === 0) {
+          return [];
+        }
+      }
 
       // Buscar contas a pagar se não filtrou apenas contas a receber
       if (filtros.tipo_titulo !== 'CONTAS_RECEBER') {
@@ -73,6 +108,10 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
 
         if (filtros.plano_conta_id) {
           queryPagar = queryPagar.eq('plano_conta_id', filtros.plano_conta_id);
+        }
+
+        if (idsPorLiquidacao) {
+          queryPagar = queryPagar.in('id', idsPorLiquidacao);
         }
 
         if (!filtros.incluir_cancelados) {
@@ -156,6 +195,18 @@ export const useMovimentacoesFinanceiras = (filtros: FiltrosMovimentacao) => {
 
         if (filtros.pessoa_id) {
           queryReceber = queryReceber.eq('cliente_id', filtros.pessoa_id);
+        }
+
+        if (filtros.centro_custo_id) {
+          queryReceber = queryReceber.eq('centro_custo_id', filtros.centro_custo_id);
+        }
+
+        if (filtros.plano_conta_id) {
+          queryReceber = queryReceber.eq('plano_conta_id', filtros.plano_conta_id);
+        }
+
+        if (idsPorLiquidacao) {
+          queryReceber = queryReceber.in('id', idsPorLiquidacao);
         }
 
         if (!filtros.incluir_cancelados) {

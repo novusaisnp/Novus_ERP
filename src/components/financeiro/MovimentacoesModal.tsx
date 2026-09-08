@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { 
   Search, 
   Filter, 
@@ -38,6 +39,8 @@ import {
 } from '@/types/movimentacoesFinanceiras';
 import { useMovimentacoesFinanceiras } from '@/hooks/useMovimentacoesFinanceiras';
 import { currencyUtils } from '@/utils/currencyUtils';
+import { listarContasBancariasAtivasComAgenciaBanco } from '@/services/contaBancariaService';
+import { usuarioService } from '@/services/usuarioService';
 
 interface MovimentacoesModalProps {
   isOpen: boolean;
@@ -68,6 +71,17 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
     permissoes,
     refetch
   } = useMovimentacoesFinanceiras(filtros);
+
+  const { data: contasBancarias = [] } = useQuery({
+    queryKey: ['contas-bancarias-ativas'],
+    queryFn: listarContasBancariasAtivasComAgenciaBanco,
+    enabled: isOpen,
+  });
+  const { data: usuarios = [] } = useQuery({
+    queryKey: ['usuarios-ativos-filtro-movimentacoes'],
+    queryFn: usuarioService.fetchUsuariosAtivos,
+    enabled: isOpen,
+  });
 
   const handleFiltroChange = (campo: keyof FiltrosMovimentacao, valor: any) => {
     console.log('[MovimentacoesModal] Alterando filtro:', campo, valor);
@@ -414,6 +428,52 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
                       onValueChange={(v) => handleFiltroChange('valor_max', v || undefined)}
                       placeholder="R$ 0,00"
                     />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Conta Bancária</label>
+                    <Select
+                      value={filtros.conta_bancaria_id || 'TODAS'}
+                      onValueChange={(value) => handleFiltroChange('conta_bancaria_id', value === 'TODAS' ? undefined : value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Todas as contas" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="TODAS">Todas as contas</SelectItem>
+                        {contasBancarias.map((conta) => (
+                          <SelectItem key={conta.id} value={conta.id}>
+                            {conta.agencias_bancarias?.bancos?.nome} — CC: {conta.numero_conta}-{conta.digito}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Filtra pela conta usada na liquidação — só considera títulos já baixados nessa conta.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Usuário</label>
+                    <Select
+                      value={filtros.usuario_id || 'TODOS'}
+                      onValueChange={(value) => handleFiltroChange('usuario_id', value === 'TODOS' ? undefined : value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Todos os usuários" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="TODOS">Todos os usuários</SelectItem>
+                        {usuarios.map((usuario) => (
+                          <SelectItem key={usuario.user_id} value={usuario.user_id}>
+                            {usuario.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Quem liquidou o título — só considera títulos já baixados.
+                    </p>
                   </div>
 
                   <div className="flex items-center space-x-2 pt-6">
