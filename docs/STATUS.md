@@ -1,6 +1,34 @@
 # Status do projeto — NOVUS ERP
 
-## 🔖 Checkpoint atual — FIN-1: filtros de conta bancária/usuário + regressão de segurança achada e corrigida (2026-09-08)
+## 🔖 Checkpoint atual — Programa Caixa e Tesouraria (`CAI-1`) desenhado no Plano Mestre (2026-09-08)
+
+**Só documentação, nenhum código/migration.** O usuário identificou um mecanismo que faltava no
+`PLANO_MESTRE.md`: Gestão de Caixas — caixa master de tesouraria/conciliação, caixas operacionais
+(Vendas balcão hoje, futuro PDV satélite depois), standby antes de creditar o financeiro, e a
+regra explícita de que nenhum lançamento/conferência/conciliação financeira acontece sem sessão de
+caixa aberta. Pedido: pesquisar sistemas consagrados antes de anotar, decisão de posicionamento no
+roadmap a critério do agente.
+
+Pesquisa (5 buscas WebSearch — Odoo POS, arquitetura genérica de retail cash management, TOTVS/
+Linx como referência brasileira já usada no projeto, distinção suspense × clearing account)
+confirmou que o desenho descrito pelo usuário bate com o padrão real de mercado — inclusive o
+termo técnico certo pro "standby" (clearing account: destino já conhecido, só falta confirmar) e
+a confirmação ponto a ponto no TOTVS/Linx (sangria/suprimento no PDV, "Conferência de Caixa"
+separada na retaguarda antes de integrar com o Financeiro).
+
+Escrito em `docs/PLANO_MESTRE.md`: novo `## Programa Caixa e Tesouraria` / `### CAI-1` (Parte 3,
+antes de `Programa Varejo e PDV`), nota futura em §1.2 (Porta 2 pode precisar de uma variante "com
+caixa" quando existir satélite de PDV — intenção registrada, não desenhada), `VAR-1` perdeu as
+duas bullets de ciclo de caixa (elevadas a `CAI-1`) e ganhou nota explicando a relocação, tabela de
+Ondas atualizada (`CAI-1` entra na Onda 2, ao lado de `VAR-1`).
+
+**Posicionamento decidido pelo agente**: Onda 2, não Onda 1 (critério de saída da Onda 1 não
+depende de caixa físico) nem Onda 3/4 (é pré-requisito conceitual pra qualquer satélite de PDV, e
+o invariante "sem caixa aberto não lança" muda o financeiro inteiro — melhor desenhado cedo).
+Adianta-se o **design**, não a implementação (que ficaria especulativa sem um satélite de PDV real
+pra validar contra — mesmo princípio já usado pra `DOC-1`).
+
+## Checkpoint anterior — FIN-1: filtros de conta bancária/usuário + regressão de segurança achada e corrigida (2026-09-08)
 
 Item seguinte da cauda do FIN-1: "Aplicar filtros já declarados de conta bancária e usuário."
 `FiltrosMovimentacao.conta_bancaria_id`/`usuario_id` existiam no tipo desde sempre mas nunca

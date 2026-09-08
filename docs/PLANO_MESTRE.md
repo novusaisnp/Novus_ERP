@@ -39,6 +39,8 @@ O documento financeiro em si: descrição, valor, vencimento, forma de pagamento
 ### Porta 2 — Liquidação (push, satélite → NOVUS)
 O evento "isso foi pago" — `titulo_id`, `valor_pago`, `data_pagamento`, `forma_pagamento`, opcionalmente dividido em múltiplas contas (`multi_baixa`). Desacoplado de como o título nasceu. `liquidacaoCanonicalSchema` (§1.5). Depois da liquidação, o dinheiro que efetivamente entrou é casado com o extrato bancário real pela conciliação bancária — isso é interno ao NOVUS, satélite nenhum precisa participar.
 
+**Nota futura, registrada e não desenhada ainda** (intenção, não especificação — mesmo princípio de "não criar adaptador genérico especulativo" já usado neste documento): quando o primeiro satélite de PDV/frente de caixa existir, a Porta 2 provavelmente precisará de uma variante "com caixa" — o satélite reporta o pagamento para o caixa operacional dele (ver Programa Caixa e Tesouraria, `CAI-1`, na Parte 3), não liquida o título direto; a liquidação real só acontece depois da conferência no caixa master. Não desenhar o contrato exato até existir um satélite real para validar contra.
+
 ### Porta 3 — Consulta/Autorização (pull, satélite ↔ NOVUS, síncrona)
 Diferente das duas primeiras, aqui o satélite **pergunta antes de agir localmente**, e o NOVUS responde com uma decisão, não só um dado. Dois exemplos reais que motivaram esta porta:
 
@@ -315,7 +317,7 @@ Objetivo: servir desde operação simples de caixa até grupo econômico multiem
 ### FIN-3 — Pequeno negócio e caixa diário
 - [ ] Onboarding financeiro simplificado com plano de contas e categorias padrão.
 - [ ] Modo simples que oculta dimensões avançadas sem removê-las do modelo.
-- (Abertura/fechamento de caixa e sangria/suprimento — relocado para `VAR-1`, Programa Varejo e PDV.)
+- (Abertura/fechamento de caixa e sangria/suprimento — relocado para `CAI-1`, Programa Caixa e Tesouraria.)
 - [ ] Visão diária: entradas, saídas, saldo, vencimentos e atrasos.
 - [ ] Recorrências monitoradas, com falhas e próxima geração visíveis.
 - [ ] Lembretes de cobrança e comprovantes pelo celular.
@@ -529,11 +531,60 @@ Estende o Estoque já maduro (Kardex, movimentações, inventário).
 - [ ] Picking/packing/romaneio simples.
 - [ ] Inventário rotativo (cíclico, além do inventário geral já existente).
 
+## Programa Caixa e Tesouraria
+
+Registrado 2026-09-08 a pedido do usuário — mecanismo que faltava documentar, maior em escopo do
+que o esqueleto que já existia dentro de `VAR-1`. Pesquisa de mercado (sistemas consagrados —
+Odoo POS, arquitetura genérica de retail cash management, e a referência brasileira TOTVS/Linx já
+usada neste projeto) confirmou que o desenho descrito pelo usuário bate com o padrão real: **caixa
+hierárquico em 3 níveis** (registro → loja/filial → tesouraria), **standby via clearing account**
+(destino conhecido, só falta confirmar — não confundir com suspense account, que é pra caso
+genuinamente incerto) e **conferência de retaguarda antes de integrar com o financeiro** (é
+literalmente como TOTVS/Linx nomeia esse passo: "Conferência de Caixa", separado da sangria/
+suprimento feita no PDV). Fontes: [Till Sessions — Sarutech](https://www.sarutech.com/article/till-sessions-point-of-sale),
+[Retail Cash Management — apg](https://apgsolutions.com/retail-cash-management/),
+[Suspense vs Clearing — TechnoFunc](https://www.technofunc.com/index.php/functional-skills/cash-management/item/clearing-v-s-suspense-account),
+[Point of Sale — Odoo docs](https://www.odoo.com/documentation/18.0/applications/sales/point_of_sale.html),
+[Conferência de Caixa — TOTVS](https://centraldeatendimento.totvs.com/hc/pt-br/articles/360039671233-TL-COME-Confer%C3%AAncia-de-Caixa),
+[Sangria e Suprimento — TOTVS](https://centraldeatendimento.totvs.com/hc/pt-br/articles/360046882473-MP-TOTVS-PDV-Sangria-n%C3%A3o-integra-com-Retaguarda),
+[Omnichannel Payments — Sensepass](https://www.sensepass.com/what-is-omnichannel-payment/).
+
+### CAI-1 — Ciclo de caixa e conferência de tesouraria
+- [ ] **Modelo hierárquico**: caixa operacional (nasce de uma frente de venda — Vendas balcão
+  hoje; um futuro satélite de PDV depois, via Porta 2 "com caixa", ver §1.2) → caixa master (um
+  por empresa/filial; não vende, só recebe e confere o que os caixas operacionais reportam).
+- [ ] **Sessão de caixa**: abertura com fundo de troco declarado, operador único por sessão (login
+  individual — trilha de auditoria); fechamento com contagem cega (operador conta sem ver o valor
+  esperado antes) e diferença esperado × contado. *(absorve as duas bullets abaixo, que estavam em
+  `VAR-1` — mesmo padrão de relocação já usado quando `FIN-3` cedeu essas bullets pra `VAR-1`.)*
+- [ ] **Invariante, explicitamente pedido pelo usuário**: nenhum lançamento, conferência,
+  conciliação ou qualquer movimentação que envolva o financeiro acontece sem uma sessão de caixa
+  **aberta** vinculada — vale tanto para o caixa operacional quanto para o caixa master (a própria
+  tesouraria não deveria conseguir registrar liquidação/conciliação sem o caixa master aberto).
+  Extensão do modelo pra além do PDV — toca lançamento financeiro em geral, não só balcão.
+- [ ] **Standby**: o fechamento de um caixa operacional não credita o financeiro direto — entra em
+  estado "aguardando conferência". É um clearing account operacional: o destino já é conhecido
+  (dinheiro vai pro cofre/depósito bancário, cartão vai virar um a receber da adquirente, PIX/
+  boleto caem no extrato a conciliar), só falta confirmar — diferente de um suspense account
+  (destino genuinamente incerto), que não é o caso comum aqui.
+- [ ] **Conferência no caixa master**: compara o que cada caixa operacional fechou contra o que
+  efetivamente chegou (extrato bancário real via **Conciliação Bancária já existente** — não
+  reinventar; lote de adquirente pra cartão) e só então direciona o crédito. Divergência vira
+  ocorrência, resolvida manualmente ou por alçada (**reaproveita `ORC-1`**, motor de alçadas já
+  existente — não desenhar um mecanismo de aprovação paralelo).
+
+**Critério de saída:** um operador não consegue lançar/conferir nada financeiro com o caixa
+fechado; todo caixa operacional fechado fica rastreável até a conferência que o liquidou de fato;
+o caixa master nunca credita o financeiro por um valor que não veio de uma conferência real.
+
 ## Programa Varejo e PDV
 
 ### VAR-1 — Caixa e balcão
-- [ ] Abertura e fechamento de caixa por operador/turno. *(relocado de FIN-3)*
-- [ ] Sangria, suprimento, conferência e diferença esperado × contado. *(relocado de FIN-3)*
+- [x] Abertura e fechamento de caixa por operador/turno; sangria, suprimento, conferência e
+  diferença esperado × contado — **elevado a `CAI-1` (Programa Caixa e Tesouraria)**, acima,
+  porque o escopo cresceu além de um caixa único de balcão. Este item existia aqui desde a
+  relocação de `FIN-3` (2026-08-30); a mecânica de sessão em si não muda, só o desenho de para
+  onde o caixa direciona o crédito depois de fechado.
 - [ ] Fluxo de venda balcão dentro de Vendas, reutilizando venda/pagamento/estoque existentes.
 - [ ] 🎯 TEF/adquirente de cartão — interface é núcleo, contrato com adquirente é ativação externa.
 
@@ -612,8 +663,10 @@ fiscais sem planilha paralela.
 
 **Onda 2 — paridade de mercado médio:** `FIN-5` residual + `FIN-7` (mecânica CNAB/Pix/
 boleto/Open Finance, ativação `🎯`), `RH-1`/`RH-2` (motor de folha núcleo, eSocial `🎯`),
-`VAR-1` (caixa/PDV núcleo, TEF `🎯`), `CRM-1`, `COM-1` (fila/template núcleo, envio real
-`🎯`), `ORC-2`, `DOC-1` só se houver ≥2 consumidores reais provados.
+`CAI-1` (ciclo de caixa e conferência de tesouraria — design já feito 2026-09-08, ver
+Parte 3) + `VAR-1` (caixa/PDV núcleo, TEF `🎯`), sequenciados juntos, `CRM-1`, `COM-1`
+(fila/template núcleo, envio real `🎯`), `ORC-2`, `DOC-1` só se houver ≥2 consumidores
+reais provados.
 
 **Onda 3 — cadeia operacional:** `LOG-1` (WMS leve), `PROD-2` (MRP mais robusto),
 projetos/timesheet leve, comércio exterior.
