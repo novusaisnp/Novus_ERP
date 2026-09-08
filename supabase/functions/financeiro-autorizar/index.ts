@@ -14,7 +14,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
-type Acao = 'LIQUIDACAO_RETROATIVA' | 'ESTORNO' | 'CANCELAMENTO';
+type Acao = 'LIQUIDACAO_RETROATIVA' | 'ESTORNO' | 'CANCELAMENTO' | 'RENEGOCIACAO';
 
 interface Body {
   acao?: Acao;
@@ -32,6 +32,7 @@ const PERMISSAO_POR_ACAO: Record<Acao, string> = {
   LIQUIDACAO_RETROATIVA: 'financeiro.lancamentoRetroativo',
   ESTORNO: 'financeiro.estorno',
   CANCELAMENTO: 'financeiro.cancelamento',
+  RENEGOCIACAO: 'financeiro.renegociacao',
 };
 
 const VALIDADE_MINUTOS = 5;

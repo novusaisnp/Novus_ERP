@@ -29,6 +29,7 @@ import { MovimentacoesGestaoPopup } from './MovimentacoesGestaoPopup';
 import { LiquidacaoTituloModal } from './LiquidacaoTituloModal';
 import { EstornoLiquidacaoModal } from './EstornoLiquidacaoModal';
 import { CancelamentoTituloModal } from './CancelamentoTituloModal';
+import { RenegociacaoTituloModal } from './RenegociacaoTituloModal';
 import { 
   TituloFinanceiro, 
   FiltrosMovimentacao, 
@@ -61,6 +62,7 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
   const [isLiquidacaoModalOpen, setIsLiquidacaoModalOpen] = useState(false);
   const [isEstornoModalOpen, setIsEstornoModalOpen] = useState(false);
   const [isCancelamentoModalOpen, setIsCancelamentoModalOpen] = useState(false);
+  const [isRenegociacaoModalOpen, setIsRenegociacaoModalOpen] = useState(false);
   const [tabAtiva, setTabAtiva] = useState('lista');
 
   const {
@@ -103,7 +105,7 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
   const handlePopupClose = () => {
     setIsGestaoPopupOpen(false);
     // [LOTE 3B] Mantém tituloSelecionado se liquidação foi aberta em cadeia.
-    if (!isLiquidacaoModalOpen && !isEstornoModalOpen && !isCancelamentoModalOpen) {
+    if (!isLiquidacaoModalOpen && !isEstornoModalOpen && !isCancelamentoModalOpen && !isRenegociacaoModalOpen) {
       setTituloSelecionado(null);
     }
     refetch();
@@ -140,6 +142,17 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
     setIsCancelamentoModalOpen(true);
   };
 
+  const handleRenegociacaoClose = () => {
+    setIsRenegociacaoModalOpen(false);
+    setTituloSelecionado(null);
+  };
+
+  const handleRenegociarFromPopup = (t: TituloFinanceiro) => {
+    setTituloSelecionado(t);
+    setIsGestaoPopupOpen(false);
+    setIsRenegociacaoModalOpen(true);
+  };
+
   // [LOTE 3B] Popup delega liquidação para o modal único.
   const handleLiquidarFromPopup = (t: TituloFinanceiro) => {
     setTituloSelecionado(t);
@@ -154,7 +167,8 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
       'PAGA': 'secondary',
       'RECEBIDA': 'secondary', 
       'VENCIDA': 'destructive',
-      'CANCELADA': 'outline'
+      'CANCELADA': 'outline',
+      'RENEGOCIADA': 'outline'
     } as const;
     
     return (
@@ -517,6 +531,7 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
           onLiquidar={handleLiquidarFromPopup}
           onEstornar={handleEstornarFromPopup}
           onCancelar={handleCancelarFromPopup}
+          onRenegociar={handleRenegociarFromPopup}
         />
       )}
 
@@ -543,6 +558,15 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
         <CancelamentoTituloModal
           isOpen={isCancelamentoModalOpen}
           onClose={handleCancelamentoClose}
+          titulo={tituloSelecionado}
+          onSuccess={refetch}
+        />
+      )}
+
+      {tituloSelecionado && (
+        <RenegociacaoTituloModal
+          isOpen={isRenegociacaoModalOpen}
+          onClose={handleRenegociacaoClose}
           titulo={tituloSelecionado}
           onSuccess={refetch}
         />

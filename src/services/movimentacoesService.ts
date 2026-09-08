@@ -8,6 +8,8 @@ import type {
   HistoricoMovimentacao,
   LiquidacaoRegistrada,
   EstornoLiquidacao,
+  RenegociacaoTitulo,
+  RenegociacaoResultado,
 } from '@/types/movimentacoesFinanceiras';
 import { getEmpresaAtivaIdOuFalha as getEmpresaIdAtual } from '@/lib/empresaAtiva';
 import {
@@ -171,6 +173,27 @@ export const movimentacoesService = {
       if (exigeAutorizacao(error)) throw new AutorizacaoRequeridaError('CANCELAMENTO');
       console.error('[MovimentacoesService] Erro ao cancelar título:', error);
       throw new Error(`Erro ao cancelar título: ${mensagemDoErro(error)}`);
+    }
+  },
+
+  // Renegociar título: substitui o saldo em aberto por novas parcelas, preservando
+  // rastreabilidade ao título original (renegociado_de_id).
+  async renegociarTitulo(dados: RenegociacaoTitulo): Promise<RenegociacaoResultado> {
+    try {
+      const { data, error } = await supabase.rpc('financeiro_renegociar_titulo', {
+        p_titulo_id: dados.titulo_id,
+        p_tipo_titulo: dados.tipo_titulo,
+        p_motivo: dados.motivo,
+        p_idempotency_key: dados.idempotency_key,
+        p_novas_parcelas: dados.novas_parcelas as unknown as Json,
+        p_ticket_autorizacao: dados.ticket_autorizacao ?? null,
+      });
+      if (error) throw error;
+      return data as unknown as RenegociacaoResultado;
+    } catch (error) {
+      if (exigeAutorizacao(error)) throw new AutorizacaoRequeridaError('RENEGOCIACAO');
+      console.error('[MovimentacoesService] Erro ao renegociar título:', error);
+      throw new Error(`Erro ao renegociar título: ${mensagemDoErro(error)}`);
     }
   },
 

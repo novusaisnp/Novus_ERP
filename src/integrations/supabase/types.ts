@@ -1436,6 +1436,7 @@ export type Database = {
           data_competencia: string | null
           data_emissao: string | null
           data_pagamento: string | null
+          data_renegociacao: string | null
           data_vencimento: string
           deleted_at: string | null
           descricao: string
@@ -1446,6 +1447,7 @@ export type Database = {
           id: string
           idempotency_key: string | null
           motivo_cancelamento: string | null
+          motivo_renegociacao: string | null
           natureza_id: string | null
           numero_documento: string | null
           numero_parcela: number | null
@@ -1457,10 +1459,13 @@ export type Database = {
           plano_conta_id: string | null
           plano_pagamento_id: string | null
           recorrente: boolean
+          renegociacao_idempotency_key: string | null
+          renegociado_de_id: string | null
           status: string | null
           total_parcelas: number | null
           updated_at: string
           usuario_cancelamento_id: string | null
+          usuario_renegociacao_id: string | null
           valor_desconto: number | null
           valor_juros: number | null
           valor_multa: number | null
@@ -1475,6 +1480,7 @@ export type Database = {
           data_competencia?: string | null
           data_emissao?: string | null
           data_pagamento?: string | null
+          data_renegociacao?: string | null
           data_vencimento: string
           deleted_at?: string | null
           descricao: string
@@ -1485,6 +1491,7 @@ export type Database = {
           id?: string
           idempotency_key?: string | null
           motivo_cancelamento?: string | null
+          motivo_renegociacao?: string | null
           natureza_id?: string | null
           numero_documento?: string | null
           numero_parcela?: number | null
@@ -1496,10 +1503,13 @@ export type Database = {
           plano_conta_id?: string | null
           plano_pagamento_id?: string | null
           recorrente?: boolean
+          renegociacao_idempotency_key?: string | null
+          renegociado_de_id?: string | null
           status?: string | null
           total_parcelas?: number | null
           updated_at?: string
           usuario_cancelamento_id?: string | null
+          usuario_renegociacao_id?: string | null
           valor_desconto?: number | null
           valor_juros?: number | null
           valor_multa?: number | null
@@ -1514,6 +1524,7 @@ export type Database = {
           data_competencia?: string | null
           data_emissao?: string | null
           data_pagamento?: string | null
+          data_renegociacao?: string | null
           data_vencimento?: string
           deleted_at?: string | null
           descricao?: string
@@ -1524,6 +1535,7 @@ export type Database = {
           id?: string
           idempotency_key?: string | null
           motivo_cancelamento?: string | null
+          motivo_renegociacao?: string | null
           natureza_id?: string | null
           numero_documento?: string | null
           numero_parcela?: number | null
@@ -1535,10 +1547,13 @@ export type Database = {
           plano_conta_id?: string | null
           plano_pagamento_id?: string | null
           recorrente?: boolean
+          renegociacao_idempotency_key?: string | null
+          renegociado_de_id?: string | null
           status?: string | null
           total_parcelas?: number | null
           updated_at?: string
           usuario_cancelamento_id?: string | null
+          usuario_renegociacao_id?: string | null
           valor_desconto?: number | null
           valor_juros?: number | null
           valor_multa?: number | null
@@ -1595,6 +1610,13 @@ export type Database = {
             referencedRelation: "planos_pagamento"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "contas_pagar_renegociado_de_id_fkey"
+            columns: ["renegociado_de_id"]
+            isOneToOne: false
+            referencedRelation: "contas_pagar"
+            referencedColumns: ["id"]
+          },
         ]
       }
       contas_receber: {
@@ -1608,6 +1630,7 @@ export type Database = {
           data_competencia: string | null
           data_emissao: string | null
           data_recebimento: string | null
+          data_renegociacao: string | null
           data_vencimento: string
           deleted_at: string | null
           descricao: string
@@ -1618,6 +1641,7 @@ export type Database = {
           id: string
           idempotency_key: string | null
           motivo_cancelamento: string | null
+          motivo_renegociacao: string | null
           natureza_id: string | null
           numero_documento: string | null
           numero_parcela: number | null
@@ -1629,10 +1653,13 @@ export type Database = {
           plano_conta_id: string | null
           plano_pagamento_id: string | null
           recorrente: boolean
+          renegociacao_idempotency_key: string | null
+          renegociado_de_id: string | null
           status: string | null
           total_parcelas: number | null
           updated_at: string
           usuario_cancelamento_id: string | null
+          usuario_renegociacao_id: string | null
           valor_desconto: number | null
           valor_juros: number | null
           valor_multa: number | null
@@ -1652,6 +1679,7 @@ export type Database = {
           data_competencia?: string | null
           data_emissao?: string | null
           data_recebimento?: string | null
+          data_renegociacao?: string | null
           data_vencimento: string
           deleted_at?: string | null
           descricao: string
@@ -1662,6 +1690,7 @@ export type Database = {
           id?: string
           idempotency_key?: string | null
           motivo_cancelamento?: string | null
+          motivo_renegociacao?: string | null
           natureza_id?: string | null
           numero_documento?: string | null
           numero_parcela?: number | null
@@ -1673,10 +1702,13 @@ export type Database = {
           plano_conta_id?: string | null
           plano_pagamento_id?: string | null
           recorrente?: boolean
+          renegociacao_idempotency_key?: string | null
+          renegociado_de_id?: string | null
           status?: string | null
           total_parcelas?: number | null
           updated_at?: string
           usuario_cancelamento_id?: string | null
+          usuario_renegociacao_id?: string | null
           valor_desconto?: number | null
           valor_juros?: number | null
           valor_multa?: number | null
@@ -1696,6 +1728,7 @@ export type Database = {
           data_competencia?: string | null
           data_emissao?: string | null
           data_recebimento?: string | null
+          data_renegociacao?: string | null
           data_vencimento?: string
           deleted_at?: string | null
           descricao?: string
@@ -1706,6 +1739,7 @@ export type Database = {
           id?: string
           idempotency_key?: string | null
           motivo_cancelamento?: string | null
+          motivo_renegociacao?: string | null
           natureza_id?: string | null
           numero_documento?: string | null
           numero_parcela?: number | null
@@ -1717,10 +1751,13 @@ export type Database = {
           plano_conta_id?: string | null
           plano_pagamento_id?: string | null
           recorrente?: boolean
+          renegociacao_idempotency_key?: string | null
+          renegociado_de_id?: string | null
           status?: string | null
           total_parcelas?: number | null
           updated_at?: string
           usuario_cancelamento_id?: string | null
+          usuario_renegociacao_id?: string | null
           valor_desconto?: number | null
           valor_juros?: number | null
           valor_multa?: number | null
@@ -1778,6 +1815,13 @@ export type Database = {
             columns: ["plano_pagamento_id"]
             isOneToOne: false
             referencedRelation: "planos_pagamento"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_receber_renegociado_de_id_fkey"
+            columns: ["renegociado_de_id"]
+            isOneToOne: false
+            referencedRelation: "contas_receber"
             referencedColumns: ["id"]
           },
           {
@@ -8761,49 +8805,41 @@ export type Database = {
         Returns: undefined
       }
       financeiro_limite_retroativo: { Args: never; Returns: string }
-      financeiro_liquidar_titulo:
-        | {
-            Args: {
-              p_conta_bancaria_id?: string
-              p_data_pagamento: string
-              p_desconto?: number
-              p_forma_pagamento: string
-              p_idempotency_key: string
-              p_juros?: number
-              p_multa?: number
-              p_multi_baixa?: Json
-              p_observacoes?: string
-              p_ticket_autorizacao?: string
-              p_tipo_titulo: string
-              p_titulo_id: string
-              p_valor: number
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_conta_bancaria_id?: string
-              p_data_pagamento: string
-              p_desconto?: number
-              p_forma_pagamento: string
-              p_idempotency_key: string
-              p_juros?: number
-              p_movimentacao_bancaria_id?: string
-              p_multa?: number
-              p_multi_baixa?: Json
-              p_observacoes?: string
-              p_ticket_autorizacao?: string
-              p_tipo_titulo: string
-              p_titulo_id: string
-              p_valor: number
-            }
-            Returns: Json
-          }
+      financeiro_liquidar_titulo: {
+        Args: {
+          p_conta_bancaria_id?: string
+          p_data_pagamento: string
+          p_desconto?: number
+          p_forma_pagamento: string
+          p_idempotency_key: string
+          p_juros?: number
+          p_movimentacao_bancaria_id?: string
+          p_multa?: number
+          p_multi_baixa?: Json
+          p_observacoes?: string
+          p_ticket_autorizacao?: string
+          p_tipo_titulo: string
+          p_titulo_id: string
+          p_valor: number
+        }
+        Returns: Json
+      }
       financeiro_permissoes: { Args: never; Returns: Json }
       financeiro_pode: { Args: { p_acao: string }; Returns: boolean }
       financeiro_pode_usuario: {
         Args: { p_acao: string; p_user_id: string }
         Returns: boolean
+      }
+      financeiro_renegociar_titulo: {
+        Args: {
+          p_idempotency_key: string
+          p_motivo: string
+          p_novas_parcelas: Json
+          p_ticket_autorizacao?: string
+          p_tipo_titulo: string
+          p_titulo_id: string
+        }
+        Returns: Json
       }
       financeiro_salvar_titulo: {
         Args: {

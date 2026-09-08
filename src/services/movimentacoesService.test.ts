@@ -270,3 +270,55 @@ describe('movimentacoesService.liquidarTitulo', () => {
     ).rejects.toBeInstanceOf(AutorizacaoRequeridaError);
   });
 });
+
+describe('movimentacoesService.renegociarTitulo', () => {
+  beforeEach(() => rpc.mockReset());
+
+  it('renegocia o saldo do titulo pela RPC, repassando as novas parcelas', async () => {
+    rpc.mockResolvedValue({
+      data: { titulo_id: 'titulo-1', idempotente: false, status: 'RENEGOCIADO', novos_titulos_ids: ['n1', 'n2'] },
+      error: null,
+    });
+
+    await movimentacoesService.renegociarTitulo({
+      titulo_id: 'titulo-1',
+      tipo_titulo: 'CONTAS_RECEBER',
+      motivo: 'Cliente pediu prazo maior',
+      idempotency_key: 'chave-renegociacao-1',
+      novas_parcelas: [
+        { numero: 1, valor: 50, data_vencimento: '2026-10-01' },
+        { numero: 2, valor: 50, data_vencimento: '2026-11-01' },
+      ],
+    });
+
+    expect(rpc).toHaveBeenCalledOnce();
+    expect(rpc).toHaveBeenCalledWith('financeiro_renegociar_titulo', {
+      p_titulo_id: 'titulo-1',
+      p_tipo_titulo: 'CONTAS_RECEBER',
+      p_motivo: 'Cliente pediu prazo maior',
+      p_idempotency_key: 'chave-renegociacao-1',
+      p_novas_parcelas: [
+        { numero: 1, valor: 50, data_vencimento: '2026-10-01' },
+        { numero: 2, valor: 50, data_vencimento: '2026-11-01' },
+      ],
+      p_ticket_autorizacao: null,
+    });
+  });
+
+  it('converte a recusa 28000 do banco em pedido de autorizacao', async () => {
+    rpc.mockResolvedValue({
+      data: null,
+      error: { code: '28000', message: 'Operacao exige autorizacao' },
+    });
+
+    await expect(
+      movimentacoesService.renegociarTitulo({
+        titulo_id: 'titulo-1',
+        tipo_titulo: 'CONTAS_RECEBER',
+        motivo: 'Cliente pediu prazo maior',
+        idempotency_key: 'chave-renegociacao-2',
+        novas_parcelas: [{ numero: 1, valor: 100, data_vencimento: '2026-10-01' }],
+      }),
+    ).rejects.toBeInstanceOf(AutorizacaoRequeridaError);
+  });
+});

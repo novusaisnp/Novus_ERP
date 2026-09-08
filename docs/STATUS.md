@@ -1,6 +1,56 @@
 # Status do projeto — NOVUS ERP
 
-## 🔖 Checkpoint atual — Programa Caixa e Tesouraria (`CAI-1`) desenhado no Plano Mestre (2026-09-08)
+## 🔖 Checkpoint atual — FIN-1: renegociação de título (2026-09-08)
+
+Item da cauda do FIN-1: "Renegociação: substituir título por novas parcelas preservando
+rastreabilidade." Terceira operação de encerramento de título (distinta de estorno e
+cancelamento) — permitida mesmo com liquidações parciais já feitas: só o **saldo em
+aberto** é substituído por novas parcelas, o que já foi pago continua válido.
+
+- Migration `20260908000000`: colunas `renegociado_de_id` (auto-FK), `renegociacao_
+  idempotency_key`, `motivo_renegociacao`, `data_renegociacao`, `usuario_renegociacao_id`
+  em `contas_pagar`/`contas_receber`; novo status `RENEGOCIADO` no CHECK; nova RPC
+  `financeiro_renegociar_titulo` (esqueleto igual às outras 4 RPCs financeiras: lock →
+  idempotência → validação → mutação → histórico → jsonb). Recusa: sem permissão/ticket,
+  soma de parcelas ≠ saldo, título já totalmente pago, título já `CANCELADO`/`RENEGOCIADO`.
+- **Correção contábil deliberada**: `lancar_titulo_criado` (trigger que lança em todo
+  `INSERT`) ganhou uma guarda — quando `renegociado_de_id IS NOT NULL`, não lança nada.
+  As novas parcelas não são um fato econômico novo, são o mesmo saldo já reconhecido pelo
+  título original reemitido em novos documentos; sem essa guarda, cada parcela nova
+  duplicaria a receita/despesa. Achado por leitura do trigger antes de escrever a RPC, não
+  por acidente em produção. A reversão do lançamento do título original permanece gap
+  conhecido (já documentado para cancelamento desde `20260830160000`) — esta migration
+  não piora esse gap, só evita criar um novo bug de dupla contagem em cima dele.
+- **Achado de passagem, corrigido no mesmo commit**: `autorizacoes_financeiras.acao` tinha
+  seu próprio CHECK constraint (separado do enum TS da edge function `financeiro-autorizar`)
+  que eu esqueci de atualizar — a prova SQL pegou isso na hora de emitir um ticket de teste.
+  Migration `20260908001000` corrigiu.
+- UI: botão "Renegociar" em `MovimentacoesGestaoPopup` (permitido em ABERTA/PARCIAL/
+  VENCIDA), novo `RenegociacaoTituloModal.tsx` reaproveitando `gerarParcelas()` (já
+  existente, usado em vendas) para pré-calcular e mostrar as parcelas antes de confirmar —
+  usuário escolhe quantidade/data da 1ª parcela/intervalo, não edita valor parcela a
+  parcela (soma sempre bate com o saldo por construção; servidor revalida de qualquer
+  forma). Segue o mesmo padrão de autorização por ticket que cancelamento/estorno já usam
+  (`AcaoAutorizavel`, edge function `financeiro-autorizar`, ambos atualizados e a function
+  redeployada).
+- Validado: typecheck limpo, 406/406 testes (2 novos), ESLint sem erro novo, build ok,
+  tipos do Supabase regerados. Provado via SQL com RPC real
+  (`supabase/sql/fin1_renegociacao_titulo_prova.sql`, 11 casos incluindo idempotência com
+  retry realista — o ticket é consumido antes da checagem de idempotência, mesma ordem já
+  usada nas outras RPCs, então um retry de verdade precisa de ticket novo se o original já
+  foi consumido), zero resíduo.
+
+**Testado ao vivo parcialmente**: confirmado que o botão "Renegociar" aparece
+corretamente com o permission-gating certo (`pode_renegociar` resolvido do servidor) no
+popup de gestão do título, para um título real `ABERTA`. Não foi possível completar o
+fluxo até o fim ao vivo — a ferramenta de automação do navegador teve problema recorrente
+de clique errando o botão adjacente ("Baixar" em vez de "Renegociar"), confirmado via
+leitura do código-fonte que **não é bug da aplicação** (o dispatcher `handleOperacao` e o
+JSX estão corretos). Mesmo se o clique tivesse funcionado, a renegociação sempre exige
+ticket de autorização (senha), que não devo digitar por conta do usuário — mesma limitação
+já registrada para estorno (`docs/PLANO_MESTRE.md`, FIN-4).
+
+## Checkpoint anterior — Programa Caixa e Tesouraria (`CAI-1`) desenhado no Plano Mestre (2026-09-08)
 
 **Só documentação, nenhum código/migration.** O usuário identificou um mecanismo que faltava no
 `PLANO_MESTRE.md`: Gestão de Caixas — caixa master de tesouraria/conciliação, caixas operacionais

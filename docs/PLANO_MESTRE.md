@@ -290,7 +290,17 @@ Objetivo: servir desde operação simples de caixa até grupo econômico multiem
 - [x] Submodal de estorno — data contábil manual (2026-09-07): campo novo no diálogo, RPC `financeiro_estornar_liquidacao` ganhou `p_data_contabil` (valida não-futuro e não-anterior à liquidação), trigger `lancar_estorno_liquidacao` usa a data escolhida em vez de `CURRENT_DATE` fixo. Provado via SQL com RPCs reais (`supabase/sql/fin1_estorno_data_contabil_prova.sql`), zero resíduo.
 - [x] Submodal de baixa parcial com juros, multa, desconto e saldo posterior.
 - [x] Divisão da baixa entre múltiplas contas/meios de pagamento.
-- [ ] Renegociação: substituir título por novas parcelas preservando rastreabilidade.
+- [x] Renegociação: substituir título por novas parcelas preservando rastreabilidade.
+  Permite mesmo com liquidações parciais já feitas (só o saldo em aberto é substituído,
+  não o título inteiro — divergente da regra de cancelamento, que exige zero liquidação).
+  Novo status `RENEGOCIADO`; novas parcelas rastreadas via `renegociado_de_id` (auto-FK).
+  Guarda contra dupla contagem contábil: as parcelas novas não geram lançamento de
+  reconhecimento (o saldo já foi reconhecido pelo título original) — reversão do
+  lançamento original permanece gap conhecido (mesmo já documentado para cancelamento
+  desde 20260830160000). Fechado 2026-09-08, provado via SQL (RPC real, 11 casos:
+  sucesso, sem permissão, soma divergente, título já pago, já renegociado, idempotência
+  com retry realista). Achou e corrigiu de passagem um CHECK constraint esquecido em
+  `autorizacoes_financeiras.acao`.
 - [x] Gestão de rateios de pagar e receber no detalhe do título.
 - [x] Vincular uma movimentação bancária existente ou criar uma nova. `financeiro_liquidar_titulo` ganhou `p_movimentacao_bancaria_id`: quando informado (mutuamente exclusivo com conta/divisão), reaproveita uma movimentação já existente (sem título, mesmo sentido, valor exato), sem duplicar lançamento. Fechado 2026-09-07, provado via SQL (8 casos, RPC real) + testado ao vivo no navegador (2026-09-08).
 - [ ] Cadastro rápido de entidade nos consumidores financeiros usando o cadastro central.

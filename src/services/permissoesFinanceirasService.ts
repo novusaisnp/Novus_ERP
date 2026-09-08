@@ -15,6 +15,7 @@ export const NENHUMA_PERMISSAO: PermissoesMovimentacao = {
   pode_cancelar: false,
   pode_visualizar_historico: false,
   pode_editar_rateio: false,
+  pode_renegociar: false,
 };
 
 export async function fetchPermissoesFinanceiras(): Promise<PermissoesMovimentacao> {
@@ -35,5 +36,6 @@ export async function fetchPermissoesFinanceiras(): Promise<PermissoesMovimentac
     pode_cancelar: ler('pode_cancelar'),
     pode_visualizar_historico: ler('pode_visualizar_historico'),
     pode_editar_rateio: ler('pode_editar_rateio'),
+    pode_renegociar: ler('pode_renegociar'),
   };
 }

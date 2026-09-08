@@ -10,7 +10,7 @@ import { getEmpresaAtivaIdOuFalha as getEmpresaIdAtual } from '@/lib/empresaAtiv
  * query. De volta vem um ticket de uso único e vida curta, que as RPCs consomem.
  */
 
-export type AcaoAutorizavel = 'LIQUIDACAO_RETROATIVA' | 'ESTORNO' | 'CANCELAMENTO';
+export type AcaoAutorizavel = 'LIQUIDACAO_RETROATIVA' | 'ESTORNO' | 'CANCELAMENTO' | 'RENEGOCIACAO';
 
 /** Código SQLSTATE que o banco usa para dizer "falta autorização". */
 const SQLSTATE_AUTORIZACAO = '28000';

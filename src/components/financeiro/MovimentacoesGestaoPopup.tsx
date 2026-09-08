@@ -1,18 +1,19 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { 
-  CreditCard, 
-  RotateCcw, 
-  Pencil, 
-  Trash2, 
-  Eye, 
-  Calendar, 
+import {
+  CreditCard,
+  RotateCcw,
+  Pencil,
+  Trash2,
+  Eye,
+  Calendar,
   DollarSign,
   Clock,
   User,
   Building,
-  AlertTriangle
+  AlertTriangle,
+  Handshake
 } from 'lucide-react';
 
 import { RateiosTab } from './movimentacoes/RateiosTab';
@@ -50,6 +51,7 @@ interface MovimentacoesGestaoPopupProps {
   onLiquidar: (titulo: TituloFinanceiro) => void;
   onEstornar: (titulo: TituloFinanceiro) => void;
   onCancelar: (titulo: TituloFinanceiro) => void;
+  onRenegociar: (titulo: TituloFinanceiro) => void;
 }
 
 export const MovimentacoesGestaoPopup = ({
@@ -60,6 +62,7 @@ export const MovimentacoesGestaoPopup = ({
   onLiquidar,
   onEstornar,
   onCancelar,
+  onRenegociar,
 }: MovimentacoesGestaoPopupProps) => {
   const navigate = useNavigate();
   const [tabAtiva, setTabAtiva] = useState('detalhes');
@@ -72,7 +75,8 @@ export const MovimentacoesGestaoPopup = ({
       'PAGA': 'secondary',
       'RECEBIDA': 'secondary', 
       'VENCIDA': 'destructive',
-      'CANCELADA': 'outline'
+      'CANCELADA': 'outline',
+      'RENEGOCIADA': 'outline'
     } as const;
     
     return (
@@ -106,6 +110,8 @@ export const MovimentacoesGestaoPopup = ({
         return permissoes.pode_editar && titulo.situacao !== 'CANCELADA';
       case 'cancelar':
         return permissoes.pode_cancelar && (titulo.situacao === 'ABERTA' || titulo.situacao === 'VENCIDA');
+      case 'renegociar':
+        return permissoes.pode_renegociar && (titulo.situacao === 'ABERTA' || titulo.situacao === 'PARCIAL' || titulo.situacao === 'VENCIDA');
       default:
         return false;
     }
@@ -121,6 +127,8 @@ export const MovimentacoesGestaoPopup = ({
         return onCancelar(titulo);
       case 'estornar':
         return onEstornar(titulo);
+      case 'renegociar':
+        return onRenegociar(titulo);
       case 'editar':
         // Edição acontece na página do título, não aqui.
         onClose();
@@ -162,6 +170,12 @@ export const MovimentacoesGestaoPopup = ({
                 <Button variant="outline" onClick={() => handleOperacao('estornar')}>
                   <RotateCcw className="w-4 h-4 mr-2" />
                   Estornar
+                </Button>
+              )}
+              {podeRealizar('renegociar') && (
+                <Button variant="outline" onClick={() => handleOperacao('renegociar')}>
+                  <Handshake className="w-4 h-4 mr-2" />
+                  Renegociar
                 </Button>
               )}
               {podeRealizar('editar') && (

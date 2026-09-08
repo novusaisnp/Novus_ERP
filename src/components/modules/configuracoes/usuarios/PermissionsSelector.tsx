@@ -106,6 +106,7 @@ export const PERMISSOES_GRANULARES: PermissionModule[] = [
       { codigo: 'financeiro.liquidar', nome: 'Liquidar Títulos', descricao: 'Dar baixa total ou parcial em contas a pagar e receber', critica: true },
       { codigo: 'financeiro.estorno', nome: 'Estornar Lançamentos', descricao: 'Estornar operações financeiras', critica: true },
       { codigo: 'financeiro.cancelamento', nome: 'Cancelar Títulos', descricao: 'Cancelar títulos financeiros sem baixa', critica: true },
+      { codigo: 'financeiro.renegociacao', nome: 'Renegociar Títulos', descricao: 'Substituir o saldo em aberto de um título por novas parcelas', critica: true },
       { codigo: 'financeiro.lancamentoRetroativo', nome: 'Lançamentos Retroativos', descricao: 'Criar lançamentos em datas passadas', critica: true },
       { codigo: 'financeiro.alterarVencimento', nome: 'Alterar Vencimentos', descricao: 'Modificar datas de vencimento' }
     ]

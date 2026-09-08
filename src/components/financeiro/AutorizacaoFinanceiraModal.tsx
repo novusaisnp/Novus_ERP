@@ -22,6 +22,7 @@ const TITULO_POR_ACAO: Record<AcaoAutorizavel, string> = {
   LIQUIDACAO_RETROATIVA: 'Baixa retroativa',
   ESTORNO: 'Estorno de baixa',
   CANCELAMENTO: 'Cancelamento de título',
+  RENEGOCIACAO: 'Renegociação de título',
 };
 
 const MOTIVO_POR_ACAO: Record<AcaoAutorizavel, string> = {
@@ -29,6 +30,7 @@ const MOTIVO_POR_ACAO: Record<AcaoAutorizavel, string> = {
     'A data de pagamento é anterior às últimas 24 horas. Um usuário com permissão para lançamento retroativo precisa autorizar.',
   ESTORNO: 'Estorno exige autorização de um usuário permissionado.',
   CANCELAMENTO: 'Cancelamento exige autorização de um usuário permissionado.',
+  RENEGOCIACAO: 'Renegociação exige autorização de um usuário permissionado.',
 };
 
 const JUSTIFICATIVA_MINIMA = 5;

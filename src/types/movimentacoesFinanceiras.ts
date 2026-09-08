@@ -1,8 +1,8 @@
 export type TipoTitulo = 'CONTAS_PAGAR' | 'CONTAS_RECEBER';
 
-export type StatusTitulo = 'ABERTA' | 'PARCIAL' | 'PAGA' | 'RECEBIDA' | 'VENCIDA' | 'CANCELADA';
+export type StatusTitulo = 'ABERTA' | 'PARCIAL' | 'PAGA' | 'RECEBIDA' | 'VENCIDA' | 'CANCELADA' | 'RENEGOCIADA';
 
-export type TipoMovimentacao = 'LIQUIDACAO' | 'ESTORNO' | 'EDICAO' | 'CANCELAMENTO';
+export type TipoMovimentacao = 'LIQUIDACAO' | 'ESTORNO' | 'EDICAO' | 'CANCELAMENTO' | 'RENEGOCIACAO';
 
 export type FormaPagamento = 
   | 'DINHEIRO' 
@@ -122,6 +122,7 @@ export interface PermissoesMovimentacao {
   pode_cancelar: boolean;
   pode_visualizar_historico: boolean;
   pode_editar_rateio: boolean;
+  pode_renegociar: boolean;
 }
 
 // Dados para edição de título
@@ -141,6 +142,34 @@ export interface CancelamentoTitulo {
   motivo_cancelamento: string;
   /** Emitido pelo diálogo de autorização; cancelamento sempre exige. */
   ticket_autorizacao?: string;
+}
+
+// Uma parcela nova gerada pela renegociação — pré-calculada no client (ver
+// src/utils/parcelamento.ts), revalidada no servidor (soma precisa bater com o saldo).
+export interface ParcelaRenegociacao {
+  numero: number;
+  valor: number;
+  data_vencimento: string;
+}
+
+// Dados para renegociação de título: substitui o saldo em aberto por novas parcelas,
+// preservando rastreabilidade ao título original (`renegociado_de_id`).
+export interface RenegociacaoTitulo {
+  titulo_id: string;
+  tipo_titulo: TipoTitulo;
+  idempotency_key: string;
+  motivo: string;
+  novas_parcelas: ParcelaRenegociacao[];
+  /** Emitido pelo diálogo de autorização; renegociação sempre exige. */
+  ticket_autorizacao?: string;
+}
+
+export interface RenegociacaoResultado {
+  titulo_id: string;
+  idempotente: boolean;
+  status: string;
+  saldo_renegociado?: number;
+  novos_titulos_ids?: string[];
 }
 
 // Estatísticas do modal

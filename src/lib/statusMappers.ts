@@ -4,10 +4,10 @@
 // DB Pagar   : PENDENTE / PAGO      / PARCIAL / VENCIDO / CANCELADO
 // DB Receber : PENDENTE / RECEBIDO  / PARCIAL / VENCIDO / CANCELADO
 
-export type UIStatusPagar = 'ABERTA' | 'PAGA' | 'VENCIDA' | 'CANCELADA' | 'PARCIAL';
-export type DBStatusPagar = 'PENDENTE' | 'PAGO' | 'PARCIAL' | 'VENCIDO' | 'CANCELADO';
-export type UIStatusReceber = 'ABERTA' | 'RECEBIDA' | 'VENCIDA' | 'CANCELADA' | 'PARCIAL';
-export type DBStatusReceber = 'PENDENTE' | 'RECEBIDO' | 'PARCIAL' | 'VENCIDO' | 'CANCELADO';
+export type UIStatusPagar = 'ABERTA' | 'PAGA' | 'VENCIDA' | 'CANCELADA' | 'PARCIAL' | 'RENEGOCIADA';
+export type DBStatusPagar = 'PENDENTE' | 'PAGO' | 'PARCIAL' | 'VENCIDO' | 'CANCELADO' | 'RENEGOCIADO';
+export type UIStatusReceber = 'ABERTA' | 'RECEBIDA' | 'VENCIDA' | 'CANCELADA' | 'PARCIAL' | 'RENEGOCIADA';
+export type DBStatusReceber = 'PENDENTE' | 'RECEBIDO' | 'PARCIAL' | 'VENCIDO' | 'CANCELADO' | 'RENEGOCIADO';
 
 const UI_TO_DB_PAGAR: Record<string, DBStatusPagar> = {
   ABERTA: 'PENDENTE',
@@ -20,6 +20,8 @@ const UI_TO_DB_PAGAR: Record<string, DBStatusPagar> = {
   VENCIDO: 'VENCIDO',
   CANCELADA: 'CANCELADO',
   CANCELADO: 'CANCELADO',
+  RENEGOCIADA: 'RENEGOCIADO',
+  RENEGOCIADO: 'RENEGOCIADO',
 };
 
 const DB_TO_UI_PAGAR: Record<string, UIStatusPagar> = {
@@ -28,6 +30,7 @@ const DB_TO_UI_PAGAR: Record<string, UIStatusPagar> = {
   PARCIAL: 'PARCIAL',
   VENCIDO: 'VENCIDA',
   CANCELADO: 'CANCELADA',
+  RENEGOCIADO: 'RENEGOCIADA',
 };
 
 const UI_TO_DB_RECEBER: Record<string, DBStatusReceber> = {
@@ -41,6 +44,8 @@ const UI_TO_DB_RECEBER: Record<string, DBStatusReceber> = {
   VENCIDO: 'VENCIDO',
   CANCELADA: 'CANCELADO',
   CANCELADO: 'CANCELADO',
+  RENEGOCIADA: 'RENEGOCIADO',
+  RENEGOCIADO: 'RENEGOCIADO',
 };
 
 const DB_TO_UI_RECEBER: Record<string, UIStatusReceber> = {
@@ -49,6 +54,7 @@ const DB_TO_UI_RECEBER: Record<string, UIStatusReceber> = {
   PARCIAL: 'PARCIAL',
   VENCIDO: 'VENCIDA',
   CANCELADO: 'CANCELADA',
+  RENEGOCIADO: 'RENEGOCIADA',
 };
 
 export const uiStatusPagarToDb = (raw: unknown): DBStatusPagar => {
