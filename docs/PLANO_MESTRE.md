@@ -303,7 +303,7 @@ Objetivo: servir desde operação simples de caixa até grupo econômico multiem
   `autorizacoes_financeiras.acao`.
 - [x] Gestão de rateios de pagar e receber no detalhe do título.
 - [x] Vincular uma movimentação bancária existente ou criar uma nova. `financeiro_liquidar_titulo` ganhou `p_movimentacao_bancaria_id`: quando informado (mutuamente exclusivo com conta/divisão), reaproveita uma movimentação já existente (sem título, mesmo sentido, valor exato), sem duplicar lançamento. Fechado 2026-09-07, provado via SQL (8 casos, RPC real) + testado ao vivo no navegador (2026-09-08).
-- [ ] Cadastro rápido de entidade nos consumidores financeiros usando o cadastro central.
+- [x] Cadastro rápido de entidade nos consumidores financeiros usando o cadastro central. Botão "+" ao lado de `ClienteAutocomplete`/`FornecedorAutocomplete` abre o próprio `FormEntidade` (o mesmo do Cadastro de Entidades) num Dialog não-modal, sem form paralelo — nenhuma validação (indicador de IE, campos personalizados obrigatórios) fica divergente. Fechado 2026-09-08, testado ao vivo (PJ com lookup de CNPJ real, PF com CPF).
 - [x] Aplicar filtros já declarados de conta bancária e usuário. Indireto via `liquidacoes_titulos`
   (conta usada na baixa / quem liquidou) — títulos nunca baixados não têm como corresponder.
   Fechado 2026-09-08; achou e corrigiu de passagem uma regressão de segurança real (ver STATUS.md).

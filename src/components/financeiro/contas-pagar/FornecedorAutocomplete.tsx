@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Label } from '@/components/ui/label';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -7,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Check, ChevronsUpDown, Building2, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFornecedores } from '@/hooks/useFornecedores';
+import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
+import { QuickAddEntidade } from '@/components/shared/QuickAddEntidadeDialog';
 import type { Fornecedor } from '@/types/fornecedor';
 
 interface FornecedorAutocompleteProps {
@@ -26,6 +29,8 @@ export const FornecedorAutocomplete: React.FC<FornecedorAutocompleteProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const queryClient = useQueryClient();
+  const { data: empresaId } = useEmpresaAtual();
   const { fornecedores, loading } = useFornecedores();
 
   // Filtrar fornecedores baseado no termo de pesquisa
@@ -66,66 +71,76 @@ export const FornecedorAutocomplete: React.FC<FornecedorAutocompleteProps> = ({
         {required && <span className="text-destructive">*</span>}
       </Label>
       
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="w-full justify-between"
-          >
-            {selectedFornecedor 
-              ? getFornecedorDisplayName(selectedFornecedor)
-              : placeholder
-            }
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-full p-0" align="start">
-          <Command shouldFilter={false}>
-            <CommandInput 
-              placeholder="Digite para pesquisar fornecedor..."
-              value={searchTerm}
-              onValueChange={setSearchTerm}
-            />
-            <CommandList>
-              <CommandEmpty>
-                {loading ? "Carregando..." : "Nenhum fornecedor encontrado."}
-              </CommandEmpty>
-              <CommandGroup>
-                {filteredFornecedores.map((fornecedor) => (
-                  <CommandItem
-                    key={fornecedor.id}
-                    value={fornecedor.id}
-                    onSelect={() => handleSelect(fornecedor.id!)}
-                    className="cursor-pointer"
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value === fornecedor.id ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    <div className="flex items-center gap-2">
-                      {fornecedor.tipo_pessoa === 'PJ' ? (
-                        <Building2 className="h-4 w-4 text-blue-500" />
-                      ) : (
-                        <User className="h-4 w-4 text-green-500" />
-                      )}
-                      <div className="flex flex-col">
-                        <span className="font-medium">{getFornecedorDisplayName(fornecedor)}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {getFornecedorDocument(fornecedor)} • {fornecedor.tipo_pessoa === 'PJ' ? 'Pessoa Jurídica' : 'Pessoa Física'}
-                        </span>
+      <div className="flex gap-2">
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className="w-full justify-between"
+            >
+              {selectedFornecedor
+                ? getFornecedorDisplayName(selectedFornecedor)
+                : placeholder
+              }
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-full p-0" align="start">
+            <Command shouldFilter={false}>
+              <CommandInput
+                placeholder="Digite para pesquisar fornecedor..."
+                value={searchTerm}
+                onValueChange={setSearchTerm}
+              />
+              <CommandList>
+                <CommandEmpty>
+                  {loading ? "Carregando..." : "Nenhum fornecedor encontrado."}
+                </CommandEmpty>
+                <CommandGroup>
+                  {filteredFornecedores.map((fornecedor) => (
+                    <CommandItem
+                      key={fornecedor.id}
+                      value={fornecedor.id}
+                      onSelect={() => handleSelect(fornecedor.id!)}
+                      className="cursor-pointer"
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          value === fornecedor.id ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      <div className="flex items-center gap-2">
+                        {fornecedor.tipo_pessoa === 'PJ' ? (
+                          <Building2 className="h-4 w-4 text-blue-500" />
+                        ) : (
+                          <User className="h-4 w-4 text-green-500" />
+                        )}
+                        <div className="flex flex-col">
+                          <span className="font-medium">{getFornecedorDisplayName(fornecedor)}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {getFornecedorDocument(fornecedor)} • {fornecedor.tipo_pessoa === 'PJ' ? 'Pessoa Jurídica' : 'Pessoa Física'}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+        <QuickAddEntidade
+          papel="FORNECEDOR"
+          empresaRepresentadaId={empresaId}
+          onCreated={async ({ id }) => {
+            await queryClient.invalidateQueries({ queryKey: ['fornecedores'] });
+            handleSelect(id);
+          }}
+        />
+      </div>
     </div>
   );
 };

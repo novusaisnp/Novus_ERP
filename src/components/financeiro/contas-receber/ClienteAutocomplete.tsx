@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Label } from '@/components/ui/label';
 import {
   Command,
@@ -14,6 +15,7 @@ import { Check, ChevronsUpDown, Building2, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useClientes } from '@/hooks/useClientes';
 import { useEmpresaAtual } from '@/hooks/estoque/useEmpresaAtual';
+import { QuickAddEntidade } from '@/components/shared/QuickAddEntidadeDialog';
 import type { Cliente } from '@/types/cliente';
 
 interface ClienteAutocompleteProps {
@@ -33,6 +35,7 @@ export const ClienteAutocomplete: React.FC<ClienteAutocompleteProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const queryClient = useQueryClient();
   const { data: empresaId } = useEmpresaAtual();
   const { clientes, loading } = useClientes(empresaId ?? null);
 
@@ -62,66 +65,78 @@ export const ClienteAutocomplete: React.FC<ClienteAutocompleteProps> = ({
         {required && <span className="text-destructive">*</span>}
       </Label>
 
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="w-full justify-between"
-          >
-            {selected ? displayName(selected) : placeholder}
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-full p-0" align="start">
-          <Command shouldFilter={false}>
-            <CommandInput
-              placeholder="Digite para pesquisar cliente..."
-              value={searchTerm}
-              onValueChange={setSearchTerm}
-            />
-            <CommandList>
-              <CommandEmpty>
-                {loading ? 'Carregando...' : 'Nenhum cliente encontrado.'}
-              </CommandEmpty>
-              <CommandGroup>
-                {filtered.map((c) => (
-                  <CommandItem
-                    key={c.id}
-                    value={c.id}
-                    onSelect={() => {
-                      onChange(c.id!);
-                      setOpen(false);
-                    }}
-                    className="cursor-pointer"
-                  >
-                    <Check
-                      className={cn(
-                        'mr-2 h-4 w-4',
-                        value === c.id ? 'opacity-100' : 'opacity-0',
-                      )}
-                    />
-                    <div className="flex items-center gap-2">
-                      {isPJ(c) ? (
-                        <Building2 className="h-4 w-4 text-primary" />
-                      ) : (
-                        <User className="h-4 w-4 text-primary" />
-                      )}
-                      <div className="flex flex-col">
-                        <span className="font-medium">{displayName(c)}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {documento(c)} • {isPJ(c) ? 'Pessoa Jurídica' : 'Pessoa Física'}
-                        </span>
+      <div className="flex gap-2">
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className="w-full justify-between"
+            >
+              {selected ? displayName(selected) : placeholder}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-full p-0" align="start">
+            <Command shouldFilter={false}>
+              <CommandInput
+                placeholder="Digite para pesquisar cliente..."
+                value={searchTerm}
+                onValueChange={setSearchTerm}
+              />
+              <CommandList>
+                <CommandEmpty>
+                  {loading ? 'Carregando...' : 'Nenhum cliente encontrado.'}
+                </CommandEmpty>
+                <CommandGroup>
+                  {filtered.map((c) => (
+                    <CommandItem
+                      key={c.id}
+                      value={c.id}
+                      onSelect={() => {
+                        onChange(c.id!);
+                        setOpen(false);
+                      }}
+                      className="cursor-pointer"
+                    >
+                      <Check
+                        className={cn(
+                          'mr-2 h-4 w-4',
+                          value === c.id ? 'opacity-100' : 'opacity-0',
+                        )}
+                      />
+                      <div className="flex items-center gap-2">
+                        {isPJ(c) ? (
+                          <Building2 className="h-4 w-4 text-primary" />
+                        ) : (
+                          <User className="h-4 w-4 text-primary" />
+                        )}
+                        <div className="flex flex-col">
+                          <span className="font-medium">{displayName(c)}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {documento(c)} • {isPJ(c) ? 'Pessoa Jurídica' : 'Pessoa Física'}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+        <QuickAddEntidade
+          papel="CLIENTE"
+          empresaRepresentadaId={empresaId}
+          onCreated={async ({ id }) => {
+            if (empresaId) {
+              await queryClient.invalidateQueries({ queryKey: ['clientes', empresaId] });
+            }
+            onChange(id);
+          }}
+        />
+      </div>
     </div>
   );
 };

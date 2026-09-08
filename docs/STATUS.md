@@ -1,6 +1,63 @@
 # Status do projeto — NOVUS ERP
 
-## 🔖 Checkpoint atual — FIN-1: renegociação de título (2026-09-08)
+## 🔖 Checkpoint atual — FIN-1: cadastro rápido de entidade + bug de trigger 403 corrigido (2026-09-08)
+
+Item da cauda do FIN-1: "Cadastro rápido de entidade nos consumidores financeiros usando o
+cadastro central."
+
+- Novo `src/components/shared/QuickAddEntidadeDialog.tsx` (`QuickAddEntidade`): botão "+" que
+  abre um `Dialog` não-modal (`modal={false}`, mesmo motivo do `QuickAddDialog` genérico —
+  evita conflito de foco aninhado dentro do modal de Conta a Pagar/Receber) embutindo o
+  **próprio `FormEntidade`** (o mesmo componente usado no Cadastro de Entidades central), com
+  `papeisIniciais={[papel]}` e os `camposPersonalizados` da empresa carregados igual à tela
+  principal. Deliberadamente **não** um form paralelo mínimo — evita a classe de bug "segunda
+  validação diverge da primeira" (ex. Indicador de IE obrigatório para papel Cliente, campos
+  personalizados obrigatórios por empresa, ambos already-enforced pelo `FormEntidade`).
+- Wiring em `ClienteAutocomplete.tsx` (Contas a Receber) e `FornecedorAutocomplete.tsx`
+  (Contas a Pagar): botão ao lado do combobox existente; `onCreated` invalida a query
+  (`['clientes', empresaId]` / `['fornecedores']`) e seleciona o id novo automaticamente.
+- Validado: typecheck limpo, 406/406 testes, ESLint sem erro novo.
+
+**Achado de passagem, sério, corrigido no mesmo commit** — não é do escopo original, mas
+bloqueava o teste ao vivo deste item e (mais grave) qualquer criação/edição real de papel de
+entidade desde 2026-08-25: as 4 funções de trigger de auditoria criadas em `20260825120000`
+(`registrar_historico_entidade_papel`, `registrar_historico_usuario_perfil`,
+`registrar_historico_user_role`) e `20260829120100` (`registrar_historico_colaborador_cargo`)
+rodavam `SECURITY INVOKER` (padrão do Postgres) tentando gravar em tabelas de histórico
+`historico_entidade_papeis`/`historico_usuarios_perfil`/`historico_colaboradores_cargo` que só
+concedem `SELECT` a `authenticated` e só têm policy de SELECT ("append-only" — intencional
+para acesso direto do cliente, mas a trigger *também* precisa bypassar isso). Sem
+`SECURITY DEFINER`, todo INSERT/UPDATE/DELETE na tabela-alvo falhava com 403, derrubando a
+transação inteira. Confirmado ao vivo: `entidadeService.createEntidade()` criava a `entidades`
+(201) e falhava no insert de `entidade_papeis` (403), deixando entidade órfã sem papel — 5
+linhas de teste geradas durante o diagnóstico, todas limpas via UI ao final (nenhum vínculo).
+Blast radius real do bug (silencioso desde a criação de cada trigger, sem teste ao vivo até
+agora — ver `project_cadastro_unificado_entidades.md`, "live-test ainda pendente"): criar
+qualquer papel de entidade (Cliente/Fornecedor/Colaborador/Sócio/etc via Cadastro de
+Entidades ou agora via cadastro rápido), editar cargo/departamento/setor de colaborador,
+mudar `usuarios.perfil_id`, conceder/revogar `user_roles`.
+- Fix aditivo, confirmado com o usuário antes de aplicar: migration
+  `20260908002000_fix_historico_triggers_security_definer.sql` — `CREATE OR REPLACE FUNCTION`
+  das 4 funções, só adicionando `SECURITY DEFINER SET search_path = public` (convenção já
+  usada em `lancar_titulo_criado`/`seed_plano_contas_nova_empresa`), corpo/assinatura
+  inalterados, RLS das tabelas de histórico intacta (continuam select-only pro cliente).
+  Aplicada no projeto real (`reksodqzemboaeqxnxyy`) via `supabase db query --linked --file`
+  (não `db push` — o histórico de migrations do CLI está fora de sincronia com o remoto desde
+  antes desta sessão, ~18 migrations de 2026-08 aparecem como "pendentes" mesmo já aplicadas；
+  não investigado/mexido nesta sessão, fora de escopo). Verificado via
+  `pg_proc.prosecdef = true` nas 4 funções pós-aplicação.
+- **Testado ao vivo end-to-end depois do fix**: Contas a Receber → Cliente PJ novo com lookup
+  de CNPJ real (autofill de razão social/endereço) → selecionado automaticamente no combobox;
+  Contas a Pagar → Fornecedor PF novo com CPF → idem. Ambos com papel gravado corretamente
+  (confirmado no Cadastro de Entidades).
+- **Risco a observar**: o CLI do Supabase local está com o histórico de migrations
+  dessincronizado do remoto (`supabase db push` sem `--include-all` lista ~18 arquivos de
+  2026-08 como não aplicados, embora o schema real já os tenha). Não usar `--include-all` sem
+  investigar a causa antes — risco de reexecutar migration não-idempotente contra dado real.
+  Usar `supabase db query --linked --file <path>` para aplicar SQL pontual enquanto isso não
+  for resolvido.
+
+## Checkpoint anterior — FIN-1: renegociação de título (2026-09-08)
 
 Item da cauda do FIN-1: "Renegociação: substituir título por novas parcelas preservando
 rastreabilidade." Terceira operação de encerramento de título (distinta de estorno e
