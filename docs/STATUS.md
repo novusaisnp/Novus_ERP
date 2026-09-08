@@ -1,6 +1,44 @@
 # Status do projeto — NOVUS ERP
 
-## 🔖 Checkpoint atual — Bloqueio de lançamento retroativo, configurável por empresa (2026-09-07)
+## 🔖 Checkpoint atual — FIN-1: liquidação de título vincula movimentação bancária existente (2026-09-08)
+
+Item pendente do FIN-1 (cauda): "Vincular uma movimentação bancária existente ou criar e
+conciliar uma nova." Até aqui, `financeiro_liquidar_titulo` sempre criava uma `movimentacoes_
+bancarias` nova — sem opção de reaproveitar um lançamento já existente (ex.: extrato importado
+ainda não conciliado, ou lançamento manual feito antes em Gestão Bancária), o que duplicava o
+banco quando o usuário já tinha esse movimento registrado.
+
+- `financeiro_liquidar_titulo` ganhou `p_movimentacao_bancaria_id uuid DEFAULT NULL` (`CREATE OR
+  REPLACE` aditivo, sem `DROP` — Postgres aceita acrescentar parâmetro com `DEFAULT` no final sem
+  quebrar identidade da função nem precisar regravar `GRANT`). Quando informado: mutuamente
+  exclusivo com `p_conta_bancaria_id`/`p_multi_baixa`; exige que a movimentação exista, seja da
+  mesma empresa, `ativo=true`, `estornado=false`, **sem** `liquidacao_titulo_id` (não vinculada a
+  outro título) e com `tipo_movimentacao`/`valor` batendo exatamente com o sentido e o valor
+  efetivo da baixa — senão recusa com mensagem acionável nomeando o esperado. Quando aceita, faz
+  `UPDATE` (não `INSERT`) setando só `liquidacao_titulo_id`, sem duplicar.
+- **Nenhuma mudança em `financeiro_estornar_liquidacao`**: o guard "Desfaça a conciliação
+  bancária antes do estorno" já existia (bloqueia estorno se a movimentação vinculada estiver
+  `conciliado=true`) mas até agora era inalcançável — nenhum caminho setava `liquidacao_titulo_id`
+  em cima de uma movimentação pré-existente. Passa a ser um caminho real sem precisar tocar nele:
+  opera genericamente sobre `liquidacao_titulo_id`, não importa como foi setado.
+- UI (`LiquidacaoTituloModal.tsx`): toggle "Nova movimentação" / "Vincular existente" ao lado do
+  seletor de conta bancária (só aparece quando a forma de pagamento não é dinheiro e não há
+  divisão entre contas — vínculo é sempre com uma única movimentação). Nova
+  `listarMovimentacoesDisponiveisParaVinculo()` lista candidatas (sem título, ativas, do sentido
+  esperado) para o seletor; a validação de fato é sempre no banco.
+- Validado: typecheck limpo, 405/405 testes (2 novos), ESLint sem erro novo (o único erro
+  reportado no arquivo é `any` pré-existente de outro commit, não tocado aqui), build ok, tipos
+  do Supabase regerados. Provado via SQL com RPC real (`supabase/sql/fin1_vincular_movimentacao_
+  prova.sql`, 8 casos: vincula com sucesso sem duplicar, recusa reusar movimentação já vinculada,
+  recusa valor divergente, recusa sentido errado, recusa combinar com conta nova/divisão, estorno
+  de liquidação vinculada segue funcionando sem mudança), zero resíduo. **Testado ao vivo no
+  navegador** (não só SQL): criado título + conta + movimentação avulsa reais na empresa ALLEGRA,
+  liquidado via UI escolhendo "Vincular existente", confirmado no banco que a liquidação usou a
+  movimentação pré-existente (mesmo id, nenhuma nova criada) e o título foi para RECEBIDO — dado
+  de teste limpo depois (soft-delete nas tabelas com trigger de histórico, DELETE direto nas
+  demais).
+
+## Checkpoint anterior — Bloqueio de lançamento retroativo, configurável por empresa (2026-09-07)
 
 Pedido do usuário durante a sessão de PERM-1: fechar o "catálogo sem consumidor" também para
 `financeiro.lancamentoRetroativo` (existia desde 2026-07-10, nunca checado) e generalizar pra

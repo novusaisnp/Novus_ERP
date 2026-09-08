@@ -42,7 +42,10 @@ export interface MovimentacaoBancaria {
   
   // Lote
   lote_id?: string;
-  
+
+  // Vínculo com a liquidação de título que a criou, ou à qual foi vinculada depois.
+  liquidacao_titulo_id?: string | null;
+
   // Auditoria
   usuario_criacao_id?: string;
   ip_origem?: string;

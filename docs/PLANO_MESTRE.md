@@ -290,7 +290,7 @@ Objetivo: servir desde operação simples de caixa até grupo econômico multiem
 - [x] Divisão da baixa entre múltiplas contas/meios de pagamento.
 - [ ] Renegociação: substituir título por novas parcelas preservando rastreabilidade.
 - [x] Gestão de rateios de pagar e receber no detalhe do título.
-- [ ] Vincular uma movimentação bancária existente ou criar e conciliar uma nova.
+- [x] Vincular uma movimentação bancária existente ou criar uma nova. `financeiro_liquidar_titulo` ganhou `p_movimentacao_bancaria_id`: quando informado (mutuamente exclusivo com conta/divisão), reaproveita uma movimentação já existente (sem título, mesmo sentido, valor exato), sem duplicar lançamento. Fechado 2026-09-07, provado via SQL (8 casos, RPC real) + testado ao vivo no navegador (2026-09-08).
 - [ ] Cadastro rápido de entidade nos consumidores financeiros usando o cadastro central.
 - [ ] Aplicar filtros já declarados de conta bancária e usuário.
 - [ ] Corrigir upload/remoção de documentos para aguardar conclusão real da mutation.

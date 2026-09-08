@@ -125,6 +125,7 @@ describe('movimentacoesService.liquidarTitulo', () => {
       p_forma_pagamento: 'PIX',
       p_idempotency_key: 'chave-1',
       p_conta_bancaria_id: 'conta-1',
+      p_movimentacao_bancaria_id: null,
       p_observacoes: 'Baixa de teste',
       p_multi_baixa: [],
       p_ticket_autorizacao: null,
@@ -132,6 +133,29 @@ describe('movimentacoesService.liquidarTitulo', () => {
       p_multa: 0,
       p_desconto: 0,
     });
+  });
+
+  it('repassa o vinculo a movimentacao bancaria existente quando informado', async () => {
+    rpc.mockResolvedValue({ data: { status: 'PAGO' }, error: null });
+
+    await movimentacoesService.liquidarTitulo({
+      titulo_id: 'titulo-1',
+      tipo_titulo: 'CONTAS_PAGAR',
+      idempotency_key: 'chave-vinculo',
+      valor_pago: 125,
+      data_pagamento: '2026-09-07',
+      forma_pagamento: 'PIX',
+      movimentacao_bancaria_id: 'mov-existente-1',
+      observacoes: 'Baixa vinculada a movimentacao ja lancada',
+    });
+
+    expect(rpc).toHaveBeenCalledWith(
+      'financeiro_liquidar_titulo',
+      expect.objectContaining({
+        p_movimentacao_bancaria_id: 'mov-existente-1',
+        p_conta_bancaria_id: undefined,
+      }),
+    );
   });
 
   it('repassa juros, multa e desconto quando informados', async () => {

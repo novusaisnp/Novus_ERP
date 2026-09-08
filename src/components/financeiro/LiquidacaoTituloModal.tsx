@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 
 import { listarContasBancariasAtivasComAgenciaBanco } from '@/services/contaBancariaService';
 import { movimentacoesService } from '@/services/movimentacoesService';
+import { listarMovimentacoesDisponiveisParaVinculo } from '@/services/movimentacoesBancariasService';
 import { qk } from '@/lib/queryKeys';
 import { TituloFinanceiro, LiquidacaoTitulo, FormaPagamento, MultiBaixa } from '@/types/movimentacoesFinanceiras';
 import { currencyUtils } from '@/utils/currencyUtils';
@@ -55,6 +56,10 @@ export const LiquidacaoTituloModal = ({
   /** Divisão do pagamento entre contas bancárias; vazia = uma conta só. */
   const [divisao, setDivisao] = useState<MultiBaixa[]>([]);
 
+  /** 'nova' cria uma movimentação (padrão, como sempre foi); 'vincular' usa uma já existente sem título. */
+  const [modoMovimentacao, setModoMovimentacao] = useState<'nova' | 'vincular'>('nova');
+  const [movimentacaoVinculadaId, setMovimentacaoVinculadaId] = useState('');
+
   // O principal abate o saldo do título; o que circula no banco carrega os acréscimos.
   const valorEfetivo =
     formData.valor_pago + formData.juros + formData.multa - formData.desconto;
@@ -76,12 +81,23 @@ export const LiquidacaoTituloModal = ({
       desconto: 0,
     });
     setDivisao([]);
+    setModoMovimentacao('nova');
+    setMovimentacaoVinculadaId('');
   }, [isOpen, titulo.id, titulo.valor_atual, titulo.valor_original]);
 
   // Buscar contas bancárias
   const { data: contasBancarias = [], isLoading: loadingContas } = useQuery({
     queryKey: ['contas-bancarias-ativas'],
     queryFn: listarContasBancariasAtivasComAgenciaBanco,
+  });
+
+  // Movimentações já existentes, sem título, no sentido esperado (entrada/saída) —
+  // candidatas a vínculo em vez de criar uma movimentação nova e duplicada.
+  const tipoMovimentacaoEsperado = titulo.tipo === 'CONTAS_PAGAR' ? 'SAQUE' : 'DEPOSITO';
+  const { data: movimentacoesDisponiveis = [], isLoading: loadingMovimentacoes } = useQuery({
+    queryKey: ['movimentacoes-disponiveis-vinculo', tipoMovimentacaoEsperado],
+    queryFn: () => listarMovimentacoesDisponiveisParaVinculo(tipoMovimentacaoEsperado),
+    enabled: isOpen && modoMovimentacao === 'vincular',
   });
 
   // Mutation para liquidar título
@@ -143,8 +159,18 @@ export const LiquidacaoTituloModal = ({
     }
 
     const usandoDivisao = divisao.length > 0;
+    const usandoVinculo = modoMovimentacao === 'vincular';
 
-    if (!usandoDivisao && !formData.conta_bancaria_id && formData.forma_pagamento !== 'DINHEIRO') {
+    if (usandoVinculo) {
+      if (!movimentacaoVinculadaId) {
+        toast({
+          title: 'Selecione a movimentação',
+          description: 'Escolha a movimentação bancária existente para vincular a esta liquidação.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    } else if (!usandoDivisao && !formData.conta_bancaria_id && formData.forma_pagamento !== 'DINHEIRO') {
       toast({
         title: "Erro",
         description: "Selecione uma conta bancária para esta forma de pagamento",
@@ -180,7 +206,8 @@ export const LiquidacaoTituloModal = ({
       valor_pago: formData.valor_pago,
       data_pagamento: formData.data_pagamento,
       forma_pagamento: formData.forma_pagamento,
-      conta_bancaria_id: usandoDivisao ? undefined : formData.conta_bancaria_id || undefined,
+      conta_bancaria_id: usandoDivisao || usandoVinculo ? undefined : formData.conta_bancaria_id || undefined,
+      movimentacao_bancaria_id: usandoVinculo ? movimentacaoVinculadaId : undefined,
       observacoes: formData.observacoes || undefined,
       juros: formData.juros || undefined,
       multa: formData.multa || undefined,
@@ -301,29 +328,82 @@ export const LiquidacaoTituloModal = ({
             </div>
 
             {necessitaContaBancaria && (
-              <div>
-                <Label htmlFor="conta_bancaria">Conta Bancária *</Label>
-                <Select
-                  value={formData.conta_bancaria_id}
-                  onValueChange={(value) => setFormData(prev => ({ 
-                    ...prev, 
-                    conta_bancaria_id: value 
-                  }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione uma conta" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {contasBancarias.map((conta) => (
-                      <SelectItem key={conta.id} value={conta.id}>
-                        {conta.agencias_bancarias?.bancos?.nome} - 
-                        Ag: {conta.agencias_bancarias?.numero_agencia} - 
-                        CC: {conta.numero_conta}-{conta.digito} - 
-                        {conta.cpf_cnpj_titular}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="md:col-span-2 space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="conta_bancaria">
+                    {modoMovimentacao === 'vincular' ? 'Movimentação Bancária *' : 'Conta Bancária *'}
+                  </Label>
+                  <div className="flex gap-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={modoMovimentacao === 'nova' ? 'secondary' : 'ghost'}
+                      onClick={() => setModoMovimentacao('nova')}
+                    >
+                      Nova movimentação
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={modoMovimentacao === 'vincular' ? 'secondary' : 'ghost'}
+                      onClick={() => {
+                        setModoMovimentacao('vincular');
+                        setFormData(prev => ({ ...prev, conta_bancaria_id: '' }));
+                      }}
+                    >
+                      Vincular existente
+                    </Button>
+                  </div>
+                </div>
+
+                {modoMovimentacao === 'nova' ? (
+                  <Select
+                    value={formData.conta_bancaria_id}
+                    onValueChange={(value) => setFormData(prev => ({
+                      ...prev,
+                      conta_bancaria_id: value
+                    }))}
+                  >
+                    <SelectTrigger id="conta_bancaria">
+                      <SelectValue placeholder="Selecione uma conta" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {contasBancarias.map((conta) => (
+                        <SelectItem key={conta.id} value={conta.id}>
+                          {conta.agencias_bancarias?.bancos?.nome} -
+                          Ag: {conta.agencias_bancarias?.numero_agencia} -
+                          CC: {conta.numero_conta}-{conta.digito} -
+                          {conta.cpf_cnpj_titular}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <>
+                    <Select value={movimentacaoVinculadaId} onValueChange={setMovimentacaoVinculadaId}>
+                      <SelectTrigger id="conta_bancaria">
+                        <SelectValue placeholder={loadingMovimentacoes ? 'Carregando...' : 'Selecione a movimentação'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {movimentacoesDisponiveis.map((mov) => (
+                          <SelectItem key={mov.id} value={mov.id}>
+                            {format(new Date(mov.data_movimentacao), 'dd/MM/yyyy')} — {currencyUtils.formatCurrency(mov.valor)} — {mov.descricao}
+                            {mov.conta_bancaria?.titular ? ` (${mov.conta_bancaria.titular})` : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Só aparecem movimentações sem título vinculado. O valor precisa bater exatamente com{' '}
+                      {currencyUtils.formatCurrency(valorEfetivo)} (o que vai circular no banco nesta baixa).
+                    </p>
+                    {!loadingMovimentacoes && movimentacoesDisponiveis.length === 0 && (
+                      <p className="text-xs text-amber-600">
+                        Nenhuma movimentação sem título disponível nesse sentido. Use "Nova movimentação".
+                      </p>
+                    )}
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -368,7 +448,8 @@ export const LiquidacaoTituloModal = ({
             </div>
           </div>
 
-          {/* Divisão entre contas: a soma tem de fechar com o valor a movimentar. */}
+          {/* Divisão entre contas: a soma tem de fechar com o valor a movimentar. Não combina com vínculo a movimentação existente (uma única movimentação, não dá pra dividir uma já criada). */}
+          {modoMovimentacao === 'nova' && (
           <div className="rounded-md border p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div>
@@ -440,6 +521,7 @@ export const LiquidacaoTituloModal = ({
               </div>
             )}
           </div>
+          )}
 
           <div>
             <Label htmlFor="observacoes">Observações</Label>

@@ -193,6 +193,49 @@ export const listarMovimentacoesBancarias = async (
   return { data: rows, total: paginacao ? (count ?? 0) : rows.length };
 };
 
+/**
+ * Movimentações candidatas a vínculo com uma liquidação de título: ainda sem
+ * título vinculado, ativas, não estornadas, do sentido esperado (DEPOSITO
+ * para conta a receber, SAQUE para conta a pagar). Usado pelo seletor de
+ * "vincular movimentação existente" em LiquidacaoTituloModal — a validação
+ * de fato (valor exato, sentido, empresa) é sempre refeita no banco pela RPC.
+ */
+export const listarMovimentacoesDisponiveisParaVinculo = async (
+  tipoMovimentacao: TipoMovimentacao,
+  busca?: string,
+): Promise<MovimentacaoBancaria[]> => {
+  const empresaId = await getEmpresaAtivaIdOuFalha();
+
+  let query = supabase
+    .from('movimentacoes_bancarias')
+    .select(`
+      id, conta_bancaria_id, tipo_movimentacao, valor, descricao, data_movimentacao,
+      documento_referencia, liquidacao_titulo_id, ativo, estornado,
+      conta_bancaria:contas_bancarias!movimentacoes_bancarias_conta_bancaria_id_fkey (
+        id, numero_conta, titular:nome_titular,
+        agencia:agencias_bancarias ( numero_agencia, banco:bancos ( codigo, nome ) )
+      )
+    `)
+    .eq('empresa_representada_id', empresaId)
+    .eq('tipo_movimentacao', tipoMovimentacao)
+    .eq('ativo', true)
+    .eq('estornado', false)
+    .is('liquidacao_titulo_id', null)
+    .order('data_movimentacao', { ascending: false })
+    .limit(30);
+
+  if (busca) {
+    query = query.ilike('descricao', `%${busca}%`);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('[MovimentacoesBancarias] Erro ao listar candidatas a vínculo:', error);
+    throw new Error(`Erro ao listar movimentações disponíveis: ${error.message}`);
+  }
+  return (data as unknown as MovimentacaoBancaria[]) || [];
+};
+
 // Função para obter uma movimentação específica
 export const obterMovimentacaoBancaria = async (id: string): Promise<MovimentacaoBancaria | null> => {
 

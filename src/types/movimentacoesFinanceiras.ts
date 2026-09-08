@@ -58,6 +58,8 @@ export interface LiquidacaoTitulo {
   data_pagamento: string;
   forma_pagamento: FormaPagamento;
   conta_bancaria_id?: string;
+  /** Vincula a uma movimentação bancária já existente (sem título) em vez de criar uma nova; mutuamente exclusivo com conta_bancaria_id/multi_baixa. */
+  movimentacao_bancaria_id?: string;
   observacoes?: string;
   multi_baixa?: MultiBaixa[];
   /** Emitido pelo diálogo de autorização; obrigatório em baixa retroativa além de 24h. */

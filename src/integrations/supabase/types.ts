@@ -8761,24 +8761,44 @@ export type Database = {
         Returns: undefined
       }
       financeiro_limite_retroativo: { Args: never; Returns: string }
-      financeiro_liquidar_titulo: {
-        Args: {
-          p_conta_bancaria_id?: string
-          p_data_pagamento: string
-          p_desconto?: number
-          p_forma_pagamento: string
-          p_idempotency_key: string
-          p_juros?: number
-          p_multa?: number
-          p_multi_baixa?: Json
-          p_observacoes?: string
-          p_ticket_autorizacao?: string
-          p_tipo_titulo: string
-          p_titulo_id: string
-          p_valor: number
-        }
-        Returns: Json
-      }
+      financeiro_liquidar_titulo:
+        | {
+            Args: {
+              p_conta_bancaria_id?: string
+              p_data_pagamento: string
+              p_desconto?: number
+              p_forma_pagamento: string
+              p_idempotency_key: string
+              p_juros?: number
+              p_multa?: number
+              p_multi_baixa?: Json
+              p_observacoes?: string
+              p_ticket_autorizacao?: string
+              p_tipo_titulo: string
+              p_titulo_id: string
+              p_valor: number
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_conta_bancaria_id?: string
+              p_data_pagamento: string
+              p_desconto?: number
+              p_forma_pagamento: string
+              p_idempotency_key: string
+              p_juros?: number
+              p_movimentacao_bancaria_id?: string
+              p_multa?: number
+              p_multi_baixa?: Json
+              p_observacoes?: string
+              p_ticket_autorizacao?: string
+              p_tipo_titulo: string
+              p_titulo_id: string
+              p_valor: number
+            }
+            Returns: Json
+          }
       financeiro_permissoes: { Args: never; Returns: Json }
       financeiro_pode: { Args: { p_acao: string }; Returns: boolean }
       financeiro_pode_usuario: {

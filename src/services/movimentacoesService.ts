@@ -63,6 +63,7 @@ export const movimentacoesService = {
         p_forma_pagamento: dadosLiquidacao.forma_pagamento,
         p_idempotency_key: dadosLiquidacao.idempotency_key,
         p_conta_bancaria_id: dadosLiquidacao.conta_bancaria_id,
+        p_movimentacao_bancaria_id: dadosLiquidacao.movimentacao_bancaria_id ?? null,
         p_observacoes: dadosLiquidacao.observacoes,
         p_multi_baixa: (dadosLiquidacao.multi_baixa || []) as unknown as Json,
         p_ticket_autorizacao: dadosLiquidacao.ticket_autorizacao ?? null,
