@@ -116,6 +116,7 @@ import Contratos from './pages/contratos/Contratos';
 import SyncDashboard from './pages/integracao/SyncDashboard';
 import { AdminRoute } from './components/auth/AdminRoute';
 import { FeatureRoute } from './components/auth/FeatureRoute';
+import { PermissionRoute } from './components/auth/PermissionRoute';
 import { SessionPersistenceHandler } from './components/SessionPersistenceHandler';
 
 const queryClient = new QueryClient();
@@ -254,10 +255,10 @@ function App() {
                         </AdminRoute>
                       }
                     />
-                    <Route path="notas-fiscais" element={<NotasFiscais />} />
-                    <Route path="mdfe" element={<MDFe />} />
-                    <Route path="sped" element={<SPED />} />
-                    <Route path="tributos" element={<Tributos />} />
+                    <Route path="notas-fiscais" element={<PermissionRoute codigo="fiscal.read"><NotasFiscais /></PermissionRoute>} />
+                    <Route path="mdfe" element={<PermissionRoute codigo="fiscal.create"><MDFe /></PermissionRoute>} />
+                    <Route path="sped" element={<PermissionRoute codigo="fiscal.read"><SPED /></PermissionRoute>} />
+                    <Route path="tributos" element={<PermissionRoute codigo="fiscal.read"><Tributos /></PermissionRoute>} />
                   </Route>
                   
                   

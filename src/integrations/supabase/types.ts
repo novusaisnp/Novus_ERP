@@ -8984,6 +8984,8 @@ export type Database = {
         Args: { p_periodicidade: string }
         Returns: number
       }
+      permissoes_usuario: { Args: { p_codigos: string[] }; Returns: Json }
+      pode: { Args: { p_permissao: string }; Returns: boolean }
       precheck_source_system_nome_consistency: {
         Args: never
         Returns: {

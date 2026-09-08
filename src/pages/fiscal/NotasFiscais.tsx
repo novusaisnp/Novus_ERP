@@ -18,6 +18,7 @@ import EmitirNFeDialog from "@/components/fiscal/EmitirNFeDialog";
 import DetalheNFeDrawer from "@/components/fiscal/DetalheNFeDrawer";
 import FiscalStatusBadge from "@/components/fiscal/FiscalStatusBadge";
 import { ExportMenu } from "@/components/relatorios/ExportMenu";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import { useReportBranding } from "@/hooks/useReportBranding";
 import { toCsv, downloadCsv, type CsvColumn } from "@/utils/csvExport";
 import type { ReportExportPayload } from "@/utils/reportExportShared";
@@ -178,14 +179,16 @@ const NotasFiscais = () => {
                         <TableCell>{v.status ?? "—"}</TableCell>
                         <TableCell>{currency(v.valor_total)}</TableCell>
                         <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button size="sm" onClick={() => { setEmitirTipo('NFE'); setEmitirVenda(v); }}>
-                              <Send className="h-3.5 w-3.5 mr-1" /> NF-e
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={() => { setEmitirTipo('NFCE'); setEmitirVenda(v); }}>
-                              <Send className="h-3.5 w-3.5 mr-1" /> NFC-e
-                            </Button>
-                          </div>
+                          <PermissionGate codigo="fiscal.create" fallback={<span className="text-xs text-muted-foreground">Sem permissão</span>}>
+                            <div className="flex justify-end gap-2">
+                              <Button size="sm" onClick={() => { setEmitirTipo('NFE'); setEmitirVenda(v); }}>
+                                <Send className="h-3.5 w-3.5 mr-1" /> NF-e
+                              </Button>
+                              <Button variant="outline" size="sm" onClick={() => { setEmitirTipo('NFCE'); setEmitirVenda(v); }}>
+                                <Send className="h-3.5 w-3.5 mr-1" /> NFC-e
+                              </Button>
+                            </div>
+                          </PermissionGate>
                         </TableCell>
                       </TableRow>
                     ))}

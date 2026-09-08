@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import { useFiscalDocumento, useFiscalEventos } from "@/hooks/fiscal/useFiscalDocumento";
 import { useFiscalDocumentoRealtime } from "@/hooks/fiscal/useFiscalDocumentoRealtime";
 import { getFiscalSignedUrl, getDanfeMockEnrichmentData } from "@/services/fiscal/emissaoService";
@@ -218,18 +219,24 @@ const DetalheNFeDrawer = ({ open, onOpenChange, documentoId }: DetalheNFeDrawerP
 
                 {documento.status?.toLowerCase() === 'autorizada' && (
                   <div className="grid grid-cols-2 gap-2">
-                    <Button variant="destructive" onClick={() => setCancelOpen(true)}>
-                      <Ban className="h-4 w-4 mr-2" /> Cancelar
-                    </Button>
-                    {documento.tipo === 'NFE' && (
-                      <Button variant="secondary" onClick={() => setCceOpen(true)}>
-                        <MailCheck className="h-4 w-4 mr-2" /> CC-e
+                    <PermissionGate codigo="fiscal.cancelarNfe">
+                      <Button variant="destructive" onClick={() => setCancelOpen(true)}>
+                        <Ban className="h-4 w-4 mr-2" /> Cancelar
                       </Button>
+                    </PermissionGate>
+                    {documento.tipo === 'NFE' && (
+                      <PermissionGate codigo="fiscal.cartaCorrecao">
+                        <Button variant="secondary" onClick={() => setCceOpen(true)}>
+                          <MailCheck className="h-4 w-4 mr-2" /> CC-e
+                        </Button>
+                      </PermissionGate>
                     )}
-                    {documento.tipo === 'MDFE' && <>
-                      <Button variant="secondary" onClick={() => setMdfeAcao('incluir_condutor')}><UserPlus className="h-4 w-4 mr-2" /> Condutor</Button>
-                      <Button onClick={() => setMdfeAcao('encerrar')}><CircleCheck className="h-4 w-4 mr-2" /> Encerrar</Button>
-                    </>}
+                    {documento.tipo === 'MDFE' && (
+                      <PermissionGate codigo="fiscal.update">
+                        <Button variant="secondary" onClick={() => setMdfeAcao('incluir_condutor')}><UserPlus className="h-4 w-4 mr-2" /> Condutor</Button>
+                        <Button onClick={() => setMdfeAcao('encerrar')}><CircleCheck className="h-4 w-4 mr-2" /> Encerrar</Button>
+                      </PermissionGate>
+                    )}
                   </div>
                 )}
               </div>

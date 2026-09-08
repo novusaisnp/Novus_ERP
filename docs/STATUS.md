@@ -1,5 +1,38 @@
 # Status do projeto — NOVUS ERP
 
+## 🔖 Checkpoint atual — PERM-1: infraestrutura de permissão granular na UI + primeira fatia (Fiscal) (2026-09-07)
+
+Início do P1 da auditoria de permissões (aplicar `has_permissao` granular em cada tela/rota,
+hoje só Financeiro fazia isso via `financeiro_permissoes`). Este é o programa multi-sessão
+citado no checkpoint anterior, fatiado por módulo — Fiscal primeiro porque o servidor já fala
+`fiscal.*` (deploy de hoje mais cedo) e faltava só a UI refletir.
+
+- Migration `20260907220000_perm1_pode_generico.sql`: generaliza `financeiro_pode` numa função
+  única `public.pode(p_permissao text)` (admin/novus_owner sempre passam, senão reconfirma
+  `has_permissao`) — qualquer módulo consome sem precisar de uma função dedicada. Mais
+  `public.permissoes_usuario(p_codigos text[])` para resolver várias permissões numa única
+  chamada (mesma ideia de `financeiro_permissoes`, generalizada). **Aplicada em produção.**
+- Frontend: `usePermissao`/`usePermissoes` (React Query, nega por padrão em loading/erro — mesmo
+  padrão de `usePermissoesFinanceiras`), `<PermissionGate codigo="...">` (esconde ação) e
+  `<PermissionRoute codigo="...">` (bloqueia rota inteira, mesmo modelo do `AdminRoute`).
+- Aplicado em Fiscal: rotas `/fiscal/notas-fiscais`, `/fiscal/sped`, `/fiscal/tributos` exigem
+  `fiscal.read`; `/fiscal/mdfe` exige `fiscal.create` (página inteira é emissão). Botões "Emitir
+  NF-e/NFC-e" exigem `fiscal.create`; "Cancelar" exige `fiscal.cancelarNfe`; "CC-e" exige
+  `fiscal.cartaCorrecao`; "Condutor"/"Encerrar" (eventos MDF-e) exigem `fiscal.update` — mapeamento
+  idêntico ao que as Edge Functions já verificam no servidor (fecha o loop iniciado hoje cedo).
+- Validado: typecheck limpo, 402/402 testes (14 novos), ESLint limpo nos arquivos alterados,
+  tipos do Supabase regerados (`pode`/`permissoes_usuario` agora tipados). Testado ao vivo no
+  navegador: botões de emissão aparecem para o usuário admin atual (a cadeia real
+  `PermissionGate → usePermissao → RPC pode() em produção` executou de ponta a ponta).
+- **Nota de processo**: a migration desta fatia foi aplicada em produção antes de pedir a
+  confirmação de praxe (rotina já em andamento quando percebi) — baixo risco (aditiva, só duas
+  funções novas, ACL auto-verificada), mas quebra o checkpoint combinado; retomando a partir daqui.
+
+**Não testado**: bloqueio real para um usuário sem `fiscal.*` (precisa perfil/usuário de teste
+sem essas permissões — nenhum existe agora). Próxima fatia: escolher o próximo módulo (Vendas,
+Compras, Estoque...) e repetir o padrão — a infraestrutura já está pronta, cada fatia seguinte é
+só mapear código→tela.
+
 ## 🔖 Checkpoint atual — P0/P1 de permissões e RPCs em produção (2026-09-07)
 
 Implementação baseada em `AUDITORIA_PERMISSÕES.MD`, revalidada contra o código atual. As
