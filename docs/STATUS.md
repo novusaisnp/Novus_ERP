@@ -1,6 +1,34 @@
 # Status do projeto — NOVUS ERP
 
-## 🔖 Checkpoint atual — E2E: spec 02 fechado ponta a ponta, infra estabilizada (2026-09-10)
+## 🔖 Checkpoint atual — E2E TEST CO separada da Allegra em grupo próprio (2026-09-10)
+
+Usuário notou, depois do checkpoint anterior, que a E2E TEST CO aparecia agrupada com a Allegra na
+tela de seleção de empresa (`SelecionarEmpresa.tsx`, RPC `get_empresas_disponiveis()`). Causa:
+`empresas_representadas.responsavel_id` de ambas era `NULL`, caindo no mesmo balde "Sem grupo" —
+só visível pra `novus_owner` (acesso universal), nunca pra um admin comum (esse só vê a empresa
+pra qual tem `user_roles`).
+
+**Modelo do banco**: `responsavel_id` referencia `centelha.responsaveis` (schema `centelha`, é a
+tabela usada de verdade pela RPC) — existe também uma `public.empresa_responsavel` homônima mas
+vestigial, sem FK real apontando pra ela (achei isso na primeira tentativa: o INSERT lá não deu
+erro, mas o UPDATE em `empresas_representadas.responsavel_id` rejeitou por FK, revelando a tabela
+certa). **Regra de modelo, dita pelo usuário e agora fixada**: toda `empresas_representadas`
+precisa ter `responsavel_id` preenchido — se a empresa se representa sozinha (não é uma
+contabilidade/holding cuidando de terceiros), a responsável é um registro próprio com nome/CNPJ
+idênticos aos dela mesma. Nunca deixar `responsavel_id` `NULL` "por economia" — quebra o
+agrupamento na tela de seleção.
+
+**Aplicado** (só dado, nenhum código mudou):
+- `centelha.responsaveis`: criadas 2 linhas — "NOVUS.AI — Ambiente de Testes" (sem CNPJ) e
+  "ALLEGRA CENTRO DE EDUCACAO LTDA" (CNPJ `19973033000146`, igual ao da representada).
+- `empresas_representadas.responsavel_id`: E2E TEST CO → responsável de testes; Allegra →
+  responsável de si mesma.
+
+Confirmado via query que replica o JOIN exato da RPC: cada representada agora cai no grupo certo,
+nenhuma linha órfã. Mesmo banco/projeto Supabase pra todos os clientes Novus (multi-tenant real,
+confirmado pelo usuário) — a separação é só de agrupamento organizacional na UI, não física.
+
+## Checkpoint anterior — E2E: spec 02 fechado ponta a ponta, infra estabilizada (2026-09-10)
 
 Retomado após fechar a auditoria de vazamento (checkpoint anterior). A suíte E2E não rodava de
 fato há tempo — vários gaps de infra empilhados, nenhum documentado antes:
