@@ -1,6 +1,70 @@
 # Status do projeto — NOVUS ERP
 
-## 🔖 Checkpoint atual — Auditoria de isolamento entre empresas: fechada, 6 services corrigidos (2026-09-10)
+## 🔖 Checkpoint atual — E2E: infra destravada, spec 02 modernizado até achar bloqueio real de dado (2026-09-10)
+
+Retomado após fechar a auditoria de vazamento (checkpoint anterior). A suíte E2E não rodava de
+fato há tempo — vários gaps de infra empilhados, nenhum documentado antes:
+
+**Infra corrigida (commit `fe47700`)**:
+- `DashboardPage.navigateTo` assumia links `<a>`; a sidebar só usa `<button>`, com grupos que
+  exigem hover (sidebar expandida) + clique pra abrir antes do sub-item existir no DOM (Radix
+  Collapsible desmonta o conteúdo quando fechado, não só esconde).
+- `signOut()` usa `scope: 'global'` (`src/hooks/useAuthenticationState.ts`) — revoga TODOS os
+  refresh tokens do usuário no servidor, não só o da aba atual. O `storageState` reaproveitado
+  pelos specs 02-05 estava sendo salvo *antes* do teste de logout rodar no mesmo arquivo — a
+  sessão persistida chegava morta pros specs seguintes. Corrigido: gera por último, com
+  "Lembrar-me" marcado (sem isso, `useSessionPersistence` desloga qualquer aba/contexto novo que
+  não passou pelo próprio formulário de login — o storageState do Playwright não replica o
+  marcador de sessionStorage que evita isso).
+- `playwright.config.ts` chamava `bun run dev` — projeto é npm.
+- Filtro de console-error do teste de login pegava ruído de terceiro: Cloudflare Turnstile emite
+  uma marca invisível de instrumentação (`%c%d font-size:0;color:transparent NaN`) via
+  `console.error` a cada carregamento do widget.
+- `e2e-reset` e `e2e-set-venda-status` (edge functions) existiam no repo mas nunca tinham sido
+  deployadas — deploy feito + secret `E2E_ENABLED=true` setado no projeto real.
+
+Resultado: `01-login` (3/3) e `05-regras-conciliacao` passam ponta a ponta — prova que a cadeia
+toda funciona. `03-conciliacao` e `04-produto-estoque` pulam graciosamente **por design** (o
+tenant "E2E TEST CO" não tem conta bancária nem localização de estoque semeada — os próprios
+testes já previam isso com `test.skip()` e mensagem clara). `06-fiscal-emissao` pula por exigir
+opt-in explícito (`E2E_FISCAL_ENABLED=1`).
+
+**`02-venda-a-liquidação` modernizado até um bloqueio real de dado (commit `36fae0a`)**: o spec
+estava desatualizado desde a consolidação de Cadastro Unificado de Entidades (2026-08-11) —
+`Clientes.tsx` não cria mais cliente inline (só lista quem já tem papel CLIENTE), criação é só via
+Cadastros → Entidades. Corrigidos em sequência, cada um um achado real de drift entre teste e UI
+atual, não suposição:
+- Criação de cliente reescrita pro formulário unificado (`?papel=CLIENTE`, Razão Social + CNPJ).
+- Item de venda: campo de descrição virou `CatalogoItemPicker` (combobox que busca produto/serviço
+  real), não input livre — usa o fallback "usar como descrição livre" do próprio componente.
+  `role="combobox"` não herda nome acessível do conteúdo textual (regra de ARIA — só roles como
+  `button`/`link` são "name from content"), então `getByRole(..., {name})` nunca casava por mais
+  que o texto "Buscar produto..." estivesse visível; a saída foi `.filter({hasText})`, que compara
+  texto renderizado direto.
+- "Preço Unit." (`CurrencyInput`) não tem `<label>` associado via `htmlFor`/`id` — `getByLabel`
+  nunca encontrava. Localiza pelo texto do rótulo vizinho; a máscara trata dígitos digitados como
+  centavos.
+- `readClienteIdByNome` (fixture de asserção) apontava pra tabela `clientes`, que não existe mais
+  (virou `entidades`, papel CLIENTE via `entidade_papeis`).
+- `makeCliente()` gerava um CPF de 11 dígitos como `cnpj_cpf` — o form PJ unificado exige CNPJ
+  válido (14 dígitos com dígito verificador); trocado por gerador que roda o mesmo algoritmo de
+  `src/services/cnpjApi.ts`.
+
+**Bloqueio real, não mais de locator** (onde parou): a transição de status pra CONFIRMADO
+(`e2e-set-venda-status`) rejeita com `CLASSIFICACAO_CONTABIL_AUSENTE` porque o item criado via
+"descrição livre" não tem produto/serviço real vinculado — sem isso não há categoria, e sem
+categoria não há classificação de Plano de Contas pra reconhecer a receita. Pra fechar este spec
+de verdade é preciso um produto REAL semeado no tenant "E2E TEST CO" (com categoria já classificada
+— receita vinculada, ver `categoriaService.ts`/`translateError` sobre `CATEGORIA_SEM_CLASSIFICACAO_RECEITA`)
+e selecioná-lo via o combobox de catálogo em vez do fallback de texto livre. Isso é decisão de
+escopo (semear dado permanente pro tenant E2E vs. só documentar o gap), não uma correção de meia
+hora — ficou pra quando alguém decidir seguir.
+
+**Próxima ação única**: decidir se vale semear produto+categoria classificada pro tenant E2E TEST
+CO (provavelmente via migration idempotente, não via UI a cada reset) pra destravar o restante do
+spec 02, ou aceitar o gap documentado e seguir pra outra frente.
+
+## Checkpoint anterior — Auditoria de isolamento entre empresas: fechada, 6 services corrigidos (2026-09-10)
 
 Disparado por relato ao vivo do usuário: trocou pra empresa "E2E TEST CO" (recém-criada nesta
 sessão, ver seção E2E abaixo) e viu a localização "Geral" da ALLEGRA aparecendo lá, sem
