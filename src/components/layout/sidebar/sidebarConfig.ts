@@ -12,6 +12,7 @@ import {
   Settings,
   RefreshCw,
   CreditCard,
+  Factory,
 } from "lucide-react"
 
 export interface MenuItem {
@@ -124,6 +125,20 @@ export const sidebarItems: MenuItem[] = [
       {
         title: "Pedidos",
         url: "/compras/pedidos",
+      },
+    ],
+  },
+  {
+    title: "Produção",
+    icon: Factory,
+    items: [
+      {
+        title: "Fichas Técnicas",
+        url: "/producao/fichas-tecnicas",
+      },
+      {
+        title: "Ordens de Fabricação",
+        url: "/producao/ordens",
       },
     ],
   },

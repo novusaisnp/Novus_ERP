@@ -2482,6 +2482,8 @@ export type Database = {
           plano_conta_depreciacao_acumulada_default_id: string | null
           plano_conta_despesa_default_id: string | null
           plano_conta_despesa_depreciacao_default_id: string | null
+          plano_conta_estoque_materia_prima_default_id: string | null
+          plano_conta_estoque_produtos_acabados_default_id: string | null
           plano_conta_imobilizado_default_id: string | null
           plano_conta_receita_default_id: string | null
           plano_conta_resultado_baixa_ativo_default_id: string | null
@@ -2513,6 +2515,8 @@ export type Database = {
           plano_conta_depreciacao_acumulada_default_id?: string | null
           plano_conta_despesa_default_id?: string | null
           plano_conta_despesa_depreciacao_default_id?: string | null
+          plano_conta_estoque_materia_prima_default_id?: string | null
+          plano_conta_estoque_produtos_acabados_default_id?: string | null
           plano_conta_imobilizado_default_id?: string | null
           plano_conta_receita_default_id?: string | null
           plano_conta_resultado_baixa_ativo_default_id?: string | null
@@ -2544,6 +2548,8 @@ export type Database = {
           plano_conta_depreciacao_acumulada_default_id?: string | null
           plano_conta_despesa_default_id?: string | null
           plano_conta_despesa_depreciacao_default_id?: string | null
+          plano_conta_estoque_materia_prima_default_id?: string | null
+          plano_conta_estoque_produtos_acabados_default_id?: string | null
           plano_conta_imobilizado_default_id?: string | null
           plano_conta_receita_default_id?: string | null
           plano_conta_resultado_baixa_ativo_default_id?: string | null
@@ -2625,6 +2631,20 @@ export type Database = {
           {
             foreignKeyName: "empresas_representadas_plano_conta_despesa_depreciacao_def_fkey"
             columns: ["plano_conta_despesa_depreciacao_default_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empresas_representadas_plano_conta_estoque_materia_prima_d_fkey"
+            columns: ["plano_conta_estoque_materia_prima_default_id"]
+            isOneToOne: false
+            referencedRelation: "plano_contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empresas_representadas_plano_conta_estoque_produtos_acabad_fkey"
+            columns: ["plano_conta_estoque_produtos_acabados_default_id"]
             isOneToOne: false
             referencedRelation: "plano_contas"
             referencedColumns: ["id"]
@@ -3276,6 +3296,117 @@ export type Database = {
           nome?: string
         }
         Relationships: []
+      }
+      fichas_tecnicas: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          empresa_representada_id: string
+          id: string
+          nome: string
+          observacoes: string | null
+          produto_id: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          empresa_representada_id: string
+          id?: string
+          nome: string
+          observacoes?: string | null
+          produto_id: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          empresa_representada_id?: string
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          produto_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fichas_tecnicas_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fichas_tecnicas_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fichas_tecnicas_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_estoque_ruptura"
+            referencedColumns: ["produto_id"]
+          },
+        ]
+      }
+      fichas_tecnicas_itens: {
+        Row: {
+          created_at: string
+          empresa_representada_id: string
+          ficha_tecnica_id: string
+          id: string
+          produto_insumo_id: string
+          quantidade: number
+        }
+        Insert: {
+          created_at?: string
+          empresa_representada_id: string
+          ficha_tecnica_id: string
+          id?: string
+          produto_insumo_id: string
+          quantidade: number
+        }
+        Update: {
+          created_at?: string
+          empresa_representada_id?: string
+          ficha_tecnica_id?: string
+          id?: string
+          produto_insumo_id?: string
+          quantidade?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fichas_tecnicas_itens_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fichas_tecnicas_itens_ficha_tecnica_id_fkey"
+            columns: ["ficha_tecnica_id"]
+            isOneToOne: false
+            referencedRelation: "fichas_tecnicas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fichas_tecnicas_itens_produto_insumo_id_fkey"
+            columns: ["produto_insumo_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fichas_tecnicas_itens_produto_insumo_id_fkey"
+            columns: ["produto_insumo_id"]
+            isOneToOne: false
+            referencedRelation: "vw_estoque_ruptura"
+            referencedColumns: ["produto_id"]
+          },
+        ]
       }
       fiscal_certificados: {
         Row: {
@@ -5796,6 +5927,194 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "orcamentos_venda"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      ordens_fabricacao: {
+        Row: {
+          centro_custo_id: string | null
+          created_at: string
+          created_by: string | null
+          custo_total_producao: number | null
+          custo_unitario_producao: number | null
+          data_abertura: string
+          data_conclusao: string | null
+          empresa_representada_id: string
+          ficha_tecnica_id: string
+          id: string
+          localizacao_consumo_id: string
+          localizacao_producao_id: string
+          motivo_cancelamento: string | null
+          observacoes: string | null
+          produto_id: string
+          quantidade_planejada: number
+          quantidade_produzida: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          centro_custo_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custo_total_producao?: number | null
+          custo_unitario_producao?: number | null
+          data_abertura?: string
+          data_conclusao?: string | null
+          empresa_representada_id: string
+          ficha_tecnica_id: string
+          id?: string
+          localizacao_consumo_id: string
+          localizacao_producao_id: string
+          motivo_cancelamento?: string | null
+          observacoes?: string | null
+          produto_id: string
+          quantidade_planejada: number
+          quantidade_produzida?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          centro_custo_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custo_total_producao?: number | null
+          custo_unitario_producao?: number | null
+          data_abertura?: string
+          data_conclusao?: string | null
+          empresa_representada_id?: string
+          ficha_tecnica_id?: string
+          id?: string
+          localizacao_consumo_id?: string
+          localizacao_producao_id?: string
+          motivo_cancelamento?: string | null
+          observacoes?: string | null
+          produto_id?: string
+          quantidade_planejada?: number
+          quantidade_produzida?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ordens_fabricacao_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_fabricacao_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_fabricacao_ficha_tecnica_id_fkey"
+            columns: ["ficha_tecnica_id"]
+            isOneToOne: false
+            referencedRelation: "fichas_tecnicas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_fabricacao_localizacao_consumo_id_fkey"
+            columns: ["localizacao_consumo_id"]
+            isOneToOne: false
+            referencedRelation: "localizacoes_estoque"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_fabricacao_localizacao_producao_id_fkey"
+            columns: ["localizacao_producao_id"]
+            isOneToOne: false
+            referencedRelation: "localizacoes_estoque"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_fabricacao_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_fabricacao_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_estoque_ruptura"
+            referencedColumns: ["produto_id"]
+          },
+        ]
+      }
+      ordens_fabricacao_consumos: {
+        Row: {
+          created_at: string
+          custo_unitario: number | null
+          empresa_representada_id: string
+          estoque_movimentacao_id: string | null
+          id: string
+          ordem_id: string
+          produto_insumo_id: string
+          quantidade_consumida: number | null
+          quantidade_planejada: number
+        }
+        Insert: {
+          created_at?: string
+          custo_unitario?: number | null
+          empresa_representada_id: string
+          estoque_movimentacao_id?: string | null
+          id?: string
+          ordem_id: string
+          produto_insumo_id: string
+          quantidade_consumida?: number | null
+          quantidade_planejada: number
+        }
+        Update: {
+          created_at?: string
+          custo_unitario?: number | null
+          empresa_representada_id?: string
+          estoque_movimentacao_id?: string | null
+          id?: string
+          ordem_id?: string
+          produto_insumo_id?: string
+          quantidade_consumida?: number | null
+          quantidade_planejada?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ordens_fabricacao_consumos_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_fabricacao_consumos_estoque_movimentacao_id_fkey"
+            columns: ["estoque_movimentacao_id"]
+            isOneToOne: false
+            referencedRelation: "estoque_movimentacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_fabricacao_consumos_ordem_id_fkey"
+            columns: ["ordem_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_fabricacao"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_fabricacao_consumos_produto_insumo_id_fkey"
+            columns: ["produto_insumo_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_fabricacao_consumos_produto_insumo_id_fkey"
+            columns: ["produto_insumo_id"]
+            isOneToOne: false
+            referencedRelation: "vw_estoque_ruptura"
+            referencedColumns: ["produto_id"]
           },
         ]
       }
@@ -8705,6 +9024,10 @@ export type Database = {
         Args: { p_localizacao_id: string; p_venda_id: string }
         Returns: Json
       }
+      cancelar_ordem_fabricacao: {
+        Args: { p_motivo: string; p_ordem_id: string }
+        Returns: undefined
+      }
       cancelar_pedido_compra: { Args: { p_pedido_id: string }; Returns: Json }
       cancelar_solicitacao_aprovacao: {
         Args: { p_solicitacao_id: string }
@@ -8720,6 +9043,14 @@ export type Database = {
       }
       clear_pessoa_pendente: { Args: never; Returns: undefined }
       conciliar_inventario: { Args: { p_inventario_id: string }; Returns: Json }
+      concluir_ordem_fabricacao: {
+        Args: {
+          p_consumos?: Json
+          p_ordem_id: string
+          p_quantidade_produzida: number
+        }
+        Returns: Json
+      }
       confirmar_match: {
         Args: { p_extrato_linha_id: string; p_movimentacao_id: string }
         Returns: Json
@@ -8732,6 +9063,18 @@ export type Database = {
       criar_lancamento_do_extrato: {
         Args: { p_extrato_linha_id: string; p_payload?: Json }
         Returns: Json
+      }
+      criar_ordem_fabricacao: {
+        Args: {
+          p_centro_custo_id?: string
+          p_empresa_id: string
+          p_ficha_tecnica_id: string
+          p_localizacao_consumo_id: string
+          p_localizacao_producao_id: string
+          p_observacoes?: string
+          p_quantidade_planejada: number
+        }
+        Returns: string
       }
       criar_responsavel_centelha: {
         Args: { p_cnpj: string; p_nome: string }
@@ -9251,6 +9594,13 @@ export type Database = {
           caixa_bancos_id: string
           contas_pagar_id: string
           contas_receber_id: string
+        }[]
+      }
+      seed_plano_contas_producao: {
+        Args: { p_empresa_id: string }
+        Returns: {
+          estoque_materia_prima_id: string
+          estoque_produtos_acabados_id: string
         }[]
       }
       solicitar_aprovacao: {

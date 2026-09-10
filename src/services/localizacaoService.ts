@@ -92,18 +92,24 @@ export const localizacaoService = {
       throw new Error('Não é possível desativar a única localização ativa');
     }
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('localizacoes_estoque')
-      .update({ 
+      .update({
         ativo: false,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', id);
+      .eq('id', id)
+      .select('id');
 
     if (error) {
       console.error('[LocalizacaoService] Erro ao desativar localização:', error);
       throw error;
     }
 
+    // Update sem .select() nunca reporta erro quando o RLS bloqueia e afeta 0 linhas —
+    // sem essa checagem, a UI mostrava "sucesso" mesmo sem nada ter mudado no banco.
+    if (!data || data.length === 0) {
+      throw new Error('Não foi possível desativar esta localização — você pode não ter permissão para esta empresa.');
+    }
   },
 };

@@ -62,6 +62,8 @@ import CotacaoCompraDetalhe from './pages/compras/CotacaoCompraDetalhe';
 import CotacaoFornecedorPublica from './pages/publico/CotacaoFornecedorPublica';
 import PedidosCompra from './pages/compras/PedidosCompra';
 import PedidoCompraDetalhe from './pages/compras/PedidoCompraDetalhe';
+import FichasTecnicas from './pages/producao/FichasTecnicas';
+import OrdensFabricacao from './pages/producao/OrdensFabricacao';
 import ContasPagar from './pages/financeiro/ContasPagar';
 import ContasReceber from './pages/financeiro/ContasReceber';
 import MovimentacoesFinanceiras from './pages/financeiro/MovimentacoesFinanceiras';
@@ -198,6 +200,13 @@ function App() {
                     <Route path="cotacoes/:id" element={<CotacaoCompraDetalhe />} />
                     <Route path="pedidos" element={<PedidosCompra />} />
                     <Route path="pedidos/:id" element={<PedidoCompraDetalhe />} />
+                  </Route>
+
+                  {/* Produção Routes */}
+                  <Route path="producao">
+                    <Route index element={<Navigate to="/producao/fichas-tecnicas" replace />} />
+                    <Route path="fichas-tecnicas" element={<FichasTecnicas />} />
+                    <Route path="ordens" element={<OrdensFabricacao />} />
                   </Route>
 
                   {/* Gestão Bancária Routes */}
