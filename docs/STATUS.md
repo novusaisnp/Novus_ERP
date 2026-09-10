@@ -1,6 +1,6 @@
 # Status do projeto — NOVUS ERP
 
-## 🔖 Checkpoint atual — E2E: infra destravada, spec 02 modernizado até achar bloqueio real de dado (2026-09-10)
+## 🔖 Checkpoint atual — E2E: spec 02 fechado ponta a ponta, infra estabilizada (2026-09-10)
 
 Retomado após fechar a auditoria de vazamento (checkpoint anterior). A suíte E2E não rodava de
 fato há tempo — vários gaps de infra empilhados, nenhum documentado antes:
@@ -50,19 +50,50 @@ atual, não suposição:
   válido (14 dígitos com dígito verificador); trocado por gerador que roda o mesmo algoritmo de
   `src/services/cnpjApi.ts`.
 
-**Bloqueio real, não mais de locator** (onde parou): a transição de status pra CONFIRMADO
-(`e2e-set-venda-status`) rejeita com `CLASSIFICACAO_CONTABIL_AUSENTE` porque o item criado via
-"descrição livre" não tem produto/serviço real vinculado — sem isso não há categoria, e sem
-categoria não há classificação de Plano de Contas pra reconhecer a receita. Pra fechar este spec
-de verdade é preciso um produto REAL semeado no tenant "E2E TEST CO" (com categoria já classificada
-— receita vinculada, ver `categoriaService.ts`/`translateError` sobre `CATEGORIA_SEM_CLASSIFICACAO_RECEITA`)
-e selecioná-lo via o combobox de catálogo em vez do fallback de texto livre. Isso é decisão de
-escopo (semear dado permanente pro tenant E2E vs. só documentar o gap), não uma correção de meia
-hora — ficou pra quando alguém decidir seguir.
+**Bloqueio de classificação contábil, resolvido sem seed de catálogo** (commit `eaf4a1e`): a
+transição pra CONFIRMADO (`e2e-set-venda-status`) rejeitava com `CLASSIFICACAO_CONTABIL_AUSENTE`
+porque o item via "descrição livre" não tem produto/categoria — mas a função
+`resolver_classificacao_receita` tem uma cadeia de fallback (produto → categoria → regra por tipo
+→ **default da empresa**, `empresas_representadas.plano_conta_receita_default_id`). Setar esse
+default uma vez pro tenant "E2E TEST CO" (conta "Receita de Vendas" já existente no Plano de
+Contas semeado) resolve pra qualquer item, sem precisar montar catálogo classificado — é
+exatamente o tipo de configuração que uma empresa real faria uma vez em Configurações Básicas.
+Dado permanente, não recriado a cada `dbReset` (não é tabela transacional).
 
-**Próxima ação única**: decidir se vale semear produto+categoria classificada pro tenant E2E TEST
-CO (provavelmente via migration idempotente, não via UI a cada reset) pra destravar o restante do
-spec 02, ou aceitar o gap documentado e seguir pra outra frente.
+**Segundo bloqueio, esse sim um bug real de infra**: "Gerar títulos" reportava sucesso (0 gerados,
+silencioso) mesmo com classificação resolvida, porque `gerar_contas_receber_da_venda` lê de
+`venda_pagamento`/`venda_pagamento_parcelas` — nunca populadas ao criar a venda. Essas tabelas só
+existem via `VendaPagamentoSection` (src/components/vendas/VendaFormModal.tsx), que só renderiza
+quando a venda **já tem id** — ou seja, nunca no modal de criação (fecha sozinho após salvar). É
+preciso reabrir a venda em edição pra registrar o pagamento antes de gerar títulos
+(`VendaFormPage.abrirEdicao`/`registrarPagamento`).
+
+**Terceiro bloqueio, achado real de `e2e-reset`**: a lista `TRANSACTIONAL_TABLES` deletava
+`vendas`/`venda_pagamento` *antes* de `contas_receber` — mas `contas_receber.venda_id` e
+`.venda_pagamento_id` são FK `NO ACTION` (verificado via `information_schema`, não suposição).
+Cada reset falhava em apagar `vendas`/`venda_pagamento` sempre que já existia algum título gerado,
+e o erro era só logado no servidor (response sempre `ok:true`) — acumulando vendas fantasma de
+execuções anteriores, silenciosamente, a cada rodada da suíte. Reordenado por dependência real de
+FK; a response agora inclui `errors` por tabela em vez de engolir.
+
+**Liquidação não vive em Contas a Receber**: `/financeiro/contas-receber` só edita/exclui o
+cadastro do título — a ação de liquidar vive em `/financeiro/movimentacoes` ("Movimentações
+Financeiras"), botão com ícone `CreditCard` (`data-testid="titulo-liquidar-icon-btn"`, adicionado).
+Liquidação em dinheiro (forma de pagamento default) não gera `movimentacoes_bancarias` **por
+design** — pagamento em espécie não passa por conta bancária. Testar o caminho que gera
+movimentação exigiria banco + agência + conta bancária seedados
+(`listarContasBancariasAtivasComAgenciaBanco` faz `INNER JOIN` em `agencias_bancarias`, nenhuma
+existe no tenant E2E) — decidido como fora de escopo; a asserção final ficou em status `RECEBIDO`
++ saldo devedor zerado, que já cobre o essencial da liquidação.
+
+**Spec 02 passa de forma estável** (3 execuções consecutivas confirmadas, ~9-10s cada). Typecheck
+limpo, suíte de testes (406 testes) passando.
+
+**Próxima ação única**: nenhuma pendente neste spec — fechado. `03-conciliacao` e
+`04-produto-estoque` seguem pulando por design (falta seed de conta bancária/localização no
+tenant E2E — decisão consciente de não semear, mesmo raciocínio do bloqueio de movimentação
+bancária acima). Se algum dia interessar destravá-los, o padrão já está estabelecido aqui: default
+a nível de empresa quando existe, senão avaliar se vale seed permanente vs. aceitar o skip.
 
 ## Checkpoint anterior — Auditoria de isolamento entre empresas: fechada, 6 services corrigidos (2026-09-10)
 
