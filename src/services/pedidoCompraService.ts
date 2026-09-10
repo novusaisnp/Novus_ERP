@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { getEmpresaAtivaIdOuFalha } from '@/lib/empresaAtiva';
 import type { PedidoCompra, EnviarParaAprovacaoResultado } from '@/types/pedidoCompra';
 
 function translateError(error: { code?: string; message?: string } | null, fallback: string): Error {
@@ -27,9 +28,11 @@ function translateError(error: { code?: string; message?: string } | null, fallb
 
 export const pedidoCompraService = {
   async list(): Promise<PedidoCompra[]> {
+    const empresaId = await getEmpresaAtivaIdOuFalha();
     const { data, error } = await supabase
       .from('pedidos_compra')
       .select('*, itens:pedidos_compra_itens(*)')
+      .eq('empresa_representada_id', empresaId)
       .order('created_at', { ascending: false });
     if (error) throw translateError(error, 'Erro ao buscar pedidos de compra');
     return (data || []) as unknown as PedidoCompra[];

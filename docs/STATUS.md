@@ -1,6 +1,71 @@
 # Status do projeto — NOVUS ERP
 
-## 🔖 Checkpoint atual — FIN-1: liquidação em lote (2026-09-09)
+## 🔖 Checkpoint atual — Auditoria de isolamento entre empresas: fechada, 6 services corrigidos (2026-09-10)
+
+Disparado por relato ao vivo do usuário: trocou pra empresa "E2E TEST CO" (recém-criada nesta
+sessão, ver seção E2E abaixo) e viu a localização "Geral" da ALLEGRA aparecendo lá, sem
+autocorreção. Auditoria priorizada, sessão de E2E do FIN-1 pausada até fechar isto.
+
+**Causa raiz confirmada — não é bug de RLS, é bug de frontend**: a policy RLS de
+`localizacoes_estoque` já estava correta no banco real (`has_role_for_empresa`, escopada —
+divergente do que a migration original de 2026-07-10 sugeria; corrigida depois, provavelmente na
+Fase 5/auditoria de agosto). O vazamento real é: `novus_owner` (dono da plataforma) tem acesso
+irrestrito por design a qualquer empresa em ~146 tabelas (decisão deliberada de 2026-08-10,
+`has_role_novus_owner_implies_all.sql`) — então em qualquer service que confie 100% no RLS sem
+filtro explícito no frontend, a troca de empresa na UI vira decorativa: mostra a UNIÃO de todas as
+empresas que o usuário pode ver, não só a ativa. **Não é uma falha de RLS pra usuário comum** (RLS
+ainda bloqueia cross-tenant pra eles) — é um bug funcional que só se manifesta pra quem já tem
+acesso legítimo a mais de uma empresa (o dono da plataforma, ou um admin vinculado a mais de uma
+empresa de verdade).
+
+**Verificado sistematicamente e limpo** (varredura via SQL contra o banco real, não contra
+migrations antigas):
+- 0 de 105 tabelas com `empresa_representada_id` têm RLS desabilitado.
+- 0 policies com `USING (true)` (acesso irrestrito) nessas 105 tabelas.
+- 0 policies SELECT/INSERT/UPDATE/DELETE genuinamente sem nenhuma referência a
+  `empresa_representada_id` (as 2 que apareceram numa primeira varredura ampla —
+  `preferencias_listagem`/`usuarios` — são escopadas por `usuario_id = auth.uid()`, um padrão
+  mais restrito ainda, não um vazamento).
+- 80 funções `SECURITY DEFINER` chamáveis por `authenticated` revisadas: achado real de baixo
+  impacto e já registrado — `promote_to_v2_only` (corte v1→v2 de assinatura de webhook satélite)
+  usa `has_role(auth.uid(),'admin')` sem escopo de empresa. Nunca chamada pelo frontend (só existe
+  em `types.ts` gerado), só alcançável forjando a chamada RPC direto, sem UI. Baixa prioridade,
+  não corrigida.
+
+**Frontend: 6 services confirmados com o mesmo padrão de `localizacaoService.ts` (list/get/update/
+delete sem `.eq('empresa_representada_id', ...)`, confiando 100% no RLS) — todos corrigidos nesta
+sessão**, seguindo o padrão já usado no resto do código
+(`getEmpresaAtivaIdOuFalha()` de `@/lib/empresaAtiva` + `.eq('empresa_representada_id', empresaId)`
+explícito em toda leitura/escrita):
+- `src/services/localizacaoService.ts` — corrigido. Bônus: `delete()` tinha um segundo bug
+  (contagem de "única localização ativa" somava across TODAS as empresas, não só a ativa).
+  Reverificado ao vivo no navegador: com "E2E TEST CO" ativa, a tela volta a mostrar
+  "Nenhuma localização cadastrada" (antes mostrava a "Geral" da Allegra).
+- `src/services/categoriaService.ts` — corrigido (`getAll`/`getById`/`update`/`delete`).
+  `create()` deixado sem filtro de propósito (payload já traz `empresa_representada_id` do
+  chamador — ver ponta solta abaixo).
+- `src/services/tamanhoService.ts` — corrigido.
+- `src/services/unidadeMedidaService.ts` — corrigido.
+- `src/services/pedidoCompraService.ts` — só `list()` precisava (as demais funções chamam RPC,
+  escopadas no servidor) — corrigido.
+- `src/services/registrosPontoService.ts` — corrigido. Mais sensível dos 6 (dado de ponto/RH);
+  a tabela `registros_ponto` já tem `empresa_representada_id` direto na linha, não precisou de
+  join.
+- `src/services/recebimentoCompraService.ts` — investigado, **falso positivo**: único `.from()` é
+  `listByPedido(pedidoId)`, escopado por FK do `pedido_id` do chamador. Não alterado.
+
+Typecheck limpo e suíte de testes (56 arquivos / 406 testes) passando após as 6 correções.
+
+**Ponta solta não fechada** (baixa prioridade, registrar e não perder): o fluxo principal de
+criação de categoria (`Categorias.tsx` → `FormCategoria.tsx`) parece não enviar
+`empresa_representada_id` no payload de `create()`, diferente de `QuickAddCategoria.tsx` que
+envia corretamente. Como a coluna é `NOT NULL`, na pior hipótese isso falha com erro de banco
+(seguro), não vaza dado — mas precisa verificação/correção quando alguém pegar essa tela.
+
+**Próxima ação única**: nenhuma pendente na auditoria — fechada. Retomar o trabalho pausado de
+E2E do FIN-1 (suíte de login já funcionando localmente — ver seção anterior).
+
+## Checkpoint anterior — FIN-1: liquidação em lote (2026-09-09)
 
 Feature nova (não havia nenhum código/stub antes): liquidar vários títulos de uma vez,
 escolhido pelo usuário entre 3 opções (liquidar/cancelar/outra) como a operação em lote mais

@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { getEmpresaAtivaIdOuFalha } from '@/lib/empresaAtiva';
 
 export interface RegistroPonto {
   id: string;
@@ -14,9 +15,11 @@ export interface RegistroPonto {
 
 export const registrosPontoService = {
   async listRegistros(): Promise<RegistroPonto[]> {
+    const empresaId = await getEmpresaAtivaIdOuFalha();
     const { data, error } = await supabase
       .from('registros_ponto')
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .order('data_registro', { ascending: false })
       .limit(500);
     if (error) throw error;

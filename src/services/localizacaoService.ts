@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { getEmpresaAtivaIdOuFalha } from '@/lib/empresaAtiva';
 import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 
 export type Localizacao = Tables<'localizacoes_estoque'>;
@@ -8,10 +9,11 @@ export type LocalizacaoUpdate = TablesUpdate<'localizacoes_estoque'>;
 
 export const localizacaoService = {
   async getAll(): Promise<Localizacao[]> {
-    
+    const empresaId = await getEmpresaAtivaIdOuFalha();
     const { data, error } = await supabase
       .from('localizacoes_estoque')
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .eq('ativo', true)
       .order('nome');
 
@@ -24,11 +26,12 @@ export const localizacaoService = {
   },
 
   async getById(id: string): Promise<Localizacao | null> {
-    
+    const empresaId = await getEmpresaAtivaIdOuFalha();
     const { data, error } = await supabase
       .from('localizacoes_estoque')
       .select('*')
       .eq('id', id)
+      .eq('empresa_representada_id', empresaId)
       .single();
 
     if (error) {
@@ -56,7 +59,7 @@ export const localizacaoService = {
   },
 
   async update(id: string, localizacao: LocalizacaoUpdate): Promise<Localizacao> {
-    
+    const empresaId = await getEmpresaAtivaIdOuFalha();
     const { data, error } = await supabase
       .from('localizacoes_estoque')
       .update({
@@ -64,6 +67,7 @@ export const localizacaoService = {
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
+      .eq('empresa_representada_id', empresaId)
       .select()
       .single();
 
@@ -76,11 +80,15 @@ export const localizacaoService = {
   },
 
   async delete(id: string): Promise<void> {
-    
-    // Verificar se não é a única localização ativa
+    const empresaId = await getEmpresaAtivaIdOuFalha();
+
+    // Verificar se não é a única localização ativa DESTA empresa — sem o filtro de
+    // empresa aqui, a contagem somava localizações de todas as empresas (achado real:
+    // uma empresa com 0 localizações não era bloqueada porque outra empresa tinha 1+).
     const { data: localizacoes, error: countError } = await supabase
       .from('localizacoes_estoque')
       .select('id')
+      .eq('empresa_representada_id', empresaId)
       .eq('ativo', true);
 
     if (countError) {
@@ -99,6 +107,7 @@ export const localizacaoService = {
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
+      .eq('empresa_representada_id', empresaId)
       .select('id');
 
     if (error) {

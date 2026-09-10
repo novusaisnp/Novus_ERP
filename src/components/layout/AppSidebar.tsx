@@ -118,7 +118,8 @@ export function AppSidebar({
   }
 
   return (
-    <div
+    <nav
+      aria-label="Menu principal"
       className={`fixed left-0 top-0 h-full z-30 transition-all duration-300 ease-in-out bg-sidebar border-r border-sidebar-border ${
         isHovered ? 'w-64' : 'w-16'
       }`}
@@ -131,6 +132,6 @@ export function AppSidebar({
           {renderNavItems(isHovered)}
         </div>
       </div>
-    </div>
+    </nav>
   );
 }

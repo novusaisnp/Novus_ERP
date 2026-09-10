@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { getEmpresaAtivaIdOuFalha } from '@/lib/empresaAtiva';
 import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 
 export type Categoria = Tables<'categorias_produtos'>;
@@ -22,9 +23,11 @@ function translateError(error: any, fallback: string): Error {
 
 export const categoriaService = {
   async getAll(): Promise<Categoria[]> {
+    const empresaId = await getEmpresaAtivaIdOuFalha();
     const { data, error } = await supabase
       .from('categorias_produtos')
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .order('nome');
 
     if (error) {
@@ -36,10 +39,12 @@ export const categoriaService = {
   },
 
   async getById(id: string): Promise<Categoria | null> {
+    const empresaId = await getEmpresaAtivaIdOuFalha();
     const { data, error } = await supabase
       .from('categorias_produtos')
       .select('*')
       .eq('id', id)
+      .eq('empresa_representada_id', empresaId)
       .single();
 
     if (error) {
@@ -66,6 +71,7 @@ export const categoriaService = {
   },
 
   async update(id: string, categoria: CategoriaUpdate): Promise<Categoria> {
+    const empresaId = await getEmpresaAtivaIdOuFalha();
     const { data, error } = await supabase
       .from('categorias_produtos')
       .update({
@@ -73,6 +79,7 @@ export const categoriaService = {
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
+      .eq('empresa_representada_id', empresaId)
       .select()
       .single();
 
@@ -85,13 +92,15 @@ export const categoriaService = {
   },
 
   async delete(id: string): Promise<void> {
+    const empresaId = await getEmpresaAtivaIdOuFalha();
     const { error } = await supabase
       .from('categorias_produtos')
       .update({
         ativo: false,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('empresa_representada_id', empresaId);
 
     if (error) {
       console.error('[CategoriaService] Erro ao desativar categoria:', error);

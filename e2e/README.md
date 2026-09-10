@@ -145,22 +145,21 @@ empresa_esperada:
 
 ```bash
 # 1) Subir o dev server (janela dedicada)
-bun run dev  # http://localhost:8080
+npm run dev  # http://localhost:3000 (porta fixa do ERP, ver CLAUDE.md raiz)
 
 # 2) Instalar browsers do Playwright (uma vez)
-bunx playwright install --with-deps chromium firefox
+npx playwright install --with-deps chromium firefox
 
 # 3) Rodar suíte completa
 E2E_USER=e2e@novus.test \
 E2E_PASS=<senha> \
-E2E_BASE_URL=http://localhost:8080 \
-bunx playwright test -c e2e/playwright.config.ts
+npx playwright test -c e2e/playwright.config.ts
 
 # Rodar um único fluxo
-bunx playwright test -c e2e/playwright.config.ts e2e/tests/05-regras-conciliacao.spec.ts
+npx playwright test -c e2e/playwright.config.ts e2e/tests/05-regras-conciliacao.spec.ts
 
 # Rodar apenas Chromium
-bunx playwright test -c e2e/playwright.config.ts --project=chromium
+npx playwright test -c e2e/playwright.config.ts --project=chromium
 ```
 
 ### 5.2 Variáveis de ambiente necessárias
@@ -169,7 +168,7 @@ bunx playwright test -c e2e/playwright.config.ts --project=chromium
 |---|---|---|
 | `E2E_USER` | sim | Email do usuário E2E (default `e2e@novus.test`) |
 | `E2E_PASS` | sim | Senha do usuário E2E — nunca versionada |
-| `E2E_BASE_URL` | opcional | Default `http://localhost:8080` |
+| `E2E_BASE_URL` | opcional | Default `http://localhost:3000` |
 | `VITE_SUPABASE_URL` | sim | Lido pelas fixtures `db-reset`/`db-read` |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | sim | idem |
 | `E2E_START_DEV_SERVER` | opcional | `1` para o Playwright subir o Vite automaticamente |
@@ -199,10 +198,12 @@ jobs:
       E2E_START_DEV_SERVER: '1'
     steps:
       - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-      - run: bun install --frozen-lockfile
-      - run: bunx playwright install --with-deps chromium firefox
-      - run: bunx playwright test -c e2e/playwright.config.ts
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium firefox
+      - run: npx playwright test -c e2e/playwright.config.ts
       - uses: actions/upload-artifact@v4
         if: always()
         with:

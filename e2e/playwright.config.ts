@@ -5,12 +5,12 @@ import { defineConfig, devices } from '@playwright/test';
  * Baseado no plano P16.2 / consolidado em P16.4.
  *
  * Variáveis de ambiente esperadas:
- * - E2E_BASE_URL (default: http://localhost:8080)
+ * - E2E_BASE_URL (default: http://localhost:3000 — porta fixa do ERP, ver CLAUDE.md raiz)
  * - E2E_USER, E2E_PASS (credenciais do tenant E2E TEST CO)
  * - E2E_START_DEV_SERVER=1 para subir o Vite via Playwright (CI opcional)
  */
 
-const BASE_URL = process.env.E2E_BASE_URL ?? 'http://localhost:8080';
+const BASE_URL = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
 const START_DEV = process.env.E2E_START_DEV_SERVER === '1';
 
 export default defineConfig({

@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { getEmpresaAtivaIdOuFalha } from '@/lib/empresaAtiva';
 import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 
 export type UnidadeMedida = Tables<'unidades_medida'>;
@@ -8,10 +9,11 @@ export type UnidadeMedidaUpdate = TablesUpdate<'unidades_medida'>;
 
 export const unidadeMedidaService = {
   async getAll(): Promise<UnidadeMedida[]> {
-    
+    const empresaId = await getEmpresaAtivaIdOuFalha();
     const { data, error } = await supabase
       .from('unidades_medida')
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .eq('ativo', true)
       .order('nome');
 
@@ -24,11 +26,12 @@ export const unidadeMedidaService = {
   },
 
   async getById(id: string): Promise<UnidadeMedida | null> {
-    
+    const empresaId = await getEmpresaAtivaIdOuFalha();
     const { data, error } = await supabase
       .from('unidades_medida')
       .select('*')
       .eq('id', id)
+      .eq('empresa_representada_id', empresaId)
       .single();
 
     if (error) {
@@ -56,7 +59,7 @@ export const unidadeMedidaService = {
   },
 
   async update(id: string, unidadeMedida: UnidadeMedidaUpdate): Promise<UnidadeMedida> {
-    
+    const empresaId = await getEmpresaAtivaIdOuFalha();
     const { data, error } = await supabase
       .from('unidades_medida')
       .update({
@@ -64,6 +67,7 @@ export const unidadeMedidaService = {
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
+      .eq('empresa_representada_id', empresaId)
       .select()
       .single();
 
@@ -76,14 +80,15 @@ export const unidadeMedidaService = {
   },
 
   async delete(id: string): Promise<void> {
-    
+    const empresaId = await getEmpresaAtivaIdOuFalha();
     const { error } = await supabase
       .from('unidades_medida')
-      .update({ 
+      .update({
         ativo: false,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('empresa_representada_id', empresaId);
 
     if (error) {
       console.error('[UnidadeMedidaService] Erro ao desativar unidade de medida:', error);
