@@ -65,7 +65,10 @@ export async function readMovimentacoesByOrigem(page: Page, tituloId: string): P
 }
 
 export async function readClienteIdByNome(page: Page, nome: string): Promise<string | null> {
-  const rows = await restGet<{ id: string }>(page, `clientes?nome=eq.${encodeURIComponent(nome)}&select=id`);
+  // Desde o Cadastro Unificado de Entidades não existe mais uma tabela `clientes`
+  // dedicada — cliente é uma entidade com o papel CLIENTE, e `nome` (== razão
+  // social para PJ) já identifica o registro criado neste teste.
+  const rows = await restGet<{ id: string }>(page, `entidades?nome=eq.${encodeURIComponent(nome)}&select=id`);
   return rows[0]?.id ?? null;
 }
 

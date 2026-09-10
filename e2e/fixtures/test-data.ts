@@ -10,6 +10,24 @@ export interface ClienteFactory {
   cnpj_cpf: string;
 }
 
+/** Gera um CNPJ com dígitos verificadores válidos (algoritmo em src/services/cnpjApi.ts). */
+const gerarCnpjValido = (): string => {
+  const base = Array.from({ length: 12 }, () => Math.floor(Math.random() * 10));
+  const digito = (nums: number[], pesoInicial: number): number => {
+    let soma = 0;
+    let peso = pesoInicial;
+    for (const n of nums) {
+      soma += n * peso;
+      peso = peso === 2 ? 9 : peso - 1;
+    }
+    const resto = soma % 11;
+    return resto < 2 ? 0 : 11 - resto;
+  };
+  const d1 = digito(base, 5);
+  const d2 = digito([...base, d1], 6);
+  return [...base, d1, d2].join('');
+};
+
 export interface ProdutoFactory {
   codigo: string;
   descricao: string;
@@ -22,7 +40,7 @@ export interface VendaFactory {
 
 export const makeCliente = (overrides: Partial<ClienteFactory> = {}): ClienteFactory => ({
   nome: `Cliente E2E ${stamp()}`,
-  cnpj_cpf: '00000000000',
+  cnpj_cpf: gerarCnpjValido(),
   ...overrides,
 });
 

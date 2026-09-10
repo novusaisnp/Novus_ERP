@@ -29,21 +29,22 @@ test.describe('F2 - Venda -> Contas a Receber -> Liquidação', () => {
     const cliente = makeCliente();
     const produto = makeProduto();
 
-    // 1. Cadastrar cliente
-    await page.goto('/cadastros/clientes');
-    await page.getByRole('button', { name: /novo cliente/i }).first().click();
-    await page.getByTestId('cliente-nome-input').fill(cliente.nome);
-    await page.getByTestId('cliente-salvar-btn').click();
-    await expect(page.getByText(cliente.nome).first()).toBeVisible({ timeout: 15_000 });
+    // 1. Cadastrar cliente — desde o Cadastro Unificado de Entidades (2026-08-11),
+    // Clientes.tsx só lista quem já tem o papel CLIENTE e não cria mais inline; toda
+    // criação passa pelo formulário único em Cadastros → Entidades (deep-link
+    // ?papel=CLIENTE pré-marca o papel e abre o dialog direto).
+    await page.goto('/cadastros/entidades?papel=CLIENTE');
+    await page.getByLabel(/razão social/i).fill(cliente.nome);
+    await page.getByLabel(/^cnpj/i).fill(cliente.cnpj_cpf);
+    await page.getByRole('button', { name: /^cadastrar$/i }).click();
+    await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 15_000 });
 
     // 2. Criar venda (fica em RASCUNHO por padrão)
     const venda = new VendaFormPage(page);
     await venda.goto();
     await venda.openNovaVenda();
     await venda.selectCliente(cliente.nome);
-    await venda.fillItem(0, produto.descricao, 2);
-    const precoInput = page.getByLabel(/preço unit/i).first();
-    await precoInput.fill('100');
+    await venda.fillItem(0, produto.descricao, 2, 100);
     await venda.save();
     await expect(page.getByText(/venda salva|sucesso/i).first()).toBeVisible({ timeout: 15_000 });
 
