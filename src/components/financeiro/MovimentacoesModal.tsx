@@ -396,10 +396,12 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
                                   <Eye className="w-4 h-4" />
                                 </Button>
                                 {permissoes.pode_liquidar && (titulo.situacao === 'ABERTA' || titulo.situacao === 'PARCIAL' || titulo.situacao === 'VENCIDA') && (
-                                  <Button 
-                                    size="sm" 
+                                  <Button
+                                    size="sm"
                                     variant="default"
                                     onClick={() => handleLiquidacaoClick(titulo)}
+                                    title="Liquidar título"
+                                    data-testid="titulo-liquidar-icon-btn"
                                   >
                                     <CreditCard className="w-4 h-4" />
                                   </Button>

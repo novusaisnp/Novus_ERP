@@ -62,7 +62,48 @@ export class VendaFormPage {
     await precoWrapper.locator('input').fill(String(Math.round(precoUnitario * 100)));
   }
 
+  /**
+   * Sem plano de pagamento selecionado, a venda salva normalmente mas
+   * `gerar_contas_receber_da_venda` não encontra parcela elegível (títulos vêm
+   * de `venda_pagamento`/`venda_pagamento_parcelas`, não são derivados direto
+   * dos itens) — "gerar títulos" reporta sucesso com 0 gerados, silenciosamente.
+   */
+  async selectPlanoPagamento(nome: string): Promise<void> {
+    await this.page.getByRole('combobox').filter({ hasText: /selecione um plano/i }).click();
+    await this.page.getByRole('option', { name: new RegExp(nome, 'i') }).first().click();
+  }
+
   async save(): Promise<void> {
     await this.salvarButton.click();
+  }
+
+  /**
+   * `VendaPagamentoSection` (src/components/vendas/VendaFormModal.tsx, linha ~478)
+   * só renderiza quando `venda?.id` existe — ou seja, nunca no modal de criação
+   * (que fecha sozinho após salvar, `onOpenChange(false)` incondicional). É
+   * preciso reabrir a venda já salva em modo edição pra registrar o pagamento.
+   * Sem isso, `gerar_contas_receber_da_venda` nunca acha parcela elegível
+   * (`venda_pagamento`/`venda_pagamento_parcelas` ficam vazias) — "Gerar
+   * títulos" reporta sucesso silencioso com 0 gerados, sem indicar o motivo.
+   */
+  async abrirEdicao(nomeCliente: string): Promise<void> {
+    const row = this.page.getByRole('row').filter({ hasText: nomeCliente }).first();
+    await row.getByTestId('venda-editar-btn').click();
+    await expect(this.clienteSelect).toBeVisible();
+  }
+
+  async registrarPagamento(valorTotal: number): Promise<void> {
+    await this.page.getByRole('combobox').filter({ hasText: /^Selecione…$/ }).first().click();
+    await this.page.getByRole('option').first().click();
+
+    const valorWrapper = this.page.locator('div').filter({ hasText: /^Valor \(R\$\)$/ });
+    await valorWrapper.locator('input').fill(String(Math.round(valorTotal * 100)));
+
+    await this.page.getByRole('button', { name: /adicionar pagamento/i }).click();
+    await expect(this.page.getByText(/restante/i)).toBeVisible();
+  }
+
+  async fecharModal(): Promise<void> {
+    await this.page.getByRole('button', { name: /^cancelar$/i }).click();
   }
 }

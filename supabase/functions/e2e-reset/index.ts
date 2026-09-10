@@ -17,22 +17,32 @@ interface ResetResponse {
   message: string;
   tenantId?: string;
   tablesTruncated?: string[];
+  errors?: Array<{ table: string; message: string }>;
 }
 
-// Tabelas transacionais escopadas por empresa_representada_id.
+// Tabelas transacionais escopadas por empresa_representada_id, em ordem de
+// dependência (filha antes da mãe) — verificado contra os FKs reais via
+// information_schema. A ordem importa: várias dessas FKs são NO ACTION (não
+// CASCADE), e um DELETE fora de ordem falha silenciosamente sem abortar o
+// reset (só loga no servidor), deixando linhas órfãs acumulando entre
+// execuções. Achado real: `vendas`/`venda_pagamento` vinham antes de
+// `contas_receber` na lista antiga — com `contas_receber.venda_id` e
+// `.venda_pagamento_id` sendo NO ACTION, cada reset falhava em apagar
+// `vendas`/`venda_pagamento` sempre que já existia algum título gerado,
+// acumulando vendas "fantasma" de execuções anteriores.
 // NÃO inclui tabelas mestre (bancos, produtos, plano_contas etc.) —
 // essas são reutilizadas entre execuções.
 const TRANSACTIONAL_TABLES = [
-  'venda_pagamento_parcelas',
-  'venda_pagamento',
-  'itens_venda',
+  'movimentacoes_bancarias', // filha de liquidacoes_titulos (NO ACTION)
+  'liquidacoes_titulos', // filha de contas_receber/contas_pagar (NO ACTION)
+  'contas_receber', // filha de vendas/venda_pagamento/venda_pagamento_parcelas (NO ACTION)
+  'contas_pagar',
+  'venda_pagamento_parcelas', // filha de venda_pagamento (CASCADE, mas contas_receber acima referenciava ela também)
+  'venda_pagamento', // filha de vendas (CASCADE)
+  'itens_venda', // filha de vendas (CASCADE)
   'vendas',
   'orcamentos_venda_itens',
   'orcamentos_venda',
-  'liquidacoes_titulos',
-  'contas_receber',
-  'contas_pagar',
-  'movimentacoes_bancarias',
   'banco_movimentacoes_extrato',
   'banco_extratos_importados',
   'estoque_movimentacoes',
@@ -103,6 +113,7 @@ Deno.serve(async (req: Request) => {
   }
 
   const truncated: string[] = [];
+  const errors: Array<{ table: string; message: string }> = [];
   for (const table of TRANSACTIONAL_TABLES) {
     const { error } = await admin
       .from(table)
@@ -112,15 +123,19 @@ Deno.serve(async (req: Request) => {
       truncated.push(table);
     } else {
       console.error(`[e2e-reset] erro em ${table}:`, error.message);
+      errors.push({ table, message: error.message });
     }
   }
 
   return jsonResponse(
     {
-      ok: true,
-      message: `Reset concluído para ${empresa.nome}`,
+      ok: errors.length === 0,
+      message: errors.length === 0
+        ? `Reset concluído para ${empresa.nome}`
+        : `Reset parcial para ${empresa.nome}: ${errors.length} tabela(s) falharam`,
       tenantId: empresa.id,
       tablesTruncated: truncated,
+      errors,
     },
     200,
   );

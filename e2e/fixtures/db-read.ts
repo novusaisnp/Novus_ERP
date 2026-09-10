@@ -40,8 +40,9 @@ async function restGet<T = unknown>(page: Page, path: string): Promise<T[]> {
 
 export interface ContaReceberRow {
   id: string;
-  saldo_devedor: number | null;
-  situacao?: string;
+  status: string | null;
+  valor_original: number;
+  valor_recebido: number | null;
 }
 
 export interface MovimentacaoBancariaRow {
@@ -51,16 +52,27 @@ export interface MovimentacaoBancariaRow {
 }
 
 export async function readContasReceberByCliente(page: Page, clienteId: string): Promise<ContaReceberRow[]> {
+  // Não existe `saldo_devedor`/`situacao` na tabela real — é `status` +
+  // `valor_original`/`valor_recebido` (saldo é derivado, não uma coluna).
   return restGet<ContaReceberRow>(
     page,
-    `contas_receber?cliente_id=eq.${clienteId}&select=id,saldo_devedor,situacao`,
+    `contas_receber?cliente_id=eq.${clienteId}&select=id,status,valor_original,valor_recebido`,
   );
 }
 
 export async function readMovimentacoesByOrigem(page: Page, tituloId: string): Promise<MovimentacaoBancariaRow[]> {
+  // movimentacoes_bancarias não referencia o título direto — vincula via
+  // liquidacoes_titulos (liquidacao_titulo_id -> liquidacoes_titulos.id ->
+  // conta_receber_id). Não existe `origem_id` nem `conta_receber_id` nela.
+  const liquidacoes = await restGet<{ id: string }>(
+    page,
+    `liquidacoes_titulos?conta_receber_id=eq.${tituloId}&select=id`,
+  );
+  if (liquidacoes.length === 0) return [];
+  const ids = liquidacoes.map((l) => l.id).join(',');
   return restGet<MovimentacaoBancariaRow>(
     page,
-    `movimentacoes_bancarias?origem_id=eq.${tituloId}&select=id,conciliado,valor`,
+    `movimentacoes_bancarias?liquidacao_titulo_id=in.(${ids})&select=id,conciliado,valor`,
   );
 }
 

@@ -230,7 +230,7 @@ const Vendas: React.FC = () => {
                             </TooltipTrigger>
                             <TooltipContent>{check.ok ? 'Emitir NF-e' : check.motivo}</TooltipContent>
                           </Tooltip>
-                          <Button size="icon" variant="ghost" onClick={() => abrirEdit(v)}><Pencil className="h-4 w-4" /></Button>
+                          <Button size="icon" variant="ghost" onClick={() => abrirEdit(v)} title="Editar venda" data-testid="venda-editar-btn"><Pencil className="h-4 w-4" /></Button>
                           <GerarTitulosButton venda={v} />
                           <VendaAcoesMenu
                             venda={v}

@@ -7,7 +7,6 @@ import {
   readClienteIdByNome,
   readVendaIdByCliente,
   readContasReceberByCliente,
-  readMovimentacoesByOrigem,
 } from '../fixtures/db-read';
 import { makeCliente, makeProduto } from '../fixtures/test-data';
 import { VendaFormPage } from '../pages/VendaFormPage';
@@ -44,9 +43,17 @@ test.describe('F2 - Venda -> Contas a Receber -> Liquidação', () => {
     await venda.goto();
     await venda.openNovaVenda();
     await venda.selectCliente(cliente.nome);
+    await venda.selectPlanoPagamento('À Vista');
     await venda.fillItem(0, produto.descricao, 2, 100);
     await venda.save();
     await expect(page.getByText(/venda salva|sucesso/i).first()).toBeVisible({ timeout: 15_000 });
+
+    // 2b. Reabrir em edição pra registrar o pagamento — "Gerar títulos" lê de
+    // venda_pagamento/venda_pagamento_parcelas, não dos itens da venda direto,
+    // e essa seção só existe depois da venda já ter id (ver VendaFormPage.registrarPagamento).
+    await venda.abrirEdicao(cliente.nome);
+    await venda.registrarPagamento(200);
+    await venda.fecharModal();
 
     // 3. Recuperar IDs e transicionar status para CONFIRMADO (via RPC de teste)
     const clienteId = await readClienteIdByNome(page, cliente.nome);
@@ -64,30 +71,35 @@ test.describe('F2 - Venda -> Contas a Receber -> Liquidação', () => {
     await page.getByTestId('venda-gerar-titulos-btn').first().click();
     await expect(page.getByText(/título|gerad|sucesso/i).first()).toBeVisible({ timeout: 15_000 });
 
-    // 5. Ir para Contas a Receber e liquidar
+    // 5. Liquidar o título — a ação de liquidar não existe em
+    // /financeiro/contas-receber (só edita/exclui o cadastro do título); vive em
+    // /financeiro/movimentacoes (ver ContasReceberPage). Achado à parte: "Busca
+    // Geral" em Contas a Receber (contasReceberQueries.ts) só filtra
+    // numero_documento/descricao — nunca o nome do cliente, apesar do rótulo.
     const cr = new ContasReceberPage(page);
     await cr.goto();
-    await cr.filtrarPor(cliente.nome);
-
-    const linhas = page.getByRole('row').filter({ hasText: cliente.nome });
-    await expect(linhas.first()).toBeVisible({ timeout: 15_000 });
-
-    await cr.abrirGestaoDaLinha(cliente.nome);
-    await cr.liquidar('200,00');
-    await expect(page.getByText(/liquidad|baixad|sucesso/i).first()).toBeVisible({ timeout: 15_000 });
+    await cr.liquidar(cliente.nome, '200,00');
+    await expect(page.getByText(/liquidad|sucesso/i).first()).toBeVisible({ timeout: 15_000 });
 
     // 6. Asserções de DB
     const contas = await readContasReceberByCliente(page, clienteId!);
     expect(contas.length, 'nenhum título gerado').toBeGreaterThan(0);
-    const saldoTotal = contas.reduce((acc, c) => acc + Number(c.saldo_devedor ?? 0), 0);
+    const saldoTotal = contas.reduce(
+      (acc, c) => acc + (Number(c.valor_original) - Number(c.valor_recebido ?? 0)),
+      0,
+    );
     expect(saldoTotal, 'saldo devedor não zerou após liquidação').toBe(0);
 
-    // Movimentações bancárias vinculadas a algum título liquidado
-    let movimentacoesConciliadas = 0;
-    for (const c of contas) {
-      const movs = await readMovimentacoesByOrigem(page, c.id);
-      movimentacoesConciliadas += movs.filter((m) => m.conciliado === true).length;
-    }
-    expect(movimentacoesConciliadas, 'nenhuma movimentação bancária conciliada').toBeGreaterThan(0);
+    const statusFinal = contas.every((c) => c.status === 'RECEBIDO');
+    expect(statusFinal, 'título não marcado como RECEBIDO após liquidação').toBe(true);
+
+    // Liquidação em dinheiro (forma de pagamento default) não gera
+    // movimentação bancária por design — pagamento em espécie não passa por
+    // conta bancária (ver `necessitaContaBancaria` em LiquidacaoTituloModal.tsx).
+    // Testar o caminho que gera movimentacoes_bancarias exigiria seed de
+    // banco + agência + conta bancária (listarContasBancariasAtivasComAgenciaBanco
+    // faz INNER JOIN em agencias_bancarias, nenhuma delas existe no tenant E2E)
+    // — fora do escopo deste spec; o essencial da liquidação já está provado
+    // acima (status RECEBIDO + saldo devedor zerado).
   });
 });
