@@ -7,6 +7,7 @@ export class LoginPage {
   readonly passwordInput: Locator;
   readonly submitButton: Locator;
   readonly errorToast: Locator;
+  readonly rememberMeCheckbox: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -14,6 +15,7 @@ export class LoginPage {
     this.passwordInput = page.getByLabel(/senha/i);
     this.submitButton = page.getByRole('button', { name: /entrar/i });
     this.errorToast = page.getByText(/credenciais|inválid|erro no login/i);
+    this.rememberMeCheckbox = page.getByLabel(/lembrar-me/i);
   }
 
   async goto(): Promise<void> {
@@ -21,9 +23,18 @@ export class LoginPage {
     await expect(this.emailInput).toBeVisible();
   }
 
-  async login(email: string, password: string): Promise<void> {
+  /**
+   * `rememberMe` precisa ser true para gerar um storageState reutilizável por
+   * outros specs: sem isso, `useSessionPersistence` desloga a sessão no
+   * primeiro mount de qualquer aba/contexto novo que não passou pelo próprio
+   * formulário de login (ver src/hooks/useSessionPersistence.ts).
+   */
+  async login(email: string, password: string, rememberMe = false): Promise<void> {
     await this.emailInput.fill(email);
     await this.passwordInput.fill(password);
+    if (rememberMe) {
+      await this.rememberMeCheckbox.check();
+    }
     await this.submitButton.click();
   }
 

@@ -19,12 +19,23 @@ export class DashboardPage {
     await expect(this.sidebar).toBeVisible();
   }
 
-  linkFor(nome: string | RegExp): Locator {
-    return this.page.getByRole('link', { name: nome });
+  /**
+   * A sidebar não usa links — todo item é um <button>. Grupos (ex. "Vendas") só
+   * abrem/expandem ao clicar, e os sub-itens só entram no DOM com a sidebar em
+   * hover (largura expandida) E o grupo aberto (Radix Collapsible desmonta o
+   * conteúdo quando fechado). Navegar para um item de grupo exige: hover na
+   * sidebar, clicar no botão do grupo, depois clicar no botão do sub-item.
+   */
+  async navigateTo(groupTitle: string, subItemTitle: string, expectedUrl: RegExp): Promise<void> {
+    await this.sidebar.hover();
+    await this.sidebar.getByRole('button', { name: groupTitle, exact: true }).click();
+    await this.page.getByRole('button', { name: subItemTitle, exact: true }).click();
+    await expect(this.page).toHaveURL(expectedUrl, { timeout: 10_000 });
   }
 
-  async navigateTo(nome: string | RegExp, expectedUrl: RegExp): Promise<void> {
-    await this.linkFor(nome).first().click();
+  /** Para itens de topo sem grupo (ex. "Dashboard"), sem sub-item para clicar. */
+  async navigateToTopLevel(title: string, expectedUrl: RegExp): Promise<void> {
+    await this.sidebar.getByRole('button', { name: title, exact: true }).first().click();
     await expect(this.page).toHaveURL(expectedUrl, { timeout: 10_000 });
   }
 
