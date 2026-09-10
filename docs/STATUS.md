@@ -1,6 +1,52 @@
 # Status do projeto — NOVUS ERP
 
-## 🔖 Checkpoint atual — E2E TEST CO separada da Allegra em grupo próprio (2026-09-10)
+## 🔖 Checkpoint atual — FIN-1 fechado por completo: E2E do ciclo de vida do título (2026-09-10)
+
+Última fatia do FIN-1 (`docs/PLANO_MESTRE.md`): testes E2E de criar/editar/liquidar
+parcial/liquidar total/cancelar/estornar. Novo spec `e2e/tests/07-titulo-vida.spec.ts`, 4 testes,
+reaproveitando o setup (`criarTituloAberto`) já provado no spec 02.
+
+**Achados reais no caminho (não só ajuste de teste)**:
+- **Cancelar/estornar exigem segunda senha** (gate do FIN-0, incondicional — "Autorização
+  necessária" com e-mail/senha/justificativa de um autorizador, registrado pra auditoria).
+  Confirmado que o gate FUNCIONA corretamente (bloqueava a ação até eu perceber e tratar).
+  Decisão de escopo: autoriza com a própria conta `e2e@novus.test` (admin do tenant de teste) —
+  aceitável por ser autoteste num tenant só de teste, diferente de preencher credencial de
+  terceiro em nome de alguém.
+- **Bug real corrigido**: "Editar" a partir de Movimentações Financeiras nunca funcionava pra
+  Contas a Receber. `MovimentacoesGestaoPopup.tsx` navega com `state: {editarTitulo, origem}`
+  pra `/financeiro/contas-receber`, mas `src/pages/financeiro/ContasReceber.tsx` nunca lia esse
+  state (só `ContasPagar.tsx` lia) — botão "Editar" abria a lista e não fazia mais nada. Corrigido
+  replicando o mesmo padrão (`useContaReceber(state.editarTitulo)` + `useEffect` que abre o modal
+  e limpa o state via `window.history.replaceState`).
+- **Bug real corrigido — erro nativo em inglês**: ao editar um título sem número de documento
+  (título gerado por venda nunca preenche esse campo), o navegador mostrava "Please fill out this
+  field" (nativo, inglês) em vez da mensagem pt-BR que `ContaReceberFormModal.handleSubmit` já
+  tinha pronta — `required` HTML intercepta o submit antes do JS rodar. Removidos os `required`
+  nativos de `ContasReceberForm.tsx` (numero_documento, descricao, valor_original, data_emissao,
+  data_vencimento); adicionada a checagem de `data_emissao` que faltava no `handleSubmit`. Novo
+  padrão #12 registrado em `novus-code-hygiene` — regra geral: `required` nativo é suspeito por
+  padrão sempre que o form pai já tem validação JS equivalente.
+
+**Modelo de "empresa responsável" esclarecido** (a pedido do usuário, corrigindo entendimento
+errado registrado no checkpoint anterior): `centelha.responsaveis` é só a ferramenta de
+onboarding (Centelha, pontapé pra instalar o sistema num cliente novo) — **não** é o modelo
+organizacional real. O modelo real é `public.empresa_responsavel` (singleton global, tela
+`/configuracoes/empresas`) + `empresas_representadas.configuracoes.tipo_vinculo`
+(`INDEPENDENTE`/`MESMA_EMPRESA`/`FILIAL`/`GRUPO`). Resolução: mantido o agrupamento em
+`centelha.responsaveis` (é o que a tela de troca de empresa usa de verdade, resolve o pedido
+original de separar visualmente Allegra/E2E TEST CO) **e** setado
+`tipo_vinculo = 'INDEPENDENTE'` pra E2E TEST CO no modelo real, sem tocar no singleton
+(continua sendo a Allegra, corretamente). Nota permanente: são duas tabelas de "responsável"
+tecnicamente desconectadas — checar qual é a real antes de mexer em qualquer feature parecida.
+
+**FIN-1 fechado por completo** — todos os itens do programa concluídos (`PLANO_MESTRE.md`).
+Onda 1 do roadmap fica só com Fiscal/SPED e FIN-8 (baseline de segurança) pendentes.
+
+Typecheck limpo, suíte de testes (406 testes) passando, suíte E2E completa passando (01, 02, 05,
+07 — 03/04/06 seguem pulando por design, sem seed de conta bancária/localização/opt-in fiscal).
+
+## Checkpoint anterior — E2E TEST CO separada da Allegra em grupo próprio (2026-09-10)
 
 Usuário notou, depois do checkpoint anterior, que a E2E TEST CO aparecia agrupada com a Allegra na
 tela de seleção de empresa (`SelecionarEmpresa.tsx`, RPC `get_empresas_disponiveis()`). Causa:

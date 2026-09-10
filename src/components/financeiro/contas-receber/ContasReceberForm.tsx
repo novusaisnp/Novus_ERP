@@ -98,7 +98,6 @@ export const ContasReceberForm: React.FC<ContasReceberFormProps> = ({
                 value={formData.numero_documento ?? ''}
                 onChange={(e) => onInputChange('numero_documento', e.target.value)}
                 placeholder="Ex: NF-001234"
-                required
               />
             </div>
 
@@ -133,7 +132,6 @@ export const ContasReceberForm: React.FC<ContasReceberFormProps> = ({
               value={formData.descricao}
               onChange={(e) => onInputChange('descricao', e.target.value)}
               placeholder="Descreva o que está sendo recebido"
-              required
             />
           </div>
 
@@ -147,7 +145,6 @@ export const ContasReceberForm: React.FC<ContasReceberFormProps> = ({
                 value={formData.valor_original}
                 onValueChange={(v) => onInputChange('valor_original', v)}
                 placeholder="R$ 0,00"
-                required
               />
             </div>
 
@@ -182,7 +179,6 @@ export const ContasReceberForm: React.FC<ContasReceberFormProps> = ({
                 type="date"
                 value={formData.data_emissao ?? ''}
                 onChange={(e) => onInputChange('data_emissao', e.target.value)}
-                required
               />
             </div>
 
@@ -195,7 +191,6 @@ export const ContasReceberForm: React.FC<ContasReceberFormProps> = ({
                 type="date"
                 value={formData.data_vencimento}
                 onChange={(e) => onInputChange('data_vencimento', e.target.value)}
-                required
               />
             </div>
 

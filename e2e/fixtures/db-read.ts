@@ -43,6 +43,7 @@ export interface ContaReceberRow {
   status: string | null;
   valor_original: number;
   valor_recebido: number | null;
+  observacoes: string | null;
 }
 
 export interface MovimentacaoBancariaRow {
@@ -56,7 +57,7 @@ export async function readContasReceberByCliente(page: Page, clienteId: string):
   // `valor_original`/`valor_recebido` (saldo é derivado, não uma coluna).
   return restGet<ContaReceberRow>(
     page,
-    `contas_receber?cliente_id=eq.${clienteId}&select=id,status,valor_original,valor_recebido`,
+    `contas_receber?cliente_id=eq.${clienteId}&select=id,status,valor_original,valor_recebido,observacoes`,
   );
 }
 

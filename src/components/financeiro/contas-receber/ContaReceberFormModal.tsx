@@ -187,6 +187,7 @@ export function ContaReceberFormModal({
     const valor = Number(form.valor_original);
     if (!valor || valor <= 0)
       return setErro('Informe um valor válido (maior que zero).');
+    if (!form.data_emissao) return setErro('Informe a data de emissão.');
     if (!form.data_vencimento) return setErro('Informe a data de vencimento.');
 
     if (useRateio) {

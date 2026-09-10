@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { useContasReceber } from '@/hooks/useContasReceber';
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import { useContasReceber, useContaReceber } from '@/hooks/useContasReceber';
 import { ContasReceberHeader } from '@/components/financeiro/contas-receber/ContasReceberHeader';
 import { ContasReceberStats } from '@/components/financeiro/contas-receber/ContasReceberStats';
 import { ContasReceberFilters } from '@/components/financeiro/contas-receber/ContasReceberFilters';
@@ -16,6 +17,7 @@ import type {
 const PAGE_SIZE = 50;
 
 const ContasReceber = () => {
+  const location = useLocation();
   const [filtros, setFiltros] = useState<ContaReceberFiltersType>({});
   const [contaParaExcluir, setContaParaExcluir] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -36,6 +38,20 @@ const ContasReceber = () => {
     isUpdating,
     isDeleting,
   } = useContasReceber(filtros, { page, pageSize: PAGE_SIZE });
+
+  // Veio de Movimentações Financeiras com um título específico pra editar —
+  // busca direta por id (getById), não depende da conta estar na página atual
+  // (mesmo padrão de ContasPagar.tsx; aqui nunca tinha sido implementado).
+  const state = location.state as { editarTitulo?: string } | null;
+  const { conta: contaParaEditar } = useContaReceber(state?.editarTitulo ?? '');
+  useEffect(() => {
+    if (state?.editarTitulo && contaParaEditar) {
+      setEditing(contaParaEditar);
+      setModalOpen(true);
+      window.history.replaceState({}, document.title);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state?.editarTitulo, contaParaEditar]);
 
   const handleCreateClick = () => {
     setEditing(null);
