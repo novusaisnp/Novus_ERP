@@ -448,6 +448,22 @@ mesmo dono) foi explicitamente descartado do escopo do NOVUS core — cada ramo/
 distinta merece sua própria instalação; um produto separado de consolidação gerencial
 multi-negócio ("ERP Enterprise") ficou registrado como ideia futura, não iniciado.
 
+**Emenda de segurança (2026-09-10, ver `STATUS.md`):** a frase acima — "`empresa_responsavel`
+já é o grupo econômico de uma instalação, todas as representadas já pertencem a ele por
+definição" — presumia que uma instalação NOVUS nunca hospeda mais de um grupo econômico
+independente. Isso deixou de ser verdade quando a E2E TEST CO passou a coexistir na mesma
+instalação da Allegra como tenant de teste — `empresa_responsavel` era um singleton global sem
+nenhuma coluna de vínculo, e suas 4 policies RLS não tinham escopo de empresa nenhum: qualquer
+admin de qualquer empresa lia/escrevia o cadastro real da Allegra. Corrigido em 2 passos
+(`20260910120000`/`20260910130000`): a tabela agora tem `empresa_representada_id` (FK,
+`NOT NULL`, único — **1 linha por `empresa_representada`, não mais 1 por instalação**) e RLS
+via `has_role_for_empresa`, mesmo padrão do resto do sistema. Cada filial/matriz de um grupo
+real (CNPJ e IE próprios, como já dito acima) passa a preencher seu próprio registro em vez de
+herdar um único cadastro da instalação — coerente com a exigência fiscal já citada nesta seção,
+mas quebra a leitura literal de "grupo econômico = 1 empresa_responsavel só". Se um cenário
+futuro precisar mesmo de dado compartilhado entre matriz e filiais do mesmo grupo (hoje nenhuma
+tela depende disso), resolver com um campo explícito de herança, não voltando a um singleton.
+
 ### ORG-1 — Matriz e filial (FK real entre empresas_representadas)
 - [x] Coluna `matriz_empresa_representada_id` (auto-referenciada, nullable, com CHECK
   contra auto-referência) substituindo o campo solto que já existia

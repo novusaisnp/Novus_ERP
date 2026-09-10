@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { empresaResponsavelService } from '@/services/empresaResponsavelService';
+import { getEmpresaAtivaId } from '@/lib/empresaAtiva';
 
 export interface EmpresaResponsavel {
   id?: string;
@@ -16,8 +17,18 @@ export interface EmpresaResponsavel {
 export const useEmpresaResponsavel = () => {
   const qc = useQueryClient();
 
+  // empresa_responsavel é escopada por empresa — a queryKey precisa da empresa ativa
+  // pra não vazar cache de uma empresa pra outra ao trocar no seletor (mesmo padrão
+  // usado em useCatalogoOrcamento/useRelatoriosContabeis/etc).
+  const empresaAtivaQuery = useQuery({
+    queryKey: ['empresa-ativa-id'],
+    queryFn: getEmpresaAtivaId,
+  });
+  const empresaAtivaId = empresaAtivaQuery.data;
+
   const query = useQuery({
-    queryKey: ['empresa-responsavel'],
+    queryKey: ['empresa-responsavel', empresaAtivaId],
+    enabled: !!empresaAtivaId,
     queryFn: async () => {
       try {
         return await empresaResponsavelService.fetch();
@@ -31,8 +42,8 @@ export const useEmpresaResponsavel = () => {
   const saveMutation = useMutation({
     mutationFn: (input: EmpresaResponsavel) => empresaResponsavelService.save(input),
     onSuccess: (savedEmpresa) => {
-      qc.setQueryData(['empresa-responsavel'], savedEmpresa);
-      qc.invalidateQueries({ queryKey: ['empresa-responsavel'] });
+      qc.setQueryData(['empresa-responsavel', empresaAtivaId], savedEmpresa);
+      qc.invalidateQueries({ queryKey: ['empresa-responsavel', empresaAtivaId] });
       toast.success('Empresa salva com sucesso');
     },
     onError: (e: Error) => {
@@ -43,7 +54,7 @@ export const useEmpresaResponsavel = () => {
 
   return {
     empresa: query.data || null,
-    loading: query.isLoading,
+    loading: empresaAtivaQuery.isLoading || query.isLoading,
     saving: saveMutation.isPending,
     saveEmpresa: (v: EmpresaResponsavel) => saveMutation.mutateAsync(v),
     refetch: query.refetch,

@@ -1,6 +1,57 @@
 # Status do projeto — NOVUS ERP
 
-## 🔖 Checkpoint atual — FIN-1 fechado por completo: E2E do ciclo de vida do título (2026-09-10)
+## 🔖 Checkpoint atual — Vazamento cross-tenant crítico em `empresa_responsavel`: achado, corrigido em 2 passos, provado ao vivo (2026-09-10)
+
+Achado reportado pelo usuário depois do checkpoint anterior ter marcado o FIN-1 como fechado:
+logou por outro navegador e viu os dados reais da Allegra (CNPJ, e-mail, endereço) aparecendo
+como "Empresa Principal" em `/configuracoes/empresas` **com a E2E TEST CO ativa no seletor**.
+Insistiu que não era cache de navegador — e não era.
+
+**Causa raiz**: `public.empresa_responsavel` nasceu como singleton global — nenhuma coluna de
+vínculo com empresa, nunca teve. As 4 policies RLS (SELECT/INSERT/UPDATE/DELETE) checavam só
+`has_role(auth.uid(),'admin')`, **sem nenhum escopo de empresa**. Ficou invisível enquanto só
+existia uma empresa no sistema inteiro (Allegra) — todo admin era, por acaso, admin dela. Virou
+explorável de verdade assim que a E2E TEST CO passou a ter admin próprio (`e2e@novus.test`):
+esse usuário conseguia ler **e escrever** (inclusive apagar) o cadastro real da Allegra.
+
+**Princípio do usuário, registrado como regra permanente**: uma empresa jamais pode ver os dados
+de outra — isso vale até para o admin de cada empresa, que não é superusuário. O único usuário
+com visão cross-empresa é `novusaisnp@gmail.com` (`novus_owner`), e mesmo ele só opera na empresa
+que escolheu no seletor ativo por vez, nunca em todas simultaneamente — trocar de empresa é
+explícito, nunca implícito.
+
+**Correção em 2 passos, confirmados pelo usuário**:
+1. **Stopgap imediato** (`20260910120000_fix_empresa_responsavel_rls_cross_tenant.sql`): as 4
+   policies trocadas para `has_role(auth.uid(), 'novus_owner')` — fecha o buraco na hora, sem
+   mudança de schema.
+2. **Correção definitiva** (`20260910130000_empresa_responsavel_escopo_por_empresa.sql`): nova
+   coluna `empresa_representada_id` (FK pra `empresas_representadas`, backfill por match de CNPJ,
+   `NOT NULL` + índice único — 1 registro por empresa), RLS reescrita com o padrão
+   `has_role_for_empresa` já usado no resto do sistema (`clientes`/`contratos`/`contas_receber`,
+   ver `20260810120200_has_role_scoped_novus_tables.sql`). `empresaResponsavelService.ts`
+   (`fetch`/`save`/`getExistingEmpresaId`) passou a filtrar sempre por
+   `getEmpresaAtivaIdOuFalha()` — nunca mais um `.limit(1)` cego pegando "a primeira linha que
+   existir". `useEmpresaResponsavel.ts` ganhou a empresa ativa na `queryKey` (mesmo padrão de
+   `useCatalogoOrcamento`/`useRelatoriosContabeis`), pra não vazar cache de uma empresa pra outra
+   ao trocar no seletor.
+
+**Prova ao vivo** (SQL, `BEGIN...ROLLBACK`, `SET LOCAL ROLE authenticated` — ver
+`feedback_prova_rls_precisa_set_role`, senão a conexão como `postgres` ignora RLS e a prova não
+testa nada):
+- Admin da E2E TEST CO: 0 linhas visíveis em `empresa_responsavel`, 0 linhas afetadas tentando
+  `UPDATE` no registro da Allegra.
+- Admin da Allegra: exatamente 1 linha visível, a própria.
+- `novus_owner`: lê normalmente (bypass intencional de RLS, mesmo design do resto do sistema —
+  quem restringe "só a empresa escolhida" pra ele é o filtro explícito do service, não a RLS).
+
+Typecheck limpo, suíte de testes (406 testes) passando depois da regeneração de
+`src/integrations/supabase/types.ts`.
+
+**Pendência aberta, não investigada ainda**: este achado apareceu por acaso (segundo tenant real
+existindo pela primeira vez), não por auditoria sistemática. Vale procurar outros `has_role(...)`
+sem escopo de empresa fora das 3 tabelas já corrigidas em agosto — não feito nesta sessão.
+
+## Checkpoint anterior — FIN-1 fechado por completo: E2E do ciclo de vida do título (2026-09-10)
 
 Última fatia do FIN-1 (`docs/PLANO_MESTRE.md`): testes E2E de criar/editar/liquidar
 parcial/liquidar total/cancelar/estornar. Novo spec `e2e/tests/07-titulo-vida.spec.ts`, 4 testes,
@@ -31,14 +82,19 @@ reaproveitando o setup (`criarTituloAberto`) já provado no spec 02.
 **Modelo de "empresa responsável" esclarecido** (a pedido do usuário, corrigindo entendimento
 errado registrado no checkpoint anterior): `centelha.responsaveis` é só a ferramenta de
 onboarding (Centelha, pontapé pra instalar o sistema num cliente novo) — **não** é o modelo
-organizacional real. O modelo real é `public.empresa_responsavel` (singleton global, tela
-`/configuracoes/empresas`) + `empresas_representadas.configuracoes.tipo_vinculo`
+organizacional real. O modelo real é `public.empresa_responsavel` (tela `/configuracoes/empresas`)
++ `empresas_representadas.configuracoes.tipo_vinculo`
 (`INDEPENDENTE`/`MESMA_EMPRESA`/`FILIAL`/`GRUPO`). Resolução: mantido o agrupamento em
 `centelha.responsaveis` (é o que a tela de troca de empresa usa de verdade, resolve o pedido
 original de separar visualmente Allegra/E2E TEST CO) **e** setado
-`tipo_vinculo = 'INDEPENDENTE'` pra E2E TEST CO no modelo real, sem tocar no singleton
-(continua sendo a Allegra, corretamente). Nota permanente: são duas tabelas de "responsável"
-tecnicamente desconectadas — checar qual é a real antes de mexer em qualquer feature parecida.
+`tipo_vinculo = 'INDEPENDENTE'` pra E2E TEST CO no modelo real, sem tocar no cadastro da Allegra.
+Nota permanente: são duas tabelas de "responsável" tecnicamente desconectadas — checar qual é a
+real antes de mexer em qualquer feature parecida.
+
+> **Nota do checkpoint seguinte (mesmo dia)**: quando este checkpoint foi escrito,
+> `public.empresa_responsavel` ainda era um singleton global sem escopo de empresa — isso
+> escondia um vazamento cross-tenant real, corrigido e provado ao vivo no checkpoint acima. A
+> tabela hoje tem `empresa_representada_id` (1 registro por empresa), não é mais singleton.
 
 **FIN-1 fechado por completo** — todos os itens do programa concluídos (`PLANO_MESTRE.md`).
 Onda 1 do roadmap fica só com Fiscal/SPED e FIN-8 (baseline de segurança) pendentes.
