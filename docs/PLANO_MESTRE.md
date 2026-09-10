@@ -286,7 +286,7 @@ Objetivo: servir desde operação simples de caixa até grupo econômico multiem
 
 ### FIN-1 — Completar fluxos atualmente parciais ou apenas visuais
 **Prioridade atual.**
-- [~] Submodal de cancelamento (implementado; validação visual local pendente — bug da ferramenta de screenshot na sessão de 2026-09-07 impediu concluir, código já revisado e íntegro).
+- [x] Submodal de cancelamento — validado ao vivo no navegador em 2026-09-09 (bloqueio de screenshot da sessão de 2026-09-07 não se repetiu). Achou de passagem um cabeçalho visualmente apertado em `MovimentacoesGestaoPopup.tsx` (título + badges + 5 botões de ação todos numa única linha flex) — corrigido: título numa linha, botões de ação numa linha própria abaixo. Autorização de segunda senha (gate pré-existente do FIN-0) não foi preenchida, por não ser decisão minha em nome do usuário — mesmo critério já usado para o estorno.
 - [x] Submodal de estorno — data contábil manual (2026-09-07): campo novo no diálogo, RPC `financeiro_estornar_liquidacao` ganhou `p_data_contabil` (valida não-futuro e não-anterior à liquidação), trigger `lancar_estorno_liquidacao` usa a data escolhida em vez de `CURRENT_DATE` fixo. Provado via SQL com RPCs reais (`supabase/sql/fin1_estorno_data_contabil_prova.sql`), zero resíduo.
 - [x] Submodal de baixa parcial com juros, multa, desconto e saldo posterior.
 - [x] Divisão da baixa entre múltiplas contas/meios de pagamento.
@@ -307,8 +307,20 @@ Objetivo: servir desde operação simples de caixa até grupo econômico multiem
 - [x] Aplicar filtros já declarados de conta bancária e usuário. Indireto via `liquidacoes_titulos`
   (conta usada na baixa / quem liquidou) — títulos nunca baixados não têm como corresponder.
   Fechado 2026-09-08; achou e corrigiu de passagem uma regressão de segurança real (ver STATUS.md).
-- [ ] Corrigir upload/remoção de documentos para aguardar conclusão real da mutation.
-- [ ] Operações em lote com revisão antes de executar.
+- [x] Corrigir upload/remoção de documentos para aguardar conclusão real da mutation. `useDocumentosTitulo` (`src/hooks/useMovimentacoesCompletas.ts`) expunha `uploadMutation.mutate`/`deleteMutation.mutate` (fire-and-forget, retorna `void`), mas `DocumentosTab.tsx` fazia `await` nas duas chamadas — o `await` não esperava nada de verdade, então o modal de upload fechava e o diálogo de exclusão resolvia antes da mutation real terminar. Trocado para `mutateAsync`. Testado ao vivo 2026-09-09: upload mostra "Enviando..." (botão desabilitado) até a mutation real terminar, só então fecha e mostra o documento na lista; exclusão idem.
+- [x] Operações em lote com revisão antes de executar. Primeira operação em lote: **liquidar
+  em lote** (a mais pedida num módulo financeiro), em Movimentações Financeiras — checkbox por
+  título elegível (ABERTA/PARCIAL/VENCIDA + `pode_liquidar`) + "selecionar todos", barra com
+  total agregado, `LiquidacaoLoteModal.tsx` com passo de revisão (remover item individual antes
+  de confirmar) e data/forma/conta compartilhadas. Reaproveita a mesma RPC
+  `financeiro_liquidar_titulo` do fluxo individual, uma chamada por título em sequência (nunca
+  paralelo, evita corrida na mesma conta bancária) — sem duplicar lógica de negócio. Título que
+  exige autorização (retroativo) não trava o lote: fica marcado "requer autorização" no
+  resultado, liquidado individualmente à parte (gap conhecido, documentado no componente).
+  Testado ao vivo 2026-09-09: 3 títulos, revisão removendo 1 (recalculou total), confirmação
+  liquidou os 2 restantes com sucesso, terceiro liquidado sozinho depois — tela de resultado
+  com ✓ por item. Outras operações em lote (cancelar, exportar) ficam para quando houver pedido
+  real — este item cobre o critério de saída citado no cabeçalho do FIN-1.
 - [ ] Testes E2E: criar, editar, liquidar parcial/total, cancelar, estornar e conciliar.
 
 **Critério de saída:** nenhum botão financeiro termina em "em breve", no-op ou toast fictício.
@@ -522,10 +534,12 @@ só o gap: folha manual, ponto sem fonte, eSocial inexistente.
 Núcleo por decisão do usuário (2026-08-30) — reverte a exclusão anterior de
 produção/manufatura (§1.8).
 
-### PROD-1 — Básico
-- [ ] Ficha técnica/BOM simples.
-- [ ] Ordem de fabricação simples (consome Estoque, gera produto acabado).
-- [ ] Apontamento de consumo × planejado, custo médio de produção.
+### PROD-1 — fechado 2026-09-09
+- [x] Ficha técnica/BOM simples.
+- [x] Ordem de fabricação simples (consome Estoque, gera produto acabado).
+- [x] Apontamento de consumo × planejado, custo médio de produção — `concluir_ordem_fabricacao` permite ajustar a quantidade consumida por insumo na conclusão; testado ao vivo com consumo real ≠ planejado (custo bateu com o cálculo esperado).
+
+Testado ao vivo de ponta a ponta (ver `docs/STATUS.md`): ficha técnica → ordem → conclusão com apontamento real → estoque/kardex/lançamento contábil conferidos via SQL → cancelamento em RASCUNHO → integração com Vendas confirmada (produto acabado aparece no autocomplete com saldo real, sem nenhuma mudança necessária no módulo de Vendas). Achou e corrigiu de passagem: tabelas novas nunca registradas em `entidade_dependencias` (proteção de exclusão não reconhecia os vínculos reais) e um bug de robustez em `localizacaoService.delete()` (update sem `.select()` mascarava falhas como sucesso).
 
 ### PROD-2 — Onda 3, mais profundo
 - [ ] MRP com explosão e múltiplos níveis de BOM.
@@ -715,7 +729,7 @@ aqui é a **sessão de trabalho com agente**, não sprint/semana de time humano.
 | 5 | `FIN-4` parte 2 — Balanço, DRE, EBITDA, DMPL, DFC | ~~2-3~~ **feita** (~1 sessão, fatiada em 1+2+3) | Todas as 3 fatias fechadas 2026-09-07, testadas ao vivo com dado abundante real. **Checkpoint humano: contador confere os relatórios gerados contra um fechamento real ou simulado.** |
 | 6 | `COMP-1` — compras e suprimentos completo | ~~3-5~~ **feito** (~1 sessão, fatiado em COMP-1a/1b/1c/1d) | Ciclo completo Requisição→Cotação→Pedido→Recebimento→título a pagar, fechado 2026-09-07. |
 | 7 | `ORC-1` — motor de alçadas mínimo | ~~2-3~~ **feito** (~1 sessão) | Fechado 2026-09-07, primeiro consumidor real é o Pedido de Compra (item 6). |
-| 8 | `PROD-1` — produção leve básica | 3-4 | Conceitualmente é "venda que baixa estoque" invertida — consumo em vez de saída por venda. |
+| 8 | `PROD-1` — produção leve básica | ~~3-4~~ **feito** (~1 sessão, 2026-09-09) | Conceitualmente é "venda que baixa estoque" invertida — consumo em vez de saída por venda. Testado ao vivo, integração com Estoque/Vendas confirmada. |
 | 9 | Fiscal — destravar SPED + NFC-e/CCe/contingência | 2-4 | SPED completo (EFD ICMS/IPI, ECD, ECF) só fecha depois do item 3-5 **e** validação contábil — não é só código. |
 | 10 | `FIN-1` (cauda já em andamento) + `FIN-8` baseline | 2-4 | Roda em paralelo, sem bloquear os itens acima. |
 

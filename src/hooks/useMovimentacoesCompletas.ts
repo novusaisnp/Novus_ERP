@@ -192,8 +192,11 @@ export const useDocumentosTitulo = (tituloId: string, tipoTitulo: string) => {
     documentos,
     isLoading,
     error,
-    uploadDocumento: uploadMutation.mutate,
-    deleteDocumento: deleteMutation.mutate,
+    // mutateAsync (não mutate): o form de upload e o diálogo de exclusão fazem `await` na
+    // chamada e só fecham/resetam depois — com `mutate` (fire-and-forget) o `await` não
+    // esperava nada de verdade, então a UI assumia sucesso antes da mutation terminar.
+    uploadDocumento: uploadMutation.mutateAsync,
+    deleteDocumento: deleteMutation.mutateAsync,
     isUploading: uploadMutation.isPending,
     isDeleting: deleteMutation.isPending,
   };

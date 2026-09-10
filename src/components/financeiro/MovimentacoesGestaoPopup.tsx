@@ -144,53 +144,51 @@ export const MovimentacoesGestaoPopup = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl w-full h-[80vh] max-h-[80vh] p-0">
-        <DialogHeader className="px-6 py-4 border-b">
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle className="text-xl font-semibold flex items-center gap-2">
-                Gestão do Título: {titulo.numero_documento}
-                {getTipoBadge(titulo.tipo)}
-                {getStatusBadge(titulo.situacao)}
-              </DialogTitle>
-              {isVencido() && (
-                <div className="flex items-center gap-1 text-status-cancelled text-sm mt-1">
-                  <AlertTriangle className="w-4 h-4" />
-                  Título vencido há {Math.floor((new Date().getTime() - new Date(titulo.data_vencimento).getTime()) / (1000 * 60 * 60 * 24))} dias
-                </div>
-              )}
-            </div>
-            <div className="flex gap-2">
-              {podeRealizar('liquidar') && (
-                <Button onClick={() => handleOperacao('liquidar')} data-testid="titulo-liquidar-btn">
-                  <CreditCard className="w-4 h-4 mr-2" />
-                  Baixar
-                </Button>
-              )}
-              {podeRealizar('estornar') && (
-                <Button variant="outline" onClick={() => handleOperacao('estornar')}>
-                  <RotateCcw className="w-4 h-4 mr-2" />
-                  Estornar
-                </Button>
-              )}
-              {podeRealizar('renegociar') && (
-                <Button variant="outline" onClick={() => handleOperacao('renegociar')}>
-                  <Handshake className="w-4 h-4 mr-2" />
-                  Renegociar
-                </Button>
-              )}
-              {podeRealizar('editar') && (
-                <Button variant="outline" onClick={() => handleOperacao('editar')}>
-                  <Pencil className="w-4 h-4 mr-2" />
-                  Editar
-                </Button>
-              )}
-              {podeRealizar('cancelar') && (
-                <Button variant="destructive" onClick={() => handleOperacao('cancelar')}>
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Cancelar
-                </Button>
-              )}
-            </div>
+        <DialogHeader className="px-6 py-4 border-b space-y-3">
+          <div>
+            <DialogTitle className="text-xl font-semibold flex items-center gap-2 flex-wrap">
+              <span className="truncate">Gestão do Título: {titulo.numero_documento}</span>
+              {getTipoBadge(titulo.tipo)}
+              {getStatusBadge(titulo.situacao)}
+            </DialogTitle>
+            {isVencido() && (
+              <div className="flex items-center gap-1 text-status-cancelled text-sm mt-1">
+                <AlertTriangle className="w-4 h-4" />
+                Título vencido há {Math.floor((new Date().getTime() - new Date(titulo.data_vencimento).getTime()) / (1000 * 60 * 60 * 24))} dias
+              </div>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {podeRealizar('liquidar') && (
+              <Button onClick={() => handleOperacao('liquidar')} data-testid="titulo-liquidar-btn">
+                <CreditCard className="w-4 h-4 mr-2" />
+                Baixar
+              </Button>
+            )}
+            {podeRealizar('estornar') && (
+              <Button variant="outline" onClick={() => handleOperacao('estornar')}>
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Estornar
+              </Button>
+            )}
+            {podeRealizar('renegociar') && (
+              <Button variant="outline" onClick={() => handleOperacao('renegociar')}>
+                <Handshake className="w-4 h-4 mr-2" />
+                Renegociar
+              </Button>
+            )}
+            {podeRealizar('editar') && (
+              <Button variant="outline" onClick={() => handleOperacao('editar')}>
+                <Pencil className="w-4 h-4 mr-2" />
+                Editar
+              </Button>
+            )}
+            {podeRealizar('cancelar') && (
+              <Button variant="destructive" onClick={() => handleOperacao('cancelar')}>
+                <Trash2 className="w-4 h-4 mr-2" />
+                Cancelar
+              </Button>
+            )}
           </div>
         </DialogHeader>
 

@@ -1,6 +1,141 @@
 # Status do projeto — NOVUS ERP
 
-## 🔖 Checkpoint atual — FIN-1: cadastro rápido de entidade + bug de trigger 403 corrigido (2026-09-08)
+## 🔖 Checkpoint atual — FIN-1: liquidação em lote (2026-09-09)
+
+Feature nova (não havia nenhum código/stub antes): liquidar vários títulos de uma vez,
+escolhido pelo usuário entre 3 opções (liquidar/cancelar/outra) como a operação em lote mais
+valiosa pra começar.
+
+- **`src/components/financeiro/LiquidacaoLoteModal.tsx`** (novo): passo de revisão (lista dos
+  títulos selecionados, cada um removível antes de confirmar, total agregado) → data/forma/conta
+  de pagamento compartilhadas → execução sequencial chamando `movimentacoesService.liquidarTitulo`
+  (a mesma RPC `financeiro_liquidar_titulo` do modal individual) uma vez por título, nunca em
+  paralelo → tela de resultado com ✓/✗/⚠ por item. Título que precisa de autorização (baixa
+  retroativa) não trava o lote — fica "requer autorização", liquidado à parte.
+- **`MovimentacoesModal.tsx`**: checkbox por título elegível (mesma regra do botão "Baixar"
+  individual: `pode_liquidar` + situação ABERTA/PARCIAL/VENCIDA) + "selecionar todos" + barra com
+  total agregado + botão "Liquidar Selecionados".
+- **Testado ao vivo**: 3 títulos de teste (R$30/R$75/R$50) → selecionar todos (total R$155
+  conferido) → removido 1 na revisão (recalculou pra R$80) → confirmado, 2 liquidados com ✓ →
+  terceiro liquidado sozinho depois, título da tela de resultado mostrando a contagem certa
+  (achou e corrigiu um bug cosmético: mostrava "0 títulos" na tela de resultado, calculado a
+  partir do array errado). Lista de fundo refletiu `PAGA`/`Pago: R$X` em tempo real pra cada um.
+- Limpeza dos dados de teste: títulos e fornecedor removidos via SQL autorizado; os lançamentos
+  contábeis de reconhecimento (criação do título) ficam permanentemente no livro da ALLEGRA —
+  mesmo padrão do PROD-1, `liquidacoes_titulos` não tem essa proteção (removida antes de tentar
+  o título, que aí sim foi excluído sem bloqueio).
+- `npm run typecheck` / `npm run test -- --run` (406/406) confirmados.
+- **Próxima ação única**: só resta 1 item do FIN-1 — testes E2E (criar, editar, liquidar
+  parcial/total, cancelar, estornar, conciliar).
+
+## Checkpoint anterior — FIN-1: duas pontas soltas fechadas (2026-09-09)
+
+Sessão em paralelo ao PROD-1 (mesmo dia), atacando as pontas soltas registradas no FIN-1.
+
+- **Submodal de cancelamento — validação visual concluída.** O bloqueio de 2026-09-07 (bug
+  da ferramenta de screenshot) não se repetiu; testado ao vivo no navegador (Contas a Pagar →
+  Movimentações Financeiras → "Gestão do Título" → Cancelar). Achou de passagem um cabeçalho
+  visualmente apertado em `MovimentacoesGestaoPopup.tsx`: título (podendo quebrar em 2 linhas)
+  + 2 badges + até 5 botões de ação, tudo numa única linha flex — corrigido, título com badges
+  numa linha, botões de ação numa linha própria abaixo. Autorização de segunda senha (gate
+  pré-existente do FIN-0) não foi preenchida, mesmo critério já usado para o estorno.
+- **Upload/remoção de documentos — corrigido e testado ao vivo.** `useDocumentosTitulo`
+  (`src/hooks/useMovimentacoesCompletas.ts`) expunha `.mutate` (fire-and-forget) em vez de
+  `.mutateAsync`; o `await` no `DocumentosTab.tsx` não esperava nada de verdade, então UI
+  assumia sucesso antes da mutation real terminar. Testado ao vivo: upload de um PNG de teste
+  mostrou "Enviando..." (botão desabilitado) até a mutation real concluir, só então fechou e
+  listou o documento; exclusão testada com o mesmo resultado (toast só depois da remoção real).
+- **Achado registrado, não corrigido nesta sessão**: ao criar uma nova Conta a Pagar pela UI,
+  o toast de sucesso aparece e os cards de estatística do topo atualizam, mas a lista abaixo
+  não — só reflete o novo título depois de um reload manual da página. Provável falha de
+  invalidação de query específica da lista (`ContasPagar.tsx`/hook correspondente,
+  não investigado a fundo). Não bloqueia nada, mas é confuso — próxima sessão que mexer nessa
+  tela deveria investigar.
+- `npm run typecheck` / `npm run test -- --run` (406/406) confirmados depois de cada correção.
+- **Próxima ação única**: seguir com os 2 itens restantes do FIN-1 — operações em lote com
+  revisão antes de executar, e testes E2E (criar/editar/liquidar/cancelar/estornar/conciliar).
+
+## Checkpoint anterior — PROD-1 (Produção Leve): fechado, aplicado e testado ao vivo (2026-09-09)
+
+**Migration aplicada no projeto real (`reksodqzemboaeqxnxyy`)** via `supabase db query --linked --file` (token do CLI renovado pelo usuário na sessão). `types.ts` regenerado de verdade (`supabase gen types typescript --linked`), substituindo o patch manual — diff conferido, só nomes de FK e uma relação extra (`vw_estoque_ruptura`) divergiam do que eu tinha adivinhado, nada estrutural.
+
+**Testado ao vivo no navegador, fluxo completo, com dado real criado na sessão** (empresa ALLEGRA, que não tinha nenhum produto/localização cadastrado antes):
+- Ficha técnica criada (Acabado Teste PROD-1 ← 2× Insumo Teste PROD-1 por unidade).
+- Ordem de fabricação aberta (planejado 5 un.) → multiplicação da ficha confirmada (10 planejado = 2×5).
+- Concluída com **consumo real diferente do planejado** (9 em vez de 10, testando o apontamento de consumo × planejado): custo total R$90,00 (9×R$10), custo unitário de produção R$18,00 (90/5) — ambos batendo com o cálculo esperado.
+- `estoque_saldos` conferido via SQL: insumo 91 (100-9), acabado 5, custos médios corretos.
+- **Lançamento contábil conferido via SQL**: Débito Produtos Acabados R$90 / Crédito Matéria-Prima R$90, balanceado.
+- Kardex de ambos os produtos conferido: rastreável até o documento `OF-<id>` da ordem.
+- Cancelamento de ordem em RASCUNHO testado (motivo obrigatório, botão desabilitado <5 caracteres) — funcionou.
+- Coluna legada `produtos.estoque_atual` sincronizada corretamente pelos triggers já existentes.
+- **Integração com Vendas confirmada**: `NovaVenda` já lista o produto acabado no autocomplete de item com o saldo real ("Estoque: 5"), sem nenhuma mudança necessária no módulo de Vendas — reaproveita a mesma infraestrutura de Estoque.
+
+**Achado real durante o teste, corrigido na hora** (pedido explícito do usuário: "garantir que as dependências de estoque/vendas/etc fiquem 100% funcionais"): a tela de excluir Produto dizia "Nenhum vínculo encontrado" para um produto que já era insumo/produto acabado de ficha técnica — a proteção contra exclusão indevida (`check_dependencias`) é orientada por uma tabela de metadados (`entidade_dependencias`) que é gerada por introspecção real de FK, não hard-coded, e as tabelas novas do PROD-1 nunca tinham sido registradas nela. Nova migration `20260909130000_prod1_entidade_dependencias.sql` registra as 15 dependências reais (produtos↔fichas_tecnicas/itens/ordens, localizacoes_estoque↔ordens, etc.) — confirmado ao vivo depois: o diálogo agora bloqueia corretamente a exclusão com "Fichas Tecnicas (1) · Ordens Fabricacao (2)".
+
+**Achado adicional, registrado mas não corrigido** (fora do escopo de Produção): tanto o seed original de `entidade_dependencias` (`20260713213203`) quanto a função `public.regenerar_entidade_dependencias()` usam `conrelid::regclass::text` + `split_part(...,'.',2)` pra extrair o nome da tabela — isso só funciona quando o schema aparece qualificado no texto, o que **não acontece** quando `public` está no `search_path` (é o caso normal, inclusive dentro da própria função via `SET search_path = public`). Nessas condições `split_part` retorna string vazia e nenhuma linha é gerada. É provável que **nenhuma tabela criada desde 2026-07-13 tenha sido registrada corretamente** em `entidade_dependencias`, mesmo que alguém tenha rodado `regenerar_entidade_dependencias()` manualmente — silencioso, sem erro. Not fixed nesta sessão (não é módulo de Produção); próxima sessão que mexer em exclusão/dependências deveria trocar para `pg_class.relname` (como fiz na migration nova) e rodar a função de novo pra pegar todas as tabelas órfãs de registro, não só as do PROD-1.
+
+**Limpeza pós-teste**: ficha técnica de teste desativada via UI (`ativo=false`). Produtos e localização de teste **não puderam ser excluídos** — e isso é o comportamento correto agora que a proteção de dependências funciona (ficha técnica + 2 ordens de fabricação bloqueiam a exclusão física). Ficaram como registros reais na empresa ALLEGRA, nomeados claramente "Teste PROD-1" — mesmo padrão de sessões anteriores quando o fluxo real foi exercido de ponta a ponta (a movimentação de estoque e o lançamento contábil são, por desenho, imutáveis).
+
+**Validações locais**: `npm run typecheck` / `npm run test -- --run` (406/406) / `npm run lint` (sem erro novo) — todas repetidas depois de trocar o patch manual de `types.ts` pelo gerado de verdade.
+
+**Limpeza dos dados de teste, com autorização explícita do usuário para excluir via SQL direto** (produtos, ordens, ficha técnica, movimentações, saldos — tudo removido, confirmado via `RETURNING`). Dois achados reais na limpeza, ambos investigados e fechados:
+
+1. **`lancamentos_contabeis`/`_itens` são de fato imutáveis por desenho** — tentativa de deletar as linhas do lançamento de teste disparou o trigger `validar_balanco_lancamento_contabil()` ("precisa de ao menos 1 débito e 1 crédito"). Não contornado (não deveria ser). O lançamento de teste (Débito Produtos Acabados / Crédito Matéria-Prima, R$90, empresa ALLEGRA) fica permanentemente no livro — mesmo padrão de qualquer sessão anterior que exerceu um fluxo contábil real de ponta a ponta.
+2. **Bug real corrigido**: `localizacaoService.delete()` (`src/services/localizacaoService.ts`) fazia `UPDATE ativo=false` sem `.select()` — se a operação afetasse 0 linhas por qualquer motivo, o Supabase não retorna erro, e o código reportava "sucesso" mesmo sem nada ter mudado. Corrigido pra checar `data.length` e lançar erro claro, mesmo padrão já usado em `requisicaoCompraService.cancelar()`. **Não era a causa do caso concreto** (investigado com prova por `SET LOCAL ROLE authenticated` — a policy de RLS permite a operação pra esse usuário): a real trava, já existente e correta, é a regra de negócio "não é possível desativar a única localização ativa" — "Depósito Teste PROD-1" era a única localização da empresa ALLEGRA (que não tinha nenhuma antes desta sessão). Resolvido criando uma localização "Geral" real (marcada Padrão) antes de desativar a de teste. `npm run test -- --run` reconfirmado (406/406) depois do fix.
+
+## Checkpoint anterior — PROD-1 (Produção Leve): código pronto, aplicação no banco real pendente (2026-09-09)
+
+Primeiro item da Onda 1 depois do FIN-1/COMP-1/ORC-1 (ver `docs/PLANO_MESTRE.md`, item 8 da
+tabela de sessões). Ficha técnica (BOM) simples + ordem de fabricação que consome Estoque e
+gera produto acabado com custo médio real + lançamento contábil automático.
+
+- **Migration nova**: `supabase/migrations/20260909120000_prod1_producao_leve.sql`.
+  - 2 contas novas no plano mínimo por empresa (`3.1.3.1` Matéria-Prima e Insumos,
+    `3.1.3.2` Produtos Acabados), seguindo exatamente o padrão do ATV-1 (função de seed +
+    2 colunas `plano_conta_..._default_id` em `empresas_representadas` + extensão do
+    trigger `seed_plano_contas_nova_empresa`).
+  - Tabelas: `fichas_tecnicas` (+ `fichas_tecnicas_itens`, com trigger impedindo um produto
+    ser insumo de si mesmo) e `ordens_fabricacao` (+ `ordens_fabricacao_consumos`) — estas
+    duas últimas só com policy de SELECT, toda escrita é via RPC `SECURITY DEFINER` (mesmo
+    padrão de `lancamentos_contabeis`).
+  - RPCs: `criar_ordem_fabricacao` (copia os itens da ficha técnica, quantidade planejada =
+    quantidade da ficha × quantidade da ordem), `concluir_ordem_fabricacao` (gera a SAIDA
+    real de cada insumo pelo custo médio atual na localização de consumo — reaproveita
+    `trg_estoque_mov_validar_saldo` já existente pra bloquear saldo insuficiente, sem
+    duplicar a checagem —, gera a ENTRADA do produto acabado pelo custo total consumido /
+    quantidade produzida, e lança Débito Produtos Acabados / Crédito Matéria-Prima quando a
+    empresa tiver as contas configuradas) e `cancelar_ordem_fabricacao` (só permitido em
+    RASCUNHO, antes de qualquer consumo).
+  - `REVOKE EXECUTE ... FROM PUBLIC, anon, authenticated` explícito nas 3 RPCs (lição do
+    bug de `CREATE OR REPLACE FUNCTION` do FIN-1 — ver `docs/PLANO_MESTRE.md`/memória).
+- **Novo (app)**: `src/types/producao.ts`, `src/services/fichaTecnicaService.ts` (com
+  `translateError`, padrão obrigatório do ecossistema), `src/services/ordemFabricacaoService.ts`
+  (idem), `src/hooks/useFichasTecnicas.ts`, `src/hooks/useOrdensFabricacao.ts`,
+  `src/pages/producao/FichasTecnicas.tsx`, `src/pages/producao/OrdensFabricacao.tsx`. Rotas
+  `/producao/fichas-tecnicas` e `/producao/ordens` em `App.tsx`, item "Produção" novo em
+  `sidebarConfig.ts`.
+- `src/integrations/supabase/types.ts` **editado manualmente** (não gerado via CLI — ver
+  bloqueio abaixo): tabelas `fichas_tecnicas`, `fichas_tecnicas_itens`, `ordens_fabricacao`,
+  `ordens_fabricacao_consumos`, as 2 colunas novas de `empresas_representadas` e as 3 funções
+  RPC. Precisa ser **regenerado de verdade** (`generate_typescript_types` ou
+  `supabase gen types`) assim que a migration for aplicada no projeto real, pra substituir
+  esse patch manual pela fonte de verdade.
+- `npm run typecheck` / `npm run test -- --run` (406/406) / `npm run lint` (sem erro novo —
+  os 61 erros de `@typescript-eslint/no-explicit-any` são o backlog já conhecido, nenhum
+  arquivo novo desta sessão está na lista) — todos verificados.
+- **🚧 Bloqueado**: o token do CLI Supabase local está inválido (`Unauthorized`) — mesmo
+  sintoma já registrado (variável de ambiente `SUPABASE_ACCESS_TOKEN` fixada no Windows
+  sobrepõe qualquer login novo). **Nada foi aplicado no banco real ainda** — a migration
+  existe só como arquivo local. Também não houve teste ao vivo no navegador (depende da
+  migration estar aplicada).
+- **Próxima ação única**: usuário gera um Personal Access Token novo
+  (https://supabase.com/dashboard/account/tokens), roda `supabase login --token <token>` (ou
+  atualiza a variável de ambiente do Windows), então: aplicar a migration no projeto real
+  (`reksodqzemboaeqxnxyy`), regenerar `types.ts` de verdade, testar ao vivo no navegador
+  (criar ficha técnica → abrir ordem → concluir produção → conferir saldo de estoque e
+  lançamento contábil gerado).
+
+## Checkpoint anterior — FIN-1: cadastro rápido de entidade + bug de trigger 403 corrigido (2026-09-08)
 
 Item da cauda do FIN-1: "Cadastro rápido de entidade nos consumidores financeiros usando o
 cadastro central."

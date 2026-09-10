@@ -24,9 +24,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 
 import { MovimentacoesGestaoPopup } from './MovimentacoesGestaoPopup';
 import { LiquidacaoTituloModal } from './LiquidacaoTituloModal';
+import { LiquidacaoLoteModal } from './LiquidacaoLoteModal';
 import { EstornoLiquidacaoModal } from './EstornoLiquidacaoModal';
 import { CancelamentoTituloModal } from './CancelamentoTituloModal';
 import { RenegociacaoTituloModal } from './RenegociacaoTituloModal';
@@ -64,6 +66,8 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
   const [isCancelamentoModalOpen, setIsCancelamentoModalOpen] = useState(false);
   const [isRenegociacaoModalOpen, setIsRenegociacaoModalOpen] = useState(false);
   const [tabAtiva, setTabAtiva] = useState('lista');
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
+  const [isLoteModalOpen, setIsLoteModalOpen] = useState(false);
 
   const {
     titulos,
@@ -100,6 +104,34 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
     console.log('[MovimentacoesModal] Liquidação selecionada:', titulo.id);
     setTituloSelecionado(titulo);
     setIsLiquidacaoModalOpen(true);
+  };
+
+  const podeLiquidarTitulo = (titulo: TituloFinanceiro) =>
+    permissoes.pode_liquidar && (titulo.situacao === 'ABERTA' || titulo.situacao === 'PARCIAL' || titulo.situacao === 'VENCIDA');
+
+  const titulosElegiveis = titulos.filter(podeLiquidarTitulo);
+  const titulosSelecionados = titulos.filter((t) => selecionados.has(t.id));
+
+  const toggleSelecionado = (id: string, checked: boolean) => {
+    setSelecionados((prev) => {
+      const proximo = new Set(prev);
+      if (checked) proximo.add(id);
+      else proximo.delete(id);
+      return proximo;
+    });
+  };
+
+  const toggleSelecionarTodos = (checked: boolean) => {
+    setSelecionados(checked ? new Set(titulosElegiveis.map((t) => t.id)) : new Set());
+  };
+
+  const handleLoteClose = () => {
+    setIsLoteModalOpen(false);
+  };
+
+  const handleLoteSuccess = () => {
+    setSelecionados(new Set());
+    refetch();
   };
 
   const handlePopupClose = () => {
@@ -249,8 +281,8 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
                     </SelectContent>
                   </Select>
 
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => setTabAtiva('filtros')}
                     className="w-full"
                   >
@@ -258,6 +290,27 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
                     Mais Filtros
                   </Button>
                 </div>
+
+                {titulosElegiveis.length > 0 && (
+                  <div className="flex items-center justify-between gap-3 mb-3 rounded-md border p-3 bg-muted/30">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="selecionar-todos-liquidar"
+                        checked={selecionados.size > 0 && selecionados.size === titulosElegiveis.length}
+                        onCheckedChange={(checked) => toggleSelecionarTodos(checked === true)}
+                      />
+                      <label htmlFor="selecionar-todos-liquidar" className="text-sm cursor-pointer">
+                        {selecionados.size > 0
+                          ? `${selecionados.size} título${selecionados.size === 1 ? '' : 's'} selecionado${selecionados.size === 1 ? '' : 's'} — Total: ${currencyUtils.formatCurrency(titulosSelecionados.reduce((soma, t) => soma + (t.valor_atual ?? t.valor_original), 0))}`
+                          : `Selecionar todos os ${titulosElegiveis.length} elegíveis para liquidar`}
+                      </label>
+                    </div>
+                    <Button size="sm" disabled={selecionados.size === 0} onClick={() => setIsLoteModalOpen(true)}>
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Liquidar Selecionados
+                    </Button>
+                  </div>
+                )}
 
                 {/* Lista de Títulos */}
                 <ScrollArea className="h-[calc(90vh-280px)]">
@@ -282,7 +335,17 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
                           onClick={() => handleTituloClick(titulo)}
                         >
                           <CardContent className="p-4">
-                            <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-center">
+                            <div className="grid grid-cols-1 md:grid-cols-[auto_repeat(6,1fr)] gap-4 items-center">
+                              <div onClick={(e) => e.stopPropagation()}>
+                                {podeLiquidarTitulo(titulo) ? (
+                                  <Checkbox
+                                    checked={selecionados.has(titulo.id)}
+                                    onCheckedChange={(checked) => toggleSelecionado(titulo.id, checked === true)}
+                                  />
+                                ) : (
+                                  <div className="w-4 h-4" />
+                                )}
+                              </div>
                               <div className="space-y-1">
                                 <div className="font-medium">{titulo.numero_documento}</div>
                                 <div className="text-sm text-muted-foreground">
@@ -520,6 +583,13 @@ export const MovimentacoesModal = ({ isOpen, onClose }: MovimentacoesModalProps)
           </div>
         </DialogContent>
       </Dialog>
+
+      <LiquidacaoLoteModal
+        isOpen={isLoteModalOpen}
+        onClose={handleLoteClose}
+        titulos={titulosSelecionados}
+        onSuccess={handleLoteSuccess}
+      />
 
       {/* Popup de Gestão do Título */}
       {tituloSelecionado && (

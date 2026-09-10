@@ -391,9 +391,16 @@ export const DocumentosTab = ({ titulo, podeEditar }: DocumentosTabProps) => {
       title="Remover documento"
       description="Tem certeza que deseja remover este documento? Esta ação não pode ser desfeita."
       confirmLabel="Remover"
-      onConfirm={() => {
-        if (documentoParaExcluir) deleteDocumento(documentoParaExcluir);
-        setDocumentoParaExcluir(null);
+      onConfirm={async () => {
+        if (!documentoParaExcluir) return;
+        try {
+          await deleteDocumento(documentoParaExcluir);
+        } catch (error) {
+          // Erro já vira toast pelo onError da mutation.
+          console.error('[DocumentosTab] Erro ao remover documento:', error);
+        } finally {
+          setDocumentoParaExcluir(null);
+        }
       }}
     />
     </>
