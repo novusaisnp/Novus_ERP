@@ -1,6 +1,215 @@
 # Status do projeto — NOVUS ERP
 
-## 🔖 Checkpoint atual — Vazamento cross-tenant crítico em `empresa_responsavel`: achado, corrigido em 2 passos, provado ao vivo (2026-09-10)
+## 🔖 Checkpoint atual — Varredura de RPCs `SECURITY DEFINER` fechada: 34 funções corrigidas em 6 blocos (2026-09-10)
+
+Continuação e fechamento do checkpoint anterior (que corrigiu só as 4 financeiras mais críticas e
+deixou ~30 pendentes). Usuário pediu explicitamente para dividir o resto em blocos e resolver —
+"não dá pra seguir em frente sem resolver isso". Cada bloco: ler o corpo completo de cada função
+antes de tocar, confirmar que o `has_role(admin)` ali é de fato bypass de empresa (não permissão
+de feature), escrever migration reproduzindo o corpo original com só a troca do check, aplicar,
+verificar via `pg_get_functiondef` que o texto mudou, typecheck + suíte completa depois de cada
+bloco (todos passaram, 406/406, sem regressão em nenhum).
+
+**Blocos fechados** (migrations `20260910160000` a `20260910210000`):
+- **Bloco A — Vendas/Estoque** (7): `autorizar_excecao_venda`, `baixar_estoque_venda`,
+  `conciliar_inventario`, `converter_orcamento_em_venda`, `estornar_estoque_venda`,
+  `gerar_contas_receber_da_venda`, `verificar_autorizacao_venda`.
+- **Bloco B — Compras** (5): `cancelar_pedido_compra`, `confirmar_recebimento_compra`,
+  `enviar_pedido_compra_para_aprovacao`, `gerar_pedidos_compra_da_cotacao`,
+  `marcar_pedido_compra_emitido`.
+- **Bloco C — Auditoria/estoque/venda** (3, já confirmadas vulneráveis no checkpoint anterior):
+  `get_audit_trail`, `validar_saldo_estoque`, `validar_pagamento_venda`.
+- **Bloco D1 — Financeiro/aprovação** (4): `fn_fluxo_caixa_projecao`, `fn_fluxo_caixa_resumo`,
+  `solicitar_aprovacao`, `transferencia_bancaria_atomica` (move dinheiro entre contas bancárias —
+  uma das de maior risco de todo o lote).
+- **Bloco D2 — Relatórios contábeis** (5): `relatorio_balanco_patrimonial`,
+  `relatorio_dfc_indireto`, `relatorio_dmpl`, `relatorio_dre`, `relatorio_fluxo_competencia`.
+  Este último tinha uma variante **mais grave** que todo o resto: chamada sem `p_empresa_id`
+  pulava a checagem de acesso inteira, e o filtro de linha final `(v_admin OR
+  user_has_access_to_empresa(...))` deixava qualquer admin ver dado agregado de TODAS as
+  empresas somado por mês — nem precisava indicar qual empresa atacar.
+- **Bloco E — Cutover de assinatura de webhook v1/v2** (6): `check_v2_readiness`,
+  `promote_to_dual`, `promote_to_v2_only`, `rollback_to_dual`, `rollback_to_v1`,
+  `precheck_source_system_nome_consistency`. Padrão diferente e mais grave: recebiam `p_tenant`
+  explícito mas não tinham NENHUM fallback de empresa (nem `user_has_access_to_empresa`), só
+  `has_role(admin)` puro — qualquer admin de qualquer empresa podia promover/rebaixar a versão
+  de assinatura HMAC de webhook de outra empresa. Fix aqui foi `has_role_for_empresa(admin,
+  p_tenant)` em vez do par `user_has_access_to_empresa`/`has_role(novus_owner)` usado nos outros
+  blocos (`precheck_source_system_nome_consistency` virou `novus_owner`-only — agrega dado de
+  todas as empresas por desenho, então "qualquer admin" nunca foi o público certo).
+
+**Deixados como estão, avaliados e considerados corretos** (mesmo padrão textual, mas não é
+vazamento de dado entre empresas):
+- `autorizar_excecao_venda` e `financeiro_liquidar_titulo` e `exigir_nao_retroativo` têm um
+  SEGUNDO `has_role(admin)`, separado do boundary check — é isenção de regra de negócio
+  (permissão granular / limite de lançamento retroativo), não controla acesso a dado de outra
+  empresa; o limite real de empresa já é aplicado em outro ponto da mesma função (já corrigido).
+- `regenerar_entidade_dependencias`: reconstrói `entidade_dependencias`, tabela de metadado de
+  schema já confirmada global por desenho (ver checkpoint da varredura de RLS) — não expõe nem
+  altera dado de nenhuma empresa específica.
+- `financeiro_pode_usuario`/`pode()`: gates de permissão de feature/UI ("este usuário tem esta
+  capacidade, em algum lugar"), não de dado — o limite de empresa de verdade é sempre aplicado
+  depois, por quem chama.
+
+**Validação**: typecheck limpo + 406/406 testes depois de cada bloco. Confirmação estática via
+`pg_get_functiondef` de que as 30 funções deste checkpoint (mais as 4 do anterior = 34 no total)
+usam `novus_owner`/`has_role_for_empresa` em vez de `admin` puro no boundary check. **Não foi
+possível testar cada uma ao vivo** (30+ funções, muitas exigindo dado seedado — venda, pedido de
+compra, inventário — que não existe no tenant de teste hoje); a validação se apoiou em leitura de
+código linha a linha + prova em SQL já feita no checkpoint anterior pro padrão idêntico
+(`financeiro_cancelar_titulo`) + regressão de testes automatizados. Risco residual: um erro de
+digitação ao reproduzir o corpo de alguma função na migration não seria pego por typecheck (são
+funções SQL, não TS) — mitigado verificando o texto exato via `pg_get_functiondef` depois de cada
+aplicação, mas não substitui teste funcional ao vivo de cada fluxo.
+
+## Checkpoint anterior — Varredura de RPCs `SECURITY DEFINER`: achado grave em 4 funções financeiras, corrigido (2026-09-10)
+
+Continuação direta da pendência do checkpoint anterior ("auditar funções `SECURITY DEFINER` pelo
+mesmo padrão de `has_role` sem parâmetro de empresa"). Varredura em `pg_proc`
+(`prosecdef=true`, corpo contendo `has_role(`) achou **34 funções** com o padrão
+`has_role(auth.uid(),'admin')` combinado com alguma checagem de empresa no mesmo corpo — só
+`decidir_solicitacao` usa o padrão correto (`has_role_for_empresa`). Não é mais um desvio
+isolado, é a convenção predominante em quase toda a camada de RPC do ERP.
+
+**As 4 mais críticas, lidas por completo e corrigidas nesta sessão** — mutação financeira direta:
+`financeiro_liquidar_titulo`, `financeiro_cancelar_titulo`, `financeiro_estornar_liquidacao`,
+`financeiro_renegociar_titulo`. Todas tinham exatamente:
+```sql
+IF NOT public.user_has_access_to_empresa(v_empresa_id)
+   AND NOT public.has_role(auth.uid(), 'admin') THEN
+  RAISE EXCEPTION 'Acesso negado para a empresa';
+```
+`has_role(uid,'admin')` é **global** (`EXISTS` em `user_roles` sem filtro de
+`empresa_representada_id` — confirmado lendo a definição) — true se o usuário é admin de
+**qualquer** empresa. Isso destravava a checagem pra qualquer admin agir sobre título financeiro
+de **qualquer outra** empresa: liquidar, cancelar, estornar, renegociar. `financeiro_salvar_titulo`
+(criar/editar) já estava correta (checa `v_empresa_do_titulo <> v_empresa_id` sem bypass de
+admin) e não precisou de ajuste.
+
+**Correção** (`20260910150000_fix_financeiro_titulo_admin_bypass_cross_tenant.sql`): troca
+`'admin'` por `'novus_owner'` nas 4 funções — mesmo padrão já formalizado em
+`has_role_for_empresa` (só `novus_owner` tem bypass cross-empresa de verdade). Aplicada via
+`supabase db query --file` (mesmo caminho dos dois fixes anteriores — `db push` segue quebrado
+pelo histórico de migrations dessincronizado).
+
+**Prova ao vivo** (SQL, `BEGIN...ROLLBACK`, `SET LOCAL ROLE authenticated`): avaliada a expressão
+exata do boundary check para o admin da Allegra tentando agir sobre o único título real hoje
+existente (pertence à E2E TEST CO) —
+`bloqueado_ANTES_do_fix = false` (ou seja, o bug era real e explorável antes desta correção) e
+`bloqueado_DEPOIS_do_fix = true`. Controle positivo: o mesmo admin continua liberado para títulos
+da própria empresa (sem regressão). `financeiro_cancelar_titulo` chamada de ponta a ponta como
+esse admin cross-tenant também falhou (mas num gate anterior — segunda senha do FIN-0 — então o
+teste de boundary isolado acima é a prova mais direta e definitiva do fix específico).
+
+Typecheck limpo, suíte de testes (406/406) passando. Suíte E2E (spec 07, ciclo de vida do
+título) **não rodou nesta sessão** — ambiente local com `VITE_SUPABASE_URL`/baseURL do Playwright
+não resolvendo neste shell, problema de infra pré-existente e não relacionado a esta mudança;
+não investigado a fundo por não bloquear a validação (prova em SQL + suíte unitária já
+suficientes, mesmo padrão dos dois achados anteriores).
+
+**Pendência real, grande, não fechada**: as outras ~30 funções do mesmo padrão (vendas, compras,
+estoque, relatórios) ainda não foram lidas individualmente — `autorizar_excecao_venda`,
+`baixar_estoque_venda`, `cancelar_pedido_compra`, `conciliar_inventario`,
+`confirmar_recebimento_compra`, `converter_orcamento_em_venda`,
+`enviar_pedido_compra_para_aprovacao`, `estornar_estoque_venda`, `fn_fluxo_caixa_projecao`,
+`fn_fluxo_caixa_resumo`, `gerar_contas_receber_da_venda`, `gerar_pedidos_compra_da_cotacao`,
+`get_audit_trail`, `marcar_pedido_compra_emitido`, `relatorio_balanco_patrimonial`,
+`relatorio_dfc_indireto`, `relatorio_dmpl`, `relatorio_dre`, `relatorio_fluxo_competencia`,
+`solicitar_aprovacao`, `transferencia_bancaria_atomica`, `validar_pagamento_venda`,
+`validar_saldo_estoque`, `verificar_autorizacao_venda` (todas com `usa_user_has_access=true`, ou
+seja, candidatas diretas ao mesmo fix) + `check_v2_readiness`/`promote_to_dual`/
+`promote_to_v2_only`/`rollback_to_dual`/`rollback_to_v1`/`precheck_source_system_nome_consistency`/
+`regenerar_entidade_dependencias` (sem `user_has_access_to_empresa` no corpo — perfil diferente,
+avaliar caso a caso se são sistêmicas por desenho ou também vazam). `get_audit_trail` e
+`validar_saldo_estoque` e `validar_pagamento_venda` já foram lidos por completo nesta sessão e
+**confirmados vulneráveis ao mesmo padrão** (leem dado de outra empresa — histórico de auditoria
+bancária, saldo de estoque, validação de pagamento de venda — não somente mutação financeira),
+ainda não corrigidos. Próxima sessão: continuar a leitura individual e decidir prioridade (dado
+que `financeiro_pode_usuario` e `pode()` também usam `has_role(admin)` sem escopo, mas parecem
+ser gates de permissão de UI/feature, não de dado — confirmar antes de tratar como vazamento).
+
+## Checkpoint anterior — Varredura de `has_role` sem escopo: 2º vazamento achado e corrigido em `perfis_acesso` (2026-09-10)
+
+Continuação direta da pendência aberta pelo checkpoint anterior ("procurar outros `has_role(...)`
+sem escopo de empresa"). Varredura em `pg_policies` (via `supabase db query`, já que o conector
+MCP do Supabase desta sessão está logado em outra conta/projeto — não serve para o ERP):
+
+- Query 1: todas as policies `public` que usam `has_role(...)` sem usar `has_role_for_empresa` —
+  8 tabelas encontradas (`cfop`, `empresas_representadas`, `entidade_dependencias`,
+  `modalidades_pagamento`, `naturezas_pagamento`, `ncm`, `papeis_catalogo`, `perfis_acesso`,
+  `report_ops_alerts`, `report_ops_audit`).
+- Query 2 (mais rígida): tabelas que **têm** coluna de escopo (`empresa_representada_id`/
+  `empresa_id`) mas a policy não referencia essa coluna nem `get_user_empresa_id`/
+  `has_role_for_empresa` — **0 resultados**. Não existe mais nenhum caso do padrão exato do bug
+  de `empresa_responsavel` (coluna existe, RLS ignora).
+- Das 8 tabelas da query 1: 7 são catálogos/metadados de sistema genuinamente globais (CFOP/NCM
+  são códigos fiscais nacionais; `modalidades_pagamento`/`naturezas_pagamento`/`papeis_catalogo`
+  são taxonomia compartilhada já confirmada intencional em sessão anterior — ver
+  `project_cargo_role_erp_educacional`; `entidade_dependencias`/`report_ops_*` são metadados de
+  sistema; `empresas_representadas` é a própria tabela raiz, `novus_owner`-only por desenho).
+
+**Achado real: `public.perfis_acesso`** nasceu sem nenhuma coluna de vínculo com empresa —
+nunca teve. `sistema=true` (3 linhas hoje, perfis padrão) é global por desenho, igual
+`papeis_catalogo`; mas perfis **customizados** (`sistema=false`) não tinham nenhum escopo:
+SELECT aberto a qualquer autenticado, INSERT/UPDATE/DELETE de perfil não-sistema liberado a
+admin de **qualquer** empresa. `usuarios.perfil_id` referencia essa tabela — é o que decide
+`permissoes` (jsonb) real de cada usuário, não é cosmético. Não foi explorado ainda (0 perfis
+customizados existiam até agora) — achado por varredura proativa, não por incidente relatado.
+
+**Correção** (`20260910140000_perfis_acesso_escopo_por_empresa.sql`, mesmo padrão do passo 2 de
+`empresa_responsavel`): coluna `empresa_representada_id` nullable + `CHECK` (
+`sistema=true ⟺ empresa_representada_id IS NULL`, `sistema=false ⟺ empresa_representada_id NOT NULL`)
+— os dois tipos de linha (sistema global / customizado por empresa) coexistem na mesma tabela,
+diferente de `empresa_responsavel` que é 1-por-empresa sempre vinculada. RLS reescrita: SELECT
+`sistema=true OR has_role_for_empresa(admin, empresa_representada_id)`; INSERT sempre força
+`sistema=false` + empresa ativa (nunca cria perfil de sistema via UI); UPDATE/DELETE mantêm a
+trava pré-existente `sistema=false` e agora também escopam por empresa. `usePerfis.ts` (hook que
+lê/grava direto, sem passar por `src/services/**` — desvio pré-existente do padrão do projeto,
+não corrigido nesta sessão) ganhou filtro explícito `sistema=true OR empresa=empresa_ativa` no
+SELECT e `empresa_representada_id: empresaAtivaId` no INSERT — RLS é rede de segurança, quem
+restringe é o código (mesma regra de `feedback_isolamento_absoluto_entre_empresas`).
+
+**Prova ao vivo** (SQL, transação `BEGIN...ROLLBACK`, `SET LOCAL ROLE authenticated` +
+`request.jwt.claim.sub` alternando entre admin da E2E TEST CO e admin da Allegra — sem dado de
+teste permanente):
+- Admin da E2E TEST CO cria perfil customizado próprio → visível pra ele, 1 linha.
+- Admin da Allegra: **0 linhas visíveis**, `UPDATE`/`DELETE` na linha da E2E TEST CO afetam 0
+  linhas.
+- Admin da E2E TEST CO, checado de novo depois: linha intacta (`descricao` inalterada — a
+  tentativa de sabotagem cross-tenant da Allegra não teve efeito nenhum).
+- Sem regressão: perfis `sistema=true` continuam visíveis para admin de qualquer empresa (3/3).
+
+Typecheck limpo, suíte de testes (406/406) passando após regenerar
+`src/integrations/supabase/types.ts`.
+
+**Testado ao vivo na UI real** (extensão do Claude in Chrome reconectou mais tarde na mesma
+sessão): sem senha salva para `e2e@novus.test` disponível localmente (não versionada, só existe
+como secret do CI/`. env.e2e.local` do usuário) — em vez de resetar essa conta (quebraria o
+`E2E_PASS` do GitHub Actions), criado um usuário descartável só para este teste via Admin API
+do Supabase Auth (`service_role` key, autorizada explicitamente pelo usuário — classificador de
+segurança bloqueou a primeira tentativa por "materialização de credencial" até a confirmação),
+com papel `admin` na E2E TEST CO. Fluxo completo confirmado na tela `/configuracoes/usuarios` →
+aba Perfis: perfis de sistema (Administrador/Consulta/Operador) aparecem normalmente para a
+empresa; **criar** um perfil customizado funciona (toast "Perfil criado com sucesso!", sem badge
+"Sistema", sem botões Editar/Excluir nos de sistema mas com eles no customizado); banco confirma
+`empresa_representada_id` gravado corretamente pelo hook; **excluir** o perfil customizado
+funciona (toast "Perfil excluído com sucesso!"). Usuário de teste e vínculo em `user_roles`
+apagados ao final (0 resíduo confirmado por query) — nenhum dado de teste permanente ficou no
+banco.
+
+**Nota operacional**: `supabase db push` falhou (`LegacyDbPushMissingRemoteError`) por causa do
+histórico de migrations dessincronizado do remoto, já registrado em sessão anterior
+(`project_fin1_cadastro_rapido_entidade_trigger_bug`) — segue não resolvido. A migration foi
+aplicada direto via `supabase db query --file`, mesmo caminho provável do passo 2 de
+`empresa_responsavel`.
+
+**Pendência aberta, ainda não fechada**: a varredura de `has_role` cobriu só policies RLS. Não
+foram auditadas funções `SECURITY DEFINER` (RPCs) que possam checar `has_role(...)` sem receber/
+validar `empresa_representada_id` como parâmetro — outra superfície possível do mesmo bug,
+mencionada como risco geral em `feedback_create_or_replace_param_append` mas não varrida
+sistematicamente ainda.
+
+## Checkpoint anterior — Vazamento cross-tenant crítico em `empresa_responsavel`: achado, corrigido em 2 passos, provado ao vivo (2026-09-10)
 
 Achado reportado pelo usuário depois do checkpoint anterior ter marcado o FIN-1 como fechado:
 logou por outro navegador e viu os dados reais da Allegra (CNPJ, e-mail, endereço) aparecendo

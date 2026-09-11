@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Perfil } from '@/types/empresa';
+import { getEmpresaAtivaIdOuFalha } from '@/lib/empresaAtiva';
 
 const QUERY_KEY = 'perfis';
 
@@ -25,9 +26,15 @@ export const usePerfis = () => {
   const { data: perfis = [], isLoading: loading } = useQuery({
     queryKey: [QUERY_KEY],
     queryFn: async () => {
+      // perfis_acesso é escopado por empresa desde 2026-09-10 (perfis de sistema
+      // continuam globais) — RLS já filtra, mas o filtro explícito aqui é a
+      // regra permanente do isolamento (RLS é rede de segurança, quem restringe
+      // é o service/hook, nunca a ausência dele).
+      const empresaAtivaId = await getEmpresaAtivaIdOuFalha();
       const { data, error } = await supabase
         .from('perfis_acesso')
         .select('*')
+        .or(`sistema.eq.true,empresa_representada_id.eq.${empresaAtivaId}`)
         .order('nome');
 
       if (error) {
@@ -61,7 +68,9 @@ export const usePerfis = () => {
             .single()
         : await supabase
             .from('perfis_acesso')
-            .insert(dataToSave)
+            // Perfil novo é sempre customizado da empresa ativa — nunca sistema
+            // (perfil de sistema só existe via seed/migração, nunca ação de UI).
+            .insert({ ...dataToSave, sistema: false, empresa_representada_id: await getEmpresaAtivaIdOuFalha() })
             .select()
             .single();
 

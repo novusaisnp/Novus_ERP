@@ -6360,6 +6360,7 @@ export type Database = {
           codigo: string
           created_at: string
           descricao: string | null
+          empresa_representada_id: string | null
           id: string
           nome: string
           permissoes: Json
@@ -6371,6 +6372,7 @@ export type Database = {
           codigo: string
           created_at?: string
           descricao?: string | null
+          empresa_representada_id?: string | null
           id?: string
           nome: string
           permissoes?: Json
@@ -6382,13 +6384,22 @@ export type Database = {
           codigo?: string
           created_at?: string
           descricao?: string | null
+          empresa_representada_id?: string | null
           id?: string
           nome?: string
           permissoes?: Json
           sistema?: boolean
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "perfis_acesso_empresa_representada_id_fkey"
+            columns: ["empresa_representada_id"]
+            isOneToOne: false
+            referencedRelation: "empresas_representadas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       periodos_contabeis: {
         Row: {
