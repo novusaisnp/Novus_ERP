@@ -1,5 +1,31 @@
 # Status do projeto — NOVUS ERP
 
+## Checkpoint atual — etapa 1 da auditoria, implantação pendente (2026-09-13)
+
+Correções locais: autorização por empresa nas tabelas/RPCs operacionais; gravação e
+cancelamento de venda em transação com estoque; estorno sem devolver estoque em dobro;
+saldo bancário calculado no banco com bloqueio da conta, sem snapshot do navegador.
+Também corrigida a permissão do trigger de histórico bancário, que impedia a edição
+autenticada da conta.
+
+Validação: typecheck aprovado; 421 testes em 60 arquivos aprovados; build aprovado
+(avisos de chunks grandes persistem); lint dos cinco arquivos JS/TS desta etapa aprovado.
+As três migrations foram executadas com testes SQL no banco ERP dentro de uma transação
+revertida: `node scripts/check-etapa1.mjs` retornou `checks_passed_rollback`.
+O teste usa usuário autenticado, empresas de teste e falhas injetadas; todos os registros
+e alterações de esquema do ensaio foram revertidos. Não houve aplicação permanente.
+
+**Não publicado:** frontend e migrations precisam de implantação coordenada: a revogação
+de escrita direta quebra o cliente antigo de vendas. Não executar `--apply` isoladamente
+enquanto esse cliente estiver em uso. Procedimento e limites em
+[`ETAPA1_INTEGRIDADE_2026-09-13.md`](./ETAPA1_INTEGRIDADE_2026-09-13.md).
+Ainda faltam ensaio concorrente com duas conexões, homologação E2E e publicação coordenada;
+esta entrega não significa liberação do ERP inteiro para produção.
+
+Checkpoint preparado para commit e push com os serviços, testes, migrations e relatório
+da auditoria. Enviar ao GitHub não aplica as migrations nem comprova implantação:
+a próxima ação é homologar e publicar o pacote coordenado conforme o procedimento acima.
+
 ## 🔖 Checkpoint atual — FIN-8: SLOs reais de jobs/integrações, achou backlog real de 14 dias (2026-09-13)
 
 Usuário pediu SLOs (item 4 da lista de pendências do FIN-8). Antes de inventar

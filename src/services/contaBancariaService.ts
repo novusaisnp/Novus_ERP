@@ -225,28 +225,9 @@ export const atualizarContaBancaria = async (id: string, input: Partial<ContaBan
   if (input.observacoes !== undefined) updateData.observacoes = input.observacoes;
   if (input.conta_cofre !== undefined) updateData.conta_cofre = input.conta_cofre;
 
-  // Ajustar agencia_id para contas cofre
-  updateData.agencia_id = input.conta_cofre ? null : input.agencia_id;
-
-  // Se saldo_inicial foi editado, ajustar saldo_atual pela diferença
-  // (o trigger só recalcula quando há movimentação; ajuste manual não dispara)
-  if (typeof input.saldo_inicial === 'number') {
-    const { data: atual, error: readErr } = await supabase
-      .from('contas_bancarias')
-      .select('saldo_inicial, saldo_atual')
-      .eq('id', id)
-      .single();
-    if (readErr) {
-      console.error('[ContaBancariaService] Falha ao ler saldos anteriores:', readErr);
-      throw new Error(readErr.message);
-    }
-    const oldInicial = Number(atual?.saldo_inicial ?? 0);
-    const oldAtual = Number(atual?.saldo_atual ?? 0);
-    const delta = Number(input.saldo_inicial) - oldInicial;
-    if (delta !== 0) {
-      updateData.saldo_atual = oldAtual + delta;
-    }
-  }
+  if (input.conta_cofre) updateData.agencia_id = null;
+  else if (input.agencia_id !== undefined) updateData.agencia_id = input.agencia_id;
+  // Saldo atual é calculado no banco, sob lock, incluindo a alteração de saldo inicial.
 
   // [LOTE 3B] Qualquer falha aqui propaga via throw — TanStack Query reverte
   // o cache; o componente não atualiza o state local (previne divergência).
@@ -254,6 +235,7 @@ export const atualizarContaBancaria = async (id: string, input: Partial<ContaBan
     .from('contas_bancarias')
     .update(updateData)
     .eq('id', id)
+    .eq('empresa_representada_id', await getEmpresaIdAtual())
     .select(CONTA_SELECT)
     .single();
 
