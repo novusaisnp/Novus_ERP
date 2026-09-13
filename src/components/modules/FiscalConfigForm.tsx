@@ -136,6 +136,15 @@ export const FiscalConfigForm: React.FC<FiscalConfigFormProps> = ({ configuracao
         </div>
 
         <div className="space-y-2">
+          <Label htmlFor="serieNfceContingencia">Série de contingência (NFC-e)</Label>
+          <Input id="serieNfceContingencia" type="number" min={1} max={999} {...register('serieNfceContingencia', { valueAsNumber: true })} />
+          <p className="text-xs text-muted-foreground">
+            Usada só quando a NFC-e é emitida offline (SEFAZ indisponível) — nunca se mistura
+            com a numeração normal.
+          </p>
+        </div>
+
+        <div className="space-y-2">
           <Label htmlFor="serieMdfe">Série MDF-e</Label>
           <Input id="serieMdfe" type="number" min={1} max={999} {...register('serieMdfe', { valueAsNumber: true })} />
         </div>

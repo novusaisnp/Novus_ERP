@@ -274,6 +274,92 @@ export function evalFiscalCertificadoExpira(i: FiscalCertificadoInput): AlertCan
   return null;
 }
 
+// ---------- PROBE JOBS: pg_cron jobs travados/falhando (FIN-8) ----------
+// Intervalo esperado de cada job (o schedule real do pg_cron), lido de
+// `cron.job.schedule` — 3x esse intervalo sem rodar já é sinal de scheduler travado,
+// não só uma execução lenta isolada. Jobs fora desta lista (ex. um job novo) não são
+// avaliados — silencioso de propósito até alguém adicionar o intervalo esperado aqui.
+export const CRON_JOB_INTERVALO_ESPERADO_SEGUNDOS: Record<string, number> = {
+  "process-webhook-outbox": 60,
+  "run-report-schedules": 60,
+  "evaluate-ops-alerts": 5 * 60,
+  "fiscal_metrics_daily_refresh": 15 * 60,
+  "cron_refresh_mv_curva_abc": 24 * 3600,
+  "job_materializar_recorrencias": 24 * 3600,
+  "prune-report-artifacts-daily": 24 * 3600,
+};
+
+export interface CronJobInput {
+  jobname: string;
+  ageSeconds: number | null; // now() - último start_time; null = nunca rodou
+  lastStatus: string | null; // 'succeeded' | 'failed' | null
+}
+
+export function evalCronJobsStalled(rows: CronJobInput[]): AlertCandidate[] {
+  const out: AlertCandidate[] = [];
+  for (const row of rows) {
+    const intervalo = CRON_JOB_INTERVALO_ESPERADO_SEGUNDOS[row.jobname];
+    if (intervalo === undefined) continue;
+    const age = row.ageSeconds;
+    if (age === null || age > intervalo * 5) {
+      out.push({
+        kind: "cron_job_stalled",
+        reason: `stalled_page:${row.jobname}`,
+        severity: "page",
+        payload: { jobname: row.jobname, age_seconds: age, intervalo_esperado_seconds: intervalo },
+      });
+      continue;
+    }
+    if (age > intervalo * 3) {
+      out.push({
+        kind: "cron_job_stalled",
+        reason: `stalled_warning:${row.jobname}`,
+        severity: "warning",
+        payload: { jobname: row.jobname, age_seconds: age, intervalo_esperado_seconds: intervalo },
+      });
+      continue;
+    }
+    if (row.lastStatus === "failed") {
+      out.push({
+        kind: "cron_job_stalled",
+        reason: `last_run_failed:${row.jobname}`,
+        severity: "warning",
+        payload: { jobname: row.jobname, age_seconds: age },
+      });
+    }
+  }
+  return out;
+}
+
+// ---------- PROBE INTEGRAÇÕES: backlog/falhas em webhook_outbox (FIN-8) ----------
+export interface WebhookOutboxInput {
+  pendentes: number; // status ainda não entregue
+  oldestPendingAgeSeconds: number | null;
+  falhasRepetidas: number; // tentativas >= 5, ainda não entregue
+}
+
+export function evalWebhookOutboxBacklog(i: WebhookOutboxInput): AlertCandidate | null {
+  const age = i.oldestPendingAgeSeconds ?? 0;
+  if (i.pendentes === 0) return null;
+  if (i.pendentes > 100 || age > 3600 || i.falhasRepetidas > 10) {
+    return {
+      kind: "webhook_outbox_backlog",
+      reason: "backlog_page",
+      severity: "page",
+      payload: { pendentes: i.pendentes, oldest_age_seconds: age, falhas_repetidas: i.falhasRepetidas },
+    };
+  }
+  if (i.pendentes > 20 || age > 900 || i.falhasRepetidas > 0) {
+    return {
+      kind: "webhook_outbox_backlog",
+      reason: "backlog_warning",
+      severity: "warning",
+      payload: { pendentes: i.pendentes, oldest_age_seconds: age, falhas_repetidas: i.falhasRepetidas },
+    };
+  }
+  return null;
+}
+
 /** Retorna o conjunto ativo de `kind` avaliados (usado para auto-resolve). */
 export const ALL_ALERT_KINDS = [
   "cron_heartbeat",
@@ -286,4 +372,6 @@ export const ALL_ALERT_KINDS = [
   "fiscal_rejeicao_alta",
   "fiscal_erro_edge",
   "fiscal_certificado_expira",
+  "cron_job_stalled",
+  "webhook_outbox_backlog",
 ] as const;

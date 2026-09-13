@@ -12,6 +12,7 @@ export interface ConfiguracaoFiscal {
   proximoNumeroNfe?: number;
   serieNfce?: number;
   proximoNumeroNfce?: number;
+  serieNfceContingencia?: number;
   serieMdfe?: number;
   proximoNumeroMdfe?: number;
   rntrc?: string;

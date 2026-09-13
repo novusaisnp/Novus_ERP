@@ -16,6 +16,8 @@ import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { hasEveryPermission } from '../_shared/permissions.ts';
 import { pagamentosToNFCe, vendaToNFePayload, VendaMapperError } from '../_shared/fiscal/mappers/vendaToNFePayload.ts';
 import { resolveFiscalProvider } from '../_shared/fiscal/providers/resolveFiscalProvider.ts';
+import { isProviderUnavailable } from '../_shared/fiscal/providers/FiscalProvider.ts';
+import { gerarCodigoUnico } from '../_shared/fiscal/contingencia.ts';
 import type {
   FiscalEnvironment,
   FiscalProviderName,
@@ -26,6 +28,8 @@ import type {
 interface EmitirRequest {
   vendaId: string;
   tipo?: 'NFE' | 'NFCE';
+  /** Emissão manual em contingência (SEFAZ/provedor indisponível). Só vale para NFCE. */
+  contingencia?: boolean;
 }
 
 Deno.serve(async (req) => {
@@ -54,6 +58,10 @@ Deno.serve(async (req) => {
     if (!body?.vendaId) return json({ error: 'invalid_input', missing: ['vendaId'] }, 400);
     const tipo = body.tipo ?? 'NFE';
     if (!['NFE', 'NFCE'].includes(tipo)) return json({ error: 'invalid_tipo' }, 400);
+    const contingencia = body.contingencia === true;
+    if (contingencia && tipo !== 'NFCE') {
+      return json({ error: 'invalid_input', message: 'Contingência só se aplica a NFC-e.' }, 400);
+    }
 
     // 1) Carrega dados
     const { data: venda, error: vErr } = await client
@@ -87,7 +95,7 @@ Deno.serve(async (req) => {
     const useMock = (Deno.env.get('FISCAL_MOCK') ?? 'true').toLowerCase() !== 'false';
     const { data: configFiscal, error: cfgErr } = await client
       .from('fiscal_configuracoes')
-      .select('serie_nfe, serie_nfce, ambiente, provedor, regime_tributario, cnpj_emitente, inscricao_estadual')
+      .select('serie_nfe, serie_nfce, serie_nfce_contingencia, ambiente, provedor, regime_tributario, cnpj_emitente, inscricao_estadual')
       .eq('empresa_representada_id', venda.empresa_representada_id)
       .eq('ativo', true)
       .is('deleted_at', null)
@@ -162,6 +170,28 @@ Deno.serve(async (req) => {
       }
     }
 
+    let codigoUnicoContingencia: string | undefined;
+    if (contingencia) {
+      const serieContingencia = configFiscal?.serie_nfce_contingencia ?? 900;
+      const { data: ultimoContingencia, error: ultimoErr } = await client
+        .from('fiscal_documentos_eletronicos')
+        .select('numero')
+        .eq('empresa_representada_id', venda.empresa_representada_id)
+        .eq('modelo', 65)
+        .eq('serie', serieContingencia)
+        .order('numero', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (ultimoErr) return json({ error: 'contingencia_numero_load_failed', details: ultimoErr.message }, 500);
+      codigoUnicoContingencia = gerarCodigoUnico();
+      payload = {
+        ...payload,
+        serie: serieContingencia,
+        numero: Number(ultimoContingencia?.numero ?? 0) + 1,
+        contingenciaOffline: { codigoUnico: codigoUnicoContingencia },
+      } satisfies NFCeEmitPayload;
+    }
+
     // 3) Insere documento em status "processando" (idempotente por chave)
     const idempotencyKey = payload.idempotencyKey;
     const { data: docExistente } = await client
@@ -190,6 +220,9 @@ Deno.serve(async (req) => {
       tipo,
       modelo: tipo === 'NFCE' ? 65 : 55,
       serie: payload.serie,
+      numero: contingencia ? payload.numero : undefined,
+      forma_emissao: contingencia ? 'contingencia' : 'normal',
+      codigo_unico_contingencia: codigoUnicoContingencia ?? null,
       ambiente: environment === 'production' ? 'PRODUCAO' : 'HOMOLOGACAO',
       data_emissao: payload.dataEmissao,
       valor_produtos: payload.valorTotal,
@@ -272,23 +305,14 @@ Deno.serve(async (req) => {
     if (snapshotInsertErr) return json({ error: 'snapshot_insert_failed', details: snapshotInsertErr.message }, 500);
 
     // 4) Chama provider (mockado por padrão)
-    let result: NFeEmitResult;
-    let provider: ReturnType<typeof resolveFiscalProvider> | null = null;
-    try {
-      if (useMock) {
-        result = mockEmitResult(idempotencyKey);
-        console.log('[fiscal-emitir-nfe] MOCK ativo — nenhuma chamada real ao provedor.');
-      } else {
-        provider = resolveFiscalProvider(providerName, environment);
-        result = tipo === 'NFCE'
-          ? await provider.emitNFCe(payload as NFCeEmitPayload)
-          : await provider.emitNFe(payload);
-      }
-    } catch (err) {
+    const falharEmissao = async (err: unknown, podeOferecerContingencia: boolean) => {
       const message = (err as Error).message ?? 'erro desconhecido';
       await client
         .from('fiscal_documentos_eletronicos')
-        .update({ status: 'REJEITADA', motivo_rejeicao: message })
+        .update({
+          status: podeOferecerContingencia ? 'FALHA_COMUNICACAO' : 'REJEITADA',
+          motivo_rejeicao: message,
+        })
         .eq('id', documentoId);
       await client.from('fiscal_eventos').insert({
         empresa_representada_id: venda.empresa_representada_id,
@@ -298,7 +322,40 @@ Deno.serve(async (req) => {
         motivo_rejeicao: message,
         created_by: userData.user.id,
       });
+      if (podeOferecerContingencia) {
+        return json({
+          error: 'sefaz_indisponivel',
+          message: 'SEFAZ/provedor fiscal indisponível no momento. É possível emitir em contingência.',
+          documento_id: documentoId,
+        }, 503);
+      }
       return json({ error: 'provider_error', message, documento_id: documentoId }, 502);
+    };
+
+    let provider: ReturnType<typeof resolveFiscalProvider> | null = null;
+    if (!useMock) {
+      try {
+        provider = resolveFiscalProvider(providerName, environment);
+      } catch (err) {
+        // Erro de configuração (token ausente, provedor não implementado) — nunca é
+        // "SEFAZ fora do ar", não oferece contingência.
+        return await falharEmissao(err, false);
+      }
+    }
+
+    let result: NFeEmitResult;
+    try {
+      if (useMock) {
+        result = mockEmitResult(idempotencyKey);
+        console.log('[fiscal-emitir-nfe] MOCK ativo — nenhuma chamada real ao provedor.');
+      } else {
+        result = tipo === 'NFCE'
+          ? await provider!.emitNFCe(payload as NFCeEmitPayload)
+          : await provider!.emitNFe(payload);
+      }
+    } catch (err) {
+      const podeOferecerContingencia = tipo === 'NFCE' && !contingencia && isProviderUnavailable(err);
+      return await falharEmissao(err, podeOferecerContingencia);
     }
 
     // 5) Fase 3: baixar XML/DANFE do provedor e subir para Storage (apenas em modo real).
@@ -365,13 +422,14 @@ Deno.serve(async (req) => {
         danfe_url: danfeStoragePath ?? result.danfeUrl,
         pdf_danfe_url: danfeStoragePath ?? result.danfeUrl,
         payload_provedor: (result.raw ?? null) as unknown,
+        numero: contingencia ? payload.numero : undefined,
       })
       .eq('id', documentoId);
 
     await client.from('fiscal_eventos').insert({
       empresa_representada_id: venda.empresa_representada_id,
       documento_id: documentoId,
-      tipo: result.status === 'autorizada' ? 'autorizacao' : 'processamento',
+      tipo: contingencia ? 'contingencia' : (result.status === 'autorizada' ? 'autorizacao' : 'processamento'),
       protocolo: result.protocoloAutorizacao,
       status: result.status,
       motivo_rejeicao: result.motivoRejeicao,
@@ -395,6 +453,7 @@ Deno.serve(async (req) => {
       xml_bucket: xmlStoragePath ? 'fiscal-xml' : undefined,
       danfe_bucket: danfeStoragePath ? 'fiscal-danfe' : undefined,
       mock: useMock,
+      forma_emissao: contingencia ? 'contingencia' : 'normal',
     }, 200);
   } catch (err) {
     console.error('[fiscal-emitir-nfe] erro inesperado', err);

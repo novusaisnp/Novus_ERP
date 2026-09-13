@@ -23,10 +23,17 @@ export const useEmitirNFe = () => {
     onSuccess: (result, input) => {
       invalidateFiscal(qc);
       const label = input.tipo === 'NFCE' ? 'NFC-e' : 'NF-e';
+      const emContingencia = result.forma_emissao === 'contingencia';
       if (result.status === 'autorizada') {
-        toast.success(`${label} autorizada com sucesso!`);
+        toast.success(emContingencia ? `${label} emitida em contingência!` : `${label} autorizada com sucesso!`);
       } else if (result.status === 'processando') {
-        toast.info(result.mock ? `${label} em processamento (modo simulação).` : `${label} em processamento na SEFAZ.`);
+        toast.info(
+          emContingencia
+            ? `${label} emitida em contingência — sincroniza com a SEFAZ automaticamente.`
+            : result.mock
+              ? `${label} em processamento (modo simulação).`
+              : `${label} em processamento na SEFAZ.`,
+        );
       } else {
         toast.warning(`${label} com status: ${result.status}`);
       }

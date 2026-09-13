@@ -1,3 +1,4 @@
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { empresasRepresentadasService } from "@/services/empresasRepresentadasService";
 
@@ -6,6 +7,8 @@ console.log('[Fiscal] Inicializando emissaoService');
 export interface EmitirNFeInput {
   vendaId: string;
   tipo?: 'NFE' | 'NFCE';
+  /** Emissão manual em contingência (SEFAZ/provedor indisponível). Só vale para NFCE. */
+  contingencia?: boolean;
 }
 
 export interface EmitirNFeResult {
@@ -17,6 +20,7 @@ export interface EmitirNFeResult {
   xml_url?: string;
   danfe_url?: string;
   mock?: boolean;
+  forma_emissao?: 'normal' | 'contingencia';
 }
 
 export interface CancelarNFeInput {
@@ -66,6 +70,8 @@ export interface FiscalDocumento {
   provider: string | null;
   ambiente: string | null;
   tentativas: number;
+  forma_emissao: 'normal' | 'contingencia';
+  codigo_unico_contingencia: string | null;
 }
 
 export interface FiscalEvento {
@@ -80,10 +86,25 @@ export interface FiscalEvento {
   created_at: string;
 }
 
+export interface FiscalFunctionError extends Error {
+  /** Código estruturado devolvido pelo edge function (ex.: 'sefaz_indisponivel', 'duplicate_emission'). */
+  code?: string;
+  documentoId?: string;
+}
+
 async function invokeOrThrow<T>(fn: string, body: unknown): Promise<T> {
   const { data, error } = await supabase.functions.invoke<T>(fn, { body });
   if (error) {
     console.error(`[Fiscal] ${fn} erro:`, error);
+    if (error instanceof FunctionsHttpError) {
+      const payload = await error.context.json().catch(() => null);
+      if (payload) {
+        const err: FiscalFunctionError = new Error(payload.message || payload.error || error.message);
+        err.code = payload.error;
+        err.documentoId = payload.documento_id;
+        throw err;
+      }
+    }
     throw error;
   }
   if (!data) throw new Error(`Resposta vazia de ${fn}`);

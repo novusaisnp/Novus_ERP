@@ -420,14 +420,38 @@ por trás).
 **Critério de saída:** qualquer evento externo pode ser reprocessado com segurança e sua origem é rastreável até o lançamento financeiro/contábil resultante.
 
 ### FIN-8 — Operação, segurança e conformidade contínua
-- [ ] Baseline OWASP ASVS 5.0 para autenticação, autorização, validação e auditoria.
-- [ ] MFA/step-up para ações críticas configuráveis.
-- [ ] Alertas de alteração bancária, pagamento duplicado e comportamento anômalo.
-- [ ] Logs sem segredos ou dados pessoais/financeiros desnecessários.
-- [ ] SLOs para baixa, conciliação, jobs e integrações; alertas acionáveis.
-- [ ] Backup, restauração e disaster recovery testados periodicamente.
-- [ ] Testes de propriedade para dinheiro, concorrência, isolamento e invariantes contábeis.
-- [ ] Particionamento/arquivamento apenas guiado por medição.
+- [x] Baseline OWASP ASVS 5.0 para autenticação, autorização, validação e auditoria —
+  auditoria rodada 2026-09-13, achados no `STATUS.md`. Autorização granular fechada em
+  duas fatias (Financeiro + RH/Configurações, 2026-09-13), reusando o catálogo/infra do
+  PERM-1. Trilha de auditoria real nova em `perfis_acesso`/`contas_bancarias`
+  (a de `usuarios`/`user_roles` já existia desde 2026-08-25, achado corrigido na sessão).
+  Zod padronizado em `financeiro-autorizar`. Política de senha alinhada a NIST 800-63B
+  (12 caracteres). Captcha continua desligado (depende do usuário mexer no painel da
+  Cloudflare, fora do meu alcance sozinho) — único item desta linha não fechado.
+- [ ] MFA/step-up para ações críticas configuráveis — decisão de produto pendente (qual
+  método: TOTP/WebAuthn/e-mail OTP), não é só código.
+- [ ] Alertas de alteração bancária, pagamento duplicado e comportamento anômalo — a
+  trilha de auditoria (item acima) é pré-requisito e já existe; o alerta em cima dela
+  ainda não foi construído.
+- [x] Logs sem segredos ou dados pessoais/financeiros desnecessários — amostragem na
+  auditoria 2026-09-13 não achou vazamento em services financeiro/RH; a limpeza mais
+  ampla de `console.*`/`: any` (Fase 7 da Auditoria de agosto) segue como dívida à parte,
+  não é um achado de segurança novo.
+- [x] SLOs para jobs e integrações; alertas acionáveis — estendido o avaliador já
+  existente (`evaluate-ops-alerts`, P6.2, roda a cada 5min com dedupe/auto-resolve) com
+  2 probes novos (`cron_job_stalled`, `webhook_outbox_backlog`) em vez de inventar
+  threshold de negócio do zero. Achou ao vivo um backlog real de 14 dias em
+  `webhook_outbox`, não investigado/corrigido ainda (2026-09-13). "Baixa" e
+  "conciliação" seguem sem SLO — falta instrumentação de falha (hoje só o sucesso vira
+  histórico), pré-requisito antes de qualquer probe fazer sentido.
+- [ ] Backup, restauração e disaster recovery testados periodicamente — testar restore de
+  verdade contra `reksodqzemboaeqxnxyy` (produção real) é arriscado demais pra fazer sem
+  combinar uma janela com o usuário.
+- [ ] Testes de propriedade para dinheiro, concorrência, isolamento e invariantes
+  contábeis — ainda não iniciado, é uma frente de testing nova (provavelmente
+  `fast-check`), tamanho de fatia própria.
+- [ ] Particionamento/arquivamento apenas guiado por medição — sem medição hoje que
+  justifique, continua adiado por desenho, não é pendência real.
 
 **Critério de saída:** controles, recuperação e auditoria são comprovados por exercício, não apenas por configuração declarada.
 
@@ -690,7 +714,9 @@ no projeto para custom fields — não generalizar sem ≥2 consumidores reais p
 - [ ] NFC-e e evolução fiscal comprovada em homologação real.
 
 ### Fiscal, RH e estoque especializado
-- [ ] Fiscal completo: NFC-e, CCe, contingência e consulta de status.
+- [x] Fiscal completo (NFC-e, CCe, contingência e consulta de status) — fechado 2026-09-13, ver
+  `STATUS.md`. Só falta SPED (EFD ICMS/IPI, ECD, ECF), que depende de validação contábil do
+  plano de contas (`FIN-4`), não é lacuna de código.
 - (Folha real — agora tracked formalmente em `RH-1`, Programa RH e Departamento Pessoal.)
 - [ ] Bem locável/serializado separado do estoque fungível antes do satélite de locação (Parte 1, §1.8).
 - [ ] Custom fields somente após caso real; preferir `metadata jsonb` antes de EAV, salvo prova contrária.
@@ -770,7 +796,7 @@ aqui é a **sessão de trabalho com agente**, não sprint/semana de time humano.
 | 6 | `COMP-1` — compras e suprimentos completo | ~~3-5~~ **feito** (~1 sessão, fatiado em COMP-1a/1b/1c/1d) | Ciclo completo Requisição→Cotação→Pedido→Recebimento→título a pagar, fechado 2026-09-07. |
 | 7 | `ORC-1` — motor de alçadas mínimo | ~~2-3~~ **feito** (~1 sessão) | Fechado 2026-09-07, primeiro consumidor real é o Pedido de Compra (item 6). |
 | 8 | `PROD-1` — produção leve básica | ~~3-4~~ **feito** (~1 sessão, 2026-09-09) | Conceitualmente é "venda que baixa estoque" invertida — consumo em vez de saída por venda. Testado ao vivo, integração com Estoque/Vendas confirmada. |
-| 9 | Fiscal — destravar SPED + NFC-e/CCe/contingência | 2-4 | SPED completo (EFD ICMS/IPI, ECD, ECF) só fecha depois do item 3-5 **e** validação contábil — não é só código. |
+| 9 | Fiscal — destravar SPED + NFC-e/CCe/contingência | ~~2-4~~ **NFC-e/CCe/contingência feitos** (2026-09-13) | Restou só SPED completo (EFD ICMS/IPI, ECD, ECF), que só fecha depois do item 3-5 **e** validação contábil — não é só código. |
 | 10 | `FIN-1` (cauda) + `FIN-8` baseline | ~~2-4~~ **FIN-1 fechado** (2026-09-10) | `FIN-1` completo, incluindo E2E (achou 2 bugs reais no caminho — ordering de `e2e-reset` e "Editar" quebrado em Contas a Receber). `FIN-8` (baseline de segurança/operação) segue não iniciado. |
 
 **Total Onda 1: ~16-24 sessões de código** (revisado para baixo 2 vezes: `ORG-1`/`ORG-2`

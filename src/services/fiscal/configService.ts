@@ -4,6 +4,7 @@ import type { ConfiguracaoFiscal } from '@/types/fiscal';
 
 type ConfigInsert = Database['public']['Tables']['fiscal_configuracoes']['Insert'];
 type ConfigMDFeWrite = { serie_mdfe?: number | null; proximo_numero_mdfe?: number | null; rntrc?: string | null };
+type ConfigContingenciaWrite = { serie_nfce_contingencia?: number | null };
 
 type ConfigRow = {
   id: string;
@@ -18,6 +19,7 @@ type ConfigRow = {
   proximo_numero_nfe: number | null;
   serie_nfce: number | null;
   proximo_numero_nfce: number | null;
+  serie_nfce_contingencia?: number | null;
   serie_mdfe?: number | null;
   proximo_numero_mdfe?: number | null;
   rntrc?: string | null;
@@ -39,6 +41,7 @@ const fromRow = (item: ConfigRow): ConfiguracaoFiscal => ({
   proximoNumeroNfe: item.proximo_numero_nfe || undefined,
   serieNfce: item.serie_nfce || undefined,
   proximoNumeroNfce: item.proximo_numero_nfce || undefined,
+  serieNfceContingencia: item.serie_nfce_contingencia || undefined,
   serieMdfe: item.serie_mdfe || undefined,
   proximoNumeroMdfe: item.proximo_numero_mdfe || undefined,
   rntrc: item.rntrc || undefined,
@@ -58,7 +61,7 @@ export const fetchConfiguracoesFiscais = async (): Promise<ConfiguracaoFiscal[]>
 };
 
 export const createConfiguracaoFiscal = async (config: ConfiguracaoFiscal): Promise<ConfiguracaoFiscal> => {
-  const payload: ConfigInsert & ConfigMDFeWrite = {
+  const payload: ConfigInsert & ConfigMDFeWrite & ConfigContingenciaWrite = {
     empresa_representada_id: config.empresaRepresentadaId,
     ambiente: config.ambiente,
     provedor: config.provedor,
@@ -70,6 +73,7 @@ export const createConfiguracaoFiscal = async (config: ConfiguracaoFiscal): Prom
     proximo_numero_nfe: config.proximoNumeroNfe || null,
     serie_nfce: config.serieNfce || null,
     proximo_numero_nfce: config.proximoNumeroNfce || null,
+    serie_nfce_contingencia: config.serieNfceContingencia || null,
     serie_mdfe: config.serieMdfe || null,
     proximo_numero_mdfe: config.proximoNumeroMdfe || null,
     rntrc: config.rntrc || null,

@@ -13,19 +13,25 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { z } from 'https://esm.sh/zod@3.23.8';
 
 type Acao = 'LIQUIDACAO_RETROATIVA' | 'ESTORNO' | 'CANCELAMENTO' | 'RENEGOCIACAO';
 
-interface Body {
-  acao?: Acao;
-  email?: string;
-  senha?: string;
-  justificativa?: string;
-  contexto?: Record<string, unknown>;
+const JUSTIFICATIVA_MINIMA = 5;
+
+// Shape do payload garantido em tempo de validação, não só checado campo a campo depois
+// (mesmo padrão já usado em `_shared/fiscal/mappers/vendaToNFePayload.ts`) — pega tipo
+// errado (ex. acao como array, contexto não-objeto) antes de chegar na lógica de negócio.
+const bodySchema = z.object({
+  acao: z.enum(['LIQUIDACAO_RETROATIVA', 'ESTORNO', 'CANCELAMENTO', 'RENEGOCIACAO']),
+  email: z.string().email(),
+  senha: z.string().min(1),
+  justificativa: z.string().trim().min(JUSTIFICATIVA_MINIMA),
+  contexto: z.record(z.unknown()).optional(),
   /** Empresa ativa escolhida na aplicação. Papéis que operam acima de uma empresa não têm
    *  vínculo fixo em `usuarios`, então a empresa vem de quem está operando. */
-  empresa_representada_id?: string;
-}
+  empresa_representada_id: z.string().uuid().optional(),
+});
 
 // Permissão exigida do autorizador em cada ação.
 const PERMISSAO_POR_ACAO: Record<Acao, string> = {
@@ -36,7 +42,6 @@ const PERMISSAO_POR_ACAO: Record<Acao, string> = {
 };
 
 const VALIDADE_MINUTOS = 5;
-const JUSTIFICATIVA_MINIMA = 5;
 
 const json = (status: number, corpo: unknown) =>
   new Response(JSON.stringify(corpo), {
@@ -63,22 +68,21 @@ Deno.serve(async (req) => {
       return json(500, { ok: false, message: 'Backend não configurado.' });
     }
 
-    const body = (await req.json().catch(() => ({}))) as Body;
-    const { acao, email, senha, justificativa, contexto } = body;
-    const empresaSolicitada = (body.empresa_representada_id || '').trim();
-
-    if (!acao || !PERMISSAO_POR_ACAO[acao]) {
-      return json(400, { ok: false, message: 'Ação inválida.' });
+    const parsed = bodySchema.safeParse(await req.json().catch(() => ({})));
+    if (!parsed.success) {
+      const primeiro = parsed.error.issues[0];
+      const mensagens: Record<string, string> = {
+        acao: 'Ação inválida.',
+        email: 'Informe um e-mail válido do autorizador.',
+        senha: 'Informe a senha do autorizador.',
+        justificativa: `Justificativa deve ter ao menos ${JUSTIFICATIVA_MINIMA} caracteres.`,
+        empresa_representada_id: 'Empresa informada é inválida.',
+      };
+      const campo = String(primeiro?.path?.[0] ?? '');
+      return json(400, { ok: false, message: mensagens[campo] ?? 'Dados inválidos.' });
     }
-    if (!email || !senha) {
-      return json(400, { ok: false, message: 'Informe e-mail e senha do autorizador.' });
-    }
-    if (!justificativa || justificativa.trim().length < JUSTIFICATIVA_MINIMA) {
-      return json(400, {
-        ok: false,
-        message: `Justificativa deve ter ao menos ${JUSTIFICATIVA_MINIMA} caracteres.`,
-      });
-    }
+    const { acao, email, senha, justificativa, contexto } = parsed.data;
+    const empresaSolicitada = (parsed.data.empresa_representada_id || '').trim();
 
     // --- Quem está pedindo ---
     const comoSolicitante = createClient(supabaseUrl, anonKey, {

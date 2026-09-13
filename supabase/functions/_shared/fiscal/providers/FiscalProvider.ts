@@ -171,3 +171,16 @@ export class FiscalProviderError extends Error {
     this.name = 'FiscalProviderError';
   }
 }
+
+/**
+ * Distingue "SEFAZ/provedor fora do ar" (retomável — vale oferecer contingência) de
+ * "rejeição de negócio" (dado inválido, autenticação, regra fiscal — não é caso de
+ * contingência). Erro de rede (fetch falhou antes de ter resposta) ou 5xx/408 do
+ * provedor contam como indisponibilidade; qualquer 4xx de validação/negócio, não.
+ */
+export function isProviderUnavailable(err: unknown): boolean {
+  if (err instanceof FiscalProviderError) {
+    return [408, 500, 502, 503, 504].includes(err.status);
+  }
+  return err instanceof Error && !(err instanceof FiscalProviderError);
+}

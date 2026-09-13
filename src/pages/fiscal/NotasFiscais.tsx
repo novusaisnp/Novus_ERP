@@ -273,7 +273,7 @@ const NotasFiscais = () => {
                         </TableCell>
                         <TableCell>{d.provider ?? "—"}</TableCell>
                         <TableCell>
-                          <FiscalStatusBadge status={d.status} />
+                          <FiscalStatusBadge status={d.status} formaEmissao={d.forma_emissao} />
                         </TableCell>
                         <TableCell>{currency(d.valor_total)}</TableCell>
                         <TableCell className="text-right">

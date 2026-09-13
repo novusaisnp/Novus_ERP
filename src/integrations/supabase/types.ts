@@ -3494,6 +3494,7 @@ export type Database = {
           rntrc: string | null
           serie_mdfe: number | null
           serie_nfce: number | null
+          serie_nfce_contingencia: number
           serie_nfe: number | null
           updated_at: string
         }
@@ -3523,6 +3524,7 @@ export type Database = {
           rntrc?: string | null
           serie_mdfe?: number | null
           serie_nfce?: number | null
+          serie_nfce_contingencia?: number
           serie_nfe?: number | null
           updated_at?: string
         }
@@ -3552,6 +3554,7 @@ export type Database = {
           rntrc?: string | null
           serie_mdfe?: number | null
           serie_nfce?: number | null
+          serie_nfce_contingencia?: number
           serie_nfe?: number | null
           updated_at?: string
         }
@@ -3571,6 +3574,7 @@ export type Database = {
           chave_acesso: string | null
           cliente_id: string | null
           codigo_status_sefaz: string | null
+          codigo_unico_contingencia: string | null
           created_at: string
           created_by: string | null
           danfe_url: string | null
@@ -3578,6 +3582,7 @@ export type Database = {
           data_emissao: string
           deleted_at: string | null
           empresa_representada_id: string
+          forma_emissao: string
           fornecedor_id: string | null
           id: string
           idempotency_key: string | null
@@ -3616,6 +3621,7 @@ export type Database = {
           chave_acesso?: string | null
           cliente_id?: string | null
           codigo_status_sefaz?: string | null
+          codigo_unico_contingencia?: string | null
           created_at?: string
           created_by?: string | null
           danfe_url?: string | null
@@ -3623,6 +3629,7 @@ export type Database = {
           data_emissao?: string
           deleted_at?: string | null
           empresa_representada_id: string
+          forma_emissao?: string
           fornecedor_id?: string | null
           id?: string
           idempotency_key?: string | null
@@ -3661,6 +3668,7 @@ export type Database = {
           chave_acesso?: string | null
           cliente_id?: string | null
           codigo_status_sefaz?: string | null
+          codigo_unico_contingencia?: string | null
           created_at?: string
           created_by?: string | null
           danfe_url?: string | null
@@ -3668,6 +3676,7 @@ export type Database = {
           data_emissao?: string
           deleted_at?: string | null
           empresa_representada_id?: string
+          forma_emissao?: string
           fornecedor_id?: string | null
           id?: string
           idempotency_key?: string | null
@@ -9023,6 +9032,15 @@ export type Database = {
       }
     }
     Functions: {
+      pode_na_empresa: { Args: { p_empresa_id: string; p_permissao: string }; Returns: boolean }
+      venda_salvar_atomica: {
+        Args: { p_empresa_id: string; p_dados: Json; p_itens: Json; p_venda_id?: string }
+        Returns: Json
+      }
+      venda_cancelar_atomica: {
+        Args: { p_empresa_id: string; p_venda_id: string; p_excluir?: boolean }
+        Returns: undefined
+      }
       autorizar_excecao_venda: {
         Args: {
           p_bloqueio_codigo: string

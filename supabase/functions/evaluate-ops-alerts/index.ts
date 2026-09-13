@@ -7,6 +7,7 @@ import { isInternalRequest } from "../_shared/internal-auth.ts";
 import {
   ALL_ALERT_KINDS,
   evalBehindSchedules,
+  evalCronJobsStalled,
   evalFailureSpikes,
   evalFiscalCertificadoExpira,
   evalFiscalErroEdge,
@@ -16,6 +17,7 @@ import {
   evalResignSaturation,
   evalStorageRate,
   evalStuckRuns,
+  evalWebhookOutboxBacklog,
   type AlertCandidate,
 } from "./thresholds.ts";
 
@@ -226,6 +228,42 @@ Deno.serve(async (req: Request) => {
     const expira7d = certs.filter((c) => c.validade_ate && c.validade_ate < in7dIso).length;
     const cFCert = evalFiscalCertificadoExpira({ expira30d, expira7d });
     if (cFCert) candidates.push(cFCert);
+
+    // ---------- PROBES FIN-8: jobs (pg_cron) e integrações (webhook_outbox) ----------
+
+    // JOBS 1 — pg_cron travado ou última execução com erro (via wrapper SECURITY
+    // DEFINER, já que `cron.*` não tem grant direto pra service_role).
+    const { data: cronRows, error: cronErr } = await admin.rpc("fn_cron_jobs_status");
+    if (cronErr) {
+      log("cron_probe_failed", { err: cronErr.message });
+    } else {
+      const cronInputs = (cronRows ?? []).map((r: { jobname: string; last_start: string | null; last_status: string | null }) => ({
+        jobname: r.jobname,
+        ageSeconds: r.last_start ? Math.floor((Date.now() - new Date(r.last_start).getTime()) / 1000) : null,
+        lastStatus: r.last_status,
+      }));
+      candidates.push(...evalCronJobsStalled(cronInputs));
+    }
+
+    // INTEGRAÇÕES 1 — backlog/falhas repetidas na fila de entrega pros satélites.
+    const { data: pendentesRows } = await admin
+      .from("webhook_outbox")
+      .select("created_at, tentativas")
+      .in("status", ["PENDENTE", "PROCESSANDO", "ERRO"])
+      .order("created_at", { ascending: true })
+      .limit(500);
+    const pendentesArr = (pendentesRows ?? []) as Array<{ created_at: string; tentativas: number | null }>;
+    const oldestPendente = pendentesArr[0]?.created_at ?? null;
+    const oldestPendenteAge = oldestPendente
+      ? Math.floor((Date.now() - new Date(oldestPendente).getTime()) / 1000)
+      : null;
+    const falhasRepetidas = pendentesArr.filter((r) => (r.tentativas ?? 0) >= 5).length;
+    const cOutbox = evalWebhookOutboxBacklog({
+      pendentes: pendentesArr.length,
+      oldestPendingAgeSeconds: oldestPendenteAge,
+      falhasRepetidas,
+    });
+    if (cOutbox) candidates.push(cOutbox);
   } catch (err) {
     log("probes_failed", { err: (err as Error).message });
     return json({ error: "probes_failed" }, 500);

@@ -24,4 +24,19 @@ describe('FiscalStatusBadge', () => {
     fireEvent.click(screen.getByText(/autorizada/i));
     expect(onClick).toHaveBeenCalledTimes(1);
   });
+
+  it('mapeia falha_comunicacao', () => {
+    render(<FiscalStatusBadge status="falha_comunicacao" />);
+    expect(screen.getByText(/falha de comunicação/i)).toBeInTheDocument();
+  });
+
+  it('mostra badge de contingência quando formaEmissao é contingencia', () => {
+    render(<FiscalStatusBadge status="autorizada" formaEmissao="contingencia" />);
+    expect(screen.getByText(/em contingência/i)).toBeInTheDocument();
+  });
+
+  it('não mostra badge de contingência para emissão normal', () => {
+    render(<FiscalStatusBadge status="autorizada" formaEmissao="normal" />);
+    expect(screen.queryByText(/em contingência/i)).not.toBeInTheDocument();
+  });
 });

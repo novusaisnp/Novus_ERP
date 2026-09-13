@@ -1,6 +1,244 @@
 # Status do projeto — NOVUS ERP
 
-## 🔖 Checkpoint atual — Varredura de RPCs `SECURITY DEFINER` fechada: 34 funções corrigidas em 6 blocos (2026-09-10)
+## 🔖 Checkpoint atual — FIN-8: SLOs reais de jobs/integrações, achou backlog real de 14 dias (2026-09-13)
+
+Usuário pediu SLOs (item 4 da lista de pendências do FIN-8). Antes de inventar
+threshold do zero, investiguei o que já existia: **já tem um avaliador de SLO/alerta
+rodando de verdade a cada 5 minutos** (`evaluate-ops-alerts`, P6.2, com dedupe/
+auto-resolve e 10 probes já cobrindo pipeline de relatórios + fiscal) — não faltava a
+infra, faltavam só os probes de "jobs" e "integrações" que o item do Plano Mestre citava.
+Estendi o mesmo avaliador em vez de criar um sistema novo:
+
+- **Jobs**: `fn_cron_jobs_status()` (SECURITY DEFINER — `cron.*` não tem grant pra
+  service_role) + probe novo `cron_job_stalled` — página se um job não roda há 5x o
+  intervalo esperado dele ou nunca rodou, warning a partir de 3x ou se a última execução
+  falhou. Intervalo esperado é hardcoded por nome de job (mesmo estilo simples e
+  explícito já usado nos outros probes).
+- **Integrações**: probe novo `webhook_outbox_backlog` (pendentes/idade do mais antigo/
+  falhas repetidas na fila de entrega pros satélites).
+- **Achado real ao vivo, não simulado**: assim que deployado, a sonda achou 4 entregas em
+  `webhook_outbox` travadas em status `ERRO` desde 30/08 e 08/09 (até 14 dias!),
+  completamente invisíveis até agora — abriu alerta `page` de verdade. Não investiguei
+  a causa raiz nem mexi nesses registros — é achado a reportar, não conserto de
+  passagem.
+
+**"Baixa" e "conciliação" ficaram de fora de propósito**: hoje não existe nenhum
+registro de tentativa FALHADA dessas operações (só o resultado bem-sucedido vira
+`historico_movimentacoes_bancarias`) — não dá pra montar uma taxa de erro real sem esse
+dado existir primeiro. Documentado como pendência explícita em vez de inventar uma
+métrica que não reflete a realidade operacional.
+
+Validação: `npm run typecheck && npm run test -- --run` (421/421) e lint limpos antes de
+aplicar. Migration (`fn_cron_jobs_status`) e deploy do `evaluate-ops-alerts` aplicados com
+confirmação do usuário. Verificado ao vivo esperando o próprio cron rodar de verdade
+(não simulei a chamada) — `cron_job_stalled` não disparou (jobs realmente saudáveis,
+sem falso positivo), `webhook_outbox_backlog` disparou corretamente no achado real acima.
+Testes Deno novos (`thresholds.test.ts`) escritos, não executados (sem Deno instalado
+nesta máquina, mesma limitação já catalogada).
+
+**Próxima ação única**: decidir com o usuário se investiga agora a causa raiz do backlog
+de 14 dias em `webhook_outbox` (achado desta sessão, não corrigido) ou trata como
+pendência à parte. FIN-8 segue com os mesmos itens fora do meu alcance sozinho: captcha
+(painel Cloudflare), MFA (decisão de produto), backup/DR testado (risco alto pra testar
+sozinho), testes de propriedade (fatia nova), e agora também instrumentação de falha em
+baixa/conciliação (pré-requisito pra um SLO real dessas duas, ainda não construído).
+
+## Checkpoint anterior — FIN-8: RH/Configurações gateados + trilha de auditoria real + Zod + senha (2026-09-13)
+
+Usuário pediu explicitamente pra não deixar nada pra trás e seguir em frente depois da
+fatia 1 (Financeiro). Fechei mais 4 frentes genuinamente executáveis em código nesta
+sessão, todas aplicadas e verificadas ao vivo em produção (`reksodqzemboaeqxnxyy`):
+
+1. **Autorização — RH e Configurações** (`src/App.tsx`): mesmo padrão do Financeiro,
+   reusando códigos já existentes no catálogo (`rh.read/update/ponto`,
+   `config.usuarios`). `colaboradores`/`cargos`/`departamentos`/`relatorios` →
+   `rh.read`; os 4 `folha/*` de configuração → `rh.update`; `registros-ponto` →
+   `rh.ponto`; `configuracoes/usuarios` → `config.usuarios`. `folha-pagamento`
+   continua `AdminRoute` (RLS já trata salário como admin-only, não afrouxei).
+   `configuracoes/perfil` (própria página do usuário) e
+   `regras-classificacao-receita` (intencionalmente aberta, comentário no código já
+   confirmava) ficaram sem gate de propósito.
+2. **Trilha de auditoria real nova** (migration `20260913150000`): `historico_perfis_acesso`
+   (trigger em `UPDATE OF permissoes, nome, ativo`) e `historico_contas_bancarias`
+   (trigger em qualquer `UPDATE`) — mesmo padrão comprovado de
+   `historico_usuarios_perfil`/`historico_entidade_papeis` (to_jsonb OLD/NEW,
+   append-only, RLS só-SELECT). **Correção de premissa importante**: a auditoria OWASP
+   tinha dito que "mudança de role de usuário não tem trilha" — isso é **falso**,
+   `historico_usuarios_perfil` já existe desde 2026-08-25 com trigger real em
+   `usuarios.perfil_id` e `user_roles`; o fork só olhou o frontend e não viu o trigger no
+   banco. O que realmente faltava era só `perfis_acesso` (o que cada perfil concede) e
+   `contas_bancarias`. Testado ao vivo: alternei `ativo` do perfil "Consulta" (zero
+   usuários reais) duas vezes e confirmei as duas linhas em `historico_perfis_acesso`
+   com `dados_anteriores`/`dados_novos` corretos.
+3. **Validação Zod em `financeiro-autorizar`**: shape do payload garantido por schema
+   (`acao` enum, `email`, `senha`, `justificativa` com mínimo, `contexto` como record,
+   `empresa_representada_id` como uuid) em vez de checagem manual campo a campo — mesmo
+   padrão do mapper fiscal. Deployado.
+4. **Política de senha**: mínimo subiu de 8 para 12 caracteres
+   (`src/lib/passwordPolicy.ts`), alinhado a NIST 800-63B (prioriza comprimento sobre
+   regra de composição forçada). Não integrei checagem contra lista de senhas vazadas
+   (dependência de rede externa nova, decisão de produto à parte).
+
+Validação: `npm run typecheck && npm run test -- --run` (417/417) e lint limpos antes de
+aplicar qualquer coisa. Migration e deploy aplicados com confirmação explícita do
+usuário a cada passo. Ao vivo: `/rh/colaboradores`, `/rh/registros-ponto`,
+`/configuracoes/usuarios` carregam normalmente pro usuário admin, sem regressão.
+
+**Fora do alcance desta sessão, listado explicitamente (não é abandono silencioso)**:
+captcha desligado (precisa o usuário mexer no painel da Cloudflare), MFA/step-up
+(decisão de produto: TOTP/WebAuthn/e-mail OTP), backup/DR testado por exercício real
+(arriscado demais testar sozinho contra produção sem combinar janela com o usuário),
+SLOs de jobs/integrações (precisa threshold definido pelo negócio), testes de
+propriedade pra dinheiro/concorrência (frente de testing nova, tamanho de fatia própria),
+particionamento (Plano Mestre já diz "só guiado por medição", sem medição que
+justifique hoje).
+
+**Próxima ação única**: nenhuma pendência de código bloqueando — as 6 frentes que
+restam pra fechar FIN-8/Onda 1 de vez dependem de decisão do usuário (produto, janela de
+teste, threshold de negócio) ou são uma fatia nova de tamanho considerável (testes de
+propriedade). Perguntar ao usuário qual delas priorizar, se for continuar.
+
+## Checkpoint anterior — FIN-8 fatia 1: autorização granular real no Financeiro (2026-09-13)
+
+Usuário pediu "feche a Onda 1" — único item restante era `FIN-8` (Operação, segurança e
+conformidade contínua), programa grande com 8 frentes. Rodei primeiro uma auditoria
+OWASP ASVS 5.0 (autenticação/autorização/validação/auditoria, via fork) sem mexer em
+código, pra decidir prioridade — usuário escolheu atacar autorização no Financeiro
+primeiro (maior superfície de risco).
+
+**Achado da auditoria**: autorização granular só existia de verdade em 4 rotas do Fiscal
+(`PERM-1`, 2026-09-07) — todo o resto do ERP só checava "está autenticado?"
+(`ProtectedRoute`). Mas o catálogo de permissões `financeiro.*` **já existia e já era
+editável** em `PermissionsSelector.tsx` desde antes — só não tinha efeito nenhum, porque
+nenhuma rota/tela lia esses códigos. Achado bônus: os 4 modais críticos (Liquidar,
+Estornar, Cancelar, Renegociar título) **já eram gateados** via mecanismo mais antigo
+(`financeiro_permissoes()` RPC → `financeiro_pode()`), que internamente usa os mesmos
+códigos `financeiro.liquidar/estorno/cancelamento/renegociacao` — não precisou mexer lá.
+
+**O que foi feito**: as 14 rotas de `/financeiro/*` sem gate nenhum (`src/App.tsx`)
+ganharam `PermissionRoute` com o código do catálogo existente mais apropriado
+(`financeiro.read` pra a maioria, `financeiro.update` pra Plano de Contas/Config
+Básicas, `relatorios.financeiro` pra Balanço/DRE/DMPL/DFC/Relatórios) — mesmo padrão já
+usado no Fiscal, sem migration nova (códigos e RPC `public.pode()` já existiam).
+`alcadas` ficou como `AdminRoute` (não afrouxei governança de lado). Antes de codar,
+confirmei no banco real que nenhum usuário ativo ficaria trancado fora: os 2 únicos
+usuários reais hoje (ambos em ALLEGRA) têm a role `admin` (`user_roles`), que passa por
+`public.pode()` independente do que falta no perfil `Administrador` em `perfis_acesso`.
+Testado ao vivo: `contas-receber`, `dre` e `plano-contas` carregam normalmente pro
+usuário admin, sem regressão. `npm run typecheck && npm run test -- --run` (417/417) e
+lint limpos.
+
+**FIN-8 NÃO está fechado** — isso é só a fatia 1 (Financeiro) de uma frente (autorização)
+das 8 do programa. Faltam: as mesmas ~18 páginas de RH e Configurações sem gate,
+reativar captcha (config de domínio já catalogada), adotar `useAuditableEntity` em
+usuários/perfis_acesso/contas bancárias (infra já existe, só não é usada fora de Centros
+de Custo), padronizar Zod nas edge functions administrativas, política de senha
+(NIST 800-63B), e as frentes que dependem de decisão/infra externa (MFA, backup/DR
+testado, SLOs com threshold de negócio, testes de propriedade). Relatório completo da
+auditoria está no histórico da sessão, não arquivado em doc ainda — se for retomar em
+outra sessão, vale re-rodar ou pedir o relatório de novo antes de continuar.
+
+**Próxima ação única**: decidir com o usuário a próxima fatia de FIN-8 (RH/Configurações
+igual ao Financeiro, ou uma das correções rápidas — captcha/auditoria de usuários/Zod/
+senha). Onda 1 só fecha de vez quando as 8 frentes do FIN-8 tiverem critério de saída
+"comprovado por exercício" atendido, não antes.
+
+## Checkpoint anterior — Fiscal: contingência de NFC-e implementada, fecha item da Onda 1 (2026-09-13)
+
+Retomando o Plano Mestre: o item "Fiscal completo: NFC-e, CCe, contingência e consulta de
+status" (Onda 1, Parte 3) só tinha contingência realmente faltando — CCe (`fiscal-cce-nfe` +
+`CartaCorrecaoDialog`) e consulta de status (`consultarNFe`, chamada automaticamente por
+`getFiscalDocumento`) já existiam. `FiscalProvider`/`FocusNFeProvider` já tinham o campo
+`contingenciaOffline`/`forma_emissao=offline` prontos desde o núcleo fiscal (2026-08-11), mas
+nada emitia com esses campos. Pesquisei a API da Focus NFe (`doc.focusnfe.com.br`) antes de
+implementar — documento fiscal não é lugar pra adivinhar.
+
+**Escopo: só NFC-e (modelo 65).** Contingência de NF-e usa EPEC/SVC, mecanismo diferente e não
+documentado como parâmetro simples pela Focus — fora do caso de uso real (contingência existe
+pra não travar o caixa/balcão).
+
+**O que foi feito**:
+- Migration `20260913120000_fiscal_contingencia_nfce.sql`: `fiscal_documentos_eletronicos` ganha
+  `forma_emissao` (`normal`/`contingencia`) e `codigo_unico_contingencia`; novo status
+  `FALHA_COMUNICACAO` (distinto de `REJEITADA` — retomável, não é rejeição de negócio);
+  `fiscal_configuracoes` ganha `serie_nfce_contingencia` (série reservada, nunca usada online).
+- `_shared/fiscal/providers/FiscalProvider.ts`: `isProviderUnavailable(err)` distingue
+  "SEFAZ/provedor fora do ar" (5xx/408/erro de rede) de rejeição de negócio (4xx).
+- `_shared/fiscal/contingencia.ts`: `gerarCodigoUnico()` (cNF, 8 dígitos).
+- `fiscal-emitir-nfe`: aceita `contingencia?: boolean` (só NFCE); em contingência, usa a série
+  reservada + numeração própria (`MAX(numero)+1` nessa série) + `codigoUnico`; se a chamada ao
+  provedor falhar por indisponibilidade (não por config — resolvi o provider **fora** do try da
+  chamada, senão token ausente seria confundido com "SEFAZ fora do ar"), documento vira
+  `FALHA_COMUNICACAO` e responde 503 `{error:'sefaz_indisponivel'}` em vez de rejeitar.
+- **Achado e corrigido de passagem**: `invokeOrThrow` (`emissaoService.ts`) nunca lia
+  `error.context.json()` do `FunctionsHttpError` — todo erro de qualquer função fiscal (emitir,
+  cancelar, CCe) já caía num toast genérico do supabase-js em vez da mensagem em português que o
+  backend sempre escreveu. Corrigido pra todos os casos, não só contingência.
+- UI: `EmitirNFeDialog` mostra alerta + botão "Emitir em contingência" quando o erro é
+  `sefaz_indisponivel`; badge "Em contingência" em `FiscalStatusBadge`/`DetalheNFeDrawer`/lista
+  de Notas Fiscais; campo "Série de contingência" em `FiscalConfigForm`.
+- Testes: Deno (`gerarCodigoUnico`, `isProviderUnavailable`) + Vitest (`invokeOrThrow`,
+  fluxo do diálogo) — `npm run typecheck && npm run test -- --run` limpos (417/417), lint limpo.
+
+**Migration aplicada e verificada em produção (2026-09-13)**: `supabase login` estava travado
+pela variável de ambiente `SUPABASE_ACCESS_TOKEN` fixada permanentemente no Windows do usuário
+(mesmo problema já catalogado em `feedback_supabase_cli_token_windows_env`, mas desta vez
+sobrepondo até um token recém-gerado — precisou `Remove-Item Env:\SUPABASE_ACCESS_TOKEN` na
+sessão do PowerShell, a variável permanente ainda não foi removida pelo usuário). Aplicada via
+`supabase db query --linked --file <migration>` (não `db push` — há dezenas de migrations locais
+com `remote` vazio no `migration list`, sinal de que a tabela de histórico do CLI está
+dessincronizada da realidade do banco há tempo, ver `docs/PLANO_MESTRE.md`/memória
+`project_fin1_cadastro_rapido_entidade_trigger_bug`; `db push` teria tentado reaplicar todo esse
+backlog). Verificado direto no banco: as 3 colunas e os 3 `CHECK constraints` existem com a
+definição exata esperada. Rodei `supabase gen types typescript --linked` e comparei campo a
+campo com o patch manual que eu tinha feito em `types.ts` antes de conseguir aplicar a
+migration — bateram exatamente, nenhuma correção necessária.
+
+**Verificação ao vivo concluída (2026-09-13)**: fiz deploy de `fiscal-emitir-nfe`
+(`supabase functions deploy` — sem isso o teste anterior estaria rodando o código antigo sem
+notar, achado no meio do processo) e testei contra o banco real, empresa ALLEGRA CENTRO DE
+EDUCACAO LTDA:
+- Emissão normal de NFC-e pela tela real (`EmitirNFeDialog`) → AUTORIZADA, mock, sem regressão.
+- Cancelamento pela tela real → funcionou (feature preexistente, não tocada nesta sessão).
+- Contingência forçada via chamada direta ao edge function (`contingencia:true`, já que o modo
+  mock sempre autoriza na hora e não dá pra forçar indisponibilidade real sem token da Focus) →
+  `forma_emissao='contingencia'`, `codigo_unico_contingencia` de 8 dígitos, `serie=900` (reservada),
+  `numero=1` (contador próprio), evento `tipo='contingencia'` no histórico — tudo confirmado
+  direto no banco **e** visualmente na tela (badge âmbar "Em contingência" na lista de Notas
+  Fiscais e no drawer de detalhe, linha "Código único (cNF)" populada).
+- De brinde, a correção do `invokeOrThrow` foi provada 4 vezes ao vivo com mensagens de erro
+  reais e distintas em português (cliente → configuração fiscal → item → forma de pagamento),
+  cada uma substituindo o texto genérico do supabase-js que aparecia antes.
+
+**Achados de ambiente de teste, corrigidos durante a verificação (nenhum é bug do meu código)**:
+a venda de teste "SMOKE-MOCK" da Allegra nunca esteve realmente pronta pra fiscal ponta a ponta —
+faltavam `qualificacao_fiscal` do cliente, a `fiscal_configuracoes` da empresa inteira (não
+existia nenhuma linha), o produto do item (estava com `produto_id` nulo) e a forma de pagamento
+da NFC-e. Corrigidos com autorização explícita a cada passo. **Atenção**: a `fiscal_configuracoes`
+criada para a Allegra usa CNPJ real dela mas regime tributário/IE assumidos
+(`SIMPLES_NACIONAL`/`ISENTO`) — confirmar com o usuário antes de usar Fiscal pra valer com essa
+empresa. Ficou também um documento fiscal de teste (NFC-e #1/900, mock, contingência) na lista
+real de Notas Fiscais da Allegra — não é lixo perigoso (protocolo `MOCK-AUT-*`, ambiente
+HOMOLOGACAO), mas vale saber que está lá.
+
+**Pendências**:
+- Sem Deno instalado nesta máquina — os testes novos em `_shared/fiscal/**/__tests__` não foram
+  executados de verdade, só revisados linha a linha com atenção extra (padrão já documentado
+  pra edge functions neste projeto).
+- O caminho de indisponibilidade real de SEFAZ/Focus (5xx/timeout de verdade, não forçado por
+  chamada direta) não foi testado — precisaria de token real da Focus em homologação. O código
+  que reage a isso (`isProviderUnavailable`) está coberto por teste unitário Deno (não executado
+  de verdade, só revisado) e por dedução de código (a única fonte de erro nesse ponto do fluxo é
+  a chamada HTTP ao provedor).
+- A variável `SUPABASE_ACCESS_TOKEN` permanente do Windows continua lá — vai voltar a travar
+  `supabase login` na próxima sessão até o usuário removê-la de vez (Configurações → Variáveis
+  de Ambiente → variáveis de usuário).
+
+**Próxima ação única**: nenhuma pendente para este item — Fiscal completo (NFC-e, CCe,
+contingência, consulta de status) está fechado, deployado e verificado ao vivo. Único item
+restante da Onda 1 inteira é `FIN-8` (baseline de segurança/operação, não iniciado).
+
+## Checkpoint anterior — Varredura de RPCs `SECURITY DEFINER` fechada: 34 funções corrigidas em 6 blocos (2026-09-10)
 
 Continuação e fechamento do checkpoint anterior (que corrigiu só as 4 financeiras mais críticas e
 deixou ~30 pendentes). Usuário pediu explicitamente para dividir o resto em blocos e resolver —

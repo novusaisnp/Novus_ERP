@@ -18,6 +18,7 @@ export interface DocEmProc {
   data_emissao: string | null;
   provider: string | null;
   venda_id: string | null;
+  forma_emissao: string | null;
 }
 
 export interface AlertaAtivo {
@@ -48,6 +49,7 @@ export interface DocFiscalRow {
   chave_acesso: string | null;
   provider: string | null;
   venda_id: string | null;
+  forma_emissao: string | null;
 }
 
 const STATUS_EMISSAO_FISCAL = ['CONFIRMADO', 'EM_PRODUCAO', 'FATURADO', 'ENTREGUE'];
@@ -72,7 +74,7 @@ export const fiscalDashboardService = {
     const empresaId = await getEmpresaAtivaIdOuFalha();
     let q = supabase
       .from('fiscal_documentos_eletronicos')
-      .select('id, numero, serie, status, data_emissao, valor_total, chave_acesso, provider, venda_id')
+      .select('id, numero, serie, status, data_emissao, valor_total, chave_acesso, provider, venda_id, forma_emissao')
       .eq('empresa_representada_id', empresaId)
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
@@ -102,7 +104,7 @@ export const fiscalDashboardService = {
     const limite = new Date(Date.now() - 10 * 60 * 1000).toISOString();
     const { data, error } = await supabase
       .from('fiscal_documentos_eletronicos')
-      .select('id, numero, serie, status, data_emissao, provider, venda_id')
+      .select('id, numero, serie, status, data_emissao, provider, venda_id, forma_emissao')
       .in('status', ['processando', 'EM_PROCESSAMENTO'])
       .lt('created_at', limite)
       .eq('empresa_representada_id', empresaId)

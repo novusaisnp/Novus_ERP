@@ -31,6 +31,7 @@ const statusVariant = (status?: string | null): 'default' | 'secondary' | 'destr
     case 'cancelada':
     case 'denegada':
     case 'rejeitada':
+    case 'falha_comunicacao':
     case 'erro': return 'destructive';
     default: return 'outline';
   }
@@ -180,6 +181,11 @@ const DetalheNFeDrawer = ({ open, onOpenChange, documentoId }: DetalheNFeDrawerP
             <div className="mt-6 space-y-4">
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant={statusVariant(documento.status)}>{documento.status}</Badge>
+                {documento.forma_emissao === 'contingencia' && (
+                  <Badge variant="outline" className="border-amber-500 text-amber-600">
+                    Em contingência
+                  </Badge>
+                )}
                 {documento.ambiente && <Badge variant="outline">{documento.ambiente}</Badge>}
                 {documento.provider && <Badge variant="outline">{documento.provider}</Badge>}
               </div>
@@ -198,6 +204,9 @@ const DetalheNFeDrawer = ({ open, onOpenChange, documentoId }: DetalheNFeDrawerP
                     : null}
                 />
                 <Row label="Tentativas" value={documento.tentativas} />
+                {documento.forma_emissao === 'contingencia' && (
+                  <Row label="Código único (cNF)" value={documento.codigo_unico_contingencia} />
+                )}
               </div>
 
               {documento.motivo_rejeicao && (

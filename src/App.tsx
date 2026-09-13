@@ -226,22 +226,22 @@ function App() {
                   
                   {/* Financeiro Routes */}
                   <Route path="financeiro">
-                    <Route path="contas-receber" element={<ContasReceber />} />
-                    <Route path="contas-pagar" element={<ContasPagar />} />
-                    <Route path="movimentacoes" element={<MovimentacoesFinanceiras />} />
-                    <Route path="fluxo-caixa" element={<FluxoCaixaPage />} />
-                    <Route path="fluxo-competencia" element={<FluxoCompetenciaPage />} />
-                    <Route path="centros-custo" element={<CentrosCusto />} />
-                    <Route path="plano-contas" element={<PlanoContas />} />
-                    <Route path="ativos-fixos" element={<AtivosFixos />} />
-                    <Route path="balanco" element={<BalancoPatrimonial />} />
-                    <Route path="dre" element={<DRE />} />
-                    <Route path="dmpl" element={<DMPL />} />
-                    <Route path="dfc" element={<DFC />} />
+                    <Route path="contas-receber" element={<PermissionRoute codigo="financeiro.read"><ContasReceber /></PermissionRoute>} />
+                    <Route path="contas-pagar" element={<PermissionRoute codigo="financeiro.read"><ContasPagar /></PermissionRoute>} />
+                    <Route path="movimentacoes" element={<PermissionRoute codigo="financeiro.read"><MovimentacoesFinanceiras /></PermissionRoute>} />
+                    <Route path="fluxo-caixa" element={<PermissionRoute codigo="financeiro.read"><FluxoCaixaPage /></PermissionRoute>} />
+                    <Route path="fluxo-competencia" element={<PermissionRoute codigo="financeiro.read"><FluxoCompetenciaPage /></PermissionRoute>} />
+                    <Route path="centros-custo" element={<PermissionRoute codigo="financeiro.read"><CentrosCusto /></PermissionRoute>} />
+                    <Route path="plano-contas" element={<PermissionRoute codigo="financeiro.update"><PlanoContas /></PermissionRoute>} />
+                    <Route path="ativos-fixos" element={<PermissionRoute codigo="financeiro.read"><AtivosFixos /></PermissionRoute>} />
+                    <Route path="balanco" element={<PermissionRoute codigo="relatorios.financeiro"><BalancoPatrimonial /></PermissionRoute>} />
+                    <Route path="dre" element={<PermissionRoute codigo="relatorios.financeiro"><DRE /></PermissionRoute>} />
+                    <Route path="dmpl" element={<PermissionRoute codigo="relatorios.financeiro"><DMPL /></PermissionRoute>} />
+                    <Route path="dfc" element={<PermissionRoute codigo="relatorios.financeiro"><DFC /></PermissionRoute>} />
                     <Route path="alcadas" element={<AdminRoute><AlcadasAprovacao /></AdminRoute>} />
-                    <Route path="aprovacoes" element={<Aprovacoes />} />
-                    <Route path="config-basicas" element={<ConfigBasicas />} />
-                    <Route path="relatorios" element={<RelatoriosFinanceiro />} />
+                    <Route path="aprovacoes" element={<PermissionRoute codigo="financeiro.read"><Aprovacoes /></PermissionRoute>} />
+                    <Route path="config-basicas" element={<PermissionRoute codigo="financeiro.update"><ConfigBasicas /></PermissionRoute>} />
+                    <Route path="relatorios" element={<PermissionRoute codigo="relatorios.financeiro"><RelatoriosFinanceiro /></PermissionRoute>} />
                   </Route>
                   <Route path="configuracoes/centros-custo" element={<Navigate to="/financeiro/centros-custo" replace />} />
                   <Route path="centros-custo" element={<Navigate to="/financeiro/centros-custo" replace />} />
@@ -273,19 +273,19 @@ function App() {
                   
                   {/* RH Routes */}
                   <Route path="rh">
-                    <Route path="colaboradores" element={<Colaboradores />} />
-                    <Route path="cargos" element={<Cargos />} />
-                    <Route path="departamentos" element={<Departamentos />} />
+                    <Route path="colaboradores" element={<PermissionRoute codigo="rh.read"><Colaboradores /></PermissionRoute>} />
+                    <Route path="cargos" element={<PermissionRoute codigo="rh.read"><Cargos /></PermissionRoute>} />
+                    <Route path="departamentos" element={<PermissionRoute codigo="rh.read"><Departamentos /></PermissionRoute>} />
                     {/* AUDITORIA_NOVA Fase 6: folha_pagamento agora é admin-only na
                         RLS (salário não é dado que qualquer funcionário deveria ler) —
                         a rota segue a mesma direção. */}
                     <Route path="folha/folha-pagamento" element={<AdminRoute><FolhaPagamento /></AdminRoute>} />
-                    <Route path="folha/vencimentos-padrao" element={<VencimentosPadrao />} />
-                    <Route path="folha/descontos-padrao" element={<DescontosPadrao />} />
-                    <Route path="folha/beneficios-vinculados" element={<BeneficiosVinculados />} />
-                    <Route path="folha/integracao-ponto" element={<IntegracaoPonto />} />
-                    <Route path="registros-ponto" element={<RegistrosPonto />} />
-                    <Route path="relatorios" element={<Relatorios />} />
+                    <Route path="folha/vencimentos-padrao" element={<PermissionRoute codigo="rh.update"><VencimentosPadrao /></PermissionRoute>} />
+                    <Route path="folha/descontos-padrao" element={<PermissionRoute codigo="rh.update"><DescontosPadrao /></PermissionRoute>} />
+                    <Route path="folha/beneficios-vinculados" element={<PermissionRoute codigo="rh.update"><BeneficiosVinculados /></PermissionRoute>} />
+                    <Route path="folha/integracao-ponto" element={<PermissionRoute codigo="rh.update"><IntegracaoPonto /></PermissionRoute>} />
+                    <Route path="registros-ponto" element={<PermissionRoute codigo="rh.ponto"><RegistrosPonto /></PermissionRoute>} />
+                    <Route path="relatorios" element={<PermissionRoute codigo="rh.read"><Relatorios /></PermissionRoute>} />
                   </Route>
 
                   {/* Integração Routes — admin-only + VITE_FEATURE_SYNC_DASHBOARD (SM1-D).
@@ -311,7 +311,7 @@ function App() {
                         qualquer usuário autenticado via a tela (só falhava
                         silenciosamente ao salvar). */}
                     <Route path="empresas" element={<AdminRoute><Empresas /></AdminRoute>} />
-                    <Route path="usuarios" element={<Usuarios />} />
+                    <Route path="usuarios" element={<PermissionRoute codigo="config.usuarios"><Usuarios /></PermissionRoute>} />
                     <Route path="perfil" element={<Perfil />} />
                     {/* AUDITORIA_NOVA Fase 6: webhook_configs agora é admin-only na
                         RLS (secret_token HMAC não é dado que qualquer funcionário
