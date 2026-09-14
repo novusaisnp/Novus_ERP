@@ -10,7 +10,8 @@ export function useMovimentacoes(filtros?: {
 }) {
   return useQuery({
     queryKey: ['estoque', 'movimentacoes', filtros],
-    queryFn: () => estoqueService.listMovimentacoes(filtros),
+    queryFn: () => estoqueService.listMovimentacoes(filtros as { empresa_id: string; produto_id?: string; tipo?: EstoqueMovimentacaoTipo }),
+    enabled: !!filtros?.empresa_id,
     staleTime: 30_000,
   });
 }

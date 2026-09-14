@@ -29,9 +29,11 @@ function translateError(error: any, fallback: string): Error {
 
 export const centroCustoService = {
   async getAll(): Promise<CentroCusto[]> {
+    const empresaId = await getEmpresaId();
     const { data, error } = await supabase
       .from('centros_custo')
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .order('nome');
 
     if (error) {
@@ -43,10 +45,12 @@ export const centroCustoService = {
   },
 
   async getById(id: string): Promise<CentroCusto | null> {
+    const empresaId = await getEmpresaId();
     const { data, error } = await supabase
       .from('centros_custo')
       .select('*')
       .eq('id', id)
+      .eq('empresa_representada_id', empresaId)
       .maybeSingle();
 
     if (error) {
@@ -113,6 +117,7 @@ export const centroCustoService = {
         ativo: input.ativo,
       })
       .eq('id', id)
+      .eq('empresa_representada_id', empresa_representada_id)
       .select()
       .single();
 
@@ -124,10 +129,12 @@ export const centroCustoService = {
   },
 
   async delete(id: string): Promise<void> {
+    const empresaId = await getEmpresaId();
     const { error } = await supabase
       .from('centros_custo')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('empresa_representada_id', empresaId);
 
     if (error) {
       throw translateError(error, 'Erro ao remover centro de custo');

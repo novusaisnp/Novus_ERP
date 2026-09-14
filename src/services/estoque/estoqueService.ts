@@ -85,8 +85,8 @@ export const estoqueService = {
     return data as EstoqueInventario | null;
   },
 
-  async listMovimentacoes(filtros?: {
-    empresa_id?: string;
+  async listMovimentacoes(filtros: {
+    empresa_id: string;
     produto_id?: string;
     tipo?: EstoqueMovimentacaoTipo;
     from?: string;
@@ -95,10 +95,10 @@ export const estoqueService = {
     let q = supabase
       .from('estoque_movimentacoes')
       .select('*')
+      .eq('empresa_representada_id', filtros.empresa_id)
       .is('deleted_at', null)
       .order('data_movimento', { ascending: false })
       .limit(500);
-    if (filtros?.empresa_id) q = q.eq('empresa_representada_id', filtros.empresa_id);
     if (filtros?.produto_id) q = q.eq('produto_id', filtros.produto_id);
     if (filtros?.tipo) q = q.eq('tipo', filtros.tipo);
     if (filtros?.from) q = q.gte('data_movimento', filtros.from);
@@ -210,10 +210,10 @@ export const estoqueService = {
   },
 
   async atualizarContagem(item_id: string, saldo_contado: number): Promise<void> {
-    const { error } = await supabase
-      .from('estoque_inventario_itens')
-      .update({ saldo_contado })
-      .eq('id', item_id);
+    const empresaId = await getEmpresaAtivaId();
+    let q = supabase.from('estoque_inventario_itens').update({ saldo_contado }).eq('id', item_id);
+    if (empresaId) q = q.eq('empresa_representada_id', empresaId);
+    const { error } = await q;
     if (error) throw error;
   },
 
@@ -226,10 +226,13 @@ export const estoqueService = {
   },
 
   async cancelarInventario(inventario_id: string): Promise<void> {
-    const { error } = await supabase
+    const empresaId = await getEmpresaAtivaId();
+    let q = supabase
       .from('estoque_inventarios')
       .update({ status: 'CANCELADO', data_fim: new Date().toISOString() })
       .eq('id', inventario_id);
+    if (empresaId) q = q.eq('empresa_representada_id', empresaId);
+    const { error } = await q;
     if (error) throw error;
   },
 };

@@ -67,9 +67,11 @@ function translateError(
 
 export const alcadasAprovacaoService = {
   async list(): Promise<AlcadaAprovacao[]> {
+    const empresaId = await getEmpresaId();
     const { data, error } = await supabase
       .from('alcadas_aprovacao')
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .order('categoria')
       .order('valor_minimo');
     if (error) throw translateError(error, 'Erro ao buscar alçadas');
@@ -95,6 +97,7 @@ export const alcadasAprovacaoService = {
   },
 
   async update(id: string, input: Partial<AlcadaAprovacaoInput>): Promise<AlcadaAprovacao> {
+    const empresaId = await getEmpresaId();
     const { data, error } = await supabase
       .from('alcadas_aprovacao')
       .update({
@@ -105,6 +108,7 @@ export const alcadasAprovacaoService = {
         ...(input.ativo !== undefined && { ativo: input.ativo }),
       })
       .eq('id', id)
+      .eq('empresa_representada_id', empresaId)
       .select()
       .single();
     if (error) throw translateError(error, 'Erro ao atualizar alçada');
@@ -112,7 +116,8 @@ export const alcadasAprovacaoService = {
   },
 
   async remove(id: string): Promise<void> {
-    const { error } = await supabase.from('alcadas_aprovacao').delete().eq('id', id);
+    const empresaId = await getEmpresaId();
+    const { error } = await supabase.from('alcadas_aprovacao').delete().eq('id', id).eq('empresa_representada_id', empresaId);
     if (error) throw translateError(
       error,
       'Erro ao remover alçada',
@@ -123,9 +128,11 @@ export const alcadasAprovacaoService = {
 
 export const alcadasSubstitutosService = {
   async list(): Promise<AlcadaSubstituto[]> {
+    const empresaId = await getEmpresaId();
     const { data, error } = await supabase
       .from('alcadas_substitutos')
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .order('data_inicio', { ascending: false });
     if (error) throw translateError(error, 'Erro ao buscar substituições');
     return (data || []) as AlcadaSubstituto[];
@@ -153,7 +160,8 @@ export const alcadasSubstitutosService = {
   },
 
   async remove(id: string): Promise<void> {
-    const { error } = await supabase.from('alcadas_substitutos').delete().eq('id', id);
+    const empresaId = await getEmpresaId();
+    const { error } = await supabase.from('alcadas_substitutos').delete().eq('id', id).eq('empresa_representada_id', empresaId);
     if (error) throw translateError(
       error,
       'Erro ao remover substituição',
@@ -164,9 +172,11 @@ export const alcadasSubstitutosService = {
 
 export const solicitacoesAprovacaoService = {
   async list(): Promise<SolicitacaoAprovacao[]> {
+    const empresaId = await getEmpresaId();
     const { data, error } = await supabase
       .from('solicitacoes_aprovacao')
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .order('created_at', { ascending: false });
     if (error) throw translateError(error, 'Erro ao buscar solicitações');
     return (data || []) as unknown as SolicitacaoAprovacao[];

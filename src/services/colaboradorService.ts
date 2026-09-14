@@ -113,6 +113,7 @@ export const colaboradorService = {
       .from('entidades')
       .update(toEntidadePayload(colaboradorData, empresaId))
       .eq('id', id)
+      .eq('empresa_representada_id', empresaId)
       .select()
       .single();
     if (error) {
@@ -135,10 +136,12 @@ export const colaboradorService = {
   },
 
   async deleteColaborador(id: string) {
+    const empresaId = await getEmpresaId();
     const { error } = await supabase
       .from('entidades')
       .update({ deleted_at: new Date().toISOString(), ativo: false })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('empresa_representada_id', empresaId);
 
     if (error) {
       console.error('[RH] Erro ao excluir colaborador');

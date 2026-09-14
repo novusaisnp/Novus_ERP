@@ -36,8 +36,9 @@ export const useSociosRepresentantes = (empresaId?: string) => {
     // Revoga ANTES do soft delete: a Porta 0.2 resolve o sócio com `deleted_at IS NULL`
     // e não acharia mais o registro depois.
     mutationFn: async (id: string) => {
+      if (!empresaId) throw new Error('Empresa ativa não resolvida.');
       await revogarAdminSatelites(id);
-      return sociosRepresentantesService.softDelete(id);
+      return sociosRepresentantesService.softDelete(id, empresaId);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['socios-representantes', empresaId] });

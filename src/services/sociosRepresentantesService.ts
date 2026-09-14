@@ -45,6 +45,7 @@ export const sociosRepresentantesService = {
     const { data: linked } = await supabase
       .from('usuarios')
       .select('entidade_id')
+      .eq('empresa_representada_id', empresaId)
       .not('entidade_id', 'is', null);
     const usedIds = new Set((linked || []).map((u) => u.entidade_id));
     return (socios || []).map(flatten).filter((s) => !usedIds.has(s.id));
@@ -71,6 +72,7 @@ export const sociosRepresentantesService = {
         .from('entidades')
         .update(entidadePayload)
         .eq('id', input.id)
+        .eq('empresa_representada_id', input.empresa_representada_id)
         .select('*')
         .single();
       if (error) throw error;
@@ -78,6 +80,7 @@ export const sociosRepresentantesService = {
         .from('entidade_papeis')
         .update({ papel: input.tipo, ...papelPayload })
         .eq('entidade_id', input.id)
+        .eq('empresa_representada_id', input.empresa_representada_id)
         .select('papel, participacao_percentual, cargo_societario')
         .single();
       if (papelError) throw papelError;
@@ -99,11 +102,12 @@ export const sociosRepresentantesService = {
     return flatten({ ...entidade, entidade_papeis: [papel] });
   },
 
-  async softDelete(id: string): Promise<void> {
+  async softDelete(id: string, empresaId: string): Promise<void> {
     const { error } = await supabase
       .from('entidades')
       .update({ deleted_at: new Date().toISOString(), ativo: false })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('empresa_representada_id', empresaId);
     if (error) throw error;
   },
 };
