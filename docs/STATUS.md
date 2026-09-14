@@ -1,6 +1,64 @@
 # Status do projeto — NOVUS ERP
 
-## 🔖 Checkpoint atual — Etapa 1 (A01-A04) aplicada em produção como correção de incidente (2026-09-14)
+## 🔖 Checkpoint atual — A09: webhook titulo.liquidado corrigido e provado ao vivo (2026-09-14)
+
+Achado da `AUDITORIA_PRONTIDAO_MERCADO_2026-09-13.md` (A09 — recuperação operacional/
+integrações sem prova suficiente). Investigando o backlog de 14 dias em `webhook_outbox`
+já registrado no checkpoint FIN-8 anterior, achei que o webhook de saída `titulo.liquidado`
+(ERP → Educacional, Fase 3 de extensibilidade, 2026-08-11) **nunca entregou nada de verdade
+desde que existe** — não era só os 4 registros travados, era 100% das tentativas.
+
+- **Causa raiz 1**: o projeto Supabase do Educacional (`ixnpotaccbpcbritxlud`) estava
+  `INACTIVE` (pausado por inatividade do plano gratuito) — reativado pelo painel
+  (`Resume project`, confirmado "all data remains safe"). Explica 3 dos 4 erros (DNS).
+- **Causa raiz 2 (a séria)**: incompatibilidade real de contrato. A função
+  `enfileirar_webhook_titulo_liquidado()` (já na sua 4ª revisão desde 11/08 — só a versão
+  mais recente antes desta sessão tinha corrigido o envelope pra `{type, data}`) montava
+  `idempotency_key` via `COALESCE(contas_receber.idempotency_key, origem_sistema || ':' ||
+  numero_documento)` — mas nenhum título real tinha esses campos preenchidos nesse formato,
+  então sempre saía `NULL`. O receptor (`edu-erp-webhook` no Educacional) exige
+  `"<nome-satelite>:<organization_id>:<numero_documento>"` no nível raiz do payload, senão
+  rejeita com HTTP 400 "Missing or invalid idempotency_key".
+- **Corrigido em 2 migrations** (`20260914130000` + `20260914131500`, a segunda porque a
+  primeira versão minha tinha regredido por engano a lógica de "valor acumulado" de uma
+  revisão anterior que eu não tinha lido antes de escrever a correção — achado e corrigido
+  na mesma sessão): `webhook_configs` ganhou `satelite_organization_id`/
+  `satelite_idempotency_prefixo` (dado de configuração, não valor cravado em código);
+  a trigger agora monta a idempotency_key a partir desses campos + `numero_documento` do
+  título, e mantém a soma de pagamentos parciais (`valor_recebido` acumulado) pra decidir
+  `receivable.paid` vs `receivable.partially_paid`. `organization_id` real da Escola
+  Allegra (`0f07e009-bc32-427a-9644-ad43e3cf5f99`) confirmado direto no banco do
+  Educacional (tabela `organizations`, única linha).
+- **Prova ao vivo em produção** (não só ensaio com rollback): criada uma liquidação de
+  teste de verdade, cron `process-webhook-outbox` (roda a cada minuto) entregou com
+  HTTP 200 na 1ª tentativa, registro confirmado direto na tabela `financial_transactions`
+  do Educacional com os dados certos. **Replay sem duplicidade também provado**: resetei o
+  mesmo registro pra `PENDENTE` manualmente, o cron reentregou, e `financial_transactions`
+  continuou com exatamente 1 linha (mesmo id) — exatamente o que o A09 pedia
+  ("replay de integração demonstrado sem duplicidade"). Dado de teste limpo dos dois lados
+  depois. **Achado lateral**: o primeiro `--apply` desta sessão gravou sem querer um
+  registro sintético de teste que fazia parte do mesmo script de ensaio — vazou pro
+  dashboard real (Contas a Receber R$ 100,00) até ser identificado e limpo.
+- **Verificado na UI, não só no banco**: tela de Webhooks do ERP
+  (`/configuracoes/webhooks`) mostra a config `novus-educacional-liquidacoes` ativa com o
+  evento certo — mas não existe log de entregas na UI (só editar/inativar/rotacionar
+  secret/testar assinatura), delivery status só é visível via `webhook_outbox` no banco.
+  Do lado do Educacional, não existe hoje nenhuma tela consumindo `financial_transactions`
+  (procurado em Secretaria → Ciclo do Aluno e não achado) — é infraestrutura de backend
+  pronta, sem UI ainda construída em cima.
+
+**Pendência não resolvida, decisão do usuário**: os 4 registros antigos travados em
+`webhook_outbox` (status `ERRO`, 2026-08-30 e 2026-09-08) continuam com o payload no
+formato antigo/quebrado — a correção só vale pra liquidações novas, não corrige
+retroativamente o que já foi enfileirado. Como o ambiente ainda está em fase de testes
+(dados sintéticos, confirmado pelo usuário), a opção mais simples é excluir esses 4
+registros como lixo de teste em vez de tentar reconstruir o payload deles.
+
+**Próxima ação**: decidir sobre os 4 registros antigos (excluir vs. corrigir+reenviar), e
+seguir pro resto do backlog do `AUDITORIA_PRONTIDAO_MERCADO_2026-09-13.md` ou outro item
+do `PLANO_MESTRE.md`.
+
+## Checkpoint anterior — Etapa 1 (A01-A04) aplicada em produção como correção de incidente (2026-09-14)
 
 **Achado que mudou a prioridade**: ao decidir "aplicar a Etapa 1 numa janela coordenada"
 (ver checkpoint anterior), descobri que o commit `1f56389` (2026-09-13 19:52, já em
