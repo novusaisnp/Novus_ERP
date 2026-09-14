@@ -35,9 +35,32 @@ Validação local: `npm run typecheck` (0 erros), `npm run test -- --run` (421/4
 `npm run build` (passa, mesmos avisos de bundle grande já conhecidos), `npm ci --dry-run`
 confirma lockfile sincronizado (a checagem que o CI real vai fazer).
 
-**Próxima ação única**: decidir com o usuário se comita/envia este checkpoint agora, depois
-seguir para a homologação de concorrência da Etapa 1 (A01-A04, ver
-`ETAPA1_INTEGRIDADE_2026-09-13.md`) e A05 (escopo de empresa ativa).
+Commit `9d84ce6` enviado a `origin/main`; CI real disparou (3 pushes anteriores estavam
+falhando, confirmando a causa raiz) e revelou **2 problemas adicionais, corrigidos na
+sequência**:
+
+- **`npm ci` ainda falhava em CI mesmo com Bun removido**: a máquina local usa Node 24/npm
+  11.17, e o `package-lock.json` foi gerado com essa versão; o workflow usava Node 20/npm
+  10.8.2 (bundled), que resolve o peer dependency `vitest→vite` de forma diferente e rejeita
+  o lockfile como "fora de sincronia" (`Missing: esbuild@0.28.2 from lock file`). Corrigido:
+  `node-version: 20` → `24` nos dois workflows, alinhando com a versão que gera o lockfile.
+  Também justifica trocar por Node 24: `@supabase/*@2.110.5` já exige `node >=22.0.0`
+  (`EBADENGINE` com Node 20).
+- **Bug real de tipos no Deno, achado ao corrigir o job `fiscal-tests`** (não é regressão
+  desta sessão nem relacionado a Bun/npm — pré-existente, nunca rodou local porque Deno não
+  está instalado nesta máquina, ver ponto cego já catalogado no `CLAUDE.md`):
+  `vendaToNFePayload.ts`, helper `parse<T>(schema: z.ZodType<T>, ...): T` perdia a tipagem
+  correta de campos com `.default()` do Zod (saíam como `string | undefined` em vez de
+  `string` no Output), quebrando `naturezaOperacao` e `cfop` em `NFeEmitPayload`/
+  `NFeItemPayload`. Corrigido trocando a assinatura para
+  `<S extends z.ZodTypeAny>(schema: S, ...): z.infer<S>` — reproduzido e confirmado local
+  com `tsc` isolado (mesma versão exata do zod, `3.23.8`) antes e depois da correção, já que
+  não dá pra rodar `deno check` nesta máquina. Sem consumidor no frontend
+  (`grep` não achou import em `src/`), risco de regressão zero fora do próprio arquivo.
+
+**Próxima ação única**: confirmar no CI real que `E2E Tests` e `fiscal-tests` ficam verdes
+com essas correções, depois seguir para a homologação de concorrência da Etapa 1 (A01-A04,
+ver `ETAPA1_INTEGRIDADE_2026-09-13.md`) e A05 (escopo de empresa ativa).
 
 ## Checkpoint anterior — etapa 1 da auditoria, implantação pendente (2026-09-13)
 

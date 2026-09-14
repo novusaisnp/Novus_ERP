@@ -147,7 +147,7 @@ export function pagamentosToNFCe(pagamentos: unknown[], valorTotal: number): NFC
 }
 
 export function vendaToNFePayload(ctx: VendaToNFeContext): NFeEmitPayload {
-  const parse = <T>(schema: z.ZodType<T>, data: unknown, label: string): T => {
+  const parse = <S extends z.ZodTypeAny>(schema: S, data: unknown, label: string): z.infer<S> => {
     const result = schema.safeParse(data);
     if (!result.success) throw new VendaMapperError(`Dados inválidos: ${label}`, result.error.flatten());
     return result.data;
