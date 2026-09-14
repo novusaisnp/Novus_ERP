@@ -1,6 +1,60 @@
 # Status do projeto — NOVUS ERP
 
-## 🔖 Checkpoint atual — CORREÇÃO: o teste de concorrência anterior não validou código da Etapa 1 (2026-09-13)
+## 🔖 Checkpoint atual — A05 (escopo de empresa ativa): bug real corrigido e testado (2026-09-14)
+
+Achado da `AUDITORIA_PRONTIDAO_MERCADO_2026-09-13.md` (A05). Diferente de A02/A04, este é
+código de **frontend puro**, já commitado e já em produção assim que este checkpoint for
+enviado — não depende de nenhuma migration não aplicada.
+
+- **Bug real confirmado**: `getEmpresaAtivaId()` (`src/lib/empresaAtiva.ts`, fonte única
+  usada por ~65 arquivos via `getEmpresaAtivaIdOuFalha`) chamava `get_user_empresa_id()`
+  primeiro e usava o resultado sempre que truthy. Essa RPC faz
+  `ORDER BY created_at ASC LIMIT 1` — a **primeira empresa vinculada ao usuário**, nunca uma
+  seleção ativa real — e é sempre truthy pra qualquer usuário com 1+ vínculo. Na prática, a
+  seleção feita em `SelecionarEmpresa.tsx` (salva via `setEmpresaAtivaId`) era **ignorada na
+  consulta seguinte**: o seletor virou decorativo assim que `ORG-1` (matriz/filial,
+  2026-08-30) passou a permitir 2+ `user_roles` por usuário. A validação do valor salvo
+  também só conferia se a empresa existia globalmente, não se o usuário atual tinha acesso
+  a ela.
+- **Corrigido**: `getEmpresaAtivaId()` agora usa `get_empresas_disponiveis()` (já scoped ao
+  usuário) pra decidir: (1) seleção salva, só se ainda está entre as empresas acessíveis
+  agora; (2) resolução automática só quando há exatamente 1 opção (mesma UX de sempre pra
+  quem só tem uma empresa); (3) qualquer ambiguidade real (2+ empresas sem seleção válida)
+  retorna `null` — `EmpresaGate` manda pro seletor, nunca escolhe por data de vínculo.
+  Cache curto (30s) em memória evita reconsultar a cada chamada de service (a função é
+  chamada sem React Query em ~65 lugares); `setEmpresaAtivaId`/`clearEmpresaAtivaId`
+  invalidam o cache na hora.
+- **Segunda metade do achado A05** ("listagens/estatísticas bancárias e ordens de
+  fabricação não filtram explicitamente a empresa ativa"): corrigidos os 2 exemplos citados
+  pela auditoria — `contaBancariaService.ts` (7 funções sem filtro: listagem, seleção,
+  listagem com agência/banco, arquivar, restaurar, estatísticas — só `atualizar`/`criar` já
+  filtravam) e `ordemFabricacaoService.list()`. Todas dependiam só de RLS (que permite
+  qualquer empresa vinculada ao usuário, não só a ativa) — risco de misturar dados de
+  empresas diferentes na mesma tela pra usuário multi-empresa.
+  **Achado extra, fora de escopo desta sessão**: o mesmo padrão (query sem
+  `.eq('empresa_representada_id', ...)`, só RLS) existe em dezenas de outros services —
+  levantamento grosseiro (contagem de `.from()` vs `.eq('empresa_representada_id'`) aponta
+  ~35 arquivos com 0 filtros explícitos, alguns com múltiplas queries. **Métrica não é
+  confiável isoladamente** — várias dessas queries já são buscas por `id` específico
+  (corretamente escopadas de outro jeito) ou telas que legitimamente precisam ver dado
+  global (ex. cadastros de referência). Precisa de uma varredura dedicada, arquivo por
+  arquivo, não uma correção mecânica — registrado como item novo de backlog no
+  `PLANO_MESTRE.md`, não tentado agora.
+- **Testes novos**: `src/lib/empresaAtiva.test.ts` (8 casos, inclusive o teste de regressão
+  do bug real — seleção salva prevalece sobre a "primeira por data"), 1 caso em
+  `ordemFabricacaoService.test.ts`. 3 testes existentes (`lote3d.test.ts`,
+  `fornecedorService.test.ts`, `produtoService.test.ts`) estavam acoplados ao RPC interno
+  antigo de `empresaAtiva.ts` (mockavam `supabase.rpc` genérico em vez do módulo) —
+  corrigidos para mockar `@/lib/empresaAtiva` diretamente, sem acoplamento à implementação
+  interna.
+
+Validação: `npm run typecheck` (0 erros), `npm run test -- --run` (429/429, incluindo os
+novos), `npm run lint` dos arquivos alterados (limpo), `npm run build` (passa).
+
+**Próxima ação única**: decidir com o usuário se ataca agora a varredura ampla de filtros
+explícitos (item novo de backlog) ou segue pro resto da lista A06-A09/backlog geral.
+
+## Checkpoint anterior — CORREÇÃO: o teste de concorrência anterior não validou código da Etapa 1 (2026-09-13)
 
 **Autocorreção da mesma sessão.** A entrada anterior deste checkpoint (agora reescrita)
 alegava que `scripts/check-etapa1-concorrencia.mjs` provava o lock de linha das migrations

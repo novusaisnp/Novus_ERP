@@ -119,6 +119,11 @@ const { supabaseMock } = vi.hoisted(() => {
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: supabaseMock,
 }));
+// getEmpresaAtivaIdOuFalha agora chama get_empresas_disponiveis (achado A05) em vez de
+// get_user_empresa_id — mockado direto pra não acoplar este teste ao RPC interno usado.
+vi.mock("@/lib/empresaAtiva", () => ({
+  getEmpresaAtivaIdOuFalha: async () => "empresa-1",
+}));
 
 // Import DEPOIS do vi.mock para o service resolver o mock.
 import {

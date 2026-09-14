@@ -40,9 +40,11 @@ function translateError(error: { code?: string; message?: string } | null, fallb
 
 export const ordemFabricacaoService = {
   async list(): Promise<OrdemFabricacao[]> {
+    const empresaId = await getEmpresaId();
     const { data, error } = await supabase
       .from('ordens_fabricacao')
       .select('*, consumos:ordens_fabricacao_consumos(*)')
+      .eq('empresa_representada_id', empresaId)
       .order('data_abertura', { ascending: false });
     if (error) throw translateError(error, 'Erro ao buscar ordens de fabricação');
     return (data || []) as unknown as OrdemFabricacao[];

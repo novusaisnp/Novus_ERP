@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: { from: vi.fn(), rpc: vi.fn() },
 }));
+vi.mock('@/lib/empresaAtiva', () => ({ getEmpresaAtivaIdOuFalha: async () => 'empresa-1' }));
 
 import { fornecedorService } from './fornecedorService';
 import { supabase } from '@/integrations/supabase/client';
@@ -39,8 +40,6 @@ const pf: Fornecedor = {
 
 beforeEach(() => {
   mock.from.mockReset();
-  mock.rpc.mockReset();
-  mock.rpc.mockResolvedValue({ data: 'empresa-1', error: null });
 });
 
 // A `entidades` real (ao contrário da antiga `fornecedores`) não tem

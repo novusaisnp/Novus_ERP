@@ -288,7 +288,22 @@ Objetivo: servir desde operação simples de caixa até grupo econômico multiem
 - [~] **A02/A03 — venda, itens e baixa de estoque não eram atômicos.** `vendasService.ts` (`save`) atualizava/criava o cabeçalho, apagava itens antigos e inseria os novos em requisições separadas, com a baixa de estoque depois e sua falha só logada; uma falha no meio do caminho podia deixar cabeçalho sem itens. Edição de venda já efetivada podia divergir da baixa (idempotência evita repetir a baixa, mas não reconcilia diferença de quantidade). Cancelamento engolia falha de estorno. Corrigido localmente: migration `20260913172000` — venda/itens/estoque na mesma transação, totais calculados no servidor, bloqueio de edição de itens já efetivados, cancelamento com estorno único.
 - [~] **A04 — saldo bancário sujeito a atualização perdida.** `contaBancariaService.ts` (`atualizarContaBancaria`) calculava o delta no navegador e gravava `saldo_atual` depois, sem lock; uma movimentação concorrente entre leitura e escrita podia se perder. Corrigido localmente: migration `20260913171000` — saldo calculado no banco com bloqueio de linha da conta; corrigiu de passagem um trigger de histórico bancário que impedia edição autenticada.
 - [~] **A01 — autorização granular incompleta no banco** (mais amplo que o fechamento de rotas descrito em `FIN-8` abaixo): policies de `contas_bancarias`/`produtos` e o critério de `contas_receber` permitiam INSERT/UPDATE/DELETE apenas por vínculo de empresa (`user_has_access_to_empresa`/`get_user_empresa_id`), sem checar permissão granular por operação; Gestão Bancária, Vendas, Estoque e Compras seguiam sem `PermissionRoute` em `App.tsx`. Corrigido localmente: migration `20260913170000` — policies restritivas em 26 tabelas e guardas nas RPCs operacionais, campos aceitos limitados ao salvar títulos.
-- [ ] **A05 — escopo de empresa ativa inconsistente (não corrigido).** `empresaAtiva.ts` prioriza `get_user_empresa_id()`, que retorna a primeira empresa por data de vínculo em `user_roles`, não uma seleção ativa real; listagens/estatísticas de Gestão Bancária e a listagem de ordens de fabricação não filtram explicitamente pela empresa ativa (a RLS permite qualquer empresa vinculada ao usuário). Risco de mistura de empresas autorizadas na mesma tela, não de acesso a empresa sem vínculo. Falta: contrato único de empresa ativa e teste de troca de contexto/cache com usuário vinculado a duas empresas.
+- [x] **A05 — escopo de empresa ativa inconsistente. Fechado 2026-09-14** (código de
+  frontend puro, já em produção — não depende de nenhuma migration não aplicada, diferente
+  de A01-A04). `empresaAtiva.ts` priorizava `get_user_empresa_id()` (primeira empresa por
+  data de vínculo em `user_roles`, nunca uma seleção ativa real) — a seleção real do
+  usuário no seletor (`SelecionarEmpresa.tsx`) era ignorada na consulta seguinte, decorativa
+  desde que `ORG-1` passou a permitir 2+ vínculos por usuário. Corrigido: `getEmpresaAtivaId()`
+  agora usa `get_empresas_disponiveis()` (scoped ao usuário) — seleção salva prevalece se
+  ainda válida, auto-resolve só com 1 opção, ambiguidade real força o seletor. Corrigidos
+  também os 2 exemplos citados pela auditoria (`contaBancariaService.ts`: 7 funções sem
+  filtro explícito; `ordemFabricacaoService.list()`), que dependiam só de RLS. 8 testes
+  novos em `empresaAtiva.test.ts` (inclusive regressão do bug real) + 1 em
+  `ordemFabricacaoService.test.ts`; 3 testes existentes destravados de acoplamento ao RPC
+  interno antigo. Ver `STATUS.md` para o detalhe completo.
+  **Achado novo de escopo maior, não corrigido agora** — ver item na Manutenção transversal
+  abaixo: o mesmo padrão de query sem filtro explícito por empresa (só RLS) aparece em
+  dezenas de outros services, precisa de varredura dedicada arquivo por arquivo.
 
 **Validação executada (local, revertida):** `npm run typecheck`, 421 testes/60 arquivos, `npm run build` e lint dos arquivos alterados aprovados. Ensaio SQL via `node scripts/check-etapa1.mjs` no banco vinculado `reksodqzemboaeqxnxyy` retornou `checks_passed_rollback`, cobrindo autorização entre empresas, escrita direta proibida, total calculado no servidor, rollback em falha de inserção de itens, estoque insuficiente, proibição de alterar item efetivado, estorno duplicado e saldo não forjável — **tudo dentro de uma transação revertida; nada foi aplicado permanentemente**.
 
@@ -769,6 +784,19 @@ no projeto para custom fields — não generalizar sem ≥2 consumidores reais p
 - [ ] Custom fields somente após caso real; preferir `metadata jsonb` antes de EAV, salvo prova contrária.
 
 ### Manutenção transversal (= Fase 7 da Auditoria de agosto, Parte 4)
+- [ ] **Achado 2026-09-14 (A05, ao corrigir o escopo de empresa ativa) — varredura ampla de
+  filtros explícitos por empresa em queries de listagem.** `contaBancariaService.ts` e
+  `ordemFabricacaoService.ts` (citados pela auditoria) já corrigidos, ver `FIN-0` acima. O
+  mesmo padrão (query direta em `.from()` sem `.eq('empresa_representada_id', ...)`,
+  contando só com RLS) aparece em outros ~35 arquivos por um levantamento grosseiro
+  (contagem de `.from()` vs `.eq('empresa_representada_id'` por arquivo) —
+  `cotacaoCompraService.ts`, `movimentacoesService.ts`, `configBasicasService.ts`,
+  `agenciaService.ts`, `bancoService.ts`, `alcadasService.ts` entre os com mais chamadas
+  sem nenhum filtro. **Métrica não é confiável isoladamente**: várias dessas queries já são
+  buscas por `id` específico (corretamente escopadas de outro jeito) ou telas que
+  legitimamente precisam ver dado global — precisa de avaliação arquivo por arquivo, nunca
+  adicionar `.eq()` mecanicamente sem entender cada query (risco de quebrar uma tela que
+  deveria mesmo ver dado cross-empresa, ex. visão de `novus_owner`).
 - [x] **Achado 2026-09-13 (A08, auditoria de prontidão para mercado) — release não
   reproduzível. Fechado no mesmo dia** (ver `STATUS.md`). Causa raiz confirmada:
   `bun.lock` estava travado desde 2026-07-14 enquanto o `package-lock.json` real (npm é o

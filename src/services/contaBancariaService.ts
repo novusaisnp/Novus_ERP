@@ -55,6 +55,7 @@ export const listarContasBancarias = async (filtros?: ContaBancariaFilters): Pro
   let query = supabase
     .from('contas_bancarias')
     .select(CONTA_SELECT)
+    .eq('empresa_representada_id', await getEmpresaIdAtual())
     .order('created_at', { ascending: false });
 
   if (!filtros?.incluir_arquivadas) {
@@ -107,6 +108,7 @@ export const listarContasBancariasParaSelecao = async (): Promise<ContaBancariaO
   const { data, error } = await supabase
     .from('contas_bancarias')
     .select('id, descricao, numero_conta, nome_titular')
+    .eq('empresa_representada_id', await getEmpresaIdAtual())
     .is('deleted_at', null)
     .order('descricao');
 
@@ -144,6 +146,7 @@ export const listarContasBancariasAtivasComAgenciaBanco = async (): Promise<Cont
         bancos!inner(nome, codigo)
       )
     `)
+    .eq('empresa_representada_id', await getEmpresaIdAtual())
     .eq('ativo', true);
 
   if (error) {
@@ -257,7 +260,8 @@ export const arquivarContaBancaria = async (id: string): Promise<void> => {
       deleted_at: new Date().toISOString(),
       status: 'INATIVA'
     })
-    .eq('id', id);
+    .eq('id', id)
+    .eq('empresa_representada_id', await getEmpresaIdAtual());
 
   if (error) {
     console.error('[ContaBancariaService] Erro ao arquivar conta bancária:', error);
@@ -276,7 +280,8 @@ export const restaurarContaBancaria = async (id: string): Promise<void> => {
       deleted_at: null,
       status: 'ATIVA'
     })
-    .eq('id', id);
+    .eq('id', id)
+    .eq('empresa_representada_id', await getEmpresaIdAtual());
 
   if (error) {
     console.error('[ContaBancariaService] Erro ao restaurar conta bancária:', error);
@@ -292,6 +297,7 @@ export const obterEstatisticasContasBancarias = async (): Promise<ContaBancariaE
   const { data, error } = await supabase
     .from('contas_bancarias')
     .select('tipo_conta, status, conta_cofre, saldo_atual, limite_credito')
+    .eq('empresa_representada_id', await getEmpresaIdAtual())
     .is('deleted_at', null);
 
   if (error) {

@@ -3,6 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: { from: vi.fn(), rpc: vi.fn() },
 }));
+const getEmpresaAtivaIdOuFalha = vi.fn();
+vi.mock('@/lib/empresaAtiva', () => ({ getEmpresaAtivaIdOuFalha: () => getEmpresaAtivaIdOuFalha() }));
 
 import { produtoService } from './produtoService';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,8 +34,8 @@ const produto: Produto = {
 
 beforeEach(() => {
   mock.from.mockReset();
-  mock.rpc.mockReset();
-  mock.rpc.mockResolvedValue({ data: 'empresa-1', error: null });
+  getEmpresaAtivaIdOuFalha.mockReset();
+  getEmpresaAtivaIdOuFalha.mockResolvedValue('empresa-1');
 });
 
 describe('produtoService.listar', () => {
@@ -62,8 +64,8 @@ describe('produtoService.buscarPorId', () => {
 });
 
 describe('produtoService.criar', () => {
-  it('obtém empresa_id via RPC e envia payload snake_case', async () => {
-    mock.rpc.mockResolvedValueOnce({ data: 'emp-1', error: null });
+  it('obtém a empresa ativa e envia payload snake_case', async () => {
+    getEmpresaAtivaIdOuFalha.mockResolvedValueOnce('emp-1');
     let captured: Record<string, unknown> = {};
     mock.from.mockImplementationOnce(() => ({
       insert: (p: Record<string, unknown>) => {
@@ -72,7 +74,6 @@ describe('produtoService.criar', () => {
       },
     }));
     const res = await produtoService.criar(produto);
-    expect(mock.rpc).toHaveBeenCalledWith('get_user_empresa_id');
     expect(captured).toMatchObject({
       empresa_representada_id: 'emp-1',
       nome: 'Item',
@@ -87,13 +88,8 @@ describe('produtoService.criar', () => {
     expect(res).toEqual({ id: 'new' });
   });
 
-  it('lança quando RPC falha', async () => {
-    mock.rpc.mockResolvedValueOnce({ data: null, error: { message: 'x' } });
-    await expect(produtoService.criar(produto)).rejects.toThrow(/Empresa não identificada/i);
-  });
-
-  it('lança quando usuário sem empresa', async () => {
-    mock.rpc.mockResolvedValueOnce({ data: null, error: null });
+  it('lança quando não há empresa ativa resolvível', async () => {
+    getEmpresaAtivaIdOuFalha.mockRejectedValueOnce(new Error('Empresa não identificada para o usuário atual.'));
     await expect(produtoService.criar(produto)).rejects.toThrow(/Empresa não identificada/i);
   });
 });
