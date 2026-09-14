@@ -777,7 +777,16 @@ no projeto para custom fields — não generalizar sem ≥2 consumidores reais p
   correção — o job `playwright` de `fiscal.yml` rodava sem `-c e2e/playwright.config.ts`
   (não usava a config real); `ci:gate` do `package.json` também usava `bun run`. Validado
   local: typecheck 0 erros, 421/421 testes, build ok, `npm ci --dry-run` confirma lockfile
-  sincronizado.
+  sincronizado. **Confirmado verde no CI real** (não só local) após 4 pushes com 3 achados
+  adicionais encadeados, cada um só visível depois que o anterior parou de mascará-lo: Node
+  20/npm 10.8.2 do CI resolvia o peer `vitest→vite` diferente do Node 24/npm 11.17 que gera
+  o lockfile (rejeitava como fora de sincronia — corrigido alinhando a versão); bug real de
+  tipos em `vendaToNFePayload.ts` (helper `parse<T>` perdia o Output correto de campo com
+  `.default()` do Zod); asserção errada em teste Deno (`'NCM obrigatório'` nunca apareceria
+  em `.message`); `fiscal.yml` nunca subia o servidor Vite nem instalava o Firefox que
+  `playwright.config.ts` também roda; `06-fiscal-emissao.spec.ts` nunca usava o
+  `storageState` de login da suíte. `E2E Tests` e `fiscal-tests` ✓ verdes, ver `STATUS.md`
+  para o detalhe completo de cada achado.
   **Ainda pendente, fora deste achado**: reconciliar o histórico remoto de migrations
   (para em `20260830170000`, banco real já tem objetos de setembro) — mexe em metadado de
   produção do Supabase, decisão própria antes de `migration repair`; não confundir com a

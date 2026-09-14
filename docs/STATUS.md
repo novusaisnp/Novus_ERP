@@ -92,11 +92,19 @@ rodado de verdade até A08 destravar os passos anteriores):
   aceito em `e2e.yml`, "26 skipped"), não por teste real passando. Configurar esses
   secrets é decisão/ação do usuário no painel do GitHub, fora do alcance desta sessão.
 
-**Próxima ação única**: confirmar no CI real que `fiscal-tests` fica totalmente verde com
-essas duas últimas correções (E2E já confirmado verde), depois seguir para a homologação de
-concorrência da Etapa 1 (A01-A04, ver `ETAPA1_INTEGRIDADE_2026-09-13.md`) e A05 (escopo de
-empresa ativa). Considerar separadamente, com o usuário, se vale configurar os secrets de
-E2E reais no GitHub para os specs pararem de rodar só em modo skip.
+**A08 confirmado fechado no CI real** (não só localmente) após o quarto push (`7e7e910`):
+`E2E Tests` (run `34792933688`) e `fiscal-tests` (run `34793544290`) ambos ✓ verdes — os
+3 pushes imediatamente anteriores a este checkpoint estavam vermelhos, então o verde é
+evidência direta da correção, não coincidência. Ao todo, 6 problemas reais encadeados
+corrigidos nesta frente (bun.lock desatualizado → versão Node/npm divergente do lockfile →
+bug de tipos no Deno → asserção de teste errada → dev server nunca subindo no fiscal → spec
+sem login/browser instalado) — cada um só apareceu depois que o anterior parou de mascará-lo.
+
+**Próxima ação única**: seguir para a homologação de concorrência da Etapa 1 (A01-A04, ver
+`ETAPA1_INTEGRIDADE_2026-09-13.md`) ou A05 (escopo de empresa ativa) — decisão do usuário
+sobre qual primeiro. Pendência separada, não bloqueante: decidir com o usuário se configura
+os secrets de E2E reais no GitHub (`E2E_USER`/`E2E_PASS`/`VITE_SUPABASE_*`), hoje ausentes,
+para os specs de login pararem de rodar só em modo skip.
 
 ## Checkpoint anterior — etapa 1 da auditoria, implantação pendente (2026-09-13)
 
