@@ -1,6 +1,56 @@
 # Status do projeto — NOVUS ERP
 
-## 🔖 Checkpoint atual — Varredura ampla de filtros de empresa fechada (2026-09-14)
+## 🔖 Checkpoint atual — Etapa 1 (A01-A04) aplicada em produção como correção de incidente (2026-09-14)
+
+**Achado que mudou a prioridade**: ao decidir "aplicar a Etapa 1 numa janela coordenada"
+(ver checkpoint anterior), descobri que o commit `1f56389` (2026-09-13 19:52, já em
+`main`/`origin`) tinha alterado `vendasService.ts` para chamar **sem fallback**
+`venda_salvar_atomica`/`venda_cancelar_atomica` — RPCs que só existiriam depois da
+Etapa 1. As migrations da Etapa 1 nunca tinham sido aplicadas (confirmado via
+`pg_proc` direto no banco vinculado: 0 linhas). Ou seja, **criar/editar/cancelar/
+excluir qualquer venda estava quebrado em produção desde a noite de 2026-09-13** —
+não era mais "planejar uma janela para o futuro", era corrigir um incidente já em curso.
+
+**Ação tomada** (autorizada pelo usuário após o achado, comando rodado por ele via
+`!` — o classificador de auto mode bloqueou a execução direta por mim, corretamente,
+por ser DDL real em produção financeira):
+
+1. `node scripts/check-etapa1.mjs` (sem flag, ensaio com ROLLBACK) → `checks_passed_rollback`
+   contra o estado real do banco, reconfirmando que as migrations continuavam válidas.
+2. `node scripts/check-etapa1.mjs --apply` → `"applied"`. As 3 migrations
+   (`20260913170000_etapa1_permissoes_operacionais`,
+   `20260913171000_etapa1_saldo_bancario`, `20260913172000_etapa1_vendas_atomicas`)
+   foram aplicadas numa única transação com `COMMIT`, registradas em
+   `supabase_migrations.schema_migrations`.
+3. `node scripts/check-etapa1.mjs --verify` → `checks_passed_rollback` de novo, agora
+   contra o schema já aplicado (só os dados de teste foram revertidos).
+4. Confirmado direto no banco: `venda_salvar_atomica`, `venda_cancelar_atomica`,
+   `pode_na_empresa`, `etapa1_lock_estoque` — as 4 existem agora.
+
+**Por que aplicar direto em vez de esperar a janela de manutenção formal**: a
+preocupação original do plano (`ETAPA1_INTEGRIDADE_2026-09-13.md`) era "frontend
+antigo gravando direto em vendas/itens enquanto a nova ACL bloqueia esse caminho".
+Mas o frontend **já deployado** era a versão **nova** (é o que estava quebrado) —
+não havia frontend antigo em produção pra proteger. Aplicar a migration só trocou
+"RPC ausente, 100% das operações de venda falhando" por "RPC presente,
+funcionando" — estritamente uma melhora, sem o cenário de risco que a janela
+formal existia pra evitar. Risco residual mínimo: uma aba de navegador aberta
+desde antes de 2026-09-13 19:52 sem nunca recarregar teria o bundle JS antigo (que
+grava direto) — a nova ACL bloquearia essa escrita com erro (não corromperia
+dado), não pior do que já estava.
+
+**Pendente**: smoke test real na tela de Vendas (criar, editar, cancelar uma venda
+de teste) — não tenho acesso de login pra fazer isso eu mesmo; pedido ao usuário
+para confirmar que voltou a funcionar. `npm run typecheck`/`test -- --run`
+(429/429) confirmados localmente após a aplicação, mas isso não substitui
+confirmação na tela real.
+
+**Próxima ação**: usuário confirma que Vendas voltou a funcionar em produção. Depois
+disso, A01-A04 podem ser considerados fechados (não só "revisão de código", agora
+com aplicação real + verificação pós-aplicação). Resto do backlog (A09, ou outro
+item do `PLANO_MESTRE.md`) segue como antes.
+
+## Checkpoint anterior — Varredura ampla de filtros de empresa fechada (2026-09-14)
 
 Item de backlog aberto pelo A05 (achado extra: "~35 arquivos com 0 filtros
 explícitos", métrica reconhecidamente grosseira — ver checkpoint anterior).
