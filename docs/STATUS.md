@@ -1,6 +1,68 @@
 # Status do projeto — NOVUS ERP
 
-## 🔖 Checkpoint atual — A05 (escopo de empresa ativa): bug real corrigido e testado (2026-09-14)
+## 🔖 Checkpoint atual — Varredura ampla de filtros de empresa fechada (2026-09-14)
+
+Item de backlog aberto pelo A05 (achado extra: "~35 arquivos com 0 filtros
+explícitos", métrica reconhecidamente grosseira — ver checkpoint anterior).
+Feita a varredura arquivo por arquivo pedida, não mecânica: cada candidato foi
+lido, e quando havia dúvida sobre se a tabela era realmente por-empresa,
+verificado direto no banco (`information_schema.columns` +
+`pg_policies`) antes de decidir se era bug ou falso positivo.
+
+**4 commits, ~35 arquivos de service tocados** (`5da61b0..28a95f2`). Padrão
+recorrente: `list()`/`getAll()`/`update()`/`delete()` faziam
+`.eq('empresa_representada_id', ...)` só quando a tabela tinha RLS
+`user_has_access_to_empresa(...)` — que autoriza **qualquer** empresa vinculada
+ao usuário, não só a ativa selecionada (mesma causa raiz do bug de
+`getEmpresaAtivaId()` do A05, só que espalhada pelos services em vez de
+centralizada). Sem o filtro explícito, um usuário com 2+ empresas (comum desde
+ORG-1, 2026-08-30) via/mexia em cadastro da empresa errada na mesma tela.
+
+- **Achado mais sério do lote**: `vendaPagamentoService.criarPagamentoComParcelas`
+  fazia o lookup de replay-safety (idempotência por `origem_sistema`+`externo_id`
+  de webhook de satélite) sem filtro de empresa — sem `UNIQUE` constraint que
+  force isso no banco, dois satélites de empresas diferentes com o mesmo par
+  colidiriam no mesmo registro de pagamento.
+- **estoqueService.listMovimentacoes** tinha `empresa_id` opcional e o hook
+  (`useMovimentacoes`) não usava `enabled` — sem a empresa ativa ainda resolvida,
+  disparava a query e trazia até 500 movimentações de estoque de **todas** as
+  empresas do usuário antes do refetch corrigir. Parâmetro virou obrigatório.
+- `folhaPagamentoService.listFolhas` (salário) e `alcadasService` (alçada de
+  aprovação financeira) eram os dados mais sensíveis sem filtro nenhum.
+- Áreas cobertas: config básicas, bancos/agências, plano de contas, cotação/
+  requisição/pedido de compra, conciliação bancária, estoque, RH (cargos,
+  departamentos, setores, benefícios, vencimentos/descontos padrão, folha,
+  integração de ponto), fiscal (tributos, naturezas de operação), contratos,
+  ficha técnica, produtos, entidades (`getEntidadeById`/`deleteEntidade`
+  ganharam parâmetro `empresaId` explícito, propagado pelos chamadores).
+- **Verificado e confirmado sem alteração** (não é bug): `usuarioService`
+  (RLS de `usuarios`/`user_roles` já exige admin-da-empresa-da-linha, não só
+  acesso genérico); `empresasRepresentadasService` (RLS já restringe UPDATE/
+  DELETE por role na própria linha); NCM/CFOP/`report_schedules`/
+  `report_ops_*`/`modalidades_pagamento`/`naturezas_pagamento` (tabelas
+  globais ou por-usuário, sem coluna de empresa — não fazem sentido escopadas);
+  `localizacaoService`/`categoriaService`/`unidadeMedidaService`/
+  `tamanhoService`/`relatorioContabilService`/`estoque/relatoriosService`
+  já filtravam tudo que precisava ou dependem de RPC que valida no servidor.
+- **Não coberto de propósito** (child-lookup por id já pertencente a um pai
+  escopado — mesmo padrão de baixo risco usado no resto do código, ex.
+  `movimentacoesService.getHistoricoTitulo`): `clientePoliticaService`,
+  `recebimentoCompraService.listByPedido`, sub-consultas de
+  `fiscal/emissaoService` por `documentoId`/`vendaId`. Não são o alvo do achado
+  A05 (que era especificamente sobre listagens/estatísticas).
+- Achado lateral corrigido de passagem: 2 testes (`fornecedorService`,
+  `produtoService`, `contasReceberOperations`) tinham mock de query builder
+  hardcoded pra 1 nível de `.eq()` — quebraram com o segundo `.eq()` novo,
+  corrigidos para refletir a cadeia real.
+
+Validação de cada lote: `npm run typecheck` (0 erros) + `npm run test -- --run`
+(429/429) antes de cada commit.
+
+**Próxima ação**: nenhuma pendência crítica desta frente. Resta decidir com o
+usuário se ataca o resto da lista A06-A09/backlog geral do
+`AUDITORIA_PRONTIDAO_MERCADO_2026-09-13.md`, ou outro item do `PLANO_MESTRE.md`.
+
+## Checkpoint anterior — A05 (escopo de empresa ativa): bug real corrigido e testado (2026-09-14)
 
 Achado da `AUDITORIA_PRONTIDAO_MERCADO_2026-09-13.md` (A05). Diferente de A02/A04, este é
 código de **frontend puro**, já commitado e já em produção assim que este checkpoint for
