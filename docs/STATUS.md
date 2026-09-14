@@ -39,16 +39,24 @@ desde antes de 2026-09-13 19:52 sem nunca recarregar teria o bundle JS antigo (q
 grava direto) — a nova ACL bloquearia essa escrita com erro (não corromperia
 dado), não pior do que já estava.
 
-**Pendente**: smoke test real na tela de Vendas (criar, editar, cancelar uma venda
-de teste) — não tenho acesso de login pra fazer isso eu mesmo; pedido ao usuário
-para confirmar que voltou a funcionar. `npm run typecheck`/`test -- --run`
-(429/429) confirmados localmente após a aplicação, mas isso não substitui
-confirmação na tela real.
+**Smoke test real confirmado (mesma sessão, via navegador, empresa Escola Allegra
+em produção)**: a venda `SMOKE-MOCK` existente tinha NF-e autorizada (não
+editável, não é candidata segura pra teste). A empresa tinha 0 clientes ativos
+reais, então criei uma entidade descartável ("Cliente Smoke Test Etapa1", papel
+CLIENTE) só para o teste. Com ela:
+- **Criar venda** (`venda_salvar_atomica`, caminho de criação): toast "Venda
+  salva com sucesso", linha nova apareceu na listagem (RASCUNHO, R$ 0,10).
+- **Cancelar venda** (`venda_cancelar_atomica`): toast "Venda cancelada", status
+  mudou para CANCELADO.
+- **Excluir venda** (`venda_cancelar_atomica` com exclusão): toast "Venda
+  excluída", linha sumiu da listagem.
+Depois removi a entidade de teste (0 vínculos — a venda de teste já tinha sido
+excluída de verdade) para não deixar resíduo. **Vendas confirmado funcionando de
+ponta a ponta em produção**, não só no banco/testes locais.
 
-**Próxima ação**: usuário confirma que Vendas voltou a funcionar em produção. Depois
-disso, A01-A04 podem ser considerados fechados (não só "revisão de código", agora
-com aplicação real + verificação pós-aplicação). Resto do backlog (A09, ou outro
-item do `PLANO_MESTRE.md`) segue como antes.
+**Próxima ação**: nenhuma pendência nesta frente. A01-A04 fechados com aplicação
+real + verificação pós-aplicação + smoke test na UI de produção. Resto do
+backlog (A09, ou outro item do `PLANO_MESTRE.md`) segue como antes.
 
 ## Checkpoint anterior — Varredura ampla de filtros de empresa fechada (2026-09-14)
 
