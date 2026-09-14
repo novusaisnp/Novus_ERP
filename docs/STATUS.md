@@ -1,6 +1,52 @@
 # Status do projeto — NOVUS ERP
 
-## 🔖 Checkpoint atual — A08 fechado: CI/release reproduzível (2026-09-13)
+## 🔖 Checkpoint atual — Concorrência real provada (A02/A04), homologação da Etapa 1 avança (2026-09-13)
+
+Item 2 do "O que falta" de `ETAPA1_INTEGRIDADE_2026-09-13.md` ("homologar concorrência real
+com duas conexões") — a parte técnica central está feita e provada contra o banco real
+vinculado (`reksodqzemboaeqxnxyy`), não em ambiente separado (não existe hoje).
+
+- **Novo**: `scripts/check-etapa1-concorrencia.mjs`. Diferente de `check-etapa1.mjs`
+  (tudo numa única transação com `ROLLBACK`, não prova bloqueio entre sessões), este cria
+  uma fixture mínima **commitada** ("HOMOLOGACAO ETAPA1 CONCORRENCIA (temporario)"), dispara
+  2 inserções verdadeiramente concorrentes (processos/conexões separados, via `spawn`) na
+  MESMA conta bancária e no MESMO produto, confere o resultado final, e remove a fixture
+  inteira ao terminar.
+- **Resultado (2 execuções completas, incluindo a fixture da primeira, já limpa)**:
+  2 depósitos concorrentes de R$10 → `saldo_atual=20` (não 10 — nenhum perdido); 2 saídas
+  concorrentes de 30un → `estoque_atual=40` de um estoque inicial de 100 (não 70). Prova
+  definitiva contra lost-update: se o lock de linha (`FOR UPDATE`) das migrations
+  `20260913171000`/`172000` não funcionasse, uma das duas escritas concorrentes teria
+  sobrescrito a outra.
+- **3 bugs reais de FK/trigger achados e corrigidos no processo de limpeza da fixture**
+  (nenhum é da Etapa 1 — são achados novos, gerais, em triggers de histórico
+  pré-existentes): (a) `trigger_registrar_historico` (AFTER DELETE em
+  `movimentacoes_bancarias`) tenta inserir em `historico_movimentacoes_bancarias` uma FK
+  para a própria linha que acabou de ser apagada — **qualquer hard-delete real dessa
+  tabela sempre falharia** (23503); contornado desabilitando a trigger só durante a
+  transação de limpeza (nunca em código de produto — a aplicação real nunca faz hard
+  delete aqui, sempre `deleted_at`, por isso esse bug nunca tinha aparecido). (b)
+  `empresas_representadas` tem 11 colunas `plano_conta_*_default_id` → `plano_contas` →
+  `empresa_representada_id` → ciclo de FK, preciso anular as 11 antes de apagar
+  `plano_contas`. (c) a trigger de histórico de estoque recria linhas em
+  `historico_estoque_movimentacoes` quando a própria `estoque_movimentacoes` é apagada —
+  precisa limpar essa tabela de novo, por último. Documentado como comentário no próprio
+  script para a próxima pessoa/sessão não repetir a investigação.
+- **Limpeza confirmada**: 0 linhas residuais em 10 tabelas verificadas, nas duas execuções.
+  Nada de teste ficou no banco de produção.
+
+**O que ainda falta da homologação completa (não coberto por este teste)**: fluxos de
+negócio ponta a ponta com dois "clientes" simultâneos (conversão de orçamento, recebimento
+de compra, criação/edição/liquidação de título), e teste com perfis sem administração —
+ver itens restantes de `ETAPA1_INTEGRIDADE_2026-09-13.md`. Não homologar/publicar a Etapa 1
+como concluída só com base nesta prova de concorrência isolada.
+
+**Próxima ação única**: decidir com o usuário se a prova de concorrência já é suficiente
+para avançar para a publicação coordenada (`--apply` + deploy do frontend), ou se ainda
+quer os fluxos de negócio ponta a ponta com dois clientes antes disso; alternativamente,
+seguir para A05 (escopo de empresa ativa), que não depende disso.
+
+## Checkpoint anterior — A08 fechado: CI/release reproduzível (2026-09-13)
 
 Achado da `AUDITORIA_PRONTIDAO_MERCADO_2026-09-13.md` (A08), já incorporado ao
 `PLANO_MESTRE.md` na mesma data. Usuário decidiu deixar a ativação fiscal real (A06/A07)

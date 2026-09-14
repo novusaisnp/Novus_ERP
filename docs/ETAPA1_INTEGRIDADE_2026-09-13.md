@@ -42,6 +42,11 @@ esse caminho. Portanto, não aplicar o banco sozinho com clientes antigos operan
 1. Homologar o pacote em ambiente separado, incluindo dois clientes simultâneos,
    conversão de orçamento, recebimento de compra, criação/edição/liquidação de título
    e perfis sem administração. Confirmar backup e procedimento de recuperação.
+   **Parcial (2026-09-13, ver `STATUS.md`)**: o mecanismo de lock de linha em si (saldo
+   bancário e estoque) foi provado com 2 conexões verdadeiramente concorrentes contra o
+   banco real vinculado (`scripts/check-etapa1-concorrencia.mjs`) — sem lost-update.
+   Faltam ainda os fluxos de negócio ponta a ponta com dois clientes e o teste com
+   perfis sem administração.
 2. Preparar a versão do frontend com os serviços novos; estabelecer janela de
    manutenção que impeça operações de clientes antigos, inclusive abas já abertas.
 3. Confirmar o projeto ERP e histórico de migrations. Aplicar somente este pacote com
