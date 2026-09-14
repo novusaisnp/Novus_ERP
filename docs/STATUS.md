@@ -70,9 +70,33 @@ com a asserção errada desde que foi escrito, mascarado por nunca ter executado
 o texto esperado para `'itens[1]'`, mesmo padrão já usado nas asserções vizinhas
 (`'cliente'`, `'itens'`) para erros vindos de `parse()`.
 
-**Próxima ação única**: confirmar no CI real que `fiscal-tests` fica verde com essa última
-correção (E2E já confirmado verde), depois seguir para a homologação de concorrência da
-Etapa 1 (A01-A04, ver `ETAPA1_INTEGRIDADE_2026-09-13.md`) e A05 (escopo de empresa ativa).
+Terceiro push (`f8a6fdc`) confirmou: `Deno` e `Vitest` de `fiscal-tests` ficaram verdes, mas
+o job `Playwright` revelou **mais dois achados reais**, ambos pré-existentes (nunca tinha
+rodado de verdade até A08 destravar os passos anteriores):
+
+- **`fiscal.yml` nunca subia o servidor Vite** (job `playwright` não tinha
+  `E2E_START_DEV_SERVER`/`E2E_BASE_URL`/secrets do Supabase, ao contrário de `e2e.yml`) —
+  `net::ERR_CONNECTION_REFUSED` em `localhost:3000`. Corrigido alinhando com o mesmo setup
+  de `e2e.yml` (commit `11ec947`).
+- **`06-fiscal-emissao.spec.ts` nunca usava o mecanismo de login da suíte**: todo outro spec
+  (ex. `02-venda-a-liquidacao.spec.ts`) usa `test.skip(!HAS_STATE, ...)` +
+  `test.use({ storageState: STORAGE_STATE_PATH })` (login feito uma vez por
+  `01-login.spec.ts`, reaproveitado via `e2e/.auth/user.json`, `fixtures/auth.fixture.ts`);
+  o spec fiscal navegava direto para páginas autenticadas sem nunca logar, e a suíte
+  também tentava rodar no projeto `firefox` do `playwright.config.ts` sem o browser
+  instalado (`fiscal.yml` só instala `chromium`). Corrigido: mesmo padrão `HAS_STATE`/
+  `storageState` aplicado ao spec, e `--project=chromium` explícito no comando do CI.
+  **Nota**: `E2E_USER`/`E2E_PASS`/`VITE_SUPABASE_URL`/`VITE_SUPABASE_PUBLISHABLE_KEY`
+  aparecem vazios nos logs do CI — esses secrets não estão configurados no repositório
+  GitHub ainda; enquanto isso, o job passa por **skip legítimo** (mesmo comportamento já
+  aceito em `e2e.yml`, "26 skipped"), não por teste real passando. Configurar esses
+  secrets é decisão/ação do usuário no painel do GitHub, fora do alcance desta sessão.
+
+**Próxima ação única**: confirmar no CI real que `fiscal-tests` fica totalmente verde com
+essas duas últimas correções (E2E já confirmado verde), depois seguir para a homologação de
+concorrência da Etapa 1 (A01-A04, ver `ETAPA1_INTEGRIDADE_2026-09-13.md`) e A05 (escopo de
+empresa ativa). Considerar separadamente, com o usuário, se vale configurar os secrets de
+E2E reais no GitHub para os specs pararem de rodar só em modo skip.
 
 ## Checkpoint anterior — etapa 1 da auditoria, implantação pendente (2026-09-13)
 

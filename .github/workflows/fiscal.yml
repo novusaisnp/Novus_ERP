@@ -86,7 +86,7 @@ jobs:
         env:
           FISCAL_MOCK: "true"
           E2E_FISCAL_ENABLED: "1"
-        run: npx playwright test -c e2e/playwright.config.ts e2e/tests/06-fiscal-emissao.spec.ts
+        run: npx playwright test -c e2e/playwright.config.ts --project=chromium e2e/tests/06-fiscal-emissao.spec.ts
       - uses: actions/upload-artifact@v4
         if: always()
         with:
