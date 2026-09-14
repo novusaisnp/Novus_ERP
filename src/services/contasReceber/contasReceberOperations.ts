@@ -49,10 +49,12 @@ const selectComRateios = `
 `;
 
 const buscarContaCompleta = async (id: string) => {
+  const empresaId = await getEmpresaIdAtual();
   const { data, error } = await supabase
     .from('contas_receber')
     .select(selectComRateios)
     .eq('id', id)
+    .eq('empresa_representada_id', empresaId)
     .single();
 
   if (error) {

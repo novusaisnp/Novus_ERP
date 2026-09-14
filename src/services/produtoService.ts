@@ -105,6 +105,7 @@ export const produtoService = {
   },
 
   async atualizar(id: string, produto: Produto): Promise<SupabaseProduto> {
+    const empresaId = await getEmpresaId();
     const payload: ProdutoUpdate = {
       nome: produto.nome,
       descricao: produto.descricao || null,
@@ -131,6 +132,7 @@ export const produtoService = {
       .from('produtos')
       .update(payload as ProdutoUpdate)
       .eq('id', id)
+      .eq('empresa_representada_id', empresaId)
       .select()
       .single();
 
@@ -143,11 +145,12 @@ export const produtoService = {
   },
 
   async excluir(id: string): Promise<void> {
-    
+    const empresaId = await getEmpresaId();
     const { error } = await supabase
       .from('produtos')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('empresa_representada_id', empresaId);
 
     if (error) {
       console.error('[Produtos] Erro ao excluir produto:', error);

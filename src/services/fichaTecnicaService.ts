@@ -25,9 +25,11 @@ function translateError(error: { code?: string; message?: string } | null, fallb
 
 export const fichaTecnicaService = {
   async list(): Promise<FichaTecnicaComItens[]> {
+    const empresaId = await getEmpresaId();
     const { data, error } = await supabase
       .from('fichas_tecnicas')
       .select('*, itens:fichas_tecnicas_itens(*)')
+      .eq('empresa_representada_id', empresaId)
       .order('created_at', { ascending: false });
     if (error) throw translateError(error, 'Erro ao buscar fichas técnicas');
     return (data || []) as unknown as FichaTecnicaComItens[];
@@ -69,7 +71,8 @@ export const fichaTecnicaService = {
   },
 
   async desativar(id: string): Promise<void> {
-    const { error } = await supabase.from('fichas_tecnicas').update({ ativo: false }).eq('id', id);
+    const empresaId = await getEmpresaId();
+    const { error } = await supabase.from('fichas_tecnicas').update({ ativo: false }).eq('id', id).eq('empresa_representada_id', empresaId);
     if (error) throw translateError(error, 'Erro ao desativar ficha técnica');
   },
 };

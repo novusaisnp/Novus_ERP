@@ -123,7 +123,7 @@ export const fornecedorService = {
     const empresaId = await getEmpresaAtivaIdOuFalha();
     const payload = this.transformToSupabaseFormat(fornecedorData, empresaId);
 
-    const { data, error } = await supabase.from('entidades').update(payload).eq('id', id).select().single();
+    const { data, error } = await supabase.from('entidades').update(payload).eq('id', id).eq('empresa_representada_id', empresaId).select().single();
     if (error) {
       console.error('[fornecedorService] Erro ao atualizar fornecedor:', error);
       throw error;
@@ -132,10 +132,12 @@ export const fornecedorService = {
   },
 
   async deleteFornecedor(id: string) {
+    const empresaId = await getEmpresaAtivaIdOuFalha();
     const { error } = await supabase
       .from('entidades')
       .update({ deleted_at: new Date().toISOString(), ativo: false })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('empresa_representada_id', empresaId);
 
     if (error) {
       console.error('[fornecedorService] Erro ao excluir fornecedor:', error);

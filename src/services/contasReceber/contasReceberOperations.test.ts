@@ -20,7 +20,9 @@ import { createContaReceber, updateContaReceber } from './contasReceberOperation
 const mockReleitura = () =>
   from.mockReturnValue({
     select: () => ({
-      eq: () => ({ single: () => Promise.resolve({ data: { id: 'conta-1' }, error: null }) }),
+      eq: () => ({
+        eq: () => ({ single: () => Promise.resolve({ data: { id: 'conta-1' }, error: null }) }),
+      }),
     }),
   });
 

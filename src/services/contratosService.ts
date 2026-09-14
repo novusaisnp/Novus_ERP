@@ -4,9 +4,11 @@ import { getEmpresaAtivaIdOuFalha as getEmpresaId } from '@/lib/empresaAtiva';
 
 export const contratosService = {
   async list(filtros: ContratoFiltros = {}): Promise<Contrato[]> {
+    const empresaId = await getEmpresaId();
     let q = supabase
       .from('contratos')
       .select('*, cliente:entidades!contratos_cliente_id_fkey(id, nome)')
+      .eq('empresa_representada_id', empresaId)
       .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
@@ -32,6 +34,7 @@ export const contratosService = {
         .from('contratos')
         .update({ ...payload, updated_at: new Date().toISOString() })
         .eq('id', id)
+        .eq('empresa_representada_id', empresaId)
         .select()
         .single();
       if (error) {
@@ -50,10 +53,12 @@ export const contratosService = {
   },
 
   async softDelete(id: string): Promise<void> {
+    const empresaId = await getEmpresaId();
     const { error } = await supabase
       .from('contratos')
       .update({ deleted_at: new Date().toISOString() })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('empresa_representada_id', empresaId);
     if (error) {
       console.error('[contratosService] Erro ao excluir contrato');
       throw error;

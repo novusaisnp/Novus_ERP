@@ -104,7 +104,9 @@ describe('produtoService.atualizar', () => {
         return {
           eq: (_c: string, v: string) => {
             capturedId = v;
-            return { select: () => ({ single: () => Promise.resolve({ data: { id: v }, error: null }) }) };
+            return {
+              eq: () => ({ select: () => ({ single: () => Promise.resolve({ data: { id: v }, error: null }) }) }),
+            };
           },
         };
       },
@@ -120,13 +122,13 @@ describe('produtoService.atualizar', () => {
 describe('produtoService.excluir', () => {
   it('resolve com sucesso', async () => {
     mock.from.mockImplementationOnce(() => ({
-      delete: () => ({ eq: () => Promise.resolve({ error: null }) }),
+      delete: () => ({ eq: () => ({ eq: () => Promise.resolve({ error: null }) }) }),
     }));
     await expect(produtoService.excluir('p-1')).resolves.toBeUndefined();
   });
   it('propaga erro', async () => {
     mock.from.mockImplementationOnce(() => ({
-      delete: () => ({ eq: () => Promise.resolve({ error: { message: 'FK' } }) }),
+      delete: () => ({ eq: () => ({ eq: () => Promise.resolve({ error: { message: 'FK' } }) }) }),
     }));
     await expect(produtoService.excluir('p-2')).rejects.toBeTruthy();
   });

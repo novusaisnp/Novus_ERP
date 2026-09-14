@@ -19,9 +19,11 @@ function translateError(error: { code?: string; message?: string } | null, fallb
 
 export const requisicaoCompraService = {
   async list(): Promise<RequisicaoCompra[]> {
+    const empresaId = await getEmpresaId();
     const { data, error } = await supabase
       .from('requisicoes_compra')
       .select('*, itens:requisicoes_compra_itens(*)')
+      .eq('empresa_representada_id', empresaId)
       .order('created_at', { ascending: false });
     if (error) throw translateError(error, 'Erro ao buscar requisições de compra');
     return (data || []) as unknown as RequisicaoCompra[];
@@ -63,10 +65,12 @@ export const requisicaoCompraService = {
   },
 
   async cancelar(id: string): Promise<void> {
+    const empresaId = await getEmpresaId();
     const { error, data } = await supabase
       .from('requisicoes_compra')
       .update({ status: 'CANCELADA' })
       .eq('id', id)
+      .eq('empresa_representada_id', empresaId)
       .select('id');
     if (error) throw translateError(error, 'Erro ao cancelar requisição');
     if (!data || data.length === 0) {

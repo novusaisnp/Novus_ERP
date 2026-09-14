@@ -85,6 +85,7 @@ export const vendaPagamentoService = {
       const { data: existente } = await supabase
         .from('venda_pagamento')
         .select('*')
+        .eq('empresa_representada_id', input.empresa_representada_id)
         .eq('origem_sistema', input.origem_sistema)
         .eq('externo_id', input.externo_id)
         .maybeSingle();

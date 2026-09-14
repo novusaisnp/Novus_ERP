@@ -142,7 +142,9 @@ describe('fornecedorService CRUD', () => {
       update: () => ({
         eq: (_c: string, v: string) => {
           capturedId = v;
-          return { select: () => ({ single: () => Promise.resolve({ data: { id: v }, error: null }) }) };
+          return {
+            eq: () => ({ select: () => ({ single: () => Promise.resolve({ data: { id: v }, error: null }) }) }),
+          };
         },
       }),
     }));
@@ -153,12 +155,12 @@ describe('fornecedorService CRUD', () => {
 
   it('deleteFornecedor faz soft delete e propaga erro', async () => {
     mock.from.mockImplementationOnce(() => ({
-      update: () => ({ eq: () => Promise.resolve({ error: null }) }),
+      update: () => ({ eq: () => ({ eq: () => Promise.resolve({ error: null }) }) }),
     }));
     await expect(fornecedorService.deleteFornecedor('f-1')).resolves.toBeUndefined();
 
     mock.from.mockImplementationOnce(() => ({
-      update: () => ({ eq: () => Promise.resolve({ error: { message: 'FK' } }) }),
+      update: () => ({ eq: () => ({ eq: () => Promise.resolve({ error: { message: 'FK' } }) }) }),
     }));
     await expect(fornecedorService.deleteFornecedor('f-2')).rejects.toBeTruthy();
   });
