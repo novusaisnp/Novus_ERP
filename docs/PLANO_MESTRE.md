@@ -282,7 +282,19 @@ quando seus critérios de saída estão comprovados.)*
 Objetivo: servir desde operação simples de caixa até grupo econômico multiempresa/multifilial, sem expor complexidade corporativa para quem não precisa dela.
 
 ### FIN-0 — Integridade e segurança transacional
-**Estado:** `[x]` concluída em 2026-08-11. RPCs transacionais/idempotentes de liquidar, estornar e cancelar título; baixa parcial real; permissões financeiras aplicadas na UI/serviço/RLS; exclusão física bloqueada; isolamento entre empresas provado.
+**Estado:** `[x]` concluída em 2026-08-11 para o escopo original (títulos): RPCs transacionais/idempotentes de liquidar, estornar e cancelar título; baixa parcial real; permissões financeiras aplicadas na UI/serviço/RLS; exclusão física bloqueada; isolamento entre empresas provado.
+
+**Achado 2026-09-13 (auditoria de prontidão para mercado, `AUDITORIA_PRONTIDAO_MERCADO_2026-09-13.md`) — a mesma classe de risco existia fora desse escopo original, em Vendas/Estoque e Contas Bancárias. Corrigido em código local, ensaiado via SQL com `ROLLBACK`, ainda NÃO aplicado em produção nem homologado (ver `ETAPA1_INTEGRIDADE_2026-09-13.md`):**
+- [~] **A02/A03 — venda, itens e baixa de estoque não eram atômicos.** `vendasService.ts` (`save`) atualizava/criava o cabeçalho, apagava itens antigos e inseria os novos em requisições separadas, com a baixa de estoque depois e sua falha só logada; uma falha no meio do caminho podia deixar cabeçalho sem itens. Edição de venda já efetivada podia divergir da baixa (idempotência evita repetir a baixa, mas não reconcilia diferença de quantidade). Cancelamento engolia falha de estorno. Corrigido localmente: migration `20260913172000` — venda/itens/estoque na mesma transação, totais calculados no servidor, bloqueio de edição de itens já efetivados, cancelamento com estorno único.
+- [~] **A04 — saldo bancário sujeito a atualização perdida.** `contaBancariaService.ts` (`atualizarContaBancaria`) calculava o delta no navegador e gravava `saldo_atual` depois, sem lock; uma movimentação concorrente entre leitura e escrita podia se perder. Corrigido localmente: migration `20260913171000` — saldo calculado no banco com bloqueio de linha da conta; corrigiu de passagem um trigger de histórico bancário que impedia edição autenticada.
+- [~] **A01 — autorização granular incompleta no banco** (mais amplo que o fechamento de rotas descrito em `FIN-8` abaixo): policies de `contas_bancarias`/`produtos` e o critério de `contas_receber` permitiam INSERT/UPDATE/DELETE apenas por vínculo de empresa (`user_has_access_to_empresa`/`get_user_empresa_id`), sem checar permissão granular por operação; Gestão Bancária, Vendas, Estoque e Compras seguiam sem `PermissionRoute` em `App.tsx`. Corrigido localmente: migration `20260913170000` — policies restritivas em 26 tabelas e guardas nas RPCs operacionais, campos aceitos limitados ao salvar títulos.
+- [ ] **A05 — escopo de empresa ativa inconsistente (não corrigido).** `empresaAtiva.ts` prioriza `get_user_empresa_id()`, que retorna a primeira empresa por data de vínculo em `user_roles`, não uma seleção ativa real; listagens/estatísticas de Gestão Bancária e a listagem de ordens de fabricação não filtram explicitamente pela empresa ativa (a RLS permite qualquer empresa vinculada ao usuário). Risco de mistura de empresas autorizadas na mesma tela, não de acesso a empresa sem vínculo. Falta: contrato único de empresa ativa e teste de troca de contexto/cache com usuário vinculado a duas empresas.
+
+**Validação executada (local, revertida):** `npm run typecheck`, 421 testes/60 arquivos, `npm run build` e lint dos arquivos alterados aprovados. Ensaio SQL via `node scripts/check-etapa1.mjs` no banco vinculado `reksodqzemboaeqxnxyy` retornou `checks_passed_rollback`, cobrindo autorização entre empresas, escrita direta proibida, total calculado no servidor, rollback em falha de inserção de itens, estoque insuficiente, proibição de alterar item efetivado, estorno duplicado e saldo não forjável — **tudo dentro de uma transação revertida; nada foi aplicado permanentemente**. Não testado: concorrência real com duas conexões (o ensaio de saldo é sequencial), E2E e os perfis restritos nos fluxos financeiros/compras afetados.
+
+**Bloqueio de implantação:** a ACL nova derruba o cliente antigo de vendas (grava direto em `vendas`/`itens_venda`) — publicar banco e frontend exige janela coordenada, procedimento em `ETAPA1_INTEGRIDADE_2026-09-13.md`. **Não rodar `--apply` isoladamente nem reaplicar o backlog inteiro com `db push`.**
+
+**Próxima ação única:** homologar em ambiente separado com duas conexões simultâneas e perfis sem administração, depois aplicar com `node scripts/check-etapa1.mjs --apply` seguido do deploy coordenado do frontend correspondente.
 
 ### FIN-1 — Completar fluxos atualmente parciais ou apenas visuais
 **Fechado 2026-09-10** — todos os itens abaixo concluídos, incluindo a cauda de testes E2E.
@@ -427,7 +439,13 @@ por trás).
   (a de `usuarios`/`user_roles` já existia desde 2026-08-25, achado corrigido na sessão).
   Zod padronizado em `financeiro-autorizar`. Política de senha alinhada a NIST 800-63B
   (12 caracteres). Captcha continua desligado (depende do usuário mexer no painel da
-  Cloudflare, fora do meu alcance sozinho) — único item desta linha não fechado.
+  Cloudflare, fora do meu alcance sozinho).
+  **Correção mesma data (auditoria de prontidão para mercado):** a frase acima cobre a
+  camada de rotas (`PermissionRoute`) nas duas fatias citadas. No banco, `contas_bancarias`/
+  `produtos`/`contas_receber` ainda aceitavam escrita por qualquer vínculo de empresa sem
+  checar permissão granular, e Gestão Bancária/Vendas/Estoque/Compras seguiam sem
+  `PermissionRoute` em `App.tsx` — achado A01, ver detalhe e correção local (ainda não
+  implantada) em `FIN-0` acima.
 - [ ] MFA/step-up para ações críticas configuráveis — decisão de produto pendente (qual
   método: TOTP/WebAuthn/e-mail OTP), não é só código.
 - [ ] Alertas de alteração bancária, pagamento duplicado e comportamento anômalo — a
@@ -447,6 +465,14 @@ por trás).
 - [ ] Backup, restauração e disaster recovery testados periodicamente — testar restore de
   verdade contra `reksodqzemboaeqxnxyy` (produção real) é arriscado demais pra fazer sem
   combinar uma janela com o usuário.
+  **Achado 2026-09-13 (A09, auditoria de prontidão para mercado):** os 7 jobs de cron com
+  último status `succeeded` provam agendamento HTTP, não conclusão da operação invocada;
+  nenhuma restauração foi comprovada com RPO/RTO medidos. A observação da mesma auditoria
+  de que `evaluate-ops-alerts` não consumia o wrapper de status de cron nem a fila de
+  `webhook_outbox` já está superada pelo checkpoint FIN-8 (SLOs) do mesmo dia, que estendeu
+  esse avaliador com os probes `cron_job_stalled`/`webhook_outbox_backlog` e achou ao vivo um
+  backlog real de 14 dias — não repetir esse diagnóstico antigo de sondas ausentes. O que
+  falta de fato é só o exercício de restauração/RPO/RTO em si.
 - [ ] Testes de propriedade para dinheiro, concorrência, isolamento e invariantes
   contábeis — ainda não iniciado, é uma frente de testing nova (provavelmente
   `fast-check`), tamanho de fatia própria.
@@ -555,12 +581,19 @@ Hoje só existem 2 soluções pontuais isoladas (`autorizacaoFinanceiraService.t
 reautenticação de senha para 3 ações financeiras específicas; `porta3Service.ts`:
 autorização de exceção de crédito em vendas a prazo) — sem motor genérico reutilizável.
 
-### ORC-1 — Motor de alçadas — fechado 2026-09-07 (sem consumidor real ainda)
-- [x] Motor de alçada mínimo (valor × categoria × empresa/filial × perfil) — tabela `alcadas_aprovacao` (faixa por `valor_minimo`, mais específica vence) + RPC `resolver_alcada`. **Não consumido ainda**: `COMP-1` não existe, e a reautenticação pontual do Financeiro (`autorizacaoFinanceiraService.ts`) não foi tocada — decisão deliberada, ver `docs/STATUS.md`.
+### ORC-1 — Motor de alçadas — fechado 2026-09-07, com consumidor real desde 2026-09-07
+
+**Correção 2026-09-13 (auditoria de prontidão para mercado apontou o texto anterior deste
+título/bullet como desatualizado):** o motor já tem consumidor real — `COMP-1`
+(aprovação por alçada no Pedido de Compra, ver Programa Compras e Suprimentos) foi fechado
+no mesmo dia e é o primeiro consumidor. A reautenticação pontual do Financeiro
+(`autorizacaoFinanceiraService.ts`) segue paralela, não migrada — decisão deliberada, ver
+`docs/STATUS.md`.
+- [x] Motor de alçada mínimo (valor × categoria × empresa/filial × perfil) — tabela `alcadas_aprovacao` (faixa por `valor_minimo`, mais específica vence) + RPC `resolver_alcada`, consumido por `COMP-1`.
 - [x] Segregação solicitante × aprovador × pagador e substituição temporária auditada — `decidir_solicitacao` bloqueia incondicionalmente (mesmo admin) quem abriu a solicitação de decidi-la; `alcadas_substitutos` permite um substituto aprovar em nome de um titular, só enquanto o titular também detiver a permissão exigida (não é promoção).
 - [x] Trilha de auditoria unificada — `solicitacoes_aprovacao` é a própria trilha (mesmo padrão `porta3_autorizacoes_excecao`: leitura ampla, escrita só via RPC `SECURITY DEFINER`).
 
-**Critério de saída do ORC-1 isolado**: motor genérico correto e provado (16 asserções em `BEGIN...ROLLBACK`, ver STATUS). O critério de saída do *programa* ("nenhuma compra ou pagamento acima da alçada sai sem aprovação") só fecha quando `COMP-1` (ou a migração do Financeiro) existir e consumir o motor — mesmo padrão do ATV-1 (vínculo com `COMP-` pendente).
+**Critério de saída do ORC-1 isolado**: motor genérico correto e provado (16 asserções em `BEGIN...ROLLBACK`, ver STATUS). **Atingido** — `COMP-1` já consome o motor (Pedido de Compra). Falta generalizar para a reautenticação pontual do Financeiro, se/quando decidido migrá-la para o motor genérico.
 
 ### ORC-2 — Orçamento empresarial
 - [ ] Orçado × realizado × comprometido por dimensão (depende de `ORG-`/`FIN-4` para "realizado" real).
@@ -717,11 +750,39 @@ no projeto para custom fields — não generalizar sem ≥2 consumidores reais p
 - [x] Fiscal completo (NFC-e, CCe, contingência e consulta de status) — fechado 2026-09-13, ver
   `STATUS.md`. Só falta SPED (EFD ICMS/IPI, ECD, ECF), que depende de validação contábil do
   plano de contas (`FIN-4`), não é lacuna de código.
+  **Correção mesma data (A06/A07, auditoria de prontidão para mercado):** "fechado" aqui é
+  mecânica/estrutura, não emissão real comprovada — a única configuração fiscal ativa é
+  FOCUS_NFE/HOMOLOGACAO, os 2 documentos persistidos têm protocolo `MOCK`, e
+  `fiscal-emitir-nfe` simula por padrão sempre que `FISCAL_MOCK` não estiver `false` (A06).
+  A numeração de contingência lê o maior número e soma 1 no código sem reserva atômica —
+  duas emissões simultâneas podem colidir, e uma UNIQUE só transformaria a corrida em falha
+  de emissão; o modo "offline" continua fazendo HTTP ao provedor (`forma_emissao=offline`
+  em `FocusNFeProvider.ts`), não emite sem internet nem com o provedor indisponível (A07).
+  Tratar como `🎯` até: seguir `FISCAL_ATIVACAO_PROVEDOR_REAL.md` com nota fiscal real de
+  homologação, reservar o número de contingência atomicamente no servidor e provar
+  concorrência + retransmissão. Não anunciar emissão fiscal real nem contingência offline
+  comprovada com base no estado atual.
 - (Folha real — agora tracked formalmente em `RH-1`, Programa RH e Departamento Pessoal.)
 - [ ] Bem locável/serializado separado do estoque fungível antes do satélite de locação (Parte 1, §1.8).
 - [ ] Custom fields somente após caso real; preferir `metadata jsonb` antes de EAV, salvo prova contrária.
 
 ### Manutenção transversal (= Fase 7 da Auditoria de agosto, Parte 4)
+- [x] **Achado 2026-09-13 (A08, auditoria de prontidão para mercado) — release não
+  reproduzível. Fechado no mesmo dia** (ver `STATUS.md`). Causa raiz confirmada:
+  `bun.lock` estava travado desde 2026-07-14 enquanto o `package-lock.json` real (npm é o
+  padrão do ERP) recebeu quase um mês de dependências novas — `bun install
+  --frozen-lockfile` nos workflows falhava por lockfile desatualizado. `bun.lock` removido;
+  `e2e.yml`/`fiscal.yml` migrados para `actions/setup-node` + `npm ci`/`npx`; porta
+  corrigida de 8080 (faixa do Educacional) para 3000; achado extra localizado durante a
+  correção — o job `playwright` de `fiscal.yml` rodava sem `-c e2e/playwright.config.ts`
+  (não usava a config real); `ci:gate` do `package.json` também usava `bun run`. Validado
+  local: typecheck 0 erros, 421/421 testes, build ok, `npm ci --dry-run` confirma lockfile
+  sincronizado.
+  **Ainda pendente, fora deste achado**: reconciliar o histórico remoto de migrations
+  (para em `20260830170000`, banco real já tem objetos de setembro) — mexe em metadado de
+  produção do Supabase, decisão própria antes de `migration repair`; não confundir com a
+  dívida de lint (Fase 7, Manutenção transversal), que é anterior e não regressão desta
+  correção.
 - [ ] Remover chamadas Supabase de componentes/hooks e respeitar `src/services/**` — **16 arquivos** identificados na Auditoria de agosto ainda pendentes.
 - [ ] Eliminar logs de debug e `any` por área, mantendo gates verdes — **682 `console.*`/48 `: any`** no snapshot da auditoria, ainda não podados.
 - [x] Manter rotas canônicas, estados vazios úteis e seletores escaláveis — **fechado pelas Fases 2-5** da Auditoria de agosto (Parte 2).
@@ -861,6 +922,11 @@ ritmo semanal e os dois gargalos humanos (contador, contratos `🎯`) não empac
 | Modelo plano de empresas | alto | ~~grupo/empresa/estabelecimento~~ matriz/filial via FK real antes de qualquer relatório consolidado (`ORG-1`, fechado 2026-08-30) |
 | Vendor lock-in Supabase | médio | manter domínio atrás de `src/services/**`; abstrair só com alternativa real |
 | Complexidade exposta ao pequeno negócio | médio | progressive disclosure e defaults, não outro produto |
+| Emissão fiscal real não comprovada (A06) | crítico p/ comercialização | rodar `FISCAL_ATIVACAO_PROVEDOR_REAL.md` com documento real de homologação antes de anunciar NF-e/NFC-e como entregue |
+| Numeração de contingência sem reserva atômica (A07) | alto | reservar número no servidor; provar concorrência e retransmissão com o provedor |
+| Release não reproduzível / CI vermelho (A08) | ~~alto~~ baixo (fechado 2026-09-13) | resolvido: CI migrado para npm/porta correta, ver "Manutenção transversal" acima; falta só reconciliar migrations remotas antes de comercializar |
+
+**Achados 2026-09-13 (auditoria de prontidão para mercado, `AUDITORIA_PRONTIDAO_MERCADO_2026-09-13.md`) já endereçados nas linhas acima e em `FIN-0`/`FIN-8`/Fiscal: A01 (autorização granular incompleta no banco), A02/A03 (venda/itens/estoque não atômicos, edição pós-baixa), A04 (saldo bancário sem lock), A05 (empresa ativa inconsistente, não corrigido), A06/A07 (fiscal mock, contingência sem reserva atômica), A08 (CI/release), A09 (backup/DR sem prova de RPO/RTO). Parecer executivo da auditoria: base funcional relevante, mas não comprovadamente pronta para lançamento amplo — próximo marco é piloto assistido após fechar esses bloqueadores, não ERP horizontal completo.**
 
 ## Decisões que só serão abertas quando a fase exigir
 
@@ -907,3 +973,25 @@ Estado em 2026-08-19, depois de fechar as Fases 1 a 6.5 (Parte 2):
 
 Nenhuma dessas pendências bloqueia as outras — podem ser atacadas em qualquer
 ordem conforme prioridade do usuário.
+
+## Atualização 2026-09-13 — Auditoria de prontidão para mercado
+
+Achados completos incorporados às seções correspondentes (`FIN-0`, `FIN-8`, Fiscal, `ORC-1`,
+Manutenção transversal e Riscos ativos, acima). Fonte:
+[`AUDITORIA_PRONTIDAO_MERCADO_2026-09-13.md`](./AUDITORIA_PRONTIDAO_MERCADO_2026-09-13.md) e
+[`ETAPA1_INTEGRIDADE_2026-09-13.md`](./ETAPA1_INTEGRIDADE_2026-09-13.md). Esta entrada só
+registra a **pendência única e bloqueante** que sobra da incorporação:
+
+8. **Publicação coordenada da Etapa 1 (`FIN-0`, achados A01-A04) ainda não feita.** As três
+   migrations (`20260913170000`/`171000`/`172000`) e os serviços de vendas/contas bancárias
+   estão prontos e commitados (`1f56389`), mas foram só **ensaiados com `ROLLBACK`** —
+   nenhuma aplicação permanente ocorreu. Não aplicar o banco isoladamente (a ACL nova
+   quebra o cliente antigo de vendas) nem reaplicar o backlog inteiro com `db push` às
+   cegas. Sequência obrigatória antes de liberar: (1) homologar em ambiente separado com
+   duas conexões simultâneas e perfis sem administração; (2) preparar o frontend novo com
+   janela de manutenção; (3) aplicar com `node scripts/check-etapa1.mjs --apply`; (4)
+   publicar o frontend e rodar `--verify` + smoke tests autenticados antes de reabrir o
+   acesso. Procedimento completo em `ETAPA1_INTEGRIDADE_2026-09-13.md`. Não declarar essa
+   etapa homologada nem o ERP pronto para produção antes disso — o parecer da auditoria
+   (achados A01-A09 acima) já classifica o estado atual como não liberável para
+   contratação ampla, mesmo depois de aplicado.

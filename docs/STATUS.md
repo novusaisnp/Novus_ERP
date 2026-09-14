@@ -1,6 +1,45 @@
 # Status do projeto — NOVUS ERP
 
-## Checkpoint atual — etapa 1 da auditoria, implantação pendente (2026-09-13)
+## 🔖 Checkpoint atual — A08 fechado: CI/release reproduzível (2026-09-13)
+
+Achado da `AUDITORIA_PRONTIDAO_MERCADO_2026-09-13.md` (A08), já incorporado ao
+`PLANO_MESTRE.md` na mesma data. Usuário decidiu deixar a ativação fiscal real (A06/A07)
+para depois — segue de propósito como `🎯`, fora do escopo desta e das próximas sessões
+até haver contrato com provedor. Ordem de trabalho combinada: A08 → homologação/publicação
+da Etapa 1 (A01-A04) → A05 → resto do backlog.
+
+- **Causa raiz confirmada do CI vermelho**: `bun.lock` estava travado em 2026-07-14
+  enquanto `package-lock.json` (o real, `npm` é o padrão do ERP) recebeu quase um mês de
+  dependências novas até 2026-08-11 — `bun install --frozen-lockfile` nos workflows
+  falhava por lockfile desatualizado, exatamente o "falha na instalação" que a auditoria
+  viu nos dois workflows (E2E e Fiscal).
+- `bun.lock` removido (morto, nunca foi o gerenciador real deste repo).
+- `.github/workflows/e2e.yml` e `.github/workflows/fiscal.yml`: trocado `oven-sh/setup-bun`
+  + `bun install`/`bunx` por `actions/setup-node@v4` + `npm ci`/`npx`, alinhado ao padrão
+  já documentado no `CLAUDE.md` raiz.
+- **Achado extra confirmado durante a correção (o mesmo A08 já citava, agora localizado)**:
+  o job `playwright` de `fiscal.yml` rodava `playwright test e2e/tests/06-fiscal-emissao.spec.ts`
+  sem `-c e2e/playwright.config.ts` — sem esse flag, o Playwright não descobre a config
+  (só existe em `e2e/`, não na raiz), então a suíte fiscal em CI não usava a config real
+  (baseURL, webServer, projects). Corrigido.
+- `e2e.yml`: `E2E_BASE_URL` corrigido de `8080` (faixa do Educacional) para `3000` (porta
+  fixa do ERP, `vite.config.ts`), batendo com o default do próprio `playwright.config.ts`.
+- `package.json`: `ci:gate` usava `bun run` nos três passos — trocado para `npm run`.
+- **Fora de escopo, não tocado nesta sessão**: reconciliar o histórico remoto de
+  migrations (para em `20260830170000`, banco real já tem objetos de setembro) — mexe em
+  metadado de produção do Supabase, decisão própria antes de rodar `migration repair`.
+  Os 60 erros/29 avisos de lint (Fase 7, Manutenção transversal) também não são deste
+  achado — dívida já catalogada, não regressão desta sessão.
+
+Validação local: `npm run typecheck` (0 erros), `npm run test -- --run` (421/421),
+`npm run build` (passa, mesmos avisos de bundle grande já conhecidos), `npm ci --dry-run`
+confirma lockfile sincronizado (a checagem que o CI real vai fazer).
+
+**Próxima ação única**: decidir com o usuário se comita/envia este checkpoint agora, depois
+seguir para a homologação de concorrência da Etapa 1 (A01-A04, ver
+`ETAPA1_INTEGRIDADE_2026-09-13.md`) e A05 (escopo de empresa ativa).
+
+## Checkpoint anterior — etapa 1 da auditoria, implantação pendente (2026-09-13)
 
 Correções locais: autorização por empresa nas tabelas/RPCs operacionais; gravação e
 cancelamento de venda em transação com estoque; estorno sem devolver estoque em dobro;
