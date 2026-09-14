@@ -58,9 +58,21 @@ sequência**:
   não dá pra rodar `deno check` nesta máquina. Sem consumidor no frontend
   (`grep` não achou import em `src/`), risco de regressão zero fora do próprio arquivo.
 
-**Próxima ação única**: confirmar no CI real que `E2E Tests` e `fiscal-tests` ficam verdes
-com essas correções, depois seguir para a homologação de concorrência da Etapa 1 (A01-A04,
-ver `ETAPA1_INTEGRIDADE_2026-09-13.md`) e A05 (escopo de empresa ativa).
+Segundo push (`4a82cc2`) confirmou no CI real: `E2E Tests` ficou verde; `fiscal-tests`
+destravou o `npm ci` e o compile (job `vitest` ficou verde), mas revelou um **terceiro
+achado real** — a suíte Deno do arquivo `vendaToNFePayload.test.ts` nunca tinha rodado de
+fato até agora (o erro de tipos acima impedia o compile), e uma vez rodando, 20/21 testes
+passaram e 1 falhou: `rejeita NCM ausente` esperava a mensagem `"NCM obrigatório"`, mas o
+fluxo real (`parse()` → `schema.safeParse` → `throw`) sempre lança a mensagem genérica
+`"Dados inválidos: itens[1]"` — o texto específico do `.refine()` (`"NCM deve ter 8
+dígitos"`) fica em `VendaMapperError.issues`, nunca em `.message`. O teste em si estava
+com a asserção errada desde que foi escrito, mascarado por nunca ter executado. Corrigido
+o texto esperado para `'itens[1]'`, mesmo padrão já usado nas asserções vizinhas
+(`'cliente'`, `'itens'`) para erros vindos de `parse()`.
+
+**Próxima ação única**: confirmar no CI real que `fiscal-tests` fica verde com essa última
+correção (E2E já confirmado verde), depois seguir para a homologação de concorrência da
+Etapa 1 (A01-A04, ver `ETAPA1_INTEGRIDADE_2026-09-13.md`) e A05 (escopo de empresa ativa).
 
 ## Checkpoint anterior — etapa 1 da auditoria, implantação pendente (2026-09-13)
 

@@ -107,7 +107,11 @@ Deno.test('vendaToNFePayload: usa CFOP interestadual quando UFs diferem', () => 
 Deno.test('vendaToNFePayload: rejeita NCM ausente', () => {
   const ctx = baseCtx();
   ctx.itens[1] = { ...ctx.itens[1], produto: { ...ctx.itens[1].produto, ncm: '' } };
-  assertThrows(() => vendaToNFePayload(ctx), VendaMapperError, 'NCM obrigatório');
+  // Erro vem de parse() (schema.safeParse + throw), que sempre lança a mensagem
+  // genérica "Dados inválidos: <label>" — o detalhe real ("NCM deve ter 8 dígitos")
+  // fica em VendaMapperError.issues, não em .message. Mesmo padrão das asserções
+  // acima para 'cliente'/'itens' (erros de parse), não do texto do refine.
+  assertThrows(() => vendaToNFePayload(ctx), VendaMapperError, 'itens[1]');
 });
 
 Deno.test('vendaToNFePayload: rejeita serviço em NF-e', () => {
