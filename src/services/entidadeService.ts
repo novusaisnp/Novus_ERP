@@ -191,11 +191,12 @@ export const entidadeService = {
     return { data: rows, total: paginacao ? (count ?? 0) : rows.length };
   },
 
-  async getEntidadeById(id: string): Promise<Entidade | null> {
+  async getEntidadeById(id: string, empresaId: string): Promise<Entidade | null> {
     const { data, error } = await supabase
       .from('entidades')
       .select('*, entidade_papeis(papel), entidade_dados_colaborador(*)')
       .eq('id', id)
+      .eq('empresa_representada_id', empresaId)
       .is('deleted_at', null)
       .maybeSingle();
     if (error) throw error;
@@ -254,11 +255,12 @@ export const entidadeService = {
     return { ...entidade, id };
   },
 
-  async deleteEntidade(id: string): Promise<void> {
+  async deleteEntidade(id: string, empresaId: string): Promise<void> {
     const { error } = await supabase
       .from('entidades')
       .update({ deleted_at: new Date().toISOString(), ativo: false })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('empresa_representada_id', empresaId);
     if (error) throw error;
   },
 };

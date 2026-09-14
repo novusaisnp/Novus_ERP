@@ -114,9 +114,9 @@ const Entidades: React.FC = () => {
   // pré-marcado, ?edit=<id> abre edição direto — busca direta por id
   // (getEntidadeById), não depende da entidade estar na página atual.
   const { data: entidadeParaEditar } = useQuery({
-    queryKey: ['entidade-por-id', editParam],
-    queryFn: () => entidadeService.getEntidadeById(editParam as string),
-    enabled: !!editParam,
+    queryKey: ['entidade-por-id', editParam, empresaId],
+    queryFn: () => entidadeService.getEntidadeById(editParam as string, empresaId as string),
+    enabled: !!editParam && !!empresaId,
   });
   useEffect(() => {
     if (editParam && entidadeParaEditar) {
@@ -160,9 +160,9 @@ const Entidades: React.FC = () => {
 
   const confirmDelete = async () => {
     const id = confirmDeleteId;
-    if (!id) return;
+    if (!id || !empresaId) return;
     setConfirmDeleteId(null);
-    await entidadeService.deleteEntidade(id);
+    await entidadeService.deleteEntidade(id, empresaId);
     invalidateAll();
   };
 

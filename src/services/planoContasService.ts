@@ -51,9 +51,11 @@ function translateError(error: any, fallback: string): Error {
 
 export const planoContasService = {
   async getAll(): Promise<PlanoContas[]> {
+    const empresaId = await getEmpresaId();
     const { data, error } = await supabase
       .from('plano_contas')
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .order('codigo');
 
     if (error) {
@@ -66,9 +68,11 @@ export const planoContasService = {
   async searchContasAnaliticas(searchTerm: string, tipo?: 'RECEITA' | 'DESPESA'): Promise<PlanoContas[]> {
     if (!searchTerm || searchTerm.length < 2) return [];
 
+    const empresaId = await getEmpresaId();
     let query = supabase
       .from('plano_contas')
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .eq('aceita_lancamento', true)
       .eq('ativo', true);
 
@@ -93,7 +97,7 @@ export const planoContasService = {
     const empresa_representada_id = await getEmpresaId();
 
     const codigo = await planoContasService.generateCode(input.id_pai, empresa_representada_id);
-    const nivel = input.id_pai ? (await planoContasService.calculateLevel(input.id_pai)) + 1 : 1;
+    const nivel = input.id_pai ? (await planoContasService.calculateLevel(input.id_pai, empresa_representada_id)) + 1 : 1;
     if (nivel > 5) throw new Error('Máximo de 5 níveis permitido');
 
     const aceita_lancamento = input.analitica !== undefined ? input.analitica : Boolean(input.id_pai);
@@ -124,11 +128,14 @@ export const planoContasService = {
   },
 
   async update(id: string, input: Partial<PlanoContasInput>): Promise<PlanoContas> {
+    const empresaId = await getEmpresaId();
+
     if (input.analitica === true) {
       const { data: filhos } = await supabase
         .from('plano_contas')
         .select('id')
-        .eq('conta_pai_id', id);
+        .eq('conta_pai_id', id)
+        .eq('empresa_representada_id', empresaId);
       if (filhos && filhos.length > 0) {
         throw new Error('Conta com subcontas não pode ser definida como analítica');
       }
@@ -145,6 +152,7 @@ export const planoContasService = {
       .from('plano_contas')
       .update(updateData)
       .eq('id', id)
+      .eq('empresa_representada_id', empresaId)
       .select()
       .single();
 
@@ -156,10 +164,13 @@ export const planoContasService = {
   },
 
   async delete(id: string): Promise<void> {
+    const empresaId = await getEmpresaId();
+
     const { data: filhos } = await supabase
       .from('plano_contas')
       .select('id')
-      .eq('conta_pai_id', id);
+      .eq('conta_pai_id', id)
+      .eq('empresa_representada_id', empresaId);
 
     if (filhos && filhos.length > 0) {
       throw new Error('Não é possível excluir conta que possui subcontas vinculadas');
@@ -168,7 +179,8 @@ export const planoContasService = {
     const { error } = await supabase
       .from('plano_contas')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('empresa_representada_id', empresaId);
 
     if (error) {
       throw translateError(error, 'Erro ao excluir conta');
@@ -189,17 +201,17 @@ export const planoContasService = {
       return Number.isFinite(lastCode) ? (lastCode + 1).toString() : '1';
     }
 
-    const { data: pai } = await supabase
-      .from('plano_contas')
-      .select('codigo')
-      .eq('id', idPai)
-      .single();
+    let paiQuery = supabase.from('plano_contas').select('codigo').eq('id', idPai);
+    if (empresaId) paiQuery = paiQuery.eq('empresa_representada_id', empresaId);
+    const { data: pai } = await paiQuery.single();
     if (!pai) throw new Error('Conta pai não encontrada');
 
-    const { data: filhos } = await supabase
+    let filhosQuery = supabase
       .from('plano_contas')
       .select('codigo')
-      .eq('conta_pai_id', idPai)
+      .eq('conta_pai_id', idPai);
+    if (empresaId) filhosQuery = filhosQuery.eq('empresa_representada_id', empresaId);
+    const { data: filhos } = await filhosQuery
       .order('codigo', { ascending: false })
       .limit(1);
 
@@ -209,12 +221,10 @@ export const planoContasService = {
     return `${pai.codigo}.${lastChildNumber + 1}`;
   },
 
-  async calculateLevel(idPai: string): Promise<number> {
-    const { data } = await supabase
-      .from('plano_contas')
-      .select('nivel')
-      .eq('id', idPai)
-      .single();
+  async calculateLevel(idPai: string, empresaId?: string): Promise<number> {
+    let query = supabase.from('plano_contas').select('nivel').eq('id', idPai);
+    if (empresaId) query = query.eq('empresa_representada_id', empresaId);
+    const { data } = await query.single();
     return data?.nivel || 0;
   },
 

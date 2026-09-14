@@ -22,19 +22,23 @@ function translateError(error: { code?: string; message?: string } | null, fallb
 
 export const cotacaoCompraService = {
   async list(): Promise<CotacaoCompra[]> {
+    const empresaId = await getEmpresaId();
     const { data, error } = await supabase
       .from('cotacoes_compra')
       .select('*, fornecedores:cotacoes_compra_fornecedores(*), precos:cotacoes_compra_precos(*)')
+      .eq('empresa_representada_id', empresaId)
       .order('created_at', { ascending: false });
     if (error) throw translateError(error, 'Erro ao buscar cotações');
     return (data || []) as unknown as CotacaoCompra[];
   },
 
   async get(id: string): Promise<CotacaoCompra | null> {
+    const empresaId = await getEmpresaId();
     const { data, error } = await supabase
       .from('cotacoes_compra')
       .select('*, fornecedores:cotacoes_compra_fornecedores(*), precos:cotacoes_compra_precos(*)')
       .eq('id', id)
+      .eq('empresa_representada_id', empresaId)
       .maybeSingle();
     if (error) throw translateError(error, 'Erro ao buscar cotação');
     return data as unknown as CotacaoCompra | null;
@@ -119,11 +123,13 @@ export const cotacaoCompraService = {
   },
 
   async fechar(id: string): Promise<void> {
+    const empresaId = await getEmpresaId();
     const { data: userData } = await supabase.auth.getUser();
     const { error, data } = await supabase
       .from('cotacoes_compra')
       .update({ status: 'FECHADA', fechada_em: new Date().toISOString(), fechada_por: userData.user?.id })
       .eq('id', id)
+      .eq('empresa_representada_id', empresaId)
       .select('id');
     if (error) throw translateError(error, 'Erro ao fechar cotação');
     if (!data || data.length === 0) {
@@ -132,10 +138,12 @@ export const cotacaoCompraService = {
   },
 
   async cancelar(id: string): Promise<void> {
+    const empresaId = await getEmpresaId();
     const { error, data } = await supabase
       .from('cotacoes_compra')
       .update({ status: 'CANCELADA' })
       .eq('id', id)
+      .eq('empresa_representada_id', empresaId)
       .select('id');
     if (error) throw translateError(error, 'Erro ao cancelar cotação');
     if (!data || data.length === 0) {

@@ -7,13 +7,15 @@ import type {
   RegraConciliacaoInput,
   SugestaoMatchResult,
 } from "@/types/conciliacao";
-import { getEmpresaAtivaId } from '@/lib/empresaAtiva';
+import { getEmpresaAtivaId, getEmpresaAtivaIdOuFalha } from '@/lib/empresaAtiva';
 
 export const conciliacaoService = {
   async listarExtratos(): Promise<ExtratoImportado[]> {
+    const empresaId = await getEmpresaAtivaIdOuFalha();
     const { data, error } = await supabase
       .from("banco_extratos_importados")
       .select("*")
+      .eq("empresa_representada_id", empresaId)
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(200);
@@ -22,20 +24,24 @@ export const conciliacaoService = {
   },
 
   async obterExtrato(id: string): Promise<ExtratoImportado | null> {
+    const empresaId = await getEmpresaAtivaIdOuFalha();
     const { data, error } = await supabase
       .from("banco_extratos_importados")
       .select("*")
       .eq("id", id)
+      .eq("empresa_representada_id", empresaId)
       .maybeSingle();
     if (error) throw error;
     return (data as ExtratoImportado | null) ?? null;
   },
 
   async listarLinhas(extratoId: string): Promise<LinhaExtrato[]> {
+    const empresaId = await getEmpresaAtivaIdOuFalha();
     const { data, error } = await supabase
       .from("banco_movimentacoes_extrato")
       .select("*")
       .eq("extrato_importado_id", extratoId)
+      .eq("empresa_representada_id", empresaId)
       .order("data_movimento", { ascending: true })
       .order("id", { ascending: true });
     if (error) throw error;
@@ -53,10 +59,12 @@ export const conciliacaoService = {
     const fim = new Date(params.dataMovimento);
     inicio.setDate(inicio.getDate() - janela);
     fim.setDate(fim.getDate() + janela);
+    const empresaId = await getEmpresaAtivaIdOuFalha();
     const { data, error } = await supabase
       .from("movimentacoes_bancarias")
       .select("id, data_lancamento, valor, tipo, descricao, conciliado")
       .eq("conta_bancaria_id", params.contaBancariaId)
+      .eq("empresa_representada_id", empresaId)
       .is("deleted_at", null)
       .eq("conciliado", false)
       .is("movimentacao_extrato_id", null)
@@ -111,9 +119,11 @@ export const conciliacaoService = {
   },
 
   async listarRegras(): Promise<RegraConciliacao[]> {
+    const empresaId = await getEmpresaAtivaIdOuFalha();
     const { data, error } = await supabase
       .from("banco_regras_conciliacao")
       .select("*")
+      .eq("empresa_representada_id", empresaId)
       .is("deleted_at", null)
       .order("prioridade", { ascending: true });
     if (error) throw error;
@@ -133,10 +143,12 @@ export const conciliacaoService = {
   },
 
   async atualizarRegra(id: string, input: Partial<RegraConciliacaoInput>): Promise<RegraConciliacao> {
+    const empresaId = await getEmpresaAtivaIdOuFalha();
     const { data, error } = await supabase
       .from("banco_regras_conciliacao")
       .update(input)
       .eq("id", id)
+      .eq("empresa_representada_id", empresaId)
       .select("*")
       .single();
     if (error) throw error;
@@ -144,35 +156,43 @@ export const conciliacaoService = {
   },
 
   async excluirRegra(id: string): Promise<void> {
+    const empresaId = await getEmpresaAtivaIdOuFalha();
     const { error } = await supabase
       .from("banco_regras_conciliacao")
       .update({ deleted_at: new Date().toISOString() })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("empresa_representada_id", empresaId);
     if (error) throw error;
   },
 
   async listarNaturezasReceita() {
+    const empresaId = await getEmpresaAtivaIdOuFalha();
     const { data, error } = await supabase
       .from("naturezas_receita")
       .select("id, nome")
+      .eq("empresa_representada_id", empresaId)
       .order("nome");
     if (error) throw error;
     return (data ?? []) as Array<{ id: string; nome: string }>;
   },
 
   async listarPlanoContas() {
+    const empresaId = await getEmpresaAtivaIdOuFalha();
     const { data, error } = await supabase
       .from("plano_contas")
       .select("id, nome, codigo")
+      .eq("empresa_representada_id", empresaId)
       .order("codigo");
     if (error) throw error;
     return (data ?? []) as Array<{ id: string; nome: string; codigo: string | null }>;
   },
 
   async listarCentrosCusto() {
+    const empresaId = await getEmpresaAtivaIdOuFalha();
     const { data, error } = await supabase
       .from("centros_custo")
       .select("id, nome")
+      .eq("empresa_representada_id", empresaId)
       .order("nome");
     if (error) throw error;
     return (data ?? []) as Array<{ id: string; nome: string }>;

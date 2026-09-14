@@ -17,9 +17,11 @@ import { getEmpresaAtivaIdOuFalha as getEmpresaIdAtual } from '@/lib/empresaAtiv
 
 export const naturezaCaixasService = {
   async getAll(): Promise<NaturezaCaixa[]> {
+    const empresaId = await getEmpresaIdAtual();
     const { data, error } = await supabase
       .from('natureza_caixas')
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .order('nome');
 
     if (error) {
@@ -79,9 +81,11 @@ export const naturezaCaixasService = {
 
 export const modalidadeCaixasService = {
   async getAll(apenasAtivos = false): Promise<ModalidadeCaixa[]> {
+    const empresaId = await getEmpresaIdAtual();
     let query = supabase
       .from('modalidade_caixas')
-      .select('*');
+      .select('*')
+      .eq('empresa_representada_id', empresaId);
 
     if (apenasAtivos) {
       query = query.eq('ativo', true);
@@ -98,9 +102,11 @@ export const modalidadeCaixasService = {
   },
 
   async search(termo: string, apenasAtivos = false): Promise<ModalidadeCaixa[]> {
+    const empresaId = await getEmpresaIdAtual();
     let query = supabase
       .from('modalidade_caixas')
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .ilike('nome', `%${termo}%`);
 
     if (apenasAtivos) {
@@ -166,9 +172,11 @@ export const modalidadeCaixasService = {
 
 export const planosPagamentoService = {
   async getAll(): Promise<PlanoPagamento[]> {
+    const empresaId = await getEmpresaIdAtual();
     const { data, error } = await supabase
       .from('planos_pagamento')
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .is('deleted_at', null)
       .order('nome');
 
@@ -229,9 +237,11 @@ export const planosPagamentoService = {
 
 export const modalidadeAPIVinculoService = {
   async getAll(): Promise<ModalidadeAPIVinculo[]> {
+    const empresaId = await getEmpresaIdAtual();
     const { data, error } = await supabase
       .from('modalidade_api_vinculo')
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .is('deleted_at', null)
       .order('nome');
 

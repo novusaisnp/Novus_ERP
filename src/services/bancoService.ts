@@ -64,9 +64,11 @@ export const listarBancos = async (incluirArquivados = false): Promise<Banco[]> 
   try {
     console.log('[Bancos] Listando bancos, incluir arquivados:', incluirArquivados);
     
+    const empresaId = await getEmpresaIdAtual();
     let query = supabase
       .from('bancos')
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .order('nome');
 
     if (!incluirArquivados) {
@@ -100,9 +102,11 @@ export const buscarBancos = async (filtros: {
   try {
     console.log('[Bancos] Buscando bancos com filtros:', filtros);
     
+    const empresaId = await getEmpresaIdAtual();
     let query = supabase
       .from('bancos')
-      .select('*');
+      .select('*')
+      .eq('empresa_representada_id', empresaId);
 
     if (filtros.codigo) {
       query = query.ilike('codigo', `%${filtros.codigo}%`);
@@ -181,6 +185,7 @@ export const atualizarBanco = async (id: string, input: Partial<BancoInput>): Pr
   try {
     console.log('[Bancos] Atualizando banco:', id, input);
 
+    const empresaId = await getEmpresaIdAtual();
     const updateData: Database['public']['Tables']['bancos']['Update'] = {
       ...input,
       sigla: input.sigla || null,
@@ -190,6 +195,7 @@ export const atualizarBanco = async (id: string, input: Partial<BancoInput>): Pr
       .from('bancos')
       .update(updateData)
       .eq('id', id)
+      .eq('empresa_representada_id', empresaId)
       .select()
       .single();
 
@@ -212,10 +218,12 @@ export const arquivarBanco = async (id: string): Promise<void> => {
   try {
     console.log('[Bancos] Arquivando banco:', id);
 
+    const empresaId = await getEmpresaIdAtual();
     const { error } = await supabase
       .from('bancos')
       .update({ deleted_at: new Date().toISOString() })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('empresa_representada_id', empresaId);
 
     if (error) {
       console.error('[Bancos] Erro ao arquivar banco:', error);
@@ -234,10 +242,12 @@ export const restaurarBanco = async (id: string): Promise<void> => {
   try {
     console.log('[Bancos] Restaurando banco:', id);
 
+    const empresaId = await getEmpresaIdAtual();
     const { error } = await supabase
       .from('bancos')
       .update({ deleted_at: null })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('empresa_representada_id', empresaId);
 
     if (error) {
       console.error('[Bancos] Erro ao restaurar banco:', error);
@@ -256,10 +266,11 @@ export const obterEstatisticasBancos = async () => {
   try {
     console.log('[Bancos] Obtendo estatísticas dos bancos');
 
+    const empresaId = await getEmpresaIdAtual();
     const [totalResult, ativosResult, arquivadosResult] = await Promise.all([
-      supabase.from('bancos').select('id', { count: 'exact' }),
-      supabase.from('bancos').select('id', { count: 'exact' }).eq('ativo', true).is('deleted_at', null),
-      supabase.from('bancos').select('id', { count: 'exact' }).not('deleted_at', 'is', null),
+      supabase.from('bancos').select('id', { count: 'exact' }).eq('empresa_representada_id', empresaId),
+      supabase.from('bancos').select('id', { count: 'exact' }).eq('empresa_representada_id', empresaId).eq('ativo', true).is('deleted_at', null),
+      supabase.from('bancos').select('id', { count: 'exact' }).eq('empresa_representada_id', empresaId).not('deleted_at', 'is', null),
     ]);
 
     const stats = {

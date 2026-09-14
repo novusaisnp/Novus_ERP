@@ -62,7 +62,8 @@ export const useEntidades = (
 
   const remove = async (id: string) => {
     try {
-      await entidadeService.deleteEntidade(id);
+      if (!empresaRepresentadaId) throw new Error('Empresa ativa não resolvida.');
+      await entidadeService.deleteEntidade(id, empresaRepresentadaId);
       await invalidate();
       toast({ title: 'Sucesso', description: 'Registro excluído com sucesso!' });
       return true;

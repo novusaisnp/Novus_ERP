@@ -33,6 +33,7 @@ const mapSupabaseAgencia = (data: Record<string, unknown>): Agencia => {
 export const listarAgencias = async (filtros?: AgenciaFilters): Promise<Agencia[]> => {
   console.log('[AgenciaService] Listando agências com filtros:', filtros);
   
+  const empresaId = await getEmpresaIdAtual();
   let query = supabase
     .from('agencias_bancarias')
     .select(`
@@ -43,7 +44,8 @@ export const listarAgencias = async (filtros?: AgenciaFilters): Promise<Agencia[
         nome,
         sigla
       )
-    `);
+    `)
+    .eq('empresa_representada_id', empresaId);
 
   // Aplicar filtros
   if (filtros?.banco_id) {
@@ -78,11 +80,14 @@ export const listarAgencias = async (filtros?: AgenciaFilters): Promise<Agencia[
 export const criarAgencia = async (input: AgenciaInput): Promise<Agencia> => {
   console.log('[AgenciaService] Criando agência:', input);
 
-  // Verificar se o banco existe e está ativo
+  const empresaId = await getEmpresaIdAtual();
+
+  // Verificar se o banco existe, pertence a esta empresa e está ativo
   const { data: banco, error: bancoError } = await supabase
     .from('bancos')
     .select('id, ativo')
     .eq('id', input.banco_id)
+    .eq('empresa_representada_id', empresaId)
     .single();
 
   if (bancoError || !banco) {
@@ -92,8 +97,6 @@ export const criarAgencia = async (input: AgenciaInput): Promise<Agencia> => {
   if (!banco.ativo) {
     throw new Error('Não é possível vincular agência a um banco inativo');
   }
-
-  const empresaId = await getEmpresaIdAtual();
 
   const { data, error } = await supabase
     .from('agencias_bancarias')
@@ -133,12 +136,15 @@ export const criarAgencia = async (input: AgenciaInput): Promise<Agencia> => {
 export const atualizarAgencia = async (id: string, input: Partial<AgenciaInput>): Promise<Agencia> => {
   console.log('[AgenciaService] Atualizando agência:', id, input);
 
-  // Se banco_id foi alterado, verificar se está ativo
+  const empresaId = await getEmpresaIdAtual();
+
+  // Se banco_id foi alterado, verificar se está ativo e pertence a esta empresa
   if (input.banco_id) {
     const { data: banco, error: bancoError } = await supabase
       .from('bancos')
       .select('id, ativo')
       .eq('id', input.banco_id)
+      .eq('empresa_representada_id', empresaId)
       .single();
 
     if (bancoError || !banco) {
@@ -166,6 +172,7 @@ export const atualizarAgencia = async (id: string, input: Partial<AgenciaInput>)
     .from('agencias_bancarias')
     .update(updateData)
     .eq('id', id)
+    .eq('empresa_representada_id', empresaId)
     .select(`
       *,
       bancos:banco_id (
@@ -192,10 +199,12 @@ export const atualizarAgencia = async (id: string, input: Partial<AgenciaInput>)
 export const arquivarAgencia = async (id: string): Promise<void> => {
   console.log('[AgenciaService] Arquivando agência:', id);
 
+  const empresaId = await getEmpresaIdAtual();
   const { error } = await supabase
     .from('agencias_bancarias')
     .update({ deleted_at: new Date().toISOString() })
-    .eq('id', id);
+    .eq('id', id)
+    .eq('empresa_representada_id', empresaId);
 
   if (error) {
     console.error('[AgenciaService] Erro ao arquivar agência:', error);
@@ -208,10 +217,12 @@ export const arquivarAgencia = async (id: string): Promise<void> => {
 export const restaurarAgencia = async (id: string): Promise<void> => {
   console.log('[AgenciaService] Restaurando agência:', id);
 
+  const empresaId = await getEmpresaIdAtual();
   const { error } = await supabase
     .from('agencias_bancarias')
     .update({ deleted_at: null })
-    .eq('id', id);
+    .eq('id', id)
+    .eq('empresa_representada_id', empresaId);
 
   if (error) {
     console.error('[AgenciaService] Erro ao restaurar agência:', error);
@@ -224,9 +235,11 @@ export const restaurarAgencia = async (id: string): Promise<void> => {
 export const obterEstatisticasAgencias = async (): Promise<AgenciaStats> => {
   console.log('[AgenciaService] Obtendo estatísticas das agências');
 
+  const empresaId = await getEmpresaIdAtual();
   const { data, error } = await supabase
     .from('agencias_bancarias')
-    .select('ativo, deleted_at');
+    .select('ativo, deleted_at')
+    .eq('empresa_representada_id', empresaId);
 
   if (error) {
     console.error('[AgenciaService] Erro ao obter estatísticas:', error);
@@ -247,6 +260,7 @@ export const obterEstatisticasAgencias = async (): Promise<AgenciaStats> => {
 export const buscarAgenciasPorBanco = async (bancoId: string): Promise<Agencia[]> => {
   console.log('[AgenciaService] Buscando agências por banco:', bancoId);
 
+  const empresaId = await getEmpresaIdAtual();
   const { data, error } = await supabase
     .from('agencias_bancarias')
     .select(`
@@ -259,6 +273,7 @@ export const buscarAgenciasPorBanco = async (bancoId: string): Promise<Agencia[]
       )
     `)
     .eq('banco_id', bancoId)
+    .eq('empresa_representada_id', empresaId)
     .is('deleted_at', null)
     .order('numero_agencia');
 

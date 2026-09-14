@@ -363,9 +363,11 @@ export const realizarTransferenciaBancaria = async (
       { origem: transferencia.conta_origem_id, destino: transferencia.conta_destino_id }
     );
   }
+  const empresaId = await getEmpresaAtivaIdOuFalha();
   const { data: contas, error: contasErr } = await supabase
     .from('contas_bancarias')
     .select('id, status, saldo_atual, configuracoes')
+    .eq('empresa_representada_id', empresaId)
     .in('id', [transferencia.conta_origem_id, transferencia.conta_destino_id]);
   if (contasErr) {
     throw new BankingError('TRANSFERENCIA_INVALIDA', contasErr.message);
@@ -388,9 +390,6 @@ export const realizarTransferenciaBancaria = async (
       valor: transferencia.valor,
     });
   }
-
-  // Obter empresa do usuário atual
-  const empresaId = await getEmpresaAtivaIdOuFalha();
 
   const { data, error } = await supabase.rpc('transferencia_bancaria_atomica', {
     p_empresa_id: empresaId,
@@ -420,11 +419,14 @@ export const estornarMovimentacao = async (
   estorno: EstornoMovimentacao
 ): Promise<MovimentacaoBancaria> => {
 
+  const empresaId = await getEmpresaAtivaIdOuFalha();
+
   // [LOTE 3B] Idempotência: bloquear estorno duplicado explicitamente
   const { data: existing, error: exErr } = await supabase
     .from('movimentacoes_bancarias')
     .select('id, estornado, ativo')
     .eq('id', estorno.movimentacao_id)
+    .eq('empresa_representada_id', empresaId)
     .maybeSingle();
   if (exErr) {
     throw new Error(`Erro ao localizar movimentação: ${exErr.message}`);
@@ -450,6 +452,7 @@ export const estornarMovimentacao = async (
       observacoes: estorno.observacoes,
     })
     .eq('id', estorno.movimentacao_id)
+    .eq('empresa_representada_id', empresaId)
     .eq('estornado', false) // Guard-race adicional
     .select()
     .single();
@@ -468,6 +471,7 @@ export const conciliarMovimentacao = async (
 ): Promise<MovimentacaoBancaria> => {
 
   const userId = (await supabase.auth.getUser()).data.user?.id;
+  const empresaId = await getEmpresaAtivaIdOuFalha();
 
   const { data, error } = await supabase
     .from('movimentacoes_bancarias')
@@ -478,6 +482,7 @@ export const conciliarMovimentacao = async (
       observacoes: conciliacao.observacoes,
     })
     .eq('id', conciliacao.movimentacao_id)
+    .eq('empresa_representada_id', empresaId)
     .eq('conciliado', false) // Só concilia se não estiver já conciliado
     .select()
     .single();
@@ -623,10 +628,13 @@ export const atualizarMovimentacaoBancaria = async (
   input: Partial<MovimentacaoBancariaInput>
 ): Promise<MovimentacaoBancaria> => {
 
+  const empresaId = await getEmpresaAtivaIdOuFalha();
+
   const { data, error } = await supabase
     .from('movimentacoes_bancarias')
     .update(input)
     .eq('id', id)
+    .eq('empresa_representada_id', empresaId)
     .eq('estornado', false) // Só atualiza se não estiver estornado
     .select(`
       *,
@@ -668,6 +676,8 @@ export const atualizarMovimentacaoBancaria = async (
 // Função para excluir movimentação (soft delete)
 export const excluirMovimentacaoBancaria = async (id: string): Promise<void> => {
 
+  const empresaId = await getEmpresaAtivaIdOuFalha();
+
   const { error } = await supabase
     .from('movimentacoes_bancarias')
     .update({
@@ -675,6 +685,7 @@ export const excluirMovimentacaoBancaria = async (id: string): Promise<void> => 
       deleted_at: new Date().toISOString(),
     })
     .eq('id', id)
+    .eq('empresa_representada_id', empresaId)
     .eq('estornado', false); // Só exclui se não estiver estornado
 
   if (error) {
