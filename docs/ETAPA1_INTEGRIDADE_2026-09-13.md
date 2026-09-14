@@ -42,11 +42,16 @@ esse caminho. Portanto, não aplicar o banco sozinho com clientes antigos operan
 1. Homologar o pacote em ambiente separado, incluindo dois clientes simultâneos,
    conversão de orçamento, recebimento de compra, criação/edição/liquidação de título
    e perfis sem administração. Confirmar backup e procedimento de recuperação.
-   **Parcial (2026-09-13, ver `STATUS.md`)**: o mecanismo de lock de linha em si (saldo
-   bancário e estoque) foi provado com 2 conexões verdadeiramente concorrentes contra o
-   banco real vinculado (`scripts/check-etapa1-concorrencia.mjs`) — sem lost-update.
-   Faltam ainda os fluxos de negócio ponta a ponta com dois clientes e o teste com
-   perfis sem administração.
+   **Ainda não feito (correção 2026-09-13, ver `STATUS.md`)**: uma tentativa de provar o
+   lock de linha com 2 conexões concorrentes (`scripts/check-etapa1-concorrencia.mjs`)
+   foi documentada por engano como homologação da Etapa 1 — na verdade nenhum objeto da
+   Etapa 1 existe no banco vinculado (nunca aplicada), então o teste só exercitou as
+   triggers pré-existentes, não o código novo. Achado real de outra natureza (o mecanismo
+   pré-existente de recálculo de saldo/estoque já é seguro para esse padrão, por usar
+   `UPDATE` que trava a linha implicitamente), mas não substitui homologar o código real.
+   Segue tudo pendente: lock de linha do código novo, fluxos de negócio ponta a ponta com
+   dois clientes e teste com perfis sem administração — só viável aplicando de fato
+   (janela coordenada abaixo) ou com um ambiente Supabase local dedicado.
 2. Preparar a versão do frontend com os serviços novos; estabelecer janela de
    manutenção que impeça operações de clientes antigos, inclusive abas já abertas.
 3. Confirmar o projeto ERP e histórico de migrations. Aplicar somente este pacote com

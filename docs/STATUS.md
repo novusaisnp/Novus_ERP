@@ -1,50 +1,52 @@
 # Status do projeto — NOVUS ERP
 
-## 🔖 Checkpoint atual — Concorrência real provada (A02/A04), homologação da Etapa 1 avança (2026-09-13)
+## 🔖 Checkpoint atual — CORREÇÃO: o teste de concorrência anterior não validou código da Etapa 1 (2026-09-13)
 
-Item 2 do "O que falta" de `ETAPA1_INTEGRIDADE_2026-09-13.md` ("homologar concorrência real
-com duas conexões") — a parte técnica central está feita e provada contra o banco real
-vinculado (`reksodqzemboaeqxnxyy`), não em ambiente separado (não existe hoje).
+**Autocorreção da mesma sessão.** A entrada anterior deste checkpoint (agora reescrita)
+alegava que `scripts/check-etapa1-concorrencia.mjs` provava o lock de linha das migrations
+`20260913171000`/`172000`. **Isso estava errado.** Confirmado via consulta direta ao catálogo
+do banco vinculado (`reksodqzemboaeqxnxyy`): **nenhum objeto da Etapa 1 existe no banco real**
+— `venda_salvar_atomica`, `pode_na_empresa`, `etapa1_lock_estoque`, a trigger
+`aaa_etapa1_lock_estoque`, as policies `etapa1_*` — nada disso existe, e
+`supabase_migrations.schema_migrations` não tem nenhuma versão `20260913*` registrada.
+Consistente com tudo já documentado (migrations nunca aplicadas), mas eu tinha assumido
+implicitamente que o teste exercitava o código novo, sem verificar.
 
-- **Novo**: `scripts/check-etapa1-concorrencia.mjs`. Diferente de `check-etapa1.mjs`
-  (tudo numa única transação com `ROLLBACK`, não prova bloqueio entre sessões), este cria
-  uma fixture mínima **commitada** ("HOMOLOGACAO ETAPA1 CONCORRENCIA (temporario)"), dispara
-  2 inserções verdadeiramente concorrentes (processos/conexões separados, via `spawn`) na
-  MESMA conta bancária e no MESMO produto, confere o resultado final, e remove a fixture
-  inteira ao terminar.
-- **Resultado (2 execuções completas, incluindo a fixture da primeira, já limpa)**:
-  2 depósitos concorrentes de R$10 → `saldo_atual=20` (não 10 — nenhum perdido); 2 saídas
-  concorrentes de 30un → `estoque_atual=40` de um estoque inicial de 100 (não 70). Prova
-  definitiva contra lost-update: se o lock de linha (`FOR UPDATE`) das migrations
-  `20260913171000`/`172000` não funcionasse, uma das duas escritas concorrentes teria
-  sobrescrito a outra.
-- **3 bugs reais de FK/trigger achados e corrigidos no processo de limpeza da fixture**
-  (nenhum é da Etapa 1 — são achados novos, gerais, em triggers de histórico
-  pré-existentes): (a) `trigger_registrar_historico` (AFTER DELETE em
-  `movimentacoes_bancarias`) tenta inserir em `historico_movimentacoes_bancarias` uma FK
-  para a própria linha que acabou de ser apagada — **qualquer hard-delete real dessa
-  tabela sempre falharia** (23503); contornado desabilitando a trigger só durante a
-  transação de limpeza (nunca em código de produto — a aplicação real nunca faz hard
-  delete aqui, sempre `deleted_at`, por isso esse bug nunca tinha aparecido). (b)
-  `empresas_representadas` tem 11 colunas `plano_conta_*_default_id` → `plano_contas` →
-  `empresa_representada_id` → ciclo de FK, preciso anular as 11 antes de apagar
-  `plano_contas`. (c) a trigger de histórico de estoque recria linhas em
-  `historico_estoque_movimentacoes` quando a própria `estoque_movimentacoes` é apagada —
-  precisa limpar essa tabela de novo, por último. Documentado como comentário no próprio
-  script para a próxima pessoa/sessão não repetir a investigação.
-- **Limpeza confirmada**: 0 linhas residuais em 10 tabelas verificadas, nas duas execuções.
-  Nada de teste ficou no banco de produção.
+**O que o teste realmente provou**: o script insere diretamente em `movimentacoes_bancarias`/
+`estoque_movimentacoes` (não passa pelas RPCs `venda_salvar_atomica`/Etapa 1, que nem
+existem). As triggers que **de fato** dispararam são as **pré-existentes**
+(`atualizar_saldo_conta_movimentacao`/`recalc_saldo_estoque`, sem nenhum `FOR UPDATE`
+explícito) — inspecionadas ao vivo depois do achado. Ambas já seguem o padrão "recomputa a
+partir da fonte + `UPDATE` a linha", e um `UPDATE` no PostgreSQL trava implicitamente a
+linha-alvo mesmo sem `SELECT...FOR UPDATE` explícito — por isso o resultado saiu correto
+(saldo=20, estoque=40) mesmo sem qualquer código da Etapa 1 presente. **Achado real, mas
+diferente do que foi alegado**: o mecanismo de recálculo já existente parece seguro para
+esse padrão específico de concorrência (inserção de movimentação/saída). Isso não homologa
+a Etapa 1 — apenas descreve o comportamento atual, sem o código novo.
 
-**O que ainda falta da homologação completa (não coberto por este teste)**: fluxos de
-negócio ponta a ponta com dois "clientes" simultâneos (conversão de orçamento, recebimento
-de compra, criação/edição/liquidação de título), e teste com perfis sem administração —
-ver itens restantes de `ETAPA1_INTEGRIDADE_2026-09-13.md`. Não homologar/publicar a Etapa 1
-como concluída só com base nesta prova de concorrência isolada.
+**Risco não coberto por este teste, nem pelo pré-existente**: `trg_estoque_mov_validar_saldo_before`
+lê `estoque_saldos.quantidade` (BEFORE trigger, checagem "saldo insuficiente") **sem lock**,
+antes do recálculo (AFTER trigger) — clássico padrão check-then-act. Duas saídas concorrentes
+que juntas excedem o saldo, mas isoladamente cabem no saldo lido, poderiam as duas passar a
+checagem (overselling). Meu teste não expôs isso porque usei quantidades (30+30=60) bem
+abaixo do estoque disponível (100) — não testei o limite. Achado a investigar, não é o mesmo
+mecanismo do A02/A03 (que é sobre `vendasService.ts`/transação da venda), mas é adjacente.
 
-**Próxima ação única**: decidir com o usuário se a prova de concorrência já é suficiente
-para avançar para a publicação coordenada (`--apply` + deploy do frontend), ou se ainda
-quer os fluxos de negócio ponta a ponta com dois clientes antes disso; alternativamente,
-seguir para A05 (escopo de empresa ativa), que não depende disso.
+**Consequência prática**: a homologação de concorrência real do código da Etapa 1 (A02/A04)
+continua **pendente**. Não é possível homologar código que não está aplicado em lugar
+nenhum — só existe hoje como migration local não aplicada. As opções reais são: (1) aplicar
+de verdade em produção dentro da janela coordenada já descrita em
+`ETAPA1_INTEGRIDADE_2026-09-13.md` e testar concorrência imediatamente depois (não antes);
+ou (2) montar um ambiente Supabase local (`supabase start`, Docker) para aplicar e testar as
+migrations sem tocar produção — ainda não existe, seria trabalho novo.
+
+Fixture de teste já foi limpa por completo nas duas execuções (0 resíduo, verificado) — isso
+continua válido, é só a interpretação do que foi provado que estava errada.
+
+**Próxima ação única**: decidir com o usuário entre (1) montar ambiente local para
+homologação real da Etapa 1, (2) aceitar a revisão de código já feita + este achado sobre o
+mecanismo pré-existente como evidência suficiente por ora e seguir para a janela de
+publicação coordenada, ou (3) seguir para A05 (não depende disso).
 
 ## Checkpoint anterior — A08 fechado: CI/release reproduzível (2026-09-13)
 
