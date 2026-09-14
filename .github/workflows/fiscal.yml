@@ -60,6 +60,14 @@ jobs:
     name: Playwright (fiscal e2e)
     runs-on: ubuntu-latest
     needs: [vitest, deno]
+    env:
+      E2E_USER: ${{ secrets.E2E_USER }}
+      E2E_PASS: ${{ secrets.E2E_PASS }}
+      E2E_ENABLED: '1'
+      E2E_START_DEV_SERVER: '1'
+      E2E_BASE_URL: http://localhost:3000
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -67,6 +75,12 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - name: Write .env for Vite build
+        run: |
+          {
+            echo "VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}"
+            echo "VITE_SUPABASE_PUBLISHABLE_KEY=${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}"
+          } >> .env
       - run: npx playwright install --with-deps chromium
       - name: Playwright — fiscal spec
         env:
