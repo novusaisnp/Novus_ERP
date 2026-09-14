@@ -29,9 +29,11 @@ const mapRow = (item: any): Tributo => ({
 
 export const fetchTributos = async (): Promise<Tributo[]> => {
   console.log('[Fiscal] Buscando tributos');
+  const empresaId = await getEmpresaAtivaIdOuFalha();
   const { data, error } = await supabase
     .from('tributos')
     .select('*')
+    .eq('empresa_representada_id', empresaId)
     .is('deleted_at', null)
     .order('tipo', { ascending: true });
 
@@ -86,10 +88,12 @@ export const createTributo = async (input: TributoInput): Promise<Tributo> => {
 };
 
 export const updateTributo = async (id: string, input: Partial<TributoInput>): Promise<Tributo> => {
+  const empresaId = await getEmpresaAtivaIdOuFalha();
   const { data, error } = await supabase
     .from('tributos')
     .update(toRow(input))
     .eq('id', id)
+    .eq('empresa_representada_id', empresaId)
     .select('*')
     .single();
   if (error) {
@@ -100,10 +104,12 @@ export const updateTributo = async (id: string, input: Partial<TributoInput>): P
 };
 
 export const deleteTributo = async (id: string): Promise<void> => {
+  const empresaId = await getEmpresaAtivaIdOuFalha();
   const { error } = await supabase
     .from('tributos')
     .update({ deleted_at: new Date().toISOString(), ativo: false })
-    .eq('id', id);
+    .eq('id', id)
+    .eq('empresa_representada_id', empresaId);
   if (error) {
     console.error('[Fiscal] Erro ao remover tributo:', error);
     throw error;

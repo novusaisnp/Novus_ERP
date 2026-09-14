@@ -30,7 +30,12 @@ const LIST_COLUMNS = 'id, nome, tipo, endpoint, configuracoes, ativo, ultima_sin
 
 export const integracaoPontoService = {
   async listIntegracoes(): Promise<IntegracaoPonto[]> {
-    const { data, error } = await supabase.from('integracoes_ponto').select(LIST_COLUMNS).order('nome');
+    const empresaId = await getEmpresaAtivaId();
+    const { data, error } = await supabase
+      .from('integracoes_ponto')
+      .select(LIST_COLUMNS)
+      .eq('empresa_representada_id', empresaId)
+      .order('nome');
     if (error) throw error;
     return data ?? [];
   },
@@ -48,9 +53,14 @@ export const integracaoPontoService = {
   // input.token_autenticacao ausente = mantém o token já gravado; só troca se
   // o campo vier preenchido (nunca vem preenchido a partir de dado lido de volta).
   async atualizarIntegracao(id: string, input: IntegracaoPontoInput): Promise<void> {
+    const empresaId = await getEmpresaAtivaId();
     const { token_autenticacao, ...rest } = input;
     const payload: IntegracaoPontoInput = token_autenticacao ? input : rest;
-    const { error } = await supabase.from('integracoes_ponto').update(payload).eq('id', id);
+    const { error } = await supabase
+      .from('integracoes_ponto')
+      .update(payload)
+      .eq('id', id)
+      .eq('empresa_representada_id', empresaId);
     if (error) throw error;
   },
 };

@@ -30,9 +30,11 @@ const mapRow = (item: any): NaturezaOperacao => ({
 
 export const fetchNaturezasOperacao = async (): Promise<NaturezaOperacao[]> => {
   console.log('[Fiscal] Buscando naturezas de operação');
+  const empresaId = await getEmpresaAtivaIdOuFalha();
   const { data, error } = await supabase
     .from('natureza_operacao')
     .select('*')
+    .eq('empresa_representada_id', empresaId)
     .is('deleted_at', null)
     .order('codigo');
 
@@ -92,10 +94,12 @@ export const updateNaturezaOperacao = async (
   id: string,
   input: Partial<NaturezaOperacaoInput>,
 ): Promise<NaturezaOperacao> => {
+  const empresaId = await getEmpresaAtivaIdOuFalha();
   const { data, error } = await supabase
     .from('natureza_operacao')
     .update(toRow(input))
     .eq('id', id)
+    .eq('empresa_representada_id', empresaId)
     .select('*')
     .single();
   if (error) {

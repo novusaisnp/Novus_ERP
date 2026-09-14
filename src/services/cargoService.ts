@@ -5,9 +5,11 @@ import { getEmpresaAtivaIdOuFalha as getEmpresaIdAtual } from '@/lib/empresaAtiv
 
 export const cargoService = {
   async fetchCargos() {
+    const empresaId = await getEmpresaIdAtual();
     const { data, error } = await supabase
       .from('cargos')
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .eq('ativo', true)
       .order('nome');
 
@@ -47,7 +49,7 @@ export const cargoService = {
   },
 
   async updateCargo(id: string, cargoData: Cargo) {
-    
+    const empresaId = await getEmpresaIdAtual();
     const dataToSave = {
       nome: cargoData.nome,
       descricao: cargoData.descricao,
@@ -61,6 +63,7 @@ export const cargoService = {
       .from('cargos')
       .update(dataToSave)
       .eq('id', id)
+      .eq('empresa_representada_id', empresaId)
       .select()
       .single();
 
@@ -73,11 +76,12 @@ export const cargoService = {
   },
 
   async deleteCargo(id: string) {
-    
+    const empresaId = await getEmpresaIdAtual();
     const { error } = await supabase
       .from('cargos')
       .update({ ativo: false })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('empresa_representada_id', empresaId);
 
     if (error) {
       console.error('[RH] Erro ao excluir cargo:', error);

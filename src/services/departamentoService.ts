@@ -5,9 +5,11 @@ import { getEmpresaAtivaIdOuFalha as getEmpresaIdAtual } from '@/lib/empresaAtiv
 
 export const departamentoService = {
   async fetchDepartamentos() {
+    const empresaId = await getEmpresaIdAtual();
     const { data, error } = await supabase
       .from('departamentos')
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .eq('ativo', true)
       .order('nome');
 
@@ -52,7 +54,7 @@ export const departamentoService = {
   },
 
   async updateDepartamento(id: string, departamentoData: Departamento) {
-    
+    const empresaId = await getEmpresaIdAtual();
     const dataToSave = {
       nome: departamentoData.nome,
       descricao: departamentoData.descricao || null,
@@ -66,6 +68,7 @@ export const departamentoService = {
       .from('departamentos')
       .update(dataToSave)
       .eq('id', id)
+      .eq('empresa_representada_id', empresaId)
       .select()
       .single();
 
@@ -83,11 +86,12 @@ export const departamentoService = {
   },
 
   async deleteDepartamento(id: string) {
-    
+    const empresaId = await getEmpresaIdAtual();
     const { error } = await supabase
       .from('departamentos')
       .update({ ativo: false })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('empresa_representada_id', empresaId);
 
     if (error) {
       console.error('[RH] Erro detalhado ao excluir departamento:', {

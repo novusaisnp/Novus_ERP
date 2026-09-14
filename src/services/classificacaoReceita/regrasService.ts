@@ -23,22 +23,24 @@ export const criarRegra = async (input: RegraClassificacaoInput): Promise<RegraC
   return data as RegraClassificacaoReceita;
 };
 
-export const atualizarRegra = async (id: string, input: Partial<RegraClassificacaoInput>): Promise<RegraClassificacaoReceita> => {
+export const atualizarRegra = async (id: string, input: Partial<RegraClassificacaoInput>, empresaId: string): Promise<RegraClassificacaoReceita> => {
   const { data, error } = await supabase
     .from('regras_classificacao_receita')
     .update(input)
     .eq('id', id)
+    .eq('empresa_representada_id', empresaId)
     .select('*')
     .single();
   if (error) throw error;
   return data as RegraClassificacaoReceita;
 };
 
-export const excluirRegra = async (id: string): Promise<void> => {
+export const excluirRegra = async (id: string, empresaId: string): Promise<void> => {
   const { error } = await supabase
     .from('regras_classificacao_receita')
     .update({ deleted_at: new Date().toISOString(), ativo: false })
-    .eq('id', id);
+    .eq('id', id)
+    .eq('empresa_representada_id', empresaId);
   if (error) throw error;
 };
 

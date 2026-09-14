@@ -7,9 +7,11 @@ import { getEmpresaAtivaIdOuFalha as getEmpresaIdAtual } from '@/lib/empresaAtiv
 export const descontoPadraoService = {
   async fetchDescontos() {
     console.log('[DescontosPadrao] Carregando descontos padrão...');
+    const empresaId = await getEmpresaIdAtual();
     const { data, error } = await supabase
       .from('descontos_padrao')
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .eq('ativo', true)
       .order('codigo');
 
@@ -56,7 +58,7 @@ export const descontoPadraoService = {
 
   async updateDesconto(id: string, descontoData: DescontoPadrao) {
     console.log('[DescontosPadrao] Atualizando desconto padrão:', id);
-    
+    const empresaId = await getEmpresaIdAtual();
     const dataToSave = {
       codigo: descontoData.codigo,
       nome: descontoData.descricao,
@@ -73,6 +75,7 @@ export const descontoPadraoService = {
       .from('descontos_padrao')
       .update(dataToSave)
       .eq('id', id)
+      .eq('empresa_representada_id', empresaId)
       .select()
       .single();
 
@@ -87,11 +90,12 @@ export const descontoPadraoService = {
 
   async deleteDesconto(id: string) {
     console.log('[DescontosPadrao] Excluindo desconto padrão:', id);
-    
+    const empresaId = await getEmpresaIdAtual();
     const { error } = await supabase
       .from('descontos_padrao')
       .update({ ativo: false })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('empresa_representada_id', empresaId);
 
     if (error) {
       console.error('[DescontosPadrao] Erro ao excluir desconto padrão:', error);

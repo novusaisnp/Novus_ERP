@@ -4,9 +4,11 @@ import { getEmpresaAtivaIdOuFalha as getEmpresaIdAtual } from '@/lib/empresaAtiv
 
 export const setorService = {
   async fetchSetores(): Promise<Setor[]> {
+    const empresaId = await getEmpresaIdAtual();
     const { data, error } = await supabase
       .from('setores_empresa')
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .eq('ativo', true)
       .order('nome');
 

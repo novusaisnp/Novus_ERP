@@ -6,9 +6,11 @@ import { getEmpresaAtivaIdOuFalha as getEmpresaIdAtual } from '@/lib/empresaAtiv
 export const vencimentoPadraoService = {
   async fetchVencimentos() {
     console.log('[RH] Carregando vencimentos padrão...');
+    const empresaId = await getEmpresaIdAtual();
     const { data, error } = await supabase
       .from('vencimentos_padrao')
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .eq('ativo', true)
       .order('codigo');
 
@@ -57,7 +59,7 @@ export const vencimentoPadraoService = {
 
   async updateVencimento(id: string, vencimentoData: VencimentoPadrao) {
     console.log('[RH] Atualizando vencimento padrão:', id);
-    
+    const empresaId = await getEmpresaIdAtual();
     const dataToSave = {
       codigo: vencimentoData.codigo,
       descricao: vencimentoData.descricao,
@@ -75,6 +77,7 @@ export const vencimentoPadraoService = {
       .from('vencimentos_padrao')
       .update(dataToSave)
       .eq('id', id)
+      .eq('empresa_representada_id', empresaId)
       .select()
       .single();
 
@@ -89,11 +92,12 @@ export const vencimentoPadraoService = {
 
   async deleteVencimento(id: string) {
     console.log('[RH] Excluindo vencimento padrão:', id);
-    
+    const empresaId = await getEmpresaIdAtual();
     const { error } = await supabase
       .from('vencimentos_padrao')
       .update({ ativo: false })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('empresa_representada_id', empresaId);
 
     if (error) {
       console.error('[RH] Erro ao excluir vencimento padrão:', error);

@@ -28,9 +28,11 @@ export interface NovaFolhaInput {
 
 export const folhaPagamentoService = {
   async listFolhas(): Promise<FolhaRow[]> {
+    const empresaId = await getEmpresaAtivaId();
     const { data, error } = await supabase
       .from('folha_pagamento')
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .order('competencia', { ascending: false });
     if (error) throw error;
     return data ?? [];

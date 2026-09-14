@@ -32,9 +32,11 @@ export interface BeneficioInput {
 
 export const beneficioVinculadoService = {
   async listBeneficios(): Promise<Beneficio[]> {
+    const empresaId = await getEmpresaAtivaId();
     const { data, error } = await supabase
       .from('beneficios_vinculados')
       .select('*')
+      .eq('empresa_representada_id', empresaId)
       .order('created_at', { ascending: false });
     if (error) throw error;
     return data ?? [];
@@ -51,12 +53,14 @@ export const beneficioVinculadoService = {
   },
 
   async atualizarBeneficio(id: string, input: BeneficioInput): Promise<void> {
-    const { error } = await supabase.from('beneficios_vinculados').update(input).eq('id', id);
+    const empresaId = await getEmpresaAtivaId();
+    const { error } = await supabase.from('beneficios_vinculados').update(input).eq('id', id).eq('empresa_representada_id', empresaId);
     if (error) throw error;
   },
 
   async excluirBeneficio(id: string): Promise<void> {
-    const { error } = await supabase.from('beneficios_vinculados').delete().eq('id', id);
+    const empresaId = await getEmpresaAtivaId();
+    const { error } = await supabase.from('beneficios_vinculados').delete().eq('id', id).eq('empresa_representada_id', empresaId);
     if (error) throw error;
   },
 };

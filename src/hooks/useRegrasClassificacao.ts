@@ -32,7 +32,7 @@ export const useRegrasClassificacao = () => {
   });
 
   const mAtualizar = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: Partial<RegraClassificacaoInput> }) => atualizarRegra(id, input),
+    mutationFn: ({ id, input }: { id: string; input: Partial<RegraClassificacaoInput> }) => atualizarRegra(id, input, empresaId as string),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['regras-classificacao-receita', empresaId] });
       toast({ title: 'Regra atualizada' });
@@ -41,7 +41,7 @@ export const useRegrasClassificacao = () => {
   });
 
   const mExcluir = useMutation({
-    mutationFn: (id: string) => excluirRegra(id),
+    mutationFn: (id: string) => excluirRegra(id, empresaId as string),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['regras-classificacao-receita', empresaId] });
       toast({ title: 'Regra removida' });
